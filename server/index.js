@@ -14,8 +14,14 @@ if (!process.env.JWT_SECRET) {
 // --- Middleware --- 
 const app = express();
 
-// Enable CORS for all origins (adjust for production)
-app.use(cors());
+// Configure CORS based on environment
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.CLIENT_URL // Use the client URL from env in production
+        : 'http://localhost:3000', // Default for development
+    credentials: true
+};
+app.use(cors(corsOptions));
 
 // Parse JSON request bodies
 app.use(express.json());

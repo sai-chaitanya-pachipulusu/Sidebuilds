@@ -4,17 +4,17 @@
 
 **Available Domain:** Sidebuilds.com
 
-## 💡 TLDR
+##  TLDR
 
 A lightweight platform where builders can track, organize, and share their side projects, with the option of selling them in the future.
 
-## 1. Problem/Opportunity ❓
+## 1. Problem/Opportunity 
 
 Entrepreneurs often juggle multiple side projects, leading to difficulty in tracking progress and many unfinished ideas. These projects represent untapped potential. Similar to how platforms like Etsy unlocked value in crafts or Airbnb in unused rooms, there's a need for a platform dedicated to organizing and potentially monetizing side projects.
 
 **Market Size:** Estimated 5–10 million active side project builders worldwide who could benefit from this tooling.
 
-## 2. Solution ✅
+## 2. Solution 
 
 **The Idea:** A lightweight platform where builders can track, organize, and share their side projects, with the option of selling them in the future.
 
@@ -26,28 +26,28 @@ Entrepreneurs often juggle multiple side projects, leading to difficulty in trac
 *   **Collaboration (Optional):** Shared projects could allow for community collaboration.
 *   **Marketplace:** With a single click, users can list a project for sale on an integrated marketplace where buyers can browse and purchase.
 
-## 3. Go-to-Market Strategy 🚀
+## 3. Go-to-Market Strategy 
 
 *   Launch via Product Hunt, Indie Hackers, and Twitter/X.
 *   Target the "build-in-public" community.
 
-## 4. Business Model 💰
+## 4. Business Model
 
 *   **Freemium:** Free tier to track up to 2 projects.
 *   **Paid Plans:** $8–$20/month for unlimited projects and the ability to list projects for sale.
 *   **Marketplace Commission:** Take a commission on each successful project sale through the platform.
 
-## 5. Startup Costs 💸
+## 5. Startup Costs 
 
 Initial development for core features could be relatively low cost. Scaling, especially the marketplace component, might require future investment or fundraising.
 
-## 6. Technology Stack 💻
+## 6. Technology Stack 
 
 *   **Frontend:** React
 *   **Backend:** Node.js with Express.js
 *   **Database:** PostgreSQL
 
-## 7. Development Roadmap 🗺️
+## 7. Development Roadmap 
 
 **Phase 1: Planning and Setup**
 
@@ -82,6 +82,6 @@ Initial development for core features could be relatively low cost. Scaling, esp
 *   [x] **Scalability:** Design for growth. *(Basic considerations discussed - DB indexing, stateless API, PaaS scaling)*
 *   [x] **Monitoring & Maintenance:** Set up monitoring and plan for upkeep. *(Basic logging is present. Discussed monitoring tools like UptimeRobot/Sentry and dependency updates)*
 
-## 8. Setup and Installation Instructions ⚙️
+## 8. Setup and Installation Instructions 
 
 *(Instructions will be added here once the initial project structure and technology stack are defined)* 
