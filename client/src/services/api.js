@@ -7,6 +7,8 @@ const apiClient = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // Add timeout to prevent hanging requests
+    timeout: 10000,
 });
 
 // --- Interceptor to add JWT token to requests --- 
@@ -19,6 +21,44 @@ apiClient.interceptors.request.use(
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// --- Response interceptor for error handling --- 
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Handle database connection errors (useful for CockroachDB)
+        if (error.code === 'ECONNABORTED') {
+            console.error('Request timeout - database may be under load');
+            return Promise.reject(new Error('Request timed out. Please try again later.'));
+        }
+
+        // Handle network errors
+        if (!error.response) {
+            console.error('Network error:', error.message);
+            return Promise.reject(new Error('Network error. Please check your connection.'));
+        }
+
+        // Handle server errors (500s)
+        if (error.response.status >= 500) {
+            console.error('Server error:', error.response.data);
+            return Promise.reject(new Error('Server error. Please try again later.'));
+        }
+
+        // Handle unauthorized errors (401)
+        if (error.response.status === 401) {
+            // If token is expired, redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Only redirect if we're not already on the login page
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
+
         return Promise.reject(error);
     }
 );
@@ -118,6 +158,18 @@ export const getMarketplaceProjects = async () => {
     } catch (error) {
         console.error('Get Marketplace Projects API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to fetch marketplace projects');
+    }
+};
+
+// --- Health Check ---
+
+export const checkApiHealth = async () => {
+    try {
+        const response = await apiClient.get('/'); 
+        return response.data;
+    } catch (error) {
+        console.error('API Health Check error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('API health check failed');
     }
 };
 

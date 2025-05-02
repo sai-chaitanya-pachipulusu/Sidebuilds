@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: sidebuilds-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: JWT_SECRET
+        sync: false # Means this will be a secret managed in the Render dashboard
+      - key: DATABASE_URL
+        sync: false # Means this will be a secret managed in the Render dashboard
+      - key: CLIENT_URL
+        value: https://sidebuilds.space # Will need to be updated after domain is set up
+      - key: LOG_LEVEL
+        value: info
+    autoDeploy: true # This is optional, enables auto deployments on pushes to the connected repo
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: https://sidebuilds.space # Update this to match your frontend domain
+      - path: /*
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate 

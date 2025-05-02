@@ -1,87 +1,115 @@
-# Side Project Tracker ⚒️
+# SideBuilds.space
 
-> Less hassle, more hustle
+A platform for tracking, sharing, and selling side projects. Built with React, Node.js, Express, and CockroachDB.
 
-**Available Domain:** Sidebuilds.com
+## Features
 
-##  TLDR
+- 🚀 Track your side projects from idea to launch
+- 🔄 Monitor progress and update project status
+- 🌐 Publish projects to a public directory
+- 💲 List projects for sale in the marketplace
+- 🌓 Dark/light theme support
+- 📱 Fully responsive design
 
-A lightweight platform where builders can track, organize, and share their side projects, with the option of selling them in the future.
+## Tech Stack
 
-## 1. Problem/Opportunity 
+### Frontend
+- React
+- React Router
+- Axios
+- CSS (with custom theming)
 
-Entrepreneurs often juggle multiple side projects, leading to difficulty in tracking progress and many unfinished ideas. These projects represent untapped potential. Similar to how platforms like Etsy unlocked value in crafts or Airbnb in unused rooms, there's a need for a platform dedicated to organizing and potentially monetizing side projects.
+### Backend
+- Node.js
+- Express
+- JWT Authentication
+- PostgreSQL (CockroachDB)
 
-**Market Size:** Estimated 5–10 million active side project builders worldwide who could benefit from this tooling.
+### Deployment
+- CockroachDB (Database)
+- Render (Backend hosting)
+- Vercel (Frontend hosting)
+- Custom domain: sidebuilds.space
 
-## 2. Solution 
+## Getting Started
 
-**The Idea:** A lightweight platform where builders can track, organize, and share their side projects, with the option of selling them in the future.
+### Prerequisites
+- Node.js (v18 or higher)
+- npm
+- PostgreSQL or CockroachDB
 
-**How it Works:**
+### Local Development
 
-*   **User Dashboard:** Users sign up and get a dashboard to track their side projects.
-*   **Project Tracking:** Projects can be tracked by various metrics like idea stage, MVP build status, domain ownership, revenue, user growth, etc.
-*   **Privacy & Sharing:** Projects can be kept private or shared publicly with the community.
-*   **Collaboration (Optional):** Shared projects could allow for community collaboration.
-*   **Marketplace:** With a single click, users can list a project for sale on an integrated marketplace where buyers can browse and purchase.
+1. **Clone the repository**
+   ```
+   git clone https://github.com/yourusername/sidebuilds.git
+   cd sidebuilds
+   ```
 
-## 3. Go-to-Market Strategy 
+2. **Set up environment variables**
+   - Create a `.env` file in the server directory based on `.env.example`
+   - Create a `.env` file in the client directory based on `.env.example`
 
-*   Launch via Product Hunt, Indie Hackers, and Twitter/X.
-*   Target the "build-in-public" community.
+3. **Install dependencies**
+   ```
+   # Install server dependencies
+   cd server
+   npm install
 
-## 4. Business Model
+   # Install client dependencies
+   cd ../client
+   npm install
+   ```
 
-*   **Freemium:** Free tier to track up to 2 projects.
-*   **Paid Plans:** $8–$20/month for unlimited projects and the ability to list projects for sale.
-*   **Marketplace Commission:** Take a commission on each successful project sale through the platform.
+4. **Set up the database**
+   - Create a CockroachDB instance or use PostgreSQL locally
+   - Run the schema file: `psql -U youruser -d yourdatabase -f database/schema.sql`
+   - Optionally run the seed file: `psql -U youruser -d yourdatabase -f database/seed.sql`
 
-## 5. Startup Costs 
+5. **Start the development servers**
+   ```
+   # Start the backend server (from the server directory)
+   npm run dev
 
-Initial development for core features could be relatively low cost. Scaling, especially the marketplace component, might require future investment or fundraising.
+   # Start the frontend server (from the client directory)
+   npm run dev
+   ```
 
-## 6. Technology Stack 
+6. **Access the application**
+   - Backend: http://localhost:5001
+   - Frontend: http://localhost:3000
 
-*   **Frontend:** React
-*   **Backend:** Node.js with Express.js
-*   **Database:** PostgreSQL
+## Deployment
 
-## 7. Development Roadmap 
+For detailed deployment instructions, please see [docs/deployment-guide.md](docs/deployment-guide.md).
 
-**Phase 1: Planning and Setup**
+## Project Structure
 
-*   [ ] **Detailed Project Plan & Roadmap:** Refine this roadmap with specific features for each phase.
-*   [x] **Technology Stack Selection:** Decide on the specific technologies.
-*   [x] **Initial Project Structure:** Set up the basic directory structure.
-*   [x] **Detailed README.md:** Create this comprehensive README file.
+```
+├── client/               # React frontend
+│   ├── public/           # Static files
+│   └── src/
+│       ├── components/   # Reusable components
+│       ├── context/      # React context providers
+│       ├── pages/        # Page components
+│       ├── services/     # API service functions
+│       └── styles/       # Global styles
+├── server/               # Express backend
+│   ├── middleware/       # Express middleware
+│   ├── routes/           # API routes
+│   ├── db.js             # Database connection
+│   └── index.js          # Server entry point
+├── database/             # Database scripts
+│   ├── schema.sql        # Database schema
+│   └── seed.sql          # Sample data
+└── scripts/              # Utility scripts
+    └── deploy-database.js # Database deployment script
+```
 
-**Phase 2: Core Tracking Features (MVP)**
+## Contributing
 
-*   [x] **Database Schema Design:** Design tables/collections for users and projects. *(SQL script provided, requires manual execution)*
-*   [x] **User Authentication:** Implement signup, login, session management. *(Backend API + Frontend Auth Flow complete)*
-*   [x] **Project CRUD:** Implement Create, Read, Update, Delete for projects. *(Backend API + Frontend UI complete)*
-*   [x] **Dashboard View:** Create the main user dashboard to display projects. *(Backend endpoint + Frontend UI complete)*
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-**Phase 3: Enhancements and Sharing**
+## License
 
-*   [x] **Project Detail View:** Create a view for individual project details. *(Implemented as part of Project CRUD)*
-*   [x] **Sharing Functionality:** Implement public/private toggles for projects. *(Backend + Frontend public list complete)*
-*   [ ] **Community/Collaboration Features (Optional/Later Phase):** Browse shared projects, potential collaboration tools.
-
-**Phase 4: Marketplace Integration**
-
-*   [x] **Seller Functionality:** Allow users to mark projects for sale (add pricing, description). *(Implemented via project form/edit)*
-*   [x] **Buyer Marketplace View:** Create a browseable marketplace page. *(Backend + Frontend UI complete)*
-*   [x] **Payment Gateway Integration:** Integrate Stripe/PayPal for transactions. *(Basic Stripe structure (checkout session, webhook handler, frontend redirect) implemented. Requires API keys, webhook setup, and fulfillment logic)*
-*   [x] **Commission Logic:** Implement commission calculation on sales. *(Placeholder added in webhook handler. Requires specific business logic and potentially payout implementation)*
-
-**Phase 5: Deployment and Scaling**
-
-*   [x] **Deployment Strategy:** Plan and execute deployment (e.g., Heroku, AWS, Vercel). *(Discussed options like Vercel+Render/Heroku. Requires manual setup)*
-*   [x] **Scalability:** Design for growth. *(Basic considerations discussed - DB indexing, stateless API, PaaS scaling)*
-*   [x] **Monitoring & Maintenance:** Set up monitoring and plan for upkeep. *(Basic logging is present. Discussed monitoring tools like UptimeRobot/Sentry and dependency updates)*
-
-## 8. Setup and Installation Instructions 
-
-*(Instructions will be added here once the initial project structure and technology stack are defined)* 
+This project is licensed under the MIT License - see the LICENSE file for details. 
