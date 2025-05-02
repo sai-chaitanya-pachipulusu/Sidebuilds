@@ -1,0 +1,129 @@
+.project-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.project-table th {
+  text-align: left;
+  padding: 1rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.project-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--secondary-text);
+  vertical-align: middle;
+}
+
+.project-table tbody tr {
+  transition: background-color 0.2s;
+}
+
+.project-table tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+.project-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .project-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .project-table th, 
+  .project-table td {
+    padding: 0.6rem;
+  }
+}
+
+/* Styling for specific columns */
+.project-name {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.project-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.project-link:hover {
+  text-decoration: underline;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* Status colors */
+.status-idea { background-color: rgba(156, 39, 176, 0.1); color: #9c27b0; }
+.status-planning { background-color: rgba(33, 150, 243, 0.1); color: #2196f3; }
+.status-mvp { background-color: rgba(255, 152, 0, 0.1); color: #ff9800; }
+.status-development { background-color: rgba(0, 150, 136, 0.1); color: #009688; }
+.status-launched { background-color: rgba(76, 175, 80, 0.1); color: #4caf50; }
+.status-on_hold { background-color: rgba(158, 158, 158, 0.1); color: #9e9e9e; }
+
+/* Action buttons */
+.action-cell {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--secondary-text);
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background-color: var(--hover-bg);
+  color: var(--primary-color);
+}
+
+/* Create a responsive table container */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* For empty state */
+.empty-table {
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  border: 1px dashed var(--border-color);
+  color: var(--secondary-text);
+} 

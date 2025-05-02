@@ -1,0 +1,76 @@
+.navbar {
+  background: var(--bg-color);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.navbar-container {
+  max-width: var(--max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: opacity var(--transition-speed), color 0.3s ease;
+}
+
+.nav-logo:hover {
+  opacity: 0.8;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-menu a {
+  font-size: 0.9rem;
+  color: var(--secondary-text);
+  text-decoration: none;
+  transition: all var(--transition-speed), color 0.3s ease, background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.nav-menu a:hover {
+  color: var(--text-color);
+  background: var(--hover-bg);
+}
+
+.nav-menu a.active {
+  color: var(--text-color);
+}
+
+.nav-menu a svg {
+  opacity: 0.7;
+  transition: opacity var(--transition-speed);
+}
+
+.nav-menu a:hover svg {
+  opacity: 1;
+} 

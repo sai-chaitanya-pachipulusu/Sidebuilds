@@ -1,3 +1,21 @@
+/* Target all critical elements to ensure full dark theme coverage */
+html, body, #root, .app-container, main, #___gatsby, #gatsby-focus-wrapper {
+  background-color: var(--bg-color) !important; /* Force background color */
+  color: var(--text-color);
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Full viewport dark theme */
+html {
+  background-color: var(--bg-color) !important; /* Force background color */
+  min-height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,9 +23,60 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color) !important; /* Force background color */
+  color: var(--text-color);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Target any possible container that might be escaping the theme */
+div, section, header, footer, aside, nav {
+  background-color: inherit;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Default dark theme */
+:root {
+  --primary-color: #0070f3;
+  --text-color: #ffffff;
+  --secondary-text: #999999;
+  --bg-color: #000000;
+  --card-bg: #111111;
+  --card-radius: 12px;
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --header-height: 70px;
+  --transition-speed: 0.2s;
+  --max-width: 800px;
+}
+
+/* Allow smooth transitions between themes */
+html, body, #root, .app-container, main {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Full width wrapper fix for black background */
+.app-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Full viewport black background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-color);
+  z-index: -1;
 }

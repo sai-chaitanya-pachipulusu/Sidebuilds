@@ -3,4 +3,4 @@ server/.env
 client/.env
 
 # Node modules
-node_modules/
+client/node_modules/

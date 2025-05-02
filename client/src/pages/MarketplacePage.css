@@ -1,0 +1,135 @@
+.marketplace-page {
+  padding: 1rem 0;
+  margin-top: 4rem;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.marketplace-header {
+  margin-bottom: 2rem;
+}
+
+.marketplace-page h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: var(--secondary-text);
+  margin-bottom: 2rem;
+  font-size: 1.05rem;
+}
+
+.marketplace-page p {
+  margin-bottom: 2rem;
+  color: var(--secondary-text);
+}
+
+.page-section-heading {
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+  color: var(--secondary-text);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.projects-grid .card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 1.5rem;
+  transition: transform var(--transition-speed);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+  box-shadow: var(--card-shadow);
+}
+
+.projects-grid .card:hover {
+  transform: translateY(-2px);
+}
+
+.projects-grid .card h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.projects-grid .card .owner {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: var(--secondary-text);
+}
+
+.projects-grid .card .status,
+.projects-grid .card .domain {
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  color: var(--secondary-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.projects-grid .card a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: opacity var(--transition-speed);
+}
+
+.projects-grid .card a:hover {
+  opacity: 0.8;
+}
+
+.buy-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.buy-button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.buy-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff4d4f;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.marketplace-table .project-table td:last-child {
+  text-align: right;
+} 
