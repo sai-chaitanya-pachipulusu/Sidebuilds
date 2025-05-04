@@ -126,4 +126,25 @@
   border-radius: var(--card-radius);
   border: 1px dashed var(--border-color);
   color: var(--secondary-text);
+}
+
+/* Add to ProjectTable.css */
+.contact-info {
+  display: flex;
+  gap: 10px;
+}
+
+.contact-link {
+  color: var(--text-color);
+  padding: 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.contact-link:hover {
+  background-color: var(--hover-color);
+  color: var(--primary-color);
 } 

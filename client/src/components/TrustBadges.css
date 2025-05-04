@@ -1,0 +1,66 @@
+.trust-badges {
+  margin: 2rem 0;
+  padding: 2rem;
+  border-radius: var(--card-radius);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+
+.trust-title {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.badges-container {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .badges-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketplace-badges .badges-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.badge-icon {
+  min-width: 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+}
+
+.badge-content h4 {
+  font-size: 1rem;
+  margin: 0 0 0.3rem 0;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.badge-content p {
+  font-size: 0.85rem;
+  margin: 0;
+  color: var(--secondary-text);
+  line-height: 1.4;
+} 

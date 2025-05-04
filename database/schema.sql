@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS projects (
     is_public BOOLEAN DEFAULT FALSE,
     is_for_sale BOOLEAN DEFAULT FALSE,
     sale_price DECIMAL(10, 2) DEFAULT 0.00,
+    contact_email VARCHAR(100), -- Contact email for sale projects
+    contact_phone VARCHAR(20),  -- Contact phone for sale projects
+    payment_method VARCHAR(20) DEFAULT 'direct', -- direct, stripe, paypal, etc.
+    stripe_product_id VARCHAR(100), -- Stripe product ID if using Stripe
+    stripe_price_id VARCHAR(100),   -- Stripe price ID if using Stripe
     owner_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
     owner_username VARCHAR(30),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -37,6 +42,7 @@ CREATE TABLE IF NOT EXISTS project_transactions (
     status VARCHAR(20) DEFAULT 'pending', -- pending, completed, failed, refunded
     payment_method VARCHAR(50),
     payment_id VARCHAR(100),
+    stripe_session_id VARCHAR(100), -- For Stripe payment sessions
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

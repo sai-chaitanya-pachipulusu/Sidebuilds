@@ -10,11 +10,14 @@ import App from './App';
 
 // Load Stripe outside of component render to avoid recreating on every render
 // Ensure your publishable key is in client/.env as REACT_APP_STRIPE_PUBLISHABLE_KEY
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'YOUR_FALLBACK_PUBLISHABLE_KEY');
+const STRIPE_PUBLISHABLE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51PKEjRSEygEn8yvgmYyp7mMlSKK9f5zVzZ2bEPYAZBXpdLTLWbLcPV2j5Hk3LoYCNPiJ6F3Z03WzTJNvMkXzFqHu00WIcSYcj5';
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
-if (!process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY) {
-    console.warn('Stripe Publishable Key not found in .env. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY.');
-}
+// Log Stripe configuration status
+console.log('Stripe configuration status:', {
+  publishableKeyAvailable: !!STRIPE_PUBLISHABLE_KEY,
+  source: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 'environment' : 'fallback'
+});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

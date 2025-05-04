@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createProject } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Consider defining stages centrally if used elsewhere
 const projectStages = ['idea', 'planning', 'mvp', 'development', 'launched', 'on_hold'];
+const paymentMethods = ['direct', 'stripe', 'paypal'];
 
 function ProjectFormPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         stage: projectStages[0], // Default stage
         domain: '',
-        revenue: 0,
-        user_growth: 0,
         is_public: false,
         is_for_sale: false,
-        sale_price: '' // Keep as string for input, convert later if needed
+        sale_price: '', // Keep as string for input, convert later if needed
+        contact_email: user?.email || '',
+        contact_phone: '',
+        payment_method: 'direct'
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -40,12 +45,25 @@ function ProjectFormPage() {
             return;
         }
 
+        // Validate contact info if project is for sale
+        if (formData.is_for_sale) {
+            if (!formData.sale_price) {
+                setError('Sale price is required for projects listed for sale.');
+                setLoading(false);
+                return;
+            }
+            
+            if (!formData.contact_email && !formData.contact_phone) {
+                setError('At least one contact method (email or phone) is required for projects listed for sale.');
+                setLoading(false);
+                return;
+            }
+        }
+
         // Prepare data for API (e.g., convert numbers)
         const projectData = {
             ...formData,
-            revenue: parseFloat(formData.revenue) || 0,
-            user_growth: parseInt(formData.user_growth, 10) || 0,
-            sale_price: formData.is_for_sale && formData.sale_price ? parseFloat(formData.sale_price) : null
+            sale_price: formData.is_for_sale && formData.sale_price ? parseFloat(formData.sale_price) : 0
         };
 
         try {
@@ -83,14 +101,6 @@ function ProjectFormPage() {
                     <input type="text" id="domain" name="domain" value={formData.domain} onChange={handleChange} placeholder="e.g., sidebuilds.com" />
                 </div>
                 <div>
-                    <label htmlFor="revenue">Monthly Revenue ($):</label>
-                    <input type="number" id="revenue" name="revenue" value={formData.revenue} onChange={handleChange} step="0.01" />
-                </div>
-                 <div>
-                    <label htmlFor="user_growth">User Growth (e.g., signups/month):</label>
-                    <input type="number" id="user_growth" name="user_growth" value={formData.user_growth} onChange={handleChange} step="1" />
-                </div>
-                 <div>
                     <label htmlFor="is_public">Make Public?</label>
                     <input type="checkbox" id="is_public" name="is_public" checked={formData.is_public} onChange={handleChange} />
                 </div>
@@ -98,11 +108,39 @@ function ProjectFormPage() {
                     <label htmlFor="is_for_sale">List for Sale?</label>
                     <input type="checkbox" id="is_for_sale" name="is_for_sale" checked={formData.is_for_sale} onChange={handleChange} />
                 </div>
+                
+                {/* Additional fields for projects listed for sale */}
                 {formData.is_for_sale && (
-                    <div>
-                        <label htmlFor="sale_price">Sale Price ($):</label>
-                        <input type="number" id="sale_price" name="sale_price" value={formData.sale_price} onChange={handleChange} step="0.01" required={formData.is_for_sale} />
-                    </div>
+                    <>
+                        <div>
+                            <label htmlFor="sale_price">Sale Price ($):</label>
+                            <input type="number" id="sale_price" name="sale_price" value={formData.sale_price} onChange={handleChange} step="0.01" required={formData.is_for_sale} />
+                        </div>
+                        <div>
+                            <label htmlFor="contact_email">Contact Email:</label>
+                            <input type="email" id="contact_email" name="contact_email" value={formData.contact_email} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label htmlFor="contact_phone">Contact Phone:</label>
+                            <input type="tel" id="contact_phone" name="contact_phone" value={formData.contact_phone} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label htmlFor="payment_method">Payment Method:</label>
+                            <select id="payment_method" name="payment_method" value={formData.payment_method} onChange={handleChange}>
+                                {paymentMethods.map(method => (
+                                    <option key={method} value={method}>
+                                        {method.charAt(0).toUpperCase() + method.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="info-text">
+                            <p>At least one contact method is required for projects listed for sale.</p>
+                            {formData.payment_method === 'stripe' && (
+                                <p>Stripe integration will be set up after project creation.</p>
+                            )}
+                        </div>
+                    </>
                 )}
 
                 <button type="submit" disabled={loading}>

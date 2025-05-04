@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './HomePage.css';
 
 // Arrow icon for links
@@ -10,12 +11,18 @@ const ArrowIcon = () => (
 );
 
 function HomePage() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <>
       <section className="hero">
-        <h1>Side Project Tracker ⚒️</h1>
+        <h1>Space for Side Hustle</h1>
         <p className="subtitle">Less hassle, more hustle.</p>
-        <Link to="/register" className="hero-btn">Get Started <ArrowIcon /></Link>
+        {!isAuthenticated ? (
+          <Link to="/register" className="hero-btn">Get Started <ArrowIcon /></Link>
+        ) : (
+          <Link to="/dashboard" className="hero-btn">Go to Dashboard <ArrowIcon /></Link>
+        )}
       </section>
 
       <div className="section-heading">ABOUT</div>
@@ -33,8 +40,8 @@ function HomePage() {
       <div className="feature-card">
         <h3>Project Dashboard</h3>
         <p>Keep all your side projects organized with status tracking, milestones, and more.</p>
-        <Link to="/login" className="arrow-link">
-          Try it <ArrowIcon />
+        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
+          {isAuthenticated ? "View your dashboard" : "Try it"} <ArrowIcon />
         </Link>
       </div>
       

@@ -16,11 +16,18 @@ apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token'); // Get token from local storage
         if (token) {
+            // Ensure token format is correct - x-auth-token or Authorization Bearer
+            config.headers['Authorization'] = `Bearer ${token}`;
             config.headers['x-auth-token'] = token;
         }
+        
+        // Log requests for debugging
+        console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+        
         return config;
     },
     (error) => {
+        console.error('Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -90,11 +97,18 @@ export const loginUser = async (credentials) => {
 
 export const getProjects = async () => {
     try {
+        console.log('Fetching user projects');
         const response = await apiClient.get('/projects');
+        console.log(`Received ${response.data.length} user projects`);
         return response.data;
     } catch (error) {
-        console.error('Get Projects API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to fetch projects');
+        console.error('Get Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        }
+        // Return empty array to prevent UI from breaking
+        return [];
     }
 };
 
@@ -142,22 +156,37 @@ export const deleteProject = async (projectId) => {
 
 export const getPublicProjects = async () => {
     try {
+        console.log('Fetching public projects');
         // Note: No token needed for this public endpoint
         const response = await apiClient.get('/public/projects'); 
+        console.log(`Received ${response.data.length} public projects`);
         return response.data;
     } catch (error) {
-        console.error('Get Public Projects API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to fetch public projects');
+        console.error('Get Public Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        }
+        // Return empty array to prevent UI from breaking
+        return [];
     }
 };
 
 export const getMarketplaceProjects = async () => {
     try {
-        const response = await apiClient.get('/public/marketplace'); 
+        console.log('Calling marketplace API endpoint');
+        const response = await apiClient.get('/public/marketplace');
+        console.log('Marketplace API response received:', response.data.length, 'projects');
         return response.data;
     } catch (error) {
-        console.error('Get Marketplace Projects API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to fetch marketplace projects');
+        console.error('Get Marketplace Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        } else if (error.request) {
+            console.error('No response received. Request:', error.request);
+        }
+        return []; // Return empty array instead of throwing to avoid breaking UI
     }
 };
 
@@ -171,6 +200,22 @@ export const checkApiHealth = async () => {
         console.error('API Health Check error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('API health check failed');
     }
+};
+
+// Payment API calls
+export const createCheckoutSession = async (projectId) => {
+    const response = await apiClient.post('/payments/create-checkout-session', { projectId });
+    return response.data;
+};
+
+export const getTransactionStatus = async (sessionId) => {
+    const response = await apiClient.get(`/payments/status/${sessionId}`);
+    return response.data;
+};
+
+export const getUserTransactions = async () => {
+    const response = await apiClient.get('/payments/transactions');
+    return response.data;
 };
 
 export default apiClient; // Export the configured instance if needed elsewhere 

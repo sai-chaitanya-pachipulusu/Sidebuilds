@@ -2,8 +2,6 @@
 html, body, #root, .app-container, main, #___gatsby, #gatsby-focus-wrapper {
   background-color: var(--bg-color) !important; /* Force background color */
   color: var(--text-color);
-  min-height: 100vh;
-  width: 100%;
   margin: 0;
   padding: 0;
 }
@@ -11,16 +9,13 @@ html, body, #root, .app-container, main, #___gatsby, #gatsby-focus-wrapper {
 /* Full viewport dark theme */
 html {
   background-color: var(--bg-color) !important; /* Force background color */
-  min-height: 100vh;
-  width: 100vw;
-  overflow-x: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: Arial, Helvetica, sans-serif; /* Changed to Arial as primary font */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-color) !important; /* Force background color */
@@ -36,13 +31,13 @@ div, section, header, footer, aside, nav {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Courier New', monospace;
 }
 
 /* Default dark theme */
 :root {
   --primary-color: #0070f3;
+  --primary-color-rgb: 0, 112, 243; /* Added RGB value for primary color */
   --text-color: #ffffff;
   --secondary-text: #999999;
   --bg-color: #000000;
@@ -54,6 +49,7 @@ code {
   --header-height: 70px;
   --transition-speed: 0.2s;
   --max-width: 800px;
+  --base-font: Arial, Helvetica, sans-serif; /* Added base font variable */
 }
 
 /* Allow smooth transitions between themes */
@@ -79,4 +75,9 @@ body::before {
   height: 100vh;
   background-color: var(--bg-color);
   z-index: -1;
+}
+
+/* Override for all instances to use the main font */
+button, input, select, textarea, label, p, h1, h2, h3, h4, h5, h6, div, span, a {
+  font-family: var(--base-font);
 }

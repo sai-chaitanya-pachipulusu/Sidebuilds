@@ -15,6 +15,7 @@ import ProjectFormPage from './pages/ProjectFormPage'; // Import the new form pa
 import ProjectDetailPage from './pages/ProjectDetailPage'; // Import the detail page
 import PublicProjectsPage from './pages/PublicProjectsPage'; // Import public page
 import MarketplacePage from './pages/MarketplacePage'; // Import Marketplace page
+import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchase success page
 
 // Placeholder components for pages not yet created
 // const HomePage = () => <div>Home Page - Publicly Accessible</div>;
@@ -65,54 +66,56 @@ function App() {
     }, [isDarkMode]);
 
     return (
-        <>
-            {/* Full-viewport background element */}
-            <div className={`app-wrapper ${isDarkMode ? 'dark-theme' : 'light-theme'}`}></div>
-            
-            {/* Main app container */}
-            <div className={`app-container ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
-                <NavBar />
-                <main>
-                    <Routes>
-                        {/* Public Routes */}
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/register" element={<RegisterPage />} />
-                        <Route path="/public-projects" element={<PublicProjectsPage />} />
-                        <Route path="/marketplace" element={<MarketplacePage />} />
-                        
-                        {/* Protected Routes */}
-                        <Route 
-                            path="/dashboard"
-                            element={
-                                <ProtectedRoute>
-                                    <DashboardPage />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route 
-                            path="/projects/new"
-                            element={
-                                <ProtectedRoute>
-                                    <ProjectFormPage />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route 
-                            path="/projects/:id"
-                            element={
-                                <ProtectedRoute>
-                                    <ProjectDetailPage />
-                                </ProtectedRoute>
-                            }
-                        /> 
-                        
-                        {/* Catch-all route for 404 Not Found */}
-                        <Route path="*" element={<NotFoundPage />} />
-                    </Routes>
-                </main>
-            </div>
-        </>
+        <div className={`app-container ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+            <NavBar />
+            <main>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/public-projects" element={<PublicProjectsPage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
+                    
+                    {/* Protected Routes */}
+                    <Route 
+                        path="/dashboard"
+                        element={
+                            <ProtectedRoute>
+                                <DashboardPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/projects/new"
+                        element={
+                            <ProtectedRoute>
+                                <ProjectFormPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/projects/:id"
+                        element={
+                            <ProtectedRoute>
+                                <ProjectDetailPage />
+                            </ProtectedRoute>
+                        }
+                    /> 
+                    <Route 
+                        path="/purchase/success"
+                        element={
+                            <ProtectedRoute>
+                                <PurchaseSuccessPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* Catch-all route for 404 Not Found */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+            </main>
+        </div>
     );
 }
 

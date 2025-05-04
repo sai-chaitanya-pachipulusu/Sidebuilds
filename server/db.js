@@ -1,18 +1,17 @@
 const { Pool } = require('pg');
 require('dotenv').config(); // Load environment variables from .env file
 
-// Check if DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
-    console.error("FATAL ERROR: DATABASE_URL environment variable is missing.");
-    process.exit(1);
-}
+// Database connection URL
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://root@localhost:26257/defaultdb?sslmode=disable';
 
 // Configure connection pool with optimized settings for CockroachDB
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false
-    },
+    connectionString: databaseUrl,
+    ssl: process.env.NODE_ENV === 'production' ? 
+        { rejectUnauthorized: true } : 
+        process.env.DATABASE_SSL === 'true' ? 
+            { rejectUnauthorized: false } : 
+            false,
     // Connection pool settings optimized for CockroachDB
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
@@ -22,21 +21,86 @@ const pool = new Pool({
     query_timeout: 10000 // Query timeout in ms (10s)
 });
 
+// Track connection state
+let isConnected = false;
+let connectionRetries = 0;
+const MAX_CONNECTION_RETRIES = 10;
+
+// Reconnection function with exponential backoff
+async function reconnect() {
+    if (connectionRetries >= MAX_CONNECTION_RETRIES) {
+        console.error(`Failed to reconnect to database after ${MAX_CONNECTION_RETRIES} attempts. Giving up.`);
+        // Don't exit process, just log the error
+        return;
+    }
+    
+    const delay = Math.min(2 ** connectionRetries * 1000, 30000); // Max 30 second delay
+    console.log(`Attempting to reconnect to database in ${delay/1000} seconds...`);
+    
+    setTimeout(async () => {
+        connectionRetries++;
+        try {
+            const client = await pool.connect();
+            console.log('Successfully reconnected to database');
+            client.release();
+            isConnected = true;
+            connectionRetries = 0; // Reset retry counter on success
+        } catch (err) {
+            console.error('Reconnection attempt failed:', err.message);
+            reconnect(); // Try again
+        }
+    }, delay);
+}
+
 // Monitor the connection pool
 pool.on('error', (err, client) => {
     console.error('Unexpected error on idle client', err);
-    // Do not exit the process here - just log the error
+    isConnected = false;
+    
+    // Start reconnection process
+    reconnect();
 });
 
 // Test the connection
-pool.query('SELECT version()', (err, res) => {
-    if (err) {
-        console.error('Error connecting to CockroachDB:', err.stack);
-    } else {
+async function testConnection() {
+    try {
+        const res = await pool.query('SELECT version()');
         console.log('Successfully connected to CockroachDB');
         console.log('Database version:', res.rows[0].version);
+        isConnected = true;
+        return true;
+    } catch (err) {
+        console.error('Error connecting to CockroachDB:', err.message);
+        isConnected = false;
+        reconnect();
+        return false;
     }
-});
+}
+
+// Initialize connection test
+testConnection();
+
+// Enhanced query function with automatic retry on connection issues
+const query = async (text, params) => {
+    // If we know we're not connected, wait a bit before trying
+    if (!isConnected) {
+        // Wait for a short time to see if connection is restored
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    try {
+        return await pool.query(text, params);
+    } catch (err) {
+        // Check for connection-related errors
+        if (err.code === 'ECONNREFUSED' || err.code === '57P01' || err.code === '08006' || err.code === '08001') {
+            console.error(`Database connection error: ${err.message}. Initiating reconnection...`);
+            isConnected = false;
+            reconnect();
+            throw new Error(`Database connection failed. Operation could not be completed.`);
+        }
+        throw err;
+    }
+};
 
 // Helper function to handle retries for CockroachDB transactions
 // CockroachDB might return a serialization error that requires retrying the transaction
@@ -59,9 +123,17 @@ const retry = async (callback, maxRetries = 5) => {
     }
 };
 
+// Check connection status
+const isConnectionHealthy = () => isConnected;
+
+// Explicitly request a connection health check
+const checkConnection = () => testConnection();
+
 module.exports = {
-    query: (text, params) => pool.query(text, params),
+    query,
     getClient: () => pool.connect(),
     retry,
-    pool // Export the pool itself if needed
+    pool, // Export the pool itself if needed
+    isConnectionHealthy,
+    checkConnection
 }; 
