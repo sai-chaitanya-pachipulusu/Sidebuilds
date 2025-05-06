@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { getProjectById, updateProject } from '../services/api';
 import './ProjectDetailPage.css';
 
@@ -9,7 +9,6 @@ const paymentMethods = ['direct', 'stripe', 'paypal'];
 
 function ProjectDetailPage() {
     const { id: projectId } = useParams(); // Get project ID from URL
-    const navigate = useNavigate();
     const [project, setProject] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
