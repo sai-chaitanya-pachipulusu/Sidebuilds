@@ -147,11 +147,36 @@
 }
 
 .logout-button {
-  color: #e74c3c !important;
+  /* Inherit general nav link styles for consistency */
+  font-size: 0.95rem;
+  color: var(--danger-color, #e74c3c); /* Use a variable or fallback to red */
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  position: relative;
+  background-color: transparent; /* Ensure transparent background */
+  border: none; /* Remove any default button border */
+  cursor: pointer; /* Ensure it looks clickable */
 }
 
 .logout-button:hover {
-  background-color: rgba(231, 76, 60, 0.1) !important;
+  color: var(--danger-color-darker, #c0392b); /* Darker red on hover */
+  background: var(--danger-hover-bg, rgba(231, 76, 60, 0.1)); /* Light red hover background */
+  transform: translateY(-2px);
+}
+
+/* Ensure icons within the button also get the red color */
+.logout-button svg {
+  stroke: var(--danger-color, #e74c3c);
+}
+
+.logout-button:hover svg {
+  stroke: var(--danger-color-darker, #c0392b);
 }
 
 .user-avatar:hover {

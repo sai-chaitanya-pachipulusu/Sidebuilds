@@ -32,6 +32,21 @@ credentials: true
 
 app.use(cors(corsOptions));
 
+// --- Content Security Policy for Stripe --- 
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' https://js.stripe.com https://m.stripe.network 'unsafe-inline'; " + // Allow unsafe-inline for scripts if necessary, but be cautious
+    "style-src 'self' https://js.stripe.com 'unsafe-inline'; " +      // Allow unsafe-inline for styles
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network; " +
+    "connect-src 'self' https://api.stripe.com https://m.stripe.network; " +
+    "img-src 'self' https://*.stripe.com data:; " + // Allow images from Stripe and data URIs
+    "font-src 'self' https://js.stripe.com;" // Allow fonts from Stripe
+  );
+  next();
+});
+
 // --- Check for JWT_SECRET --- 
 if (!process.env.JWT_SECRET) {
     console.error("FATAL ERROR: JWT_SECRET environment variable is not set.");
