@@ -50,6 +50,7 @@ const ProtectedRoute = ({ children }) => {
 
 
 function App() {
+    const { logout } = useAuth();
     const { isAuthenticated: isAuth, isLoading } = useAuth();
     const { isDarkMode } = useTheme();
     const navigate = useNavigate();
