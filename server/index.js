@@ -15,13 +15,26 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 
 // Configure CORS based on environment
-const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? process.env.CLIENT_URL // Use the client URL from env in production
-        : ['http://localhost:3001', 'https://sidebuilds.space', 'https://sidebuilds-sai-chaitanyas-projects-f9e3324e.vercel.app/'], // Default for development
+const allowedOrigins = [
+    'https://sidebuilds.space',
+    'https://sidebuilds-nc8w31avl-sai-chaitanyas-projects-f9e3324e.vercel.app', // <-- add your Vercel preview URL here
+    'https://sidebuilds-sai-chaitanyas-projects-f9e3324e.vercel.app/'
+];
+  
+  const corsOptions = {
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true
-};
-app.use(cors(corsOptions));
+  };
+  
+  app.use(cors(corsOptions));
 
 // For Stripe webhook only - Express raw body parser
 // This must be defined BEFORE the express.json() middleware
