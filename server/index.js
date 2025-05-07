@@ -3,13 +3,7 @@ const cors = require('cors');
 require('dotenv').config(); // Load .env variables
 
 // Import database connection (this will also run the connection test)
-const db = require('./db');
-
-// --- Check for JWT_SECRET --- 
-if (!process.env.JWT_SECRET) {
-    console.error("FATAL ERROR: JWT_SECRET environment variable is not set.");
-    process.exit(1);
-}
+// const db = require('./db');
 
 // --- Middleware --- 
 const app = express();
@@ -17,24 +11,31 @@ const app = express();
 // Configure CORS based on environment
 const allowedOrigins = [
     'https://sidebuilds.space',
-    'https://sidebuilds-nc8w31avl-sai-chaitanyas-projects-f9e3324e.vercel.app', // <-- add your Vercel preview URL here
+    'https://sidebuilds-nc8w31avl-sai-chaitanyas-projects-f9e3324e.vercel.app', 
     'https://sidebuilds-sai-chaitanyas-projects-f9e3324e.vercel.app/'
 ];
   
-  const corsOptions = {
-    origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true
-  };
-  
-  app.use(cors(corsOptions));
+const corsOptions = {
+origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+    callback(null, true);
+    } else {
+    callback(new Error('Not allowed by CORS'));
+    }
+},
+credentials: true
+};
+
+app.use(cors(corsOptions));
+
+// --- Check for JWT_SECRET --- 
+if (!process.env.JWT_SECRET) {
+    console.error("FATAL ERROR: JWT_SECRET environment variable is not set.");
+    process.exit(1);
+}
+
 
 // For Stripe webhook only - Express raw body parser
 // This must be defined BEFORE the express.json() middleware
