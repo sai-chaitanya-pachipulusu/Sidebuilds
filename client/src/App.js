@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import './App.css'; // Import the CSS file
@@ -50,8 +50,6 @@ const ProtectedRoute = ({ children }) => {
 
 
 function App() {
-    const { logout } = useAuth();
-    const { isLoading } = useAuth();
     const { isDarkMode } = useTheme();
 
     // Apply theme to document.body for full coverage
