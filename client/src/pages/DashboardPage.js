@@ -12,6 +12,7 @@ function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [deleteError, setDeleteError] = useState('');
+    // eslint-disable-next-line no-unused-vars
     const [deletingId, setDeletingId] = useState(null);
 
     useEffect(() => {

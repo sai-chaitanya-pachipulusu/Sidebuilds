@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import './App.css'; // Import the CSS file
@@ -24,7 +24,7 @@ import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchas
 // const NotFoundPage = () => <div>404 Not Found</div>;
 
 // --- Create actual placeholder components for now --- 
-const PlaceholderHomePage = () => <div>Home Page - Publicly Accessible</div>;
+// const PlaceholderHomePage = () => <div>Home Page - Publicly Accessible</div>;
 // Keep other placeholders for now
 // const PlaceholderProjectPage = () => <div>Single Project Page - Protected</div>;
 
@@ -51,14 +51,8 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
     const { logout } = useAuth();
-    const { isAuthenticated: isAuth, isLoading } = useAuth();
+    const { isLoading } = useAuth();
     const { isDarkMode } = useTheme();
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
 
     // Apply theme to document.body for full coverage
     React.useEffect(() => {
