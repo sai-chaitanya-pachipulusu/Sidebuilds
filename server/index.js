@@ -18,7 +18,7 @@ const app = express();
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
         ? process.env.CLIENT_URL // Use the client URL from env in production
-        : 'http://localhost:3001', // Default for development
+        : ['http://localhost:3001', 'https://sidebuilds.space', 'https://sidebuilds-sai-chaitanyas-projects-f9e3324e.vercel.app/'], // Default for development
     credentials: true
 };
 app.use(cors(corsOptions));
