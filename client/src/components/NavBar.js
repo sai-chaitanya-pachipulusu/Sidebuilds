@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, HStack, Button, IconButton, Text, 
-  useColorModeValue, useDisclosure, Drawer, DrawerBody,
-  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
-  Link
+  useColorModeValue, useDisclosure, 
+  Link,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
@@ -214,16 +214,16 @@ function NavBar() {
           }
         />
 
-        {/* Mobile drawer */}
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-          <DrawerOverlay />
-          <DrawerContent bg="gray.900">
-            <DrawerCloseButton color="white" />
-            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
+        {/* Mobile drawer - replaced with Modal for compatibility */}
+        <Modal isOpen={isOpen} onClose={onClose} placement="right" size="full">
+          <ModalOverlay />
+          <ModalContent bg="gray.900" m={0} ml="auto" h="100vh" maxW="300px" borderRadius="0">
+            <ModalCloseButton color="white" />
+            <ModalHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
               Menu
-            </DrawerHeader>
-            <DrawerBody>
-              <Flex direction="column" mt={4} spacing={4}>
+            </ModalHeader>
+            <ModalBody p={0}>
+              <Flex direction="column" mt={4} spacing={4} p={4}>
                 <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
                   Projects
                 </MobileNavItem>
@@ -254,7 +254,7 @@ function NavBar() {
                       to="/login"
                       leftIcon={<LoginIcon />}
                       variant="ghost"
-                      justifyContent="flex-start"
+                      justifyContent="flex-start" 
                       mt={2}
                     >
                       Login
@@ -272,9 +272,9 @@ function NavBar() {
                   </>
                 )}
               </Flex>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       </Flex>
     </Box>
   );
