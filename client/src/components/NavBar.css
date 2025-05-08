@@ -29,7 +29,7 @@
 .navbar-container {
   max-width: var(--max-width);
   width: 80%;
-  margin: 0 auto 0 20px;
+  margin: 0 auto;
   padding: 0 1rem;
   display: flex;
   align-items: center;
@@ -75,7 +75,7 @@
 }
 
 .nav-menu a {
-  font-size: 0.95rem;
+  font-size: var(--secondary-text-size);
   color: var(--secondary-text);
   text-decoration: none;
   transition: all 0.2s ease;
