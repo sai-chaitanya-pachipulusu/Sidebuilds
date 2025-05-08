@@ -39,7 +39,7 @@ code {
   --primary-color: #0070f3;
   --primary-color-rgb: 0, 112, 243; /* Added RGB value for primary color */
   --text-color: #ffffff;
-  --secondary-text: #999999;
+  --secondary-text: #AEAEAE; /* Made secondary text lighter for better contrast */
   --bg-color: #000000;
   --card-bg: #111111;
   --card-radius: 12px;
