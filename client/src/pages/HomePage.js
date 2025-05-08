@@ -19,6 +19,7 @@ function HomePage() {
         <div className="hero-content">
           <h1>Space for <span className="gradient-text">Side Hustle</span></h1>
           <p className="subtitle">Less hassle, more hustle.</p>
+          <p className="tagline">Empower. Innovate. Monetize.</p>
           {!isAuthenticated ? (
             <Link to="/register" className="cta-button">
               Get Started <ArrowIcon />
@@ -76,6 +77,14 @@ function HomePage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Final Call-to-Action Banner */}
+      <section className="cta-banner">
+        <h2>Ready to launch your next big idea?</h2>
+        <Link to={isAuthenticated ? "/dashboard" : "/register"} className="cta-button">
+          Start Your Journey <ArrowIcon />
+        </Link>
       </section>
     </div>
   );
