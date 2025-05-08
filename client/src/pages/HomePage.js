@@ -53,19 +53,10 @@ function HomePage() {
         <h2 className="section-title">Key Features</h2>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">📊</div>
             <h3>Project Dashboard</h3>
             <p>Track progress and set milestones for all your projects.</p>
             <Link to={isAuthenticated ? "/dashboard" : "/login"} className="feature-link">
               {isAuthenticated ? "View Dashboard" : "Try Now"} <ArrowIcon />
-            </Link>
-          </div>
-
-          <div className="feature-card">
-            <h3>Project Dashboard</h3>
-            <p>Keep all your side projects organized with status tracking, milestones, and more.</p>
-            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
-              {isAuthenticated ? "View your dashboard" : "Try it"} <ArrowIcon />
             </Link>
           </div>
           

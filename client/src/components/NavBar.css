@@ -29,7 +29,7 @@
 .navbar-container {
   max-width: var(--max-width);
   width: 80%;
-  margin: 0 auto;
+  margin: 0 auto 0 20px;
   padding: 0 1rem;
   display: flex;
   align-items: center;
@@ -148,7 +148,7 @@
 
 .logout-button {
   /* Inherit general nav link styles for consistency */
-  font-size: 0.95rem;
+  font-size: 0.65rem;
   color: var(--danger-color, #e74c3c); /* Use a variable or fallback to red */
   text-decoration: none;
   transition: all 0.2s ease;

@@ -52,7 +52,7 @@ code {
   --transition-speed: 0.2s;
   --max-width: 800px;
   --base-font: Arial, Helvetica, sans-serif; /* Added base font variable */
-  --base-font-size: 18px; /* New: increase base font size */
+  --base-font-size: 14px; /* reduced base font size */
 }
 
 /* Allow smooth transitions between themes */
@@ -76,7 +76,7 @@ html, body, #root, .app-container, main {
 }
 
 .hero-section {
-  padding: 4rem 0;
+  padding: 3rem 0; /* tightened vertical spacing */
   text-align: center;
   border-bottom: 1px solid var(--border-color);
 }
@@ -113,8 +113,8 @@ html, body, #root, .app-container, main {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: 1rem; /* reduced space between cards */
+  margin-top: 1.5rem; /* tightened above section */
 }
 
 .feature-card {
@@ -137,8 +137,8 @@ html, body, #root, .app-container, main {
 .about-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: 1rem; /* reduced space between columns */
+  margin-top: 1.5rem; /* tightened above section */
 }
 
 @media (max-width: 768px) {
