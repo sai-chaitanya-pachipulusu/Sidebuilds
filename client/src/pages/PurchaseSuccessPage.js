@@ -1,15 +1,17 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 // import { getTransactionStatus } from '../services/api'; // Temporarily comment out API call
 import './PurchaseSuccessPage.css';
 
-// Success icon
+// Success icon - Temporarily comment out definition as it's unused in simplified component
+/*
 const SuccessIcon = () => (
   <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
     <polyline points="22 4 12 14.01 9 11.01"></polyline>
   </svg>
 );
+*/
 
 function PurchaseSuccessPage() {
   // const [transaction, setTransaction] = useState(null);
