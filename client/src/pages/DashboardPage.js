@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { 
+  Box, Flex, Heading, Text, Button, Alert, AlertIcon,
+  Container, useToast
+} from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, deleteProject } from '../services/api';
 import ProjectTable from '../components/ProjectTable';
-import './DashboardPage.css';
+
+const MotionBox = motion(Box);
 
 function DashboardPage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const toast = useToast();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -46,37 +53,89 @@ function DashboardPage() {
         try {
             await deleteProject(projectId);
             setProjects(prevProjects => prevProjects.filter(p => p.project_id !== projectId));
+            toast({
+                title: "Project deleted",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+            });
         } catch (err) {
             console.error("Failed to delete project:", err);
             setDeleteError(`Failed to delete project: ${err.message || 'Server error'}`);
+            toast({
+                title: "Delete failed",
+                description: err.message || 'Server error',
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
         } finally {
             setDeletingId(null);
         }
     };
 
     return (
-        <div className="dashboard-page">
-            <div className="dashboard-header">
-                <div>
-                    <div className="page-section-heading">DASHBOARD</div>
-                    <h2>Your Projects</h2>
-                    {user && <p className="welcome-text">Welcome back, {user.username}!</p>}
-                </div>
-                <Link to="/projects/new" className="add-project-btn">
-                    + New Project
-                </Link>
-            </div>
+        <Container maxW="1200px" pt="80px" px={6}>
+            <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <Flex 
+                    justify="space-between" 
+                    align="center" 
+                    mb={8}
+                    direction={{ base: 'column', md: 'row' }}
+                    gap={{ base: 4, md: 0 }}
+                >
+                    <Box>
+                        <Text 
+                            fontSize="sm" 
+                            letterSpacing="1px" 
+                            textTransform="uppercase"
+                            color="gray.400"
+                            fontWeight="semibold"
+                        >
+                            DASHBOARD
+                        </Text>
+                        <Heading size="lg" mt={1} mb={1}>Your Projects</Heading>
+                        {user && (
+                            <Text color="gray.400">
+                                Welcome back, <Text as="span" fontWeight="bold" color="white">{user.username}</Text>!
+                            </Text>
+                        )}
+                    </Box>
+                    <Button
+                        as={RouterLink}
+                        to="/projects/new"
+                        size="md"
+                        colorScheme="blue"
+                        leftIcon={<Box as="span" fontSize="lg">+</Box>}
+                        _hover={{
+                            transform: 'translateY(-2px)',
+                            boxShadow: 'lg'
+                        }}
+                    >
+                        New Project
+                    </Button>
+                </Flex>
 
-            {deleteError && <p className="error-message">{deleteError}</p>}
-            
-            <ProjectTable 
-                projects={projects}
-                type="dashboard"
-                onDelete={handleDelete}
-                isLoading={loading}
-                error={error}
-            />
-        </div>
+                {deleteError && (
+                    <Alert status="error" mb={4} borderRadius="md">
+                        <AlertIcon />
+                        {deleteError}
+                    </Alert>
+                )}
+                
+                <ProjectTable 
+                    projects={projects}
+                    type="dashboard"
+                    onDelete={handleDelete}
+                    isLoading={loading}
+                    error={error}
+                />
+            </MotionBox>
+        </Container>
     );
 }
 

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import './NavBar.css';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { 
+  Box, Flex, HStack, Button, IconButton, Text, 
+  useColorModeValue, useDisclosure, Drawer, DrawerBody,
+  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
+  Link
+} from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
+import './NavBar.css';
 
 // Icons
 // const HomeIcon = () => (
@@ -66,7 +73,7 @@ function NavBar() {
   const location = useLocation();
   const { isAuthenticated, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   
   // Determine active link
   const isActive = (path) => {
@@ -76,7 +83,7 @@ function NavBar() {
   const handleLogout = (e) => {
     e.preventDefault();
     logout();
-    setMobileMenuOpen(false);
+    onClose();
   };
   
   // Handle scroll for navbar style changes
@@ -98,66 +105,238 @@ function NavBar() {
   
   // Close mobile menu when route changes
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+    onClose();
+  }, [location.pathname, onClose]);
+
+  const MotionBox = motion(Box);
 
   return (
-    <header className={`navbar ${scrolled ? 'scrolled' : ''} ${mobileMenuOpen ? 'menu-open' : ''}`}>
-      <div className="navbar-container">
-        <Link to="/" className="nav-logo">
-          <span className="logo-text">SIDEBUILDS.</span>
-        </Link>
-        
-        <button 
-          className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`} 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
+    <Box 
+      as="header"
+      position="fixed"
+      top="0"
+      left="0"
+      right="0"
+      zIndex="1000"
+      bg={scrolled ? 'rgba(0, 0, 0, 0.8)' : 'black'}
+      borderBottom={scrolled ? '1px' : 'none'}
+      borderColor="whiteAlpha.100"
+      backdropFilter={scrolled ? 'blur(10px)' : 'none'}
+      transition="all 0.3s ease"
+      boxShadow={scrolled ? '0 4px 20px rgba(0, 0, 0, 0.2)' : 'none'}
+    >
+      <Flex
+        maxW="1200px"
+        mx="auto"
+        py={3}
+        px={4}
+        align="center"
+        justify="space-between"
+      >
+        <MotionBox
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        
-        <div className={`nav-right ${mobileMenuOpen ? 'open' : ''}`}>
-          <nav className="nav-menu">
-            <Link to="/public-projects" className={isActive('/public-projects') ? 'active' : ''}>
-              <ProjectsIcon />
-              <span>Projects</span>
-            </Link>
-            <Link to="/marketplace" className={isActive('/marketplace') ? 'active' : ''}>
-              <MarketplaceIcon />
-              <span>Marketplace</span>
-            </Link>
-            
-            {/* Conditional rendering based on authentication status */}
-            {isAuthenticated ? (
-              <>
-                <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}>
-                  <DashboardIcon />
-                  <span>Dashboard</span>
-                </Link>
-                <button onClick={handleLogout} className="logout-button" aria-label="Logout">
-                  <LogoutIcon />
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className={isActive('/login') ? 'active login-button' : 'login-button'}>
-                  <LoginIcon />
-                  <span>Login</span>
-                </Link>
-                <Link to="/register" className="register-button">
-                  <RegisterIcon />
-                  <span>Register</span>
-                </Link>
-              </>
-            )}
-          </nav>
+          <Link 
+            as={RouterLink} 
+            to="/"
+            _hover={{ textDecoration: 'none' }}
+          >
+            <Text
+              fontSize="2xl"
+              fontWeight="bold"
+              letterSpacing="wider"
+            >
+              SIDEBUILDS.
+            </Text>
+          </Link>
+        </MotionBox>
+
+        {/* Desktop Navigation */}
+        <HStack spacing={8} display={{ base: 'none', md: 'flex' }}>
+          <NavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+            Projects
+          </NavItem>
+          <NavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+            Marketplace
+          </NavItem>
+          
+          {isAuthenticated ? (
+            <>
+              <NavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
+                Dashboard
+              </NavItem>
+              <IconButton
+                aria-label="Logout"
+                variant="ghost"
+                icon={<LogoutIcon />}
+                onClick={handleLogout}
+                _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
+              />
+            </>
+          ) : (
+            <>
+              <Button 
+                as={RouterLink} 
+                to="/login"
+                variant="ghost"
+                leftIcon={<LoginIcon />}
+                fontWeight="normal"
+              >
+                Login
+              </Button>
+              <Button 
+                as={RouterLink} 
+                to="/register"
+                colorScheme="blue"
+                leftIcon={<RegisterIcon />}
+              >
+                Register
+              </Button>
+            </>
+          )}
           <ThemeToggle />
-        </div>
-      </div>
-    </header>
+        </HStack>
+
+        {/* Mobile hamburger */}
+        <IconButton
+          display={{ base: 'flex', md: 'none' }}
+          onClick={onOpen}
+          variant="ghost"
+          fontSize="20px"
+          aria-label="Open menu"
+          icon={
+            <Box>
+              <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
+              <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
+              <Box as="span" display="block" w="24px" h="2px" bg="white" />
+            </Box>
+          }
+        />
+
+        {/* Mobile drawer */}
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+          <DrawerOverlay />
+          <DrawerContent bg="gray.900">
+            <DrawerCloseButton color="white" />
+            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
+              Menu
+            </DrawerHeader>
+            <DrawerBody>
+              <Flex direction="column" mt={4} spacing={4}>
+                <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+                  Projects
+                </MobileNavItem>
+                <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+                  Marketplace
+                </MobileNavItem>
+                
+                {isAuthenticated ? (
+                  <>
+                    <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
+                      Dashboard
+                    </MobileNavItem>
+                    <Button 
+                      leftIcon={<LogoutIcon />} 
+                      colorScheme="red" 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      mt={2}
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      as={RouterLink}
+                      to="/login"
+                      leftIcon={<LoginIcon />}
+                      variant="ghost"
+                      justifyContent="flex-start"
+                      mt={2}
+                    >
+                      Login
+                    </Button>
+                    <Button 
+                      as={RouterLink}
+                      to="/register"
+                      leftIcon={<RegisterIcon />}
+                      colorScheme="blue"
+                      justifyContent="flex-start"
+                      mt={2}
+                    >
+                      Register
+                    </Button>
+                  </>
+                )}
+              </Flex>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
+      </Flex>
+    </Box>
   );
 }
+
+// Desktop Navigation Item
+const NavItem = ({ icon, children, isActive, to }) => {
+  const MotionLink = motion(Link);
+  
+  return (
+    <MotionLink
+      as={RouterLink}
+      to={to}
+      px={2}
+      py={1}
+      display="flex"
+      alignItems="center"
+      position="relative"
+      _hover={{ textDecoration: 'none' }}
+      whileHover={{ y: -2 }}
+    >
+      <HStack spacing={1}>
+        {icon}
+        <Text color={isActive ? 'brand.500' : 'gray.300'}>{children}</Text>
+      </HStack>
+      {isActive && (
+        <Box
+          position="absolute"
+          bottom="-6px"
+          left="50%"
+          transform="translateX(-50%)"
+          height="2px"
+          width="20px"
+          bg="brand.500"
+          borderRadius="full"
+        />
+      )}
+    </MotionLink>
+  );
+};
+
+// Mobile Navigation Item
+const MobileNavItem = ({ icon, children, isActive, to }) => {
+  return (
+    <Button
+      as={RouterLink}
+      to={to}
+      variant="ghost"
+      justifyContent="flex-start"
+      leftIcon={icon}
+      borderLeft={isActive ? '3px solid' : 'none'}
+      borderColor={isActive ? 'brand.500' : 'transparent'}
+      bg={isActive ? 'whiteAlpha.100' : 'transparent'}
+      borderRadius="0"
+      pl={isActive ? 3 : 0}
+      py={4}
+      mb={2}
+      _hover={{ bg: 'whiteAlpha.100' }}
+    >
+      {children}
+    </Button>
+  );
+};
 
 export default NavBar; 
