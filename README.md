@@ -32,7 +32,7 @@ A platform for tracking, sharing, and selling side projects. Built with React, N
 - CockroachDB (Database)
 - Render (Backend hosting)
 - Vercel (Frontend hosting)
-- Custom domain: sidebuilds.space
+- Custom domain: www.sidebuilds.space
 
 ## Getting Started
 

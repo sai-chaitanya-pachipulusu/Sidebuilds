@@ -136,9 +136,8 @@ function NavBar() {
                   <DashboardIcon />
                   <span>Dashboard</span>
                 </Link>
-                <button onClick={handleLogout} className="logout-button">
+                <button onClick={handleLogout} className="logout-button" aria-label="Logout">
                   <LogoutIcon />
-                  <span>Logout</span>
                 </button>
               </>
             ) : (

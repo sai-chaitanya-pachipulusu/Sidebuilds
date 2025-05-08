@@ -2,6 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './HomePage.css';
+import { Box, Flex, Heading, Text, Button } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // Arrow icon for links
 const ArrowIcon = () => (
@@ -14,23 +17,42 @@ function HomePage() {
   const { isAuthenticated } = useAuth();
   
   return (
-    <div className="home-container">
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1>Space for <span className="gradient-text">Side Hustle</span></h1>
-          <p className="subtitle">Less hassle, more hustle.</p>
-          <p className="tagline">Empower. Innovate. Monetize.</p>
-          {!isAuthenticated ? (
-            <Link to="/register" className="cta-button">
-              Get Started <ArrowIcon />
-            </Link>
-          ) : (
-            <Link to="/dashboard" className="cta-button">
-              Go to Dashboard <ArrowIcon />
-            </Link>
-          )}
-        </div>
-      </section>
+    <Box maxW="1200px" mx="auto" px={4}>
+      <Flex
+        as={motion.section}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        direction="column"
+        align="center"
+        justify="center"
+        py={20}
+        position="relative"
+        overflow="hidden"
+      >
+        <Heading
+          as="h1"
+          size="4xl"
+          textAlign="center"
+          bgGradient="linear(to-r, blue.500, teal.500)"
+          bgClip="text"
+        >
+          Space for Side Hustle
+        </Heading>
+        <Text fontSize="lg" color="gray.400" mt={2}>
+          Less hassle, more hustle.
+        </Text>
+        <Button
+          as={RouterLink}
+          to={isAuthenticated ? '/dashboard' : '/register'}
+          size="lg"
+          variant="outline"
+          colorScheme="blue"
+          mt={6}
+          _hover={{ transform: 'translateY(-2px)', bg: 'blue.500', color: 'white' }}
+        >
+          {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
+        </Button>
+      </Flex>
 
       <section className="about-section">
         <h2 className="section-title">About SideBuilds</h2>
@@ -79,14 +101,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Final Call-to-Action Banner */}
-      <section className="cta-banner">
-        <h2>Ready to launch your next big idea?</h2>
-        <Link to={isAuthenticated ? "/dashboard" : "/register"} className="cta-button">
-          Start Your Journey <ArrowIcon />
-        </Link>
-      </section>
-    </div>
+    </Box>
   );
 }
 

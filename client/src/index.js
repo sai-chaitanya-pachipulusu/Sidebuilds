@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { ChakraProvider } from '@chakra-ui/react';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { loadStripe } from '@stripe/stripe-js';
@@ -22,14 +23,16 @@ console.log('Stripe configuration status:', {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <Elements stripe={stripePromise}>
-            <App />
-          </Elements>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ChakraProvider>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <Elements stripe={stripePromise}>
+              <App />
+            </Elements>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ChakraProvider>
   </React.StrictMode>
 );
