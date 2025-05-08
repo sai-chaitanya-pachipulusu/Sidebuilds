@@ -514,15 +514,19 @@ router.get('/status/:sessionId', authMiddleware, async (req, res) => {
         const { sessionId } = req.params;
         const userId = req.user.id;
 
-        // Get transaction details
+        // Get transaction details - Modified query to use seller_id from transaction for permission check
         const transactionResult = await db.query(
-            `SELECT t.*, p.name as project_name, p.owner_id as seller_id, s.username as seller_username, 
-             s.email as seller_email, b.username as buyer_username, b.email as buyer_email
+            `SELECT t.*, p.name as project_name, 
+             t.seller_id, -- Select seller_id from transaction record
+             s.username as seller_username, s.email as seller_email, 
+             b.username as buyer_username, b.email as buyer_email
              FROM project_transactions t
              JOIN projects p ON t.project_id = p.project_id
-             JOIN users s ON p.owner_id = s.user_id
+             JOIN users s ON t.seller_id = s.user_id -- Join seller based on transaction seller_id
              JOIN users b ON t.buyer_id = b.user_id
-             WHERE t.stripe_session_id = $1 AND (t.buyer_id = $2 OR p.owner_id = $2)`,
+             WHERE t.stripe_session_id = $1 
+               AND (t.buyer_id = $2 OR t.seller_id = $2) -- Check permission against buyer or seller from transaction
+             LIMIT 1`, // Added LIMIT 1 for safety, though session ID should be unique
             [sessionId, userId]
         );
 

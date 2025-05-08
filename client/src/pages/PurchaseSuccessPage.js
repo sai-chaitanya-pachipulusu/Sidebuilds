@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { getTransactionStatus } from '../services/api';
+// import { getTransactionStatus } from '../services/api'; // Temporarily comment out API call
 import './PurchaseSuccessPage.css';
 
 // Success icon
@@ -12,103 +12,47 @@ const SuccessIcon = () => (
 );
 
 function PurchaseSuccessPage() {
-  const [transaction, setTransaction] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // const [transaction, setTransaction] = useState(null);
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState('');
   
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const sessionId = queryParams.get('session_id');
 
+  // Temporarily disable useEffect hook
+  /*
   useEffect(() => {
+    console.log('[PurchaseSuccessPage] useEffect triggered.');
     const fetchTransactionDetails = async () => {
       if (!sessionId) {
-        setError('No session ID provided');
-        setLoading(false);
+        console.error('No session ID provided');
         return;
       }
 
       try {
         const transactionData = await getTransactionStatus(sessionId);
-        setTransaction(transactionData);
+        // setTransaction(transactionData);
       } catch (err) {
         console.error('Error fetching transaction details:', err);
-        setError('Failed to load transaction details');
-      } finally {
-        setLoading(false);
+        // setError('Failed to load transaction details');
       }
     };
-
     fetchTransactionDetails();
   }, [sessionId]);
+  */
 
-  if (loading) {
-    return (
-      <div className="purchase-success-page">
-        <div className="loading-spinner">Loading transaction details...</div>
-      </div>
-    );
-  }
-
-  if (error || !transaction) {
-    return (
-      <div className="purchase-success-page">
-        <div className="error-container">
-          <h2>Transaction Error</h2>
-          <p>{error || 'Transaction details not found'}</p>
-          <Link to="/marketplace" className="action-button">Return to Marketplace</Link>
-        </div>
-      </div>
-    );
-  }
-
+  // Directly render a simple success message for testing
+  console.log(`[PurchaseSuccessPage] Rendering basic success message for session: ${sessionId}`);
   return (
     <div className="purchase-success-page">
       <div className="success-container">
-        <SuccessIcon />
-        <h1>Purchase Successful!</h1>
+        {/* <SuccessIcon /> */}
+        <h1>Purchase Page Reached!</h1>
         <p className="success-message">
-          Thank you for your purchase. The project is now yours!
+          Successfully redirected after payment.
         </p>
-        
-        <div className="transaction-details">
-          <h3>Transaction Details</h3>
-          <div className="detail-row">
-            <span className="detail-label">Project:</span>
-            <span className="detail-value">{transaction.project_name}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Total Amount:</span>
-            <span className="detail-value">${parseFloat(transaction.amount).toFixed(2)}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Platform Fee:</span>
-            <span className="detail-value">${parseFloat(transaction.commission_amount).toFixed(2)}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Seller Receives:</span>
-            <span className="detail-value">${parseFloat(transaction.seller_amount).toFixed(2)}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Status:</span>
-            <span className="detail-value status-badge">{transaction.status}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Seller:</span>
-            <span className="detail-value">{transaction.seller_username}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Purchase Date:</span>
-            <span className="detail-value">{new Date(transaction.created_at).toLocaleString()}</span>
-          </div>
-        </div>
-
-        <div className="next-steps">
-          <h3>Next Steps</h3>
-          <p>The seller has been notified of your purchase and will receive {parseFloat(transaction.seller_amount).toFixed(2)} USD (minus any payment processor fees). They will contact you with further instructions for transferring project assets.</p>
-          <p>As the marketplace facilitator, SideBuilds takes a small {((parseFloat(transaction.commission_amount) / parseFloat(transaction.amount)) * 100).toFixed(0)}% fee to maintain our platform.</p>
-          <p>You can contact the seller directly at <strong>{transaction.seller_email}</strong> to expedite the transfer process.</p>
-        </div>
+        <p>Session ID: {sessionId || 'Not Found'}</p>
         
         <div className="action-buttons">
           <Link to="/dashboard" className="action-button">Go to Dashboard</Link>
