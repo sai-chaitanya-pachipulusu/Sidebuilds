@@ -10,10 +10,6 @@ const app = express();
 
 // Configure CORS based on environment
 const allowedOrigins = [
-    'https://sidebuilds.space',
-    'https://sidebuilds-nc8w31avl-sai-chaitanyas-projects-f9e3324e.vercel.app', 
-    'https://sidebuilds-sai-chaitanyas-projects-f9e3324e.vercel.app/',
-    'https://sidebuilds.vercel.app',
     'https://www.sidebuilds.space'
 ];
   
