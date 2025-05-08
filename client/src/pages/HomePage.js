@@ -14,53 +14,79 @@ function HomePage() {
   const { isAuthenticated } = useAuth();
   
   return (
-    <>
-      <section className="hero">
-        <h1>Space for Side Hustle</h1>
-        <p className="subtitle">Less hassle, more hustle.</p>
-        {!isAuthenticated ? (
-          <Link to="/register" className="hero-btn">Get Started <ArrowIcon /></Link>
-        ) : (
-          <Link to="/dashboard" className="hero-btn">Go to Dashboard <ArrowIcon /></Link>
-        )}
+    <div className="home-container">
+      <section className="hero-section">
+        <div className="hero-content">
+          <h1>Space for <span className="gradient-text">Side Hustle</span></h1>
+          <p className="subtitle">Less hassle, more hustle.</p>
+          {!isAuthenticated ? (
+            <Link to="/register" className="cta-button">
+              Get Started <ArrowIcon />
+            </Link>
+          ) : (
+            <Link to="/dashboard" className="cta-button">
+              Go to Dashboard <ArrowIcon />
+            </Link>
+          )}
+        </div>
       </section>
 
-      <div className="section-heading">ABOUT</div>
-      <p>
-        Track, organize, and share your side projects. With SideBuilds, you can manage 
-        all your ideas in one place, monitor their progress, and even monetize 
-        them when they're ready.
-      </p>
-      <p>
-        Perfect for developers, entrepreneurs, and creators who juggle multiple projects 
-        and want to turn unfinished ideas into finished products.
-      </p>
+      <section className="about-section">
+        <h2 className="section-title">About SideBuilds</h2>
+        <div className="about-grid">
+          <div className="about-card">
+            <h3>Organize</h3>
+            <p>Manage all your side projects in one place with progress tracking and milestones.</p>
+          </div>
+          <div className="about-card">
+            <h3>Collaborate</h3>
+            <p>Share projects with the community to get feedback and find collaborators.</p>
+          </div>
+          <div className="about-card">
+            <h3>Monetize</h3>
+            <p>Turn your unfinished projects into income through our marketplace.</p>
+          </div>
+        </div>
+      </section>
 
-      <div className="section-heading">FEATURES</div>
-      <div className="feature-card">
-        <h3>Project Dashboard</h3>
-        <p>Keep all your side projects organized with status tracking, milestones, and more.</p>
-        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
-          {isAuthenticated ? "View your dashboard" : "Try it"} <ArrowIcon />
-        </Link>
-      </div>
-      
-      <div className="feature-card">
-        <h3>Public Sharing</h3>
-        <p>Share your projects with the community to get feedback or collaborators.</p>
-        <Link to="/public-projects" className="arrow-link">
-          Browse projects <ArrowIcon />
-        </Link>
-      </div>
-      
-      <div className="feature-card">
-        <h3>Project Marketplace</h3>
-        <p>Turn your side projects into income by selling them to interested buyers.</p>
-        <Link to="/marketplace" className="arrow-link">
-          Visit marketplace <ArrowIcon />
-        </Link>
-      </div>
-    </>
+      <section className="features-section">
+        <h2 className="section-title">Key Features</h2>
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>Project Dashboard</h3>
+            <p>Track progress and set milestones for all your projects.</p>
+            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="feature-link">
+              {isAuthenticated ? "View Dashboard" : "Try Now"} <ArrowIcon />
+            </Link>
+          </div>
+
+          <div className="feature-card">
+            <h3>Project Dashboard</h3>
+            <p>Keep all your side projects organized with status tracking, milestones, and more.</p>
+            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
+              {isAuthenticated ? "View your dashboard" : "Try it"} <ArrowIcon />
+            </Link>
+          </div>
+          
+          <div className="feature-card">
+            <h3>Public Sharing</h3>
+            <p>Share your projects with the community to get feedback or collaborators.</p>
+            <Link to="/public-projects" className="arrow-link">
+              Browse projects <ArrowIcon />
+            </Link>
+          </div>
+          
+          <div className="feature-card">
+            <h3>Project Marketplace</h3>
+            <p>Turn your side projects into income by selling them to interested buyers.</p>
+            <Link to="/marketplace" className="arrow-link">
+              Visit marketplace <ArrowIcon />
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
