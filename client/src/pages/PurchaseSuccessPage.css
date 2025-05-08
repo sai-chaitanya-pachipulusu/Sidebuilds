@@ -1,40 +1,52 @@
 .purchase-success-page {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 3rem 1rem;
+  max-width: 700px;
+  margin: 2rem auto;
 }
 
 .success-container {
   background-color: var(--card-bg);
   border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  padding: 2rem;
+  box-shadow: var(--card-shadow-lg, 0 4px 15px rgba(0,0,0,0.1));
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
 
+.success-container h1 {
+  font-size: 1.8rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--heading-color);
+}
+
 .success-message {
-  font-size: 1.2rem;
-  margin: 1rem 0 2rem;
+  font-size: 1.1rem;
+  color: var(--secondary-text);
+  margin: 0.5rem 0 2.5rem;
+  max-width: 450px;
 }
 
 .transaction-details {
   width: 100%;
-  max-width: 500px;
-  margin: 1rem 0 2rem;
+  max-width: 450px;
+  margin: 0 0 2.5rem;
   text-align: left;
-  border: 1px solid var(--border-color);
+  border: none;
   border-radius: 8px;
   padding: 1.5rem;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--hover-bg);
 }
 
 .transaction-details h3 {
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
 }
 
 .detail-row {
@@ -52,39 +64,69 @@
 }
 
 .detail-label {
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.detail-value {
+  font-weight: 500;
   color: var(--secondary-text);
 }
 
+.detail-value {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
 .status-badge {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: capitalize;
+  border: 1px solid transparent;
+}
+
+.status-badge.completed {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #38a169;
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.pending {
+  background-color: rgba(237, 137, 54, 0.1);
+  color: #dd6b20;
+  border-color: rgba(237, 137, 54, 0.3);
+}
+
+.status-badge.failed {
+  background-color: rgba(229, 62, 62, 0.1);
+  color: #c53030;
+  border-color: rgba(229, 62, 62, 0.3);
 }
 
 .next-steps {
   width: 100%;
-  max-width: 500px;
+  max-width: 450px;
   margin-bottom: 2rem;
-  text-align: left;
+  text-align: center;
+  padding: 1.5rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .next-steps h3 {
+  margin-top: 0;
   margin-bottom: 1rem;
-  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .next-steps p {
   margin-bottom: 0.75rem;
-  line-height: 1.5;
+  line-height: 1.6;
+  color: var(--secondary-text);
+}
+
+.next-steps strong {
+  color: var(--text-color);
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -120,6 +162,13 @@
 .error-container {
   text-align: center;
   padding: 2rem;
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.error-container h2 {
+  color: var(--danger-color, #e53e3e);
 }
 
 .loading-spinner {

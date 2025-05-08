@@ -115,7 +115,7 @@ function PurchaseSuccessPage() {
           </div>
           <div className="detail-row">
             <span className="detail-label">Status:</span>
-            <span className="detail-value status-badge">{transaction.status}</span>
+            <span className={`detail-value status-badge ${transaction.status?.toLowerCase()}`}>{transaction.status}</span>
           </div>
           <div className="detail-row">
             <span className="detail-label">Seller:</span>
