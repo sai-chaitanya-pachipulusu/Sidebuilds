@@ -254,3 +254,15 @@ p, a, li, label, input, textarea {
   font-size: 2rem;
   margin-bottom: 1rem;
 }
+
+/* Animation for mobile menu */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

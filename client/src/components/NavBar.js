@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, HStack, Button, IconButton, Text, 
-  useColorModeValue, useDisclosure, 
-  Link,
-  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton
+  useDisclosure, Link, VStack
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
@@ -214,67 +212,112 @@ function NavBar() {
           }
         />
 
-        {/* Mobile drawer - replaced with Modal for compatibility */}
-        <Modal isOpen={isOpen} onClose={onClose} placement="right" size="full">
-          <ModalOverlay />
-          <ModalContent bg="gray.900" m={0} ml="auto" h="100vh" maxW="300px" borderRadius="0">
-            <ModalCloseButton color="white" />
-            <ModalHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
-              Menu
-            </ModalHeader>
-            <ModalBody p={0}>
-              <Flex direction="column" mt={4} spacing={4} p={4}>
-                <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
-                  Projects
-                </MobileNavItem>
-                <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
-                  Marketplace
-                </MobileNavItem>
-                
-                {isAuthenticated ? (
-                  <>
-                    <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
-                      Dashboard
-                    </MobileNavItem>
-                    <Button 
-                      leftIcon={<LogoutIcon />} 
-                      colorScheme="red" 
-                      variant="ghost" 
-                      justifyContent="flex-start" 
-                      mt={2}
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button 
-                      as={RouterLink}
-                      to="/login"
-                      leftIcon={<LoginIcon />}
-                      variant="ghost"
-                      justifyContent="flex-start" 
-                      mt={2}
-                    >
-                      Login
-                    </Button>
-                    <Button 
-                      as={RouterLink}
-                      to="/register"
-                      leftIcon={<RegisterIcon />}
-                      colorScheme="blue"
-                      justifyContent="flex-start"
-                      mt={2}
-                    >
-                      Register
-                    </Button>
-                  </>
-                )}
-              </Flex>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+        {/* Simple mobile menu sliding panel */}
+        {isOpen && (
+          <Box
+            position="fixed"
+            top="0"
+            right="0"
+            bottom="0"
+            width="250px"
+            bg="gray.900"
+            boxShadow="lg"
+            zIndex={20}
+            overflowY="auto"
+            p={4}
+            animation="slideInRight 0.3s ease-out forwards"
+          >
+            <Flex justify="space-between" mb={5}>
+              <Text fontSize="xl" fontWeight="bold">Menu</Text>
+              <IconButton
+                variant="ghost"
+                icon={
+                  <Box>
+                    <Box 
+                      as="span" 
+                      display="block" 
+                      w="16px" 
+                      h="2px" 
+                      bg="white" 
+                      transform="rotate(45deg) translate(1px, 0px)"
+                    />
+                    <Box 
+                      as="span" 
+                      display="block" 
+                      w="16px" 
+                      h="2px" 
+                      bg="white"
+                      transform="rotate(-45deg) translate(1px, -2px)" 
+                    />
+                  </Box>
+                }
+                aria-label="Close Menu"
+                onClick={onClose}
+              />
+            </Flex>
+            
+            <VStack spacing={4} align="stretch">
+              <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+                Projects
+              </MobileNavItem>
+              <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+                Marketplace
+              </MobileNavItem>
+              
+              {isAuthenticated ? (
+                <>
+                  <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
+                    Dashboard
+                  </MobileNavItem>
+                  <Button 
+                    leftIcon={<LogoutIcon />} 
+                    colorScheme="red" 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    as={RouterLink}
+                    to="/login"
+                    leftIcon={<LoginIcon />}
+                    variant="ghost"
+                    justifyContent="flex-start" 
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    as={RouterLink}
+                    to="/register"
+                    leftIcon={<RegisterIcon />}
+                    colorScheme="blue"
+                    justifyContent="flex-start"
+                  >
+                    Register
+                  </Button>
+                </>
+              )}
+            </VStack>
+          </Box>
+        )}
+
+        {/* Overlay when mobile menu is open */}
+        {isOpen && (
+          <Box
+            position="fixed"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            bg="blackAlpha.700"
+            zIndex={10}
+            onClick={onClose}
+          />
+        )}
       </Flex>
     </Box>
   );
