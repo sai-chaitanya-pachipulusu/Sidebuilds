@@ -26,7 +26,7 @@ function HomePage() {
             </Link>
           ) : (
             <Link to="/dashboard" className="cta-button">
-              Go to Dashboard <ArrowIcon />
+              View Projects <ArrowIcon />
             </Link>
           )}
         </div>
@@ -56,8 +56,8 @@ function HomePage() {
           <div className="feature-card">
             <h3>Project Dashboard</h3>
             <p>Track progress and set milestones for all your projects.</p>
-            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="feature-link">
-              {isAuthenticated ? "View Dashboard" : "Try Now"} <ArrowIcon />
+            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
+              {isAuthenticated ? "View Projects" : "Try Now"} <ArrowIcon />
             </Link>
           </div>
           
@@ -79,6 +79,13 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Final Call-to-Action Banner */}
+      <section className="cta-banner">
+        <h2>Ready to launch your next big idea?</h2>
+        <Link to={isAuthenticated ? "/dashboard" : "/register"} className="cta-button">
+          {isAuthenticated ? "View Projects" : "Get Started"} <ArrowIcon />
+        </Link>
+      </section>
     </div>
   );
 }

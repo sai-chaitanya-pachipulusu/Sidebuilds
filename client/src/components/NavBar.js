@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, HStack, Button, IconButton, Text, 
-  useDisclosure, Link, VStack
+  useColorModeValue, useDisclosure, Drawer, DrawerBody,
+  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
+  Link
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
@@ -144,8 +146,10 @@ function NavBar() {
               fontSize="2xl"
               fontWeight="bold"
               letterSpacing="wider"
+              textTransform="uppercase"
+              color="white"
             >
-              SIDEBUILDS.
+              sidebuilds.
             </Text>
           </Link>
         </MotionBox>
@@ -169,6 +173,7 @@ function NavBar() {
                 variant="ghost"
                 icon={<LogoutIcon />}
                 onClick={handleLogout}
+                mt={-1}
                 _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
               />
             </>
@@ -212,112 +217,67 @@ function NavBar() {
           }
         />
 
-        {/* Simple mobile menu sliding panel */}
-        {isOpen && (
-          <Box
-            position="fixed"
-            top="0"
-            right="0"
-            bottom="0"
-            width="250px"
-            bg="gray.900"
-            boxShadow="lg"
-            zIndex={20}
-            overflowY="auto"
-            p={4}
-            animation="slideInRight 0.3s ease-out forwards"
-          >
-            <Flex justify="space-between" mb={5}>
-              <Text fontSize="xl" fontWeight="bold">Menu</Text>
-              <IconButton
-                variant="ghost"
-                icon={
-                  <Box>
-                    <Box 
-                      as="span" 
-                      display="block" 
-                      w="16px" 
-                      h="2px" 
-                      bg="white" 
-                      transform="rotate(45deg) translate(1px, 0px)"
-                    />
-                    <Box 
-                      as="span" 
-                      display="block" 
-                      w="16px" 
-                      h="2px" 
-                      bg="white"
-                      transform="rotate(-45deg) translate(1px, -2px)" 
-                    />
-                  </Box>
-                }
-                aria-label="Close Menu"
-                onClick={onClose}
-              />
-            </Flex>
-            
-            <VStack spacing={4} align="stretch">
-              <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
-                Projects
-              </MobileNavItem>
-              <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
-                Marketplace
-              </MobileNavItem>
-              
-              {isAuthenticated ? (
-                <>
-                  <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
-                    Dashboard
-                  </MobileNavItem>
-                  <Button 
-                    leftIcon={<LogoutIcon />} 
-                    colorScheme="red" 
-                    variant="ghost" 
-                    justifyContent="flex-start" 
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    as={RouterLink}
-                    to="/login"
-                    leftIcon={<LoginIcon />}
-                    variant="ghost"
-                    justifyContent="flex-start" 
-                  >
-                    Login
-                  </Button>
-                  <Button 
-                    as={RouterLink}
-                    to="/register"
-                    leftIcon={<RegisterIcon />}
-                    colorScheme="blue"
-                    justifyContent="flex-start"
-                  >
-                    Register
-                  </Button>
-                </>
-              )}
-            </VStack>
-          </Box>
-        )}
-
-        {/* Overlay when mobile menu is open */}
-        {isOpen && (
-          <Box
-            position="fixed"
-            top="0"
-            left="0"
-            right="0"
-            bottom="0"
-            bg="blackAlpha.700"
-            zIndex={10}
-            onClick={onClose}
-          />
-        )}
+        {/* Mobile drawer */}
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+          <DrawerOverlay />
+          <DrawerContent bg="gray.900">
+            <DrawerCloseButton color="white" />
+            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
+              Menu
+            </DrawerHeader>
+            <DrawerBody>
+              <Flex direction="column" mt={4} spacing={4}>
+                <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+                  Projects
+                </MobileNavItem>
+                <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+                  Marketplace
+                </MobileNavItem>
+                
+                {isAuthenticated ? (
+                  <>
+                    <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
+                      Dashboard
+                    </MobileNavItem>
+                    <Button 
+                      leftIcon={<LogoutIcon />} 
+                      colorScheme="red" 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      mt={2}
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      as={RouterLink}
+                      to="/login"
+                      leftIcon={<LoginIcon />}
+                      variant="ghost"
+                      justifyContent="flex-start"
+                      mt={2}
+                    >
+                      Login
+                    </Button>
+                    <Button 
+                      as={RouterLink}
+                      to="/register"
+                      leftIcon={<RegisterIcon />}
+                      colorScheme="blue"
+                      justifyContent="flex-start"
+                      mt={2}
+                    >
+                      Register
+                    </Button>
+                  </>
+                )}
+              </Flex>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
       </Flex>
     </Box>
   );
@@ -339,8 +299,10 @@ const NavItem = ({ icon, children, isActive, to }) => {
       _hover={{ textDecoration: 'none' }}
       whileHover={{ y: -2 }}
     >
-      <HStack spacing={1}>
-        {icon}
+      <HStack spacing={2} align="center">
+        <Box display="flex" alignItems="center" justifyContent="center" minW="18px">
+          {icon}
+        </Box>
         <Text color={isActive ? 'brand.500' : 'gray.300'}>{children}</Text>
       </HStack>
       {isActive && (
