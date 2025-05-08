@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config(); // Load .env variables
 
 // Import database connection (this will also run the connection test)
-// const db = require('./db');
+ const db = require('./db');
 
 // --- Middleware --- 
 const app = express();
@@ -37,12 +37,12 @@ app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' https://js.stripe.com https://m.stripe.network 'unsafe-inline'; " + // Allow unsafe-inline for scripts if necessary, but be cautious
-    "style-src 'self' https://js.stripe.com 'unsafe-inline'; " +      // Allow unsafe-inline for styles
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network; " +
-    "connect-src 'self' https://api.stripe.com https://m.stripe.network; " +
-    "img-src 'self' https://*.stripe.com data:; " + // Allow images from Stripe and data URIs
-    "font-src 'self' https://js.stripe.com;" // Allow fonts from Stripe
+    "script-src 'self' https://js.stripe.com https://m.stripe.network 'unsafe-inline' https://*.stripe.com; " + // Allow unsafe-inline for scripts if necessary, but be cautious
+    "style-src 'self' https://js.stripe.com 'unsafe-inline' https://*.stripe.com; " +      // Allow unsafe-inline for styles
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://*.stripe.com; " +
+    "connect-src 'self' https://api.stripe.com https://m.stripe.network https://*.stripe.com; " +
+    "img-src 'self' data: https://*.stripe.com; " + // Allow images from Stripe and data URIs
+    "font-src 'self' https://js.stripe.com https://*.stripe.com;" // Allow fonts from Stripe
   );
   next();
 });

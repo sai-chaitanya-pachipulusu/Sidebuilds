@@ -6,77 +6,58 @@
  */
 
 /**
- * Get a direct Stripe checkout URL from a session ID
- * This bypasses the Stripe.js redirect and uses a direct URL
- * which works more reliably for seeded projects
- * 
- * @param {string} sessionId - The Stripe checkout session ID
- * @returns {string} The direct checkout URL
- */
-export const getStripeCheckoutUrl = (sessionId) => {
-  if (!sessionId) {
-    console.error('No session ID provided for Stripe checkout URL');
-    return null;
-  }
-  
-  // Format session ID (remove any prefix/suffix that might cause issues)
-  const formattedSessionId = sessionId.trim();
-  
-  console.log(`Generating direct checkout URL for session ID: ${formattedSessionId}`);
-  
-  // Try an alternative URL format (Stripe has a few different URL patterns)
-  // Note: Stripe sometimes changes their URL structure, so we're trying multiple formats
-  return `https://checkout.stripe.com/pay/${formattedSessionId}`;
-};
-
-/**
- * Create a checkout session and then redirect to Stripe
- * Uses the most reliable method based on if it's a seeded project
+ * Create a checkout session and then redirect to Stripe using stripe.redirectToCheckout()
  * 
  * @param {Object} params - Parameters for checkout
  * @param {string} params.projectId - ID of the project being purchased
  * @param {boolean} params.isSeeded - Whether this is a seeded project
- * @param {Object} params.stripe - Stripe.js instance
- * @returns {Promise<void>} Redirects the user to Stripe checkout
+ * @param {Object} params.stripe - Stripe.js instance (from useStripe() hook)
+ * @param {Object} params.api - Axios or API client instance
+ * @returns {Promise<void>} Redirects the user to Stripe checkout or throws error
  */
 export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe, api }) => {
-  console.log(`Creating checkout with direct redirect for project ${projectId}`);
+  console.log(`Creating checkout session for project ${projectId}`);
   console.log(`Is seeded project: ${isSeeded}`);
+
+  if (!stripe) {
+    console.error("Stripe.js has not been loaded yet. Cannot redirect.");
+    throw new Error("Payment system not ready.");
+  }
 
   try {
     // Create the checkout session via API
+    console.log('Calling backend to create checkout session...');
     const response = await api.post('/payments/create-checkout-session', { 
       projectId,
-      isSeeded
+      isSeeded // Pass isSeeded status if backend uses it
     });
     
     const { id: sessionId } = response.data;
     
     if (!sessionId) {
-      throw new Error('No session ID returned from server');
+      console.error('No session ID returned from server.');
+      throw new Error('Failed to create checkout session: No Session ID received.');
     }
     
-    console.log(`Session created: ${sessionId}`);
+    console.log(`Checkout session created: ${sessionId}. Redirecting to Stripe...`);
     
-    // For all projects, get the direct URL (most reliable)
-    const checkoutUrl = getStripeCheckoutUrl(sessionId);
-    console.log(`Redirecting to direct URL: ${checkoutUrl}`);
+    // Use the standard Stripe.js method to redirect
+    const { error } = await stripe.redirectToCheckout({ sessionId });
     
-    // Direct URL is more reliable for all projects (especially on Windows)
-    window.location.assign(checkoutUrl);
-    
-    // Wait a moment to ensure redirect happens
-    setTimeout(() => {
-      // As a fallback, if still on the page, try the Stripe.js method
-      if (!isSeeded && stripe) {
-        console.log('Attempting Stripe.js redirect as fallback...');
-        stripe.redirectToCheckout({ sessionId }).catch(err => {
-          console.error('Fallback Stripe.js redirect failed:', err);
-        });
-      }
-    }, 1000);
+    // If redirectToCheckout fails (e.g., user closes tab before redirect),
+    // it will return an error object.
+    if (error) {
+      console.error('Stripe redirectToCheckout error:', error);
+      // You might want to display this error message to the user
+      throw new Error(error.message || 'Failed to redirect to payment page.');
+    }
+
+    // If redirect is successful, the user's browser navigates away,
+    // so code execution essentially stops here in the current context.
+
   } catch (error) {
-    console.error('Failed to create checkout session:', error);
+    console.error('Error during checkout creation or redirect:', error);
+    // Re-throw the error so the calling component (MarketplacePage) can handle it (e.g., show error message)
     throw error;
   }
 }; 

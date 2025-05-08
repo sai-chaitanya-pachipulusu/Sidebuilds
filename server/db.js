@@ -1,17 +1,10 @@
 const { Pool } = require('pg');
 require('dotenv').config(); // Load environment variables from .env file
 
-// Database connection URL
-const databaseUrl = process.env.DATABASE_URL || 'postgresql://root@localhost:26257/defaultdb?sslmode=disable';
-
 // Configure connection pool with optimized settings for CockroachDB
 const pool = new Pool({
-    connectionString: databaseUrl,
-    ssl: process.env.NODE_ENV === 'production' ? 
-        { rejectUnauthorized: true } : 
-        process.env.DATABASE_SSL === 'true' ? 
-            { rejectUnauthorized: false } : 
-            false,
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     // Connection pool settings optimized for CockroachDB
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
@@ -20,6 +13,25 @@ const pool = new Pool({
     statement_timeout: 10000, // Statement timeout in ms (10s)
     query_timeout: 10000 // Query timeout in ms (10s)
 });
+
+// Test connection (optional, but good)
+pool.connect((err, client, release) => {
+    if (err) {
+      return console.error('Error acquiring client from pool', err.stack);
+    }
+    client.query('SELECT NOW()', (err, result) => {
+      release();
+      if (err) {
+        return console.error('Error executing query', err.stack);
+      }
+      console.log('Successfully connected to CockroachDB. Server time:', result.rows[0].now);
+    });
+  });
+  
+  module.exports = {
+    query: (text, params) => pool.query(text, params),
+    pool: pool // Export pool if you need to end it on shutdown
+  };
 
 // Track connection state
 let isConnected = false;
