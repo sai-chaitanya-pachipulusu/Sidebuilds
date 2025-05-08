@@ -11,11 +11,12 @@ html {
   background-color: var(--bg-color) !important; /* Force background color */
   height: 100%;
   width: 100%;
+  font-size: var(--base-font-size);
 }
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif; /* Changed to Arial as primary font */
+  font-family: var(--base-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-color) !important; /* Force background color */
@@ -23,6 +24,7 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
+  font-size: 1rem; /* Ensure body text uses base size */
 }
 
 /* Target any possible container that might be escaping the theme */
@@ -39,7 +41,7 @@ code {
   --primary-color: #0070f3;
   --primary-color-rgb: 0, 112, 243; /* Added RGB value for primary color */
   --text-color: #ffffff;
-  --secondary-text: #CCCCCC; /* Made secondary text even lighter */
+  --secondary-text: #ffffff; /* Made secondary text even lighter */
   --bg-color: #000000;
   --card-bg: #111111;
   --card-radius: 12px;
@@ -50,6 +52,7 @@ code {
   --transition-speed: 0.2s;
   --max-width: 800px;
   --base-font: Arial, Helvetica, sans-serif; /* Added base font variable */
+  --base-font-size: 18px; /* New: increase base font size */
 }
 
 /* Allow smooth transitions between themes */
@@ -91,14 +94,19 @@ html, body, #root, .app-container, main {
 }
 
 .cta-button {
-  background: linear-gradient(45deg, var(--primary-color), #0066ff);
-  padding: 1rem 2rem;
-  border-radius: 50px;
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
   font-weight: 600;
-  transition: transform 0.2s ease;
+  font-size: 1rem;
+  transition: background var(--transition-speed), color var(--transition-speed), transform var(--transition-speed);
 }
 
 .cta-button:hover {
+  background: var(--primary-color);
+  color: #ffffff;
   transform: translateY(-2px);
 }
 
@@ -171,4 +179,26 @@ h2 {
 
 h3 {
   font-size: 1.3rem; /* Slightly smaller */
+}
+
+/* Increase common text elements */
+p, a, li, label, input, textarea {
+  font-size: 1rem;
+}
+
+.section-heading {
+  font-size: 1rem; /* increase from 0.85rem */
+}
+
+.hero .subtitle {
+  font-size: 1.2rem; /* from 1.1rem */
+}
+
+.feature-card p {
+  font-size: 1rem; /* from 0.95rem */
+}
+
+/* Remove old .hero-btn if present */
+.hero-btn {
+  display: none;
 }
