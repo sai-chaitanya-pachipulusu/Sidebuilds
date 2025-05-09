@@ -161,7 +161,9 @@ function DashboardPage() {
                     <Alert status="success" mb={4} borderRadius="md">
                         <AlertIcon />
                         <Box>
-                            <Text fontWeight="bold">Purchase Complete!</Text>
+                            <Text fontWeight="bold">
+                                Purchase Complete! <Badge colorScheme="purple" ml={2}>New</Badge>
+                            </Text>
                             <Text>Your newly purchased project is now available in your dashboard.</Text>
                         </Box>
                     </Alert>
