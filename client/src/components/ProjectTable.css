@@ -6,7 +6,7 @@
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   margin-bottom: 2rem;
-  font-size: 0.9rem;
+  font-size: 0.4rem;
 }
 
 .project-table th {
@@ -58,7 +58,7 @@
 .project-name {
   font-weight: 500;
   color: var(--text-color);
-  font-size: 0.45rem;
+  font-size: 0.4rem;
 }
 
 .project-link {
