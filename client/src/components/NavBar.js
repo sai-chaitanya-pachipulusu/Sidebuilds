@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, HStack, Button, IconButton, Text, 
-  useColorModeValue, useDisclosure, Drawer, DrawerBody,
+  useDisclosure, Drawer, DrawerBody,
   DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
   Link
 } from '@chakra-ui/react';
