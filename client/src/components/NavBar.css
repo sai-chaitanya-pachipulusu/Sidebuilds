@@ -330,13 +330,22 @@
     #2563eb, 
     #4f46e5, 
     #7c3aed, 
-    #9333ea
+    #9333ea,
+    #a855f7,
+    #d946ef,
+    #ec4899,
+    #f97316,
+    #fb923c,
+    #f59e0b,
+    #facc15
   );
   background-size: 200% auto;
   color: transparent !important;
   -webkit-background-clip: text;
   background-clip: text;
   animation: gradient 8s linear infinite;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  letter-spacing: 1px;
 }
 
 @keyframes gradient {
