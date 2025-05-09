@@ -199,4 +199,14 @@
 .column-source {
   font-size: 0.95rem !important;
   font-weight: 500;
+}
+
+/* Remove the previous fix */
+.project-table .project-name .project-link {
+  color: var(--primary-color); /* Keep links blue to indicate they're clickable */
+}
+
+.project-table .project-name .project-link:hover {
+  color: var(--primary-color);
+  opacity: 0.8;
 } 
