@@ -135,7 +135,7 @@ function PurchaseSuccessPage() {
         </div>
         
         <div className="action-buttons">
-          <Link to="/dashboard" className="action-button">Go to Dashboard</Link>
+          <Link to="/dashboard?purchased=true" className="action-button">Go to Dashboard</Link>
           <Link to="/marketplace" className="action-button secondary">Return to Marketplace</Link>
         </div>
       </div>

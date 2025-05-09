@@ -143,9 +143,14 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
               ? "public-project-name" 
               : "project-table project-name"}>
             {type === 'dashboard' ? (
-              <Link to={`/projects/${project.project_id}`} className="project-link">
-                {project.name}
-              </Link>
+              <>
+                <Link to={`/projects/${project.project_id}`} className="project-link">
+                  {project.name}
+                </Link>
+                {project.source === 'purchased' && (
+                  <span className="purchased-badge">PURCHASED</span>
+                )}
+              </>
             ) : (
               project.name
             )}
@@ -277,7 +282,10 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
           </thead>
           <tbody>
             {projects.map((project) => (
-              <tr key={project.project_id}>
+              <tr 
+                key={project.project_id}
+                className={project.source === 'purchased' ? 'purchased-project' : ''}
+              >
                 {columns.map((column) => (
                   <td key={`${project.project_id}-${column.id}`}>
                     {renderCell(project, column.id)}
