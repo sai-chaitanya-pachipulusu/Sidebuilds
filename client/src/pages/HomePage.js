@@ -13,8 +13,8 @@ const ArrowIcon = () => (
 
 // Secure icon for security information
 const SecureIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
@@ -91,6 +91,8 @@ function HomePage() {
       <section className="trust-section">
         <h2 className="section-title">Why Choose SideBuilds</h2>
         
+        <TrustBadges type="marketplace" />
+
         <div className="secure-purchase-info">
           <div className="secure-icon">
             <SecureIcon />
@@ -98,7 +100,6 @@ function HomePage() {
           <p>All transactions on SideBuilds are processed securely via Stripe with encrypted payment information. We never store your card details.</p>
         </div>
         
-        <TrustBadges type="marketplace" />
       </section>
     </div>
   );
