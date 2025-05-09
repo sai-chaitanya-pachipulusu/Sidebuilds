@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, Heading, Text, Button, Alert, AlertIcon,
-  Container, useToast, Badge
+  Container, useToast
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
