@@ -129,6 +129,11 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
 
   // Render cell content based on column ID
   const renderCell = (project, columnId) => {
+    // Helper function to wrap content with column class
+    const wrapWithColumnClass = (content) => {
+      return <span className={`column-${columnId}`}>{content}</span>;
+    };
+    
     switch (columnId) {
       case 'name':
         return (
@@ -147,9 +152,9 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
           </span>
         );
       case 'source':
-        return <SourceBadge source={project.source} />;
+        return wrapWithColumnClass(<SourceBadge source={project.source} />);
       case 'stage':
-        return (
+        return wrapWithColumnClass(
           <span className={`status-chip status-${project.stage || 'idea'}`}>
             {project.stage || 'Idea'}
           </span>
@@ -158,7 +163,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
       case 'created_at':
         return new Date(project[columnId]).toLocaleDateString();
       case 'domain':
-        return project.domain ? (
+        return wrapWithColumnClass(project.domain ? (
           <a 
             href={`http://${project.domain}`} 
             target="_blank" 
@@ -168,15 +173,15 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
           </a>
         ) : (
           'N/A'
-        );
+        ));
       case 'is_public':
         return project.is_public ? 'Yes' : 'No';
       case 'is_for_sale':
         return project.is_for_sale ? 'Yes' : 'No';
       case 'owner_username':
-        return project.owner_username || 'Anonymous';
+        return wrapWithColumnClass(project.owner_username || 'Anonymous');
       case 'sale_price':
-        return `$${parseFloat(project.sale_price).toFixed(2)}`;
+        return wrapWithColumnClass(`$${parseFloat(project.sale_price).toFixed(2)}`);
       case 'contact':
         return (
           <div className="contact-info">
@@ -202,7 +207,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
           </div>
         );
       case 'github':
-        return project.github_url ? (
+        return wrapWithColumnClass(project.github_url ? (
           <a 
             href={project.github_url} 
             target="_blank" 
@@ -213,7 +218,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
           </a>
         ) : (
           'N/A'
-        );
+        ));
       case 'live':
         return project.domain ? (
           <a 

@@ -188,4 +188,15 @@
 .small-text {
   font-size: 0.85rem !important;
   /* Using !important to override any conflicting styles */
+}
+
+/* Added specific classes for marketplace and public table column content */
+.column-stage,
+.column-owner_username, 
+.column-sale_price,
+.column-domain,
+.column-github,
+.column-source {
+  font-size: 0.95rem !important;
+  font-weight: 500;
 } 
