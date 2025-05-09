@@ -63,14 +63,28 @@ function App() {
             <NavBar />
             <main>
                 <Routes>
-                    {/* Public Routes */}
+                    {/* Public Routes - Only Home, Login, Register */}
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/public-projects" element={<PublicProjectsPage />} />
-                    <Route path="/marketplace" element={<MarketplacePage />} />
                     
-                    {/* Protected Routes */}
+                    {/* Protected Routes - Everything else requires login */}
+                    <Route 
+                        path="/public-projects"
+                        element={
+                            <ProtectedRoute>
+                                <PublicProjectsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/marketplace"
+                        element={
+                            <ProtectedRoute>
+                                <MarketplacePage />
+                            </ProtectedRoute>
+                        }
+                    />
                     <Route 
                         path="/dashboard"
                         element={

@@ -56,7 +56,7 @@ function HomePage() {
           <div className="feature-card">
             <h3>Project Dashboard</h3>
             <p>Track progress and set milestones for all your projects.</p>
-            <Link to="/public-projects" className="arrow-link">
+            <Link to={isAuthenticated ? "/public-projects" : "/login"} className="arrow-link">
               <span className="button-text">Browse Projects</span> <ArrowIcon />
             </Link>
           </div>
@@ -64,7 +64,7 @@ function HomePage() {
           <div className="feature-card">
             <h3>Public Sharing</h3>
             <p>Share your projects with the community to get feedback or collaborators.</p>
-            <Link to="/public-projects" className="arrow-link">
+            <Link to={isAuthenticated ? "/public-projects" : "/login"} className="arrow-link">
               <span className="button-text">Public projects</span> <ArrowIcon />
             </Link>
           </div>
@@ -72,7 +72,7 @@ function HomePage() {
           <div className="feature-card">
             <h3>Project Marketplace</h3>
             <p>Turn your side projects into income by selling them to interested buyers.</p>
-            <Link to="/marketplace" className="arrow-link">
+            <Link to={isAuthenticated ? "/marketplace" : "/login"} className="arrow-link">
               <span className="button-text">Visit marketplace</span> <ArrowIcon />
             </Link>
           </div>

@@ -156,27 +156,29 @@ function NavBar() {
 
         {/* Desktop Navigation */}
         <HStack spacing={8} display={{ base: 'none', md: 'flex' }}>
-          <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
-            Projects
-          </NavItem>
-          <NavItem to="/marketplace" isActive={isActive('/marketplace')}>
-            Marketplace
-          </NavItem>
-          
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <>
+              <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
+                Projects
+              </NavItem>
+              <NavItem to="/marketplace" isActive={isActive('/marketplace')}>
+                Marketplace
+              </NavItem>
               <NavItem to="/dashboard" isActive={isActive('/dashboard')}>
                 Dashboard
               </NavItem>
-              <IconButton
-                aria-label="Logout"
-                variant="ghost"
-                icon={<LogoutIcon />}
-                onClick={handleLogout}
-                mt={-1}
-                _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
-              />
             </>
+          )}
+          
+          {isAuthenticated ? (
+            <IconButton
+              aria-label="Logout"
+              variant="ghost"
+              icon={<LogoutIcon />}
+              onClick={handleLogout}
+              mt={-1}
+              _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
+            />
           ) : (
             <>
               <Button 
@@ -227,29 +229,31 @@ function NavBar() {
             </DrawerHeader>
             <DrawerBody>
               <Flex direction="column" mt={4} spacing={4}>
-                <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
-                  Projects
-                </MobileNavItem>
-                <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
-                  Marketplace
-                </MobileNavItem>
-                
-                {isAuthenticated ? (
+                {isAuthenticated && (
                   <>
+                    <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+                      Projects
+                    </MobileNavItem>
+                    <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+                      Marketplace
+                    </MobileNavItem>
                     <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
                       Dashboard
                     </MobileNavItem>
-                    <Button 
-                      leftIcon={<LogoutIcon />} 
-                      colorScheme="red" 
-                      variant="ghost" 
-                      justifyContent="flex-start" 
-                      mt={2}
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
                   </>
+                )}
+                
+                {isAuthenticated ? (
+                  <Button 
+                    leftIcon={<LogoutIcon />} 
+                    colorScheme="red" 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    mt={2}
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </Button>
                 ) : (
                   <>
                     <Button 
