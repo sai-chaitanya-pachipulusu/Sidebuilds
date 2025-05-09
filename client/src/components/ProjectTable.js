@@ -130,7 +130,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
     switch (columnId) {
       case 'name':
         return (
-          <span className="project-name small-text">
+          <span className="project-name">
             {type === 'dashboard' ? (
               <Link to={`/projects/${project.project_id}`} className="project-link">
                 {project.name}
