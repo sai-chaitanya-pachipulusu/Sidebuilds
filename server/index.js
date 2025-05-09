@@ -85,6 +85,11 @@ app.use('/api/auth', require('./routes/auth'));
 // Mount project routes (protected by middleware within the file)
 app.use('/api/projects', require('./routes/projects')); 
 
+// Import the certificates routes
+const certificatesRoutes = require('./routes/certificates');
+
+// Mount certificates routes
+app.use('/api/certificates', certificatesRoutes);
 
 // --- Server Initialization --- 
 const PORT = process.env.PORT || 5001; // Use port from .env or default to 5001

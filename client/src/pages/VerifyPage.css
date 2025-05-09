@@ -1,0 +1,127 @@
+.verify-page {
+  padding: 3rem 0;
+}
+
+.verify-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.verify-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.verify-header h1 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.verify-header p {
+  color: var(--secondary-text);
+  font-size: 1.1rem;
+}
+
+.verify-form-container {
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+.verify-form {
+  display: flex;
+  gap: 1rem;
+}
+
+.verify-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.verify-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.verify-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.verify-button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.verify-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: var(--text-color);
+  font-size: 1.1rem;
+}
+
+.verify-error {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 8px;
+  text-align: center;
+  color: #e74c3c;
+}
+
+.verify-error h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.verify-error p {
+  margin-bottom: 1.5rem;
+}
+
+.try-again-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.try-again-button:hover {
+  opacity: 0.9;
+}
+
+.verification-result {
+  margin-top: 2rem;
+}
+
+.verification-success {
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #2ecc71;
+}
+
+.verification-success h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+} 

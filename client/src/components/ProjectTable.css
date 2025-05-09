@@ -147,4 +147,24 @@
 .contact-link:hover {
   background-color: var(--hover-color);
   color: var(--primary-color);
+}
+
+/* Source badges */
+.source-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.source-created {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}
+
+.source-purchased {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9c27b0;
 } 

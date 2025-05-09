@@ -1,0 +1,184 @@
+.seller-certificate {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.certificate-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.print-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.print-button:hover {
+  opacity: 0.9;
+}
+
+.certificate-content {
+  background-color: white;
+  color: #333;
+  border: 2px solid #222;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.certificate-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 20px;
+}
+
+.certificate-header h1 {
+  font-size: 36px;
+  color: #333;
+  margin: 0;
+  font-family: 'Georgia', serif;
+}
+
+.certificate-logo {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin-top: 10px;
+}
+
+.certificate-body {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.certificate-intro {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.seller-name {
+  font-size: 32px;
+  margin: 20px 0;
+  color: #222;
+  font-family: 'Georgia', serif;
+}
+
+.certificate-text {
+  font-size: 18px;
+  margin: 15px 0;
+}
+
+.project-name {
+  font-size: 24px;
+  margin: 15px 0;
+  color: var(--primary-color);
+}
+
+.certificate-verification {
+  margin-top: 40px;
+  border: 1px solid #ddd;
+  padding: 20px;
+  display: inline-block;
+}
+
+.verification-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.verification-code {
+  font-family: monospace;
+  font-size: 20px;
+  letter-spacing: 2px;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border: 1px dashed #ccc;
+  margin-bottom: 10px;
+}
+
+.verification-note {
+  font-size: 12px;
+  color: #666;
+}
+
+.verification-url {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.certificate-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 40px;
+  border-top: 2px solid #f0f0f0;
+  padding-top: 20px;
+}
+
+.certificate-signature {
+  flex: 1;
+}
+
+.signature-line {
+  width: 200px;
+  height: 1px;
+  background-color: #333;
+  margin-bottom: 5px;
+}
+
+.signature-name {
+  font-size: 14px;
+}
+
+.certificate-seal {
+  width: 80px;
+  height: 80px;
+  color: var(--primary-color);
+}
+
+.certificate-id {
+  font-size: 12px;
+  color: #999;
+  align-self: flex-end;
+}
+
+.certificate-error {
+  text-align: center;
+  padding: 40px;
+  color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+}
+
+/* Print styles */
+@media print {
+  .certificate-actions {
+    display: none;
+  }
+  
+  body {
+    background-color: white;
+  }
+  
+  .seller-certificate.printable {
+    padding: 0;
+    box-shadow: none;
+  }
+  
+  .certificate-content {
+    box-shadow: none;
+    border: 2px solid #222;
+  }
+} 

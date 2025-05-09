@@ -17,6 +17,10 @@ import PublicProjectsPage from './pages/PublicProjectsPage'; // Import public pa
 import MarketplacePage from './pages/MarketplacePage'; // Import Marketplace page
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchase success page
 
+// Import new certificate components
+import CertificatePage from './pages/CertificatePage';
+import VerifyPage from './pages/VerifyPage';
+
 // Placeholder components for pages not yet created
 // const HomePage = () => <div>Home Page - Publicly Accessible</div>;
 // const DashboardPage = () => <div>Dashboard Page - Protected</div>;
@@ -67,6 +71,8 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/verify" element={<VerifyPage />} />
+                    <Route path="/verify/:verificationCode" element={<VerifyPage />} />
                     
                     {/* Protected Routes - Everything else requires login */}
                     <Route 
@@ -117,6 +123,11 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route path="/certificates/:certificateId" element={
+                        <ProtectedRoute>
+                            <CertificatePage />
+                        </ProtectedRoute>
+                    } />
                     
                     {/* Catch-all route for 404 Not Found */}
                     <Route path="*" element={<NotFoundPage />} />

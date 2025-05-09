@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 require('dotenv').config();
+const crypto = require('crypto');
 
 // Get Stripe keys from environment variables only (no hardcoded fallbacks)
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -454,12 +455,15 @@ const webhookHandler = async (req, res) => {
                 const buyer = buyerResult.rows[0];
                 
                 // Create a transfer record in the project_transfers table
-                await db.query(
+                const transferResult = await db.query(
                     `INSERT INTO project_transfers 
-                    (project_id, transaction_id, status, transfer_type, assets_transferred)
-                    VALUES ($1, $2, $3, $4, $5)`,
-                    [transaction.project_id, transaction.transaction_id, 'pending', 'full_ownership', false]
+                    (project_id, transaction_id, status, transfer_type, assets_transferred, certificate_generated)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING transfer_id`,
+                    [transaction.project_id, transaction.transaction_id, 'pending', 'full_ownership', false, false]
                 );
+                
+                const transferId = transferResult.rows[0].transfer_id;
 
                 // Update transaction status
                 await db.query(
@@ -469,8 +473,37 @@ const webhookHandler = async (req, res) => {
 
                 // Mark the project as sold and transfer ownership
                 await db.query(
-                    'UPDATE projects SET is_for_sale = FALSE, owner_id = $1, previous_owner_id = $2, transfer_date = NOW() WHERE project_id = $3',
+                    `UPDATE projects 
+                    SET is_for_sale = FALSE, 
+                        owner_id = $1, 
+                        previous_owner_id = $2, 
+                        transfer_date = NOW(),
+                        purchased_at = NOW(),
+                        source = 'purchased'
+                    WHERE project_id = $3`,
                     [transaction.buyer_id, transaction.seller_id, transaction.project_id]
+                );
+                
+                // Generate a unique verification code for the certificate
+                const verificationCode = crypto
+                    .randomBytes(16)
+                    .toString('hex')
+                    .toUpperCase();
+                
+                // Create a seller certificate
+                await db.query(
+                    `INSERT INTO seller_certificates
+                    (seller_id, project_id, transaction_id, buyer_id, sale_amount, verification_code)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING certificate_id`,
+                    [
+                        transaction.seller_id,
+                        transaction.project_id,
+                        transaction.transaction_id,
+                        transaction.buyer_id,
+                        transaction.amount,
+                        verificationCode
+                    ]
                 );
                 
                 // Send notifications to buyer and seller

@@ -44,6 +44,24 @@ const PhoneIcon = () => (
   </svg>
 );
 
+// Source badges
+const SourceBadge = ({ source }) => {
+  if (!source || source === 'created') {
+    return (
+      <span className="source-badge source-created">
+        Created
+      </span>
+    );
+  } else if (source === 'purchased') {
+    return (
+      <span className="source-badge source-purchased">
+        Purchased
+      </span>
+    );
+  }
+  return null;
+};
+
 /**
  * A reusable table component for displaying projects
  * 
@@ -65,6 +83,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
     if (type === 'dashboard') {
       return [
         ...common,
+        { id: 'source', label: 'Source' },
         { id: 'updated_at', label: 'Last Updated' },
         { id: 'domain', label: 'Domain' },
         { id: 'is_public', label: 'Public' },
@@ -84,6 +103,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
       return [
         ...common,
         { id: 'owner_username', label: 'Creator' },
+        { id: 'source', label: 'Source' },
         { id: 'domain', label: 'Domain' },
         { id: 'github', label: 'GitHub' },
         { id: 'live', label: 'Live Demo' },
@@ -120,6 +140,8 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
             )}
           </span>
         );
+      case 'source':
+        return <SourceBadge source={project.source} />;
       case 'stage':
         return (
           <span className={`status-chip status-${project.stage || 'idea'}`}>
