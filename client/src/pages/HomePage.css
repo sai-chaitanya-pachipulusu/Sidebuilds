@@ -88,4 +88,76 @@
   border-radius: 50%;
   margin-bottom: 2rem;
   border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.about-section, .features-section, .trust-section {
+  margin-bottom: 3rem;
+  padding-top: 1rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.about-card {
+  padding: 1.5rem;
+  border-radius: var(--card-radius);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  text-align: center;
+}
+
+/* Trust Section Styles */
+.trust-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 3rem;
+}
+
+.secure-purchase-info {
+  display: flex;
+  align-items: center;
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  border-radius: var(--card-radius);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.secure-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  color: white;
+}
+
+.secure-purchase-info p {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .secure-purchase-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .secure-icon {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .secure-purchase-info p {
+    font-size: 1rem;
+  }
 } 
