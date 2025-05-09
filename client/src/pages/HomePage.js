@@ -22,11 +22,11 @@ function HomePage() {
           <p className="tagline">Empower. Innovate. Monetize.</p>
           {!isAuthenticated ? (
             <Link to="/register" className="cta-button">
-              Get Started <ArrowIcon />
+              <span className="button-text">Get Started</span> <ArrowIcon />
             </Link>
-          ) : (
+          ) :(
             <Link to="/dashboard" className="cta-button">
-              View Projects <ArrowIcon />
+              <span className="button-text">View Projects</span> <ArrowIcon />
             </Link>
           )}
         </div>
@@ -56,8 +56,8 @@ function HomePage() {
           <div className="feature-card">
             <h3>Project Dashboard</h3>
             <p>Track progress and set milestones for all your projects.</p>
-            <Link to={isAuthenticated ? "/dashboard" : "/login"} className="arrow-link">
-              {isAuthenticated ? "View Projects" : "Try Now"} <ArrowIcon />
+            <Link to="/public-projects" className="arrow-link">
+              <span className="button-text">Browse Projects</span> <ArrowIcon />
             </Link>
           </div>
           
@@ -65,7 +65,7 @@ function HomePage() {
             <h3>Public Sharing</h3>
             <p>Share your projects with the community to get feedback or collaborators.</p>
             <Link to="/public-projects" className="arrow-link">
-              Browse projects <ArrowIcon />
+              <span className="button-text">Public projects</span> <ArrowIcon />
             </Link>
           </div>
           
@@ -73,18 +73,10 @@ function HomePage() {
             <h3>Project Marketplace</h3>
             <p>Turn your side projects into income by selling them to interested buyers.</p>
             <Link to="/marketplace" className="arrow-link">
-              Visit marketplace <ArrowIcon />
+              <span className="button-text">Visit marketplace</span> <ArrowIcon />
             </Link>
           </div>
         </div>
-      </section>
-
-      {/* Final Call-to-Action Banner */}
-      <section className="cta-banner">
-        <h2>Ready to launch your next big idea?</h2>
-        <Link to={isAuthenticated ? "/dashboard" : "/register"} className="cta-button">
-          {isAuthenticated ? "View Projects" : "Get Started"} <ArrowIcon />
-        </Link>
       </section>
     </div>
   );

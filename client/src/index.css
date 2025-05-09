@@ -41,7 +41,7 @@ code {
   --primary-color: #0070f3;
   --primary-color-rgb: 0, 112, 243; /* Added RGB value for primary color */
   --text-color: #ffffff;
-  --secondary-text: #ffffff; /* Made secondary text even lighter */
+  --secondary-text: white; /* Made secondary text fully white */
   --bg-color: #000000;
   --card-bg: #111111;
   --card-radius: 12px;
@@ -128,6 +128,20 @@ html, body, #root, .app-container, main {
   font-weight: 600;
   font-size: 1rem;
   transition: background var(--transition-speed), color var(--transition-speed), transform var(--transition-speed);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.button-text {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.cta-button svg {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .cta-button:hover {

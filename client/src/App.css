@@ -26,7 +26,7 @@
   --primary-color: #0070f3;
   --primary-color-rgb: 0, 112, 243;
   --text-color: #ffffff;
-  --secondary-text: #999999;
+  --secondary-text: white;
   --bg-color: #000000;
   --card-bg: #111111;
   --card-radius: 12px;
@@ -328,10 +328,12 @@ input[type="checkbox"] + label {
 .arrow-link {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   transition: all var(--transition-speed);
   color: var(--primary-color);
   font-size: 0.9rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .arrow-link:hover {
@@ -339,7 +341,8 @@ input[type="checkbox"] + label {
 }
 
 .arrow-link svg {
-  margin-left: 0.35rem;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* New global variables */
