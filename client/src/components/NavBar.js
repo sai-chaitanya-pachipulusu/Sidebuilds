@@ -307,7 +307,7 @@ const NavItem = ({ icon, children, isActive, to }) => {
         <Box display="flex" alignItems="center" justifyContent="center" minW="18px">
           {icon}
         </Box>
-        <Text color={isActive ? 'brand.500' : 'gray.300'}>{children}</Text>
+        <Text color={isActive ? 'brand.500' : 'white'}>{children}</Text>
       </HStack>
       {isActive && (
         <Box
