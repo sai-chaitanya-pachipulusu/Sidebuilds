@@ -58,7 +58,20 @@
 .project-table .project-name {
   font-weight: 500;
   color: var(--text-color);
-  font-size: 0.75rem !important;
+  font-size: 0.85rem !important;
+}
+
+/* New classes for marketplace and public project tables */
+.marketplace-project-name {
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 1rem !important; /* Larger font size for marketplace */
+}
+
+.public-project-name {
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 1rem !important; /* Larger font size for public projects */
 }
 
 .project-link {
@@ -172,6 +185,6 @@
 
 /* Added specific class for small text */
 .small-text {
-  font-size: 0.75rem !important;
+  font-size: 0.85rem !important;
   /* Using !important to override any conflicting styles */
 } 

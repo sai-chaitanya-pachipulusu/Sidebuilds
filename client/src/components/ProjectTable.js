@@ -130,7 +130,11 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
     switch (columnId) {
       case 'name':
         return (
-          <span className="project-name small-text">
+          <span className={type === 'marketplace' 
+            ? "marketplace-project-name" 
+            : type === 'public' 
+              ? "public-project-name" 
+              : "project-table project-name"}>
             {type === 'dashboard' ? (
               <Link to={`/projects/${project.project_id}`} className="project-link">
                 {project.name}
@@ -159,7 +163,6 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
             rel="noopener noreferrer"
             className="project-link"
           >
-            {project.domain} <ExternalLinkIcon />
           </a>
         ) : (
           'N/A'
@@ -204,7 +207,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
             rel="noopener noreferrer"
             className="project-link"
           >
-            <GithubIcon />
+            
           </a>
         ) : (
           'N/A'
@@ -217,7 +220,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
             rel="noopener noreferrer"
             className="project-link"
           >
-            <ExternalLinkIcon />
+            
           </a>
         ) : (
           'N/A'
