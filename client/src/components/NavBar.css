@@ -321,4 +321,32 @@
     margin-top: 2rem;
     align-self: center;
   }
+}
+
+.brand-text {
+  background: linear-gradient(
+    to right, 
+    #3b82f6, 
+    #2563eb, 
+    #4f46e5, 
+    #7c3aed, 
+    #9333ea
+  );
+  background-size: 200% auto;
+  color: transparent !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: gradient 8s linear infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
 } 

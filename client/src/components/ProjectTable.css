@@ -7,6 +7,18 @@
   box-shadow: var(--card-shadow);
   margin-bottom: 2rem;
   font-size: 0.85rem;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .project-table th {
@@ -30,11 +42,16 @@
 }
 
 .project-table tbody tr {
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  transform-origin: center;
 }
 
 .project-table tbody tr:hover {
   background-color: var(--hover-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  position: relative;
 }
 
 .project-table tbody tr:last-child td {
@@ -93,13 +110,29 @@
   text-transform: capitalize;
 }
 
-/* Status colors */
+/* Status colors with pulse effect for "launched" status */
 .status-idea { background-color: rgba(156, 39, 176, 0.1); color: #9c27b0; }
 .status-planning { background-color: rgba(33, 150, 243, 0.1); color: #2196f3; }
 .status-mvp { background-color: rgba(255, 152, 0, 0.1); color: #ff9800; }
 .status-development { background-color: rgba(0, 150, 136, 0.1); color: #009688; }
-.status-launched { background-color: rgba(76, 175, 80, 0.1); color: #4caf50; }
+.status-launched { 
+  background-color: rgba(76, 175, 80, 0.1); 
+  color: #4caf50; 
+  animation: status-pulse 2s infinite;
+}
 .status-on_hold { background-color: rgba(158, 158, 158, 0.1); color: #9e9e9e; }
+
+@keyframes status-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
 
 /* Action buttons */
 .action-cell {
@@ -199,4 +232,56 @@
 .column-source {
   font-size: 0.95rem !important;
   font-weight: 500;
+}
+
+/* Add this to your ProjectTable.css file */
+.buy-button {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.buy-button:hover {
+  background: linear-gradient(90deg, #1d4ed8, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.buy-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  bottom: -50%;
+  left: -50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0));
+  transform: rotateZ(60deg) translate(-5em, 7.5em);
+  animation: shine 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    transform: rotateZ(60deg) translate(-5em, 7.5em);
+  }
+  100% {
+    transform: rotateZ(60deg) translate(12em, -7.5em);
+  }
+}
+
+.buy-button.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.buy-button.disabled::after {
+  display: none;
 } 

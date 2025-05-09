@@ -148,6 +148,7 @@ function NavBar() {
               letterSpacing="wider"
               textTransform="lowercase"
               color="white"
+              className="brand-text"
             >
               sidebuilds.
             </Text>
