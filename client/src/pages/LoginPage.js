@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loginUser } from '../services/api';
@@ -8,8 +8,14 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isLoading, isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -33,6 +39,10 @@ function LoginPage() {
             setLoading(false);
         }
     };
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div>
