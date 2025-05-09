@@ -170,6 +170,7 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
             rel="noopener noreferrer"
             className="project-link"
           >
+            {project.domain}
           </a>
         ) : (
           'N/A'

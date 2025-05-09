@@ -201,12 +201,15 @@
   font-weight: 500;
 }
 
-/* Remove the previous fix */
+/* Make project names white text but keep link functionality */
 .project-table .project-name .project-link {
-  color: var(--primary-color); /* Keep links blue to indicate they're clickable */
+  color: white;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.3); /* Subtle underline to indicate it's a link */
 }
 
 .project-table .project-name .project-link:hover {
-  color: var(--primary-color);
-  opacity: 0.8;
+  color: var(--primary-color); /* Change to blue on hover */
+  border-bottom: 1px solid var(--primary-color);
+  opacity: 1;
 } 
