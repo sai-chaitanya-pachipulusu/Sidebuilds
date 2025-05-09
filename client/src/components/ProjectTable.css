@@ -6,7 +6,7 @@
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   margin-bottom: 2rem;
-  font-size: 0.4rem;
+  font-size: 0.75rem;
 }
 
 .project-table th {
@@ -55,10 +55,10 @@
 }
 
 /* Styling for specific columns */
-.project-name {
+.project-table .project-name {
   font-weight: 500;
   color: var(--text-color);
-  font-size: 0.4rem;
+  font-size: 0.75rem !important;
 }
 
 .project-link {
@@ -168,4 +168,10 @@
 .source-purchased {
   background-color: rgba(156, 39, 176, 0.1);
   color: #9c27b0;
+}
+
+/* Added specific class for small text */
+.small-text {
+  font-size: 0.75rem !important;
+  /* Using !important to override any conflicting styles */
 } 
