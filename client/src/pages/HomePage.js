@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TrustBadges from '../components/TrustBadges';
 import './HomePage.css';
@@ -21,19 +21,7 @@ const SecureIcon = () => (
 );
 
 function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login', { replace: true });
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
-  if (isLoading || !isAuthenticated) {
-    // Optionally, render a loading indicator or null while checking auth/redirecting
-    return <div>Loading...</div>; // Or null
-  }
+  const { isAuthenticated } = useAuth();
   
   return (
     <div className="home-container">
