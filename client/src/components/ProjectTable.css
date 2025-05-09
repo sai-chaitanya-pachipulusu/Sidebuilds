@@ -58,7 +58,7 @@
 .project-table .project-name {
   font-weight: 500;
   color: var(--text-color);
-  font-size: 0.85rem !important;
+  font-size: 0.75rem !important;
 }
 
 .project-link {
@@ -74,7 +74,7 @@
   display: inline-block;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   text-transform: capitalize;
 }
@@ -155,7 +155,7 @@
   display: inline-block;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   text-transform: capitalize;
 }
