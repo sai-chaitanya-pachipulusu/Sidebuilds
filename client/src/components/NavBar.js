@@ -128,7 +128,7 @@ function NavBar() {
       <Flex
         maxW="1200px"
         mx="auto"
-        py={3}
+        py={5}
         px={4}
         align="center"
         justify="space-between"
@@ -146,7 +146,7 @@ function NavBar() {
               fontSize="2xl"
               fontWeight="bold"
               letterSpacing="wider"
-              textTransform="uppercase"
+              textTransform="lowercase"
               color="white"
             >
               sidebuilds.
@@ -156,16 +156,16 @@ function NavBar() {
 
         {/* Desktop Navigation */}
         <HStack spacing={8} display={{ base: 'none', md: 'flex' }}>
-          <NavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
+          <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
             Projects
           </NavItem>
-          <NavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
+          <NavItem to="/marketplace" isActive={isActive('/marketplace')}>
             Marketplace
           </NavItem>
           
           {isAuthenticated ? (
             <>
-              <NavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
+              <NavItem to="/dashboard" isActive={isActive('/dashboard')}>
                 Dashboard
               </NavItem>
               <IconButton

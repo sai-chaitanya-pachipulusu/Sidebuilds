@@ -4,13 +4,14 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: var(--header-height);
+  height: calc(var(--header-height) + 20px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: none;
   transition: all 0.3s ease;
+  padding: 10px 0;
 }
 
 /* Scrolled state - adds shadow and changes background */
