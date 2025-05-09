@@ -9,13 +9,30 @@
 
 .back-link {
   margin-bottom: 20px;
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: transparent;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
 }
 
 .back-link a {
   font-size: 16px;
-  color: var(--primary-color);
+  color: white;
   text-decoration: none;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.back-link a:hover {
+  color: var(--primary-color);
+}
+
+.back-link a:before {
+  content: "←";
+  margin-right: 8px;
+  font-size: 18px;
 }
 
 /* Display Mode Styling */
