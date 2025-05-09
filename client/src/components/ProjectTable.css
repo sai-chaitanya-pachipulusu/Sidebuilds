@@ -58,6 +58,7 @@
 .project-name {
   font-weight: 500;
   color: var(--text-color);
+  font-size: 0.85rem;
 }
 
 .project-link {
