@@ -284,9 +284,9 @@
 }
 
 .faq-list {
-  margin: 0.5rem 0 0.75rem 1.25rem;
+  margin: 0.5rem 0 0.75rem 0;
   padding: 0;
-  list-style-type: disc;
+  list-style-type: none;
 }
 
 .faq-list li {
@@ -295,9 +295,17 @@
   color: var(--secondary-text);
   line-height: 1.5;
   background-color: transparent;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border-left: 2px solid var(--primary-color);
+  padding: 0.5rem 0.5rem 0.5rem 2rem;
+  position: relative;
+}
+
+.faq-list li:before {
+  content: "•";
+  position: absolute;
+  left: 0.75rem;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .faq-list li:last-child {
