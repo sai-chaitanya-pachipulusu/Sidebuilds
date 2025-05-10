@@ -1,0 +1,99 @@
+.marketplace-trust-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background-color: #000000;
+}
+
+.trust-title {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.trust-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .trust-badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .trust-badges-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.trust-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: #000000;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  background-color: #000000;
+}
+
+.badge-content h4 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.badge-content p {
+  font-size: 0.9rem;
+  margin: 0;
+  color: var(--secondary-text);
+  line-height: 1.4;
+}
+
+.secure-payment-notice {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #000000;
+  padding: 1.25rem;
+  border-radius: 8px;
+}
+
+.secure-payment-notice svg {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.secure-payment-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--secondary-text);
+}
+
+@media (max-width: 768px) {
+  .secure-payment-notice {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .secure-payment-notice svg {
+    margin-bottom: 0.5rem;
+  }
+} 

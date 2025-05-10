@@ -4,6 +4,7 @@ import apiClient from '../services/api';
 import { useStripe } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext'; // Import auth context to get current user
 import ProjectTable from '../components/ProjectTable';
+import MarketplaceTrustSection from '../components/MarketplaceTrustSection';
 import { createAndRedirectToCheckout } from '../utils/stripe-helper';
 import './MarketplacePage.css';
 
@@ -163,6 +164,7 @@ function MarketplacePage() {
 
             {checkoutError && <p className="error-message">Payment Error: {checkoutError}</p>}
             
+            <MarketplaceTrustSection />
             
             <div className="marketplace-table">
                 <h3>Available Projects</h3>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import TrustBadges from '../components/TrustBadges';
+import MarketplaceTrustSection from '../components/MarketplaceTrustSection';
 import './HomePage.css';
 
 // Arrow icon for links
@@ -90,16 +90,7 @@ function HomePage() {
       </section>
 
       <section className="trust-section">
-              
-        <TrustBadges type="marketplace" />
-
-        <div className="secure-purchase-info">
-          <div className="secure-icon">
-            <SecureIcon />
-          </div>
-          <p>All transactions on SideBuilds are processed securely via Stripe with encrypted payment information. We never store your card details.</p>
-        </div>
-        
+        <MarketplaceTrustSection />
       </section>
     </div>
   );
