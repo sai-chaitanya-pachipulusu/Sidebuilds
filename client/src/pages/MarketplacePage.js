@@ -5,7 +5,6 @@ import { useStripe } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext'; // Import auth context to get current user
 import ProjectTable from '../components/ProjectTable';
 import { createAndRedirectToCheckout } from '../utils/stripe-helper';
-import { useNavigate } from 'react-router-dom';
 import './MarketplacePage.css';
 
 // Icons
@@ -18,7 +17,6 @@ function MarketplacePage() {
     const [checkoutError, setCheckoutError] = useState('');
     const [processingPaymentId, setProcessingPaymentId] = useState(null);
     const { user } = useAuth(); // Get the current user
-    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchMarketplaceProjects = async () => {
