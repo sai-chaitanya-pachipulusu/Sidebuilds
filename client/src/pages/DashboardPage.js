@@ -7,8 +7,6 @@ import {
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, deleteProject } from '../services/api';
-import { checkAndProcessPendingPurchase } from '../utils/stripe-helper';
-import apiClient from '../services/api';
 import ProjectTable from '../components/ProjectTable';
 
 const MotionBox = motion(Box);
@@ -51,24 +49,6 @@ function DashboardPage() {
             navigate('/dashboard', { replace: true });
         }
     }, [location, navigate, toast]);
-
-    // Check for and process any pending purchases that might have failed webhook processing
-    useEffect(() => {
-        const manuallyCheckPurchase = async () => {
-            try {
-                const processed = await checkAndProcessPendingPurchase(apiClient);
-                if (processed) {
-                    console.log('Manually processed a pending purchase');
-                    // Force a refresh
-                    setRefreshCounter(prev => prev + 1);
-                }
-            } catch (error) {
-                console.error('Error checking pending purchases:', error);
-            }
-        };
-        
-        manuallyCheckPurchase();
-    }, []);
 
     useEffect(() => {
         const fetchProjects = async () => {
