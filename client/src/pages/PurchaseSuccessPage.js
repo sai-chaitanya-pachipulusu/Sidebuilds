@@ -134,13 +134,43 @@ function PurchaseSuccessPage() {
           <div className="transfer-info">
             <h4>Transfer Process</h4>
             <p>Here's what to expect over the next few days:</p>
-            <ol className="transfer-steps">
-              <li><strong>Initial Contact:</strong> The seller will reach out within 24 hours to coordinate the transfer.</li>
-              <li><strong>Code Transfer:</strong> Repository access or code files will be shared via GitHub transfer or download link.</li>
-              <li><strong>Domain Transfer:</strong> If applicable, you'll receive instructions to initiate the domain transfer through the registrar.</li>
-              <li><strong>Additional Assets:</strong> Any design files, documentation, and credentials will be provided.</li>
-              <li><strong>Verification Period:</strong> Once transfers are complete, you'll have 7 days to verify everything works as expected.</li>
-            </ol>
+            <div className="transfer-steps">
+              <div className="transfer-step">
+                <div className="step-number">1</div>
+                <div className="step-content">
+                  <strong>Initial Contact</strong>
+                  <span>The seller will reach out within 24 hours to coordinate the transfer.</span>
+                </div>
+              </div>
+              <div className="transfer-step">
+                <div className="step-number">2</div>
+                <div className="step-content">
+                  <strong>Code Transfer</strong>
+                  <span>Repository access or code files will be shared via GitHub transfer or download link.</span>
+                </div>
+              </div>
+              <div className="transfer-step">
+                <div className="step-number">3</div>
+                <div className="step-content">
+                  <strong>Domain Transfer</strong>
+                  <span>If applicable, you'll receive instructions to initiate the domain transfer through the registrar.</span>
+                </div>
+              </div>
+              <div className="transfer-step">
+                <div className="step-number">4</div>
+                <div className="step-content">
+                  <strong>Additional Assets</strong>
+                  <span>Any design files, documentation, and credentials will be provided.</span>
+                </div>
+              </div>
+              <div className="transfer-step">
+                <div className="step-number">5</div>
+                <div className="step-content">
+                  <strong>Verification Period</strong>
+                  <span>Once transfers are complete, you'll have 7 days to verify everything works as expected.</span>
+                </div>
+              </div>
+            </div>
             <p>You can track the progress of each transfer step in your dashboard.</p>
           </div>
           

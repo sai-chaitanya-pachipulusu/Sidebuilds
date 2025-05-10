@@ -42,10 +42,15 @@ function DashboardPage() {
                 position: "top"
             });
             
-            // Trigger a refresh
+            // Force multiple refreshes to ensure data is updated
+            // First immediate refresh
             setRefreshCounter(prev => prev + 1);
             
-            // Clear the URL parameter
+            // Schedule additional refreshes with increasing delays
+            setTimeout(() => setRefreshCounter(prev => prev + 1), 500);
+            setTimeout(() => setRefreshCounter(prev => prev + 1), 1500);
+            
+            // Clear the URL parameter but keep the history
             navigate('/dashboard', { replace: true });
         }
     }, [location, navigate, toast]);
@@ -53,7 +58,7 @@ function DashboardPage() {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                console.log('Fetching user projects...');
+                console.log(`Fetching user projects (refresh #${refreshCounter})...`);
                 setError('');
                 setLoading(true);
                 const userProjects = await getProjects();
@@ -72,32 +77,44 @@ function DashboardPage() {
                     return new Date(bDate) - new Date(aDate);
                 });
                 
+                // Apply visual highlighting for purchased projects
+                const enhancedProjects = userProjects.map(project => ({
+                    ...project,
+                    // Add a flag for CSS animation if it's a recent purchase
+                    isRecentPurchase: project.source === 'purchased' && hasNewPurchase
+                }));
+                
                 // Log projects after sorting
                 console.log('Sorted projects (purchased first):', 
-                    userProjects.map(p => ({ 
+                    enhancedProjects.map(p => ({ 
                         name: p.name, 
                         source: p.source, 
+                        isRecentPurchase: p.isRecentPurchase,
                         purchased_at: p.purchased_at,
                         updated_at: p.updated_at
                     }))
                 );
                 
-                setProjects(userProjects);
+                setProjects(enhancedProjects);
                 
                 // If we just purchased something, check if it shows up
                 if (hasNewPurchase) {
-                    const purchasedProjects = userProjects.filter(p => p.source === 'purchased');
+                    const purchasedProjects = enhancedProjects.filter(p => p.source === 'purchased');
                     console.log(`Found ${purchasedProjects.length} purchased projects:`, purchasedProjects);
                     
                     if (purchasedProjects.length > 0) {
-                        // Reset the purchase flag
+                        // Reset the purchase flag after we confirmed projects are present
                         setHasNewPurchase(false);
-                    } else {
+                    } else if (refreshCounter < 5) {
                         // If we didn't find any purchased projects but should have, try refreshing again
                         console.log('No purchased projects found, will retry in 2 seconds...');
                         setTimeout(() => {
                             setRefreshCounter(prev => prev + 1);
                         }, 2000);
+                    } else {
+                        // If we've tried too many times, give up and reset the flag
+                        console.log('Max retries reached, resetting purchase flag');
+                        setHasNewPurchase(false);
                     }
                 }
             } catch (err) {
@@ -113,7 +130,7 @@ function DashboardPage() {
         };
 
         fetchProjects();
-    }, [logout, navigate, hasNewPurchase, refreshCounter]); // Add refreshCounter as a dependency
+    }, [logout, navigate, hasNewPurchase, refreshCounter]);
 
     const handleDelete = async (projectId) => {
         if (!window.confirm('Are you sure you want to delete this project?')) {
