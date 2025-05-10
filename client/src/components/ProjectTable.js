@@ -243,28 +243,26 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
       case 'actions':
         return (
           <div className="project-actions">
-            <Link to={`/projects/${project.project_id}`} className="action-button view">
+            <Link to={`/projects/${project.project_id}`} className="action-button view" title="View Project">
               <EditIcon />
-              View
             </Link>
             
             {/* Add View Transfer button for purchased projects */}
             {project.source === 'purchased' && (
-              <Link to={`/projects/${project.project_id}/transfer`} className="action-button transfer">
+              <Link to={`/projects/${project.project_id}/transfer`} className="action-button transfer" title="View Transfer Status">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                Transfer Status
               </Link>
             )}
             
             <button 
               onClick={() => onDelete(project.project_id)} 
               className="action-button delete"
+              title="Delete Project"
             >
               <DeleteIcon />
-              Delete
             </button>
           </div>
         );

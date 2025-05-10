@@ -212,18 +212,6 @@ function MarketplacePage() {
                         {processingPaymentId === project.project_id ? 'Processing...' : 
                          isOwnProject ? 'Your Project' : 'Buy Now'}
                     </button>
-                    
-                    {/* Debug button - only show in development */}
-                    {ENABLE_DEBUG && !isOwnProject && (
-                        <button 
-                            onClick={() => handleDebugPurchase(project.project_id)}
-                            disabled={processingPaymentId === project.project_id}
-                            className="debug-button"
-                            title="Debug: Transfer Without Payment"
-                        >
-                            Debug Buy
-                        </button>
-                    )}
                 </div>
             )
         };

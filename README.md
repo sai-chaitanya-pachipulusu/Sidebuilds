@@ -12,6 +12,41 @@ A platform for tracking, sharing, and selling side projects. Built with React, N
 - 🌓 Dark/light theme support
 - 📱 Fully responsive design
 
+## Project Transfer System
+
+The SideProject Tracker includes a comprehensive project transfer system for handling the purchase and transfer of projects:
+
+### Purchase Workflow
+
+1. **Buying a Project**: Users can purchase projects through the marketplace using Stripe integration
+2. **Payment Processing**: The system handles payments with a 5% commission fee
+3. **Post-Purchase UI**: Purchased projects appear in the buyer's dashboard with distinct highlighting
+
+### Transfer Process
+
+The transfer process is semi-manual and includes the following steps:
+
+1. **Transfer Status Tracking**: A dedicated transfer status page for each purchased project
+2. **Transfer Checklist**: Three key transfer components tracked individually:
+   - Code Repository Access
+   - Domain Transfer
+   - Assets & Documentation
+
+### Verification Period
+
+- All purchased projects have a 7-day verification period
+- During this time, buyers can confirm all project assets have been properly transferred
+- A visual countdown timer shows the remaining verification days
+
+### UI Elements
+
+- **Dashboard Indicators**: Recently purchased projects are highlighted
+- **Transfer Status Button**: Quick access to view transfer details from the dashboard
+- **Status Badges**: Clear pending/complete status indicators for each transfer item
+- **Seller Contact**: Direct access to seller's contact information
+
+To view the transfer status of a purchased project, click the "Transfer Status" button in your dashboard.
+
 ## Tech Stack
 
 ### Frontend
