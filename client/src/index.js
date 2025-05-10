@@ -21,6 +21,21 @@ console.log('Stripe configuration status:', {
   source: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 'environment' : 'fallback'
 });
 
+// For development debugging - expose utils globally if not in production
+if (process.env.NODE_ENV !== 'production') {
+  // Import dynamic modules for debugging
+  import('./utils/test-transfer.js')
+    .then(module => {
+      // Expose the debug functions to the window object
+      window.debugUtils = {
+        testProjectTransfer: module.testProjectTransfer,
+        runDebugTransfer: module.runDebugTransfer
+      };
+      console.log('Debug utilities loaded. Available as window.debugUtils');
+    })
+    .catch(err => console.error('Failed to load debug utilities:', err));
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

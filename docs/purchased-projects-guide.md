@@ -1,6 +1,6 @@
 # Purchased Projects & Seller Certificates Guide
 
-This document describes how the SideBuilds platform handles purchased projects and seller certificates.
+This document describes how the SideBuilds platform handles purchased projects, seller certificates, and the transfer process.
 
 ## Overview
 
@@ -147,6 +147,83 @@ Potential enhancements for future versions:
 - Blockchain-based certificate verification
 - Integration with social media for sharing achievements
 - Analytics dashboard for sellers with certificate metrics
+
+## Project Transfer Process
+
+When a project is purchased, a semi-automated transfer process begins to ensure smooth handover of all project assets from seller to buyer.
+
+### Transfer Process Overview
+
+1. **Immediate Ownership Update**: When a purchase is completed, the project ownership is immediately updated in the database and appears in the buyer's dashboard marked as "Purchased".
+
+2. **Semi-Manual Transfer Coordination**: The actual transfer of code, domain, and other assets follows a coordinated process between buyer and seller, facilitated by the platform.
+
+3. **Transfer Status Tracking**: Both buyer and seller can track the status of transfers in their dashboards, with clear indicators for what has been transferred and what is pending.
+
+### Asset Transfer Details
+
+#### Code Transfer
+
+The code transfer process typically includes:
+
+- **GitHub Repository Transfer**: If the project is on GitHub, the seller transfers repository ownership to the buyer.
+- **Private Repository Access**: The seller adds the buyer as a collaborator to any private repositories.
+- **Code Archive Download**: For projects not on GitHub, the seller provides a full archive of the codebase.
+- **Deployment Instructions**: Documentation on how to deploy and run the project.
+
+#### Domain Transfer
+
+Domain transfers follow standard domain registrar processes:
+
+1. Seller initiates the domain transfer from their registrar account.
+2. Seller provides the authorization/EPP code to the buyer.
+3. Buyer initiates the transfer at their chosen registrar.
+4. Both parties confirm the transfer through their respective registrars.
+5. DNS settings are configured by the buyer to point to their hosting.
+
+#### Additional Assets
+
+Other assets that may be transferred include:
+
+- Design files (Figma, Sketch, PSD, etc.)
+- Documentation and user guides
+- Configuration files and credentials
+- Third-party service accounts (when applicable)
+- Analytics and SEO data
+
+### Verification Period
+
+After all assets are transferred:
+
+1. The buyer has a 7-day verification period to test the project and ensure everything works as advertised.
+2. During this period, the seller should be available to provide basic support and answer questions.
+3. If significant issues are found that don't match the project description, the buyer may be eligible for a refund.
+
+### Transfer Timeline
+
+Typical timelines for the transfer process:
+
+- **Initial Contact**: Within 24 hours of purchase
+- **Code Transfer**: 1-3 days
+- **Domain Transfer**: 5-7 days (depends on registrar policies)
+- **Additional Assets**: 1-2 days
+- **Verification Period**: 7 days after all transfers complete
+
+### Best Practices for Buyers
+
+- Keep all communication with the seller documented through the platform.
+- Create a checklist of all expected assets before the transfer begins.
+- Test the project functionality as soon as transfers are complete.
+- Follow provided documentation to set up the project correctly.
+- Ask questions if anything is unclear during the transfer process.
+
+### Best Practices for Sellers
+
+- Prepare all project assets before listing the project for sale.
+- Respond promptly to buyer inquiries after purchase.
+- Provide clear instructions for each transfer step.
+- Create thorough documentation about the project setup and features.
+- Be available during the verification period to provide support.
 
 ## Related Documentation
 

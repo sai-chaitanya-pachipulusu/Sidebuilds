@@ -130,6 +130,20 @@ function PurchaseSuccessPage() {
         <div className="next-steps">
           <h3>Next Steps</h3>
           <p>The seller has been notified of your purchase and will receive {parseFloat(transaction.seller_amount).toFixed(2)} USD (minus any payment processor fees). They will contact you with further instructions for transferring project assets.</p>
+          
+          <div className="transfer-info">
+            <h4>Transfer Process</h4>
+            <p>Here's what to expect over the next few days:</p>
+            <ol className="transfer-steps">
+              <li><strong>Initial Contact:</strong> The seller will reach out within 24 hours to coordinate the transfer.</li>
+              <li><strong>Code Transfer:</strong> Repository access or code files will be shared via GitHub transfer or download link.</li>
+              <li><strong>Domain Transfer:</strong> If applicable, you'll receive instructions to initiate the domain transfer through the registrar.</li>
+              <li><strong>Additional Assets:</strong> Any design files, documentation, and credentials will be provided.</li>
+              <li><strong>Verification Period:</strong> Once transfers are complete, you'll have 7 days to verify everything works as expected.</li>
+            </ol>
+            <p>You can track the progress of each transfer step in your dashboard.</p>
+          </div>
+          
           <p>As the marketplace facilitator, SideBuilds takes a small {((parseFloat(transaction.commission_amount) / parseFloat(transaction.amount)) * 100).toFixed(0)}% fee to maintain our platform.</p>
           <p>You can contact the seller directly at <strong>{transaction.seller_email}</strong> to expedite the transfer process.</p>
         </div>

@@ -242,23 +242,30 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
         return project.buy_action || null;
       case 'actions':
         return (
-          <div className="action-cell">
-            <Link 
-              to={`/projects/${project.project_id}`}
-              className="action-btn"
-              title="Edit project"
-            >
+          <div className="project-actions">
+            <Link to={`/projects/${project.project_id}`} className="action-button view">
               <EditIcon />
+              View
             </Link>
-            {onDelete && (
-              <button
-                onClick={() => onDelete(project.project_id)}
-                className="action-btn"
-                title="Delete project"
-              >
-                <DeleteIcon />
-              </button>
+            
+            {/* Add View Transfer button for purchased projects */}
+            {project.source === 'purchased' && (
+              <Link to={`/projects/${project.project_id}/transfer`} className="action-button transfer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Transfer Status
+              </Link>
             )}
+            
+            <button 
+              onClick={() => onDelete(project.project_id)} 
+              className="action-button delete"
+            >
+              <DeleteIcon />
+              Delete
+            </button>
           </div>
         );
       default:

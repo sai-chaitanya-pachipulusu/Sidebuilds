@@ -179,6 +179,36 @@
   height: 200px;
 }
 
+.transfer-info {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid var(--primary-color);
+}
+
+.transfer-info h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.transfer-steps {
+  margin: 1rem 0 1rem 1.5rem;
+  padding: 0;
+}
+
+.transfer-steps li {
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.transfer-steps strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .purchase-success-page {
     padding: 1rem;

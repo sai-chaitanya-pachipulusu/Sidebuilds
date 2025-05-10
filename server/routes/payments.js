@@ -334,8 +334,17 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
 const webhookHandler = async (req, res) => {
     // Check if webhook secret is configured
     if (!endpointSecret) {
-        console.error('ERROR: No webhook secret configured - check your STRIPE_WEBHOOK_SECRET env variable');
-        return res.status(500).send('Webhook secret is not configured');
+        console.warn('WARNING: No webhook secret configured - running in DEV mode with simplified event handling');
+        // In development mode, we'll just use the event from the request body
+        const event = req.body;
+        console.log(`DEV mode webhook event type: ${event.type}`);
+        
+        // Process the event even without signature verification
+        if (event.type === 'checkout.session.completed') {
+            await processCheckoutCompleted(event.data.object);
+        }
+        
+        return res.json({ received: true });
     }
 
     const sig = req.headers['stripe-signature'];
@@ -365,170 +374,7 @@ const webhookHandler = async (req, res) => {
     switch (event.type) {
         case 'checkout.session.completed':
             const session = event.data.object;
-            console.log(`Processing checkout.session.completed. Session ID: ${session.id}`);
-            try {
-                // Get transaction details from database
-                const transactionResult = await db.query(
-                    'SELECT * FROM project_transactions WHERE stripe_session_id = $1',
-                    [session.id]
-                );
-                
-                if (transactionResult.rows.length === 0) {
-                    console.error(`No transaction found for session ID: ${session.id}`);
-                    return res.status(200).json({ received: true });
-                }
-                
-                const transaction = transactionResult.rows[0];
-                
-                // Get seller info from database
-                const sellerResult = await db.query(
-                    'SELECT * FROM users WHERE user_id = $1',
-                    [transaction.seller_id]
-                );
-                
-                if (sellerResult.rows.length === 0) {
-                    throw new Error('Seller not found');
-                }
-                
-                const seller = sellerResult.rows[0];
-                
-                // Check if seller has a Stripe Connect account
-                if (seller.stripe_account_id) {
-                    // Transfer funds to the seller's Stripe account
-                    const transfer = await stripe.transfers.create({
-                        amount: Math.round(transaction.seller_amount * 100), // Convert to cents
-                        currency: 'usd',
-                        destination: seller.stripe_account_id,
-                        transfer_group: `project-${transaction.project_id}`,
-                        source_transaction: session.payment_intent,
-                        metadata: {
-                            transaction_id: transaction.transaction_id,
-                            project_id: transaction.project_id,
-                            buyer_id: transaction.buyer_id,
-                            seller_id: transaction.seller_id
-                        }
-                    });
-                    
-                    // Record the transfer in the database
-                    await db.query(
-                        'UPDATE project_transactions SET transfer_id = $1, transfer_status = $2 WHERE transaction_id = $3',
-                        [transfer.id, 'completed', transaction.transaction_id]
-                    );
-                    
-                    console.log(`Transfer ${transfer.id} created successfully for seller ${seller.user_id}`);
-                } else {
-                    // Record that a manual payout is needed
-                    await db.query(
-                        'UPDATE project_transactions SET transfer_status = $1, notes = $2 WHERE transaction_id = $3',
-                        ['pending_manual', 'Seller has no Stripe Connect account. Manual payout required.', transaction.transaction_id]
-                    );
-                    
-                    console.log(`Manual payout needed for seller ${seller.user_id} - no Stripe Connect account`);
-                    
-                    // Send email notification to admin about manual payout requirement
-                    // Implementation depends on your email service
-                    // sendAdminNotification('manual_payout_required', { transaction, seller });
-                }
-                
-                // Get project details
-                const projectResult = await db.query(
-                    'SELECT * FROM projects WHERE project_id = $1',
-                    [transaction.project_id]
-                );
-                
-                if (projectResult.rows.length === 0) {
-                    throw new Error('Project not found');
-                }
-                
-                const project = projectResult.rows[0];
-                
-                // Get buyer details for notifications
-                const buyerResult = await db.query(
-                    'SELECT * FROM users WHERE user_id = $1',
-                    [transaction.buyer_id]
-                );
-                
-                if (buyerResult.rows.length === 0) {
-                    throw new Error('Buyer not found');
-                }
-                
-                const buyer = buyerResult.rows[0];
-                
-                // Create a transfer record in the project_transfers table
-                const transferResult = await db.query(
-                    `INSERT INTO project_transfers 
-                    (project_id, transaction_id, status, transfer_type, assets_transferred, certificate_generated)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING transfer_id`,
-                    [transaction.project_id, transaction.transaction_id, 'pending', 'full_ownership', false, false]
-                );
-                
-                const transferId = transferResult.rows[0].transfer_id;
-
-                // Update transaction status
-                await db.query(
-                    'UPDATE project_transactions SET status = $1, payment_id = $2 WHERE stripe_session_id = $3',
-                    ['completed', session.payment_intent, session.id]
-                );
-
-                // Mark the project as sold and transfer ownership
-                await db.query(
-                    `UPDATE projects 
-                    SET is_for_sale = FALSE, 
-                        owner_id = $1, 
-                        previous_owner_id = $2, 
-                        transfer_date = NOW(),
-                        purchased_at = NOW(),
-                        source = 'purchased'
-                    WHERE project_id = $3`,
-                    [transaction.buyer_id, transaction.seller_id, transaction.project_id]
-                );
-                
-                // Generate a unique verification code for the certificate
-                const verificationCode = crypto
-                    .randomBytes(16)
-                    .toString('hex')
-                    .toUpperCase();
-                
-                // Create a seller certificate
-                await db.query(
-                    `INSERT INTO seller_certificates
-                    (seller_id, project_id, transaction_id, buyer_id, sale_amount, verification_code)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING certificate_id`,
-                    [
-                        transaction.seller_id,
-                        transaction.project_id,
-                        transaction.transaction_id,
-                        transaction.buyer_id,
-                        transaction.amount,
-                        verificationCode
-                    ]
-                );
-                
-                // Send notifications to buyer and seller
-                // Implementation depends on your email/notification service
-                /* 
-                sendEmail(buyer.email, 'Purchase Successful', {
-                    project_name: project.name,
-                    amount: transaction.amount,
-                    next_steps: 'You will receive transfer details within 24 hours.'
-                });
-                
-                sendEmail(seller.email, 'Your Project Was Sold', {
-                    project_name: project.name,
-                    amount: transaction.seller_amount,
-                    fee: transaction.commission_amount,
-                    payout_status: seller.stripe_account_id ? 'automatic' : 'manual',
-                    next_steps: 'Please transfer project assets within 24 hours.'
-                });
-                */
-                
-                console.log(`Project ${transaction.project_id} sold successfully`);
-                
-            } catch (error) {
-                console.error('Error processing checkout completion:', error);
-            }
+            await processCheckoutCompleted(session);
             break;
         default:
             // Handle other event types
@@ -539,6 +385,160 @@ const webhookHandler = async (req, res) => {
     // Return a 200 response to acknowledge receipt of the event
     res.json({ received: true });
 };
+
+// Function to process checkout.session.completed events
+async function processCheckoutCompleted(session) {
+    console.log(`Processing checkout.session.completed. Session ID: ${session.id}`);
+    try {
+        // Get transaction details from database
+        const transactionResult = await db.query(
+            'SELECT * FROM project_transactions WHERE stripe_session_id = $1',
+            [session.id]
+        );
+        
+        if (transactionResult.rows.length === 0) {
+            console.error(`No transaction found for session ID: ${session.id}`);
+            return;
+        }
+        
+        const transaction = transactionResult.rows[0];
+        console.log(`Found transaction for session ${session.id}:`, transaction);
+        
+        // Get seller info from database
+        const sellerResult = await db.query(
+            'SELECT * FROM users WHERE user_id = $1',
+            [transaction.seller_id]
+        );
+        
+        if (sellerResult.rows.length === 0) {
+            throw new Error('Seller not found');
+        }
+        
+        const seller = sellerResult.rows[0];
+        
+        // Check if seller has a Stripe Connect account
+        if (seller.stripe_account_id) {
+            // Transfer funds to the seller's Stripe account
+            const transfer = await stripe.transfers.create({
+                amount: Math.round(transaction.seller_amount * 100), // Convert to cents
+                currency: 'usd',
+                destination: seller.stripe_account_id,
+                transfer_group: `project-${transaction.project_id}`,
+                source_transaction: session.payment_intent,
+                metadata: {
+                    transaction_id: transaction.transaction_id,
+                    project_id: transaction.project_id,
+                    buyer_id: transaction.buyer_id,
+                    seller_id: transaction.seller_id
+                }
+            });
+            
+            // Record the transfer in the database
+            await db.query(
+                'UPDATE project_transactions SET transfer_id = $1, transfer_status = $2 WHERE transaction_id = $3',
+                [transfer.id, 'completed', transaction.transaction_id]
+            );
+            
+            console.log(`Transfer ${transfer.id} created successfully for seller ${seller.user_id}`);
+        } else {
+            // Record that a manual payout is needed
+            await db.query(
+                'UPDATE project_transactions SET transfer_status = $1, notes = $2 WHERE transaction_id = $3',
+                ['pending_manual', 'Seller has no Stripe Connect account. Manual payout required.', transaction.transaction_id]
+            );
+            
+            console.log(`Manual payout needed for seller ${seller.user_id} - no Stripe Connect account`);
+        }
+        
+        // Get project details
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [transaction.project_id]
+        );
+        
+        if (projectResult.rows.length === 0) {
+            throw new Error('Project not found');
+        }
+        
+        const project = projectResult.rows[0];
+        console.log(`Found project ${project.project_id}: ${project.name}`);
+        
+        // Get buyer details for notifications
+        const buyerResult = await db.query(
+            'SELECT * FROM users WHERE user_id = $1',
+            [transaction.buyer_id]
+        );
+        
+        if (buyerResult.rows.length === 0) {
+            throw new Error('Buyer not found');
+        }
+        
+        const buyer = buyerResult.rows[0];
+        
+        // Create a transfer record in the project_transfers table
+        const transferResult = await db.query(
+            `INSERT INTO project_transfers 
+            (project_id, transaction_id, status, transfer_type, assets_transferred, certificate_generated)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING transfer_id`,
+            [transaction.project_id, transaction.transaction_id, 'pending', 'full_ownership', false, false]
+        );
+        
+        const transferId = transferResult.rows[0].transfer_id;
+        console.log(`Created transfer record with ID: ${transferId}`);
+
+        // Update transaction status
+        await db.query(
+            'UPDATE project_transactions SET status = $1, payment_id = $2 WHERE stripe_session_id = $3',
+            ['completed', session.payment_intent, session.id]
+        );
+        console.log(`Updated transaction status to 'completed'`);
+
+        // Mark the project as sold and transfer ownership
+        const updateResult = await db.query(
+            `UPDATE projects 
+            SET is_for_sale = FALSE, 
+                owner_id = $1, 
+                previous_owner_id = $2, 
+                transfer_date = NOW(),
+                purchased_at = NOW(),
+                source = 'purchased'
+            WHERE project_id = $3
+            RETURNING project_id, name, owner_id`,
+            [transaction.buyer_id, transaction.seller_id, transaction.project_id]
+        );
+        
+        console.log(`Updated project ownership. Result:`, updateResult.rows[0]);
+        
+        // Generate a unique verification code for the certificate
+        const verificationCode = crypto
+            .randomBytes(16)
+            .toString('hex')
+            .toUpperCase();
+        
+        // Create a seller certificate
+        const certificateResult = await db.query(
+            `INSERT INTO seller_certificates
+            (seller_id, project_id, transaction_id, buyer_id, sale_amount, verification_code)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING certificate_id`,
+            [
+                transaction.seller_id,
+                transaction.project_id,
+                transaction.transaction_id,
+                transaction.buyer_id,
+                transaction.amount,
+                verificationCode
+            ]
+        );
+        
+        console.log(`Created seller certificate with ID: ${certificateResult.rows[0].certificate_id}`);
+        console.log(`Project ${transaction.project_id} purchased successfully by user ${transaction.buyer_id}`);
+        
+    } catch (error) {
+        console.error('Error processing checkout completion:', error);
+    }
+}
 
 // --- Get Transaction Status ---
 // GET /api/payments/status/:sessionId
@@ -899,6 +899,157 @@ if (process.env.NODE_ENV !== 'production') {
         }
     });
 }
+
+// --- DEBUG ONLY: Manual Transfer Route (FOR DEVELOPMENT ONLY) ---
+// POST /api/payments/debug/transfer-project
+router.post('/debug/transfer-project', authMiddleware, async (req, res) => {
+    // Only enable in development environment
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ error: 'This endpoint is not available in production' });
+    }
+    
+    try {
+        const { projectId, sellerId } = req.body;
+        const buyerId = req.user.id;
+        
+        if (!projectId || !sellerId) {
+            return res.status(400).json({ error: 'projectId and sellerId are required' });
+        }
+        
+        console.log(`DEBUG: Manual project transfer requested. Project: ${projectId}, Seller: ${sellerId}, Buyer: ${buyerId}`);
+        
+        // Verify the project exists and is for sale
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1 AND is_for_sale = TRUE',
+            [projectId]
+        );
+        
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Project not found or not for sale' });
+        }
+        
+        const project = projectResult.rows[0];
+        console.log('DEBUG: Found project for transfer:', project.name);
+        
+        // Prevent buying your own project
+        if (project.owner_id === buyerId) {
+            return res.status(400).json({ error: 'You cannot purchase your own project' });
+        }
+        
+        // Create a mock transaction
+        console.log('DEBUG: Creating mock transaction...');
+        const transactionResult = await db.query(
+            `INSERT INTO project_transactions 
+            (project_id, seller_id, buyer_id, amount, seller_amount, commission_amount, status, stripe_session_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING transaction_id`,
+            [
+                projectId, 
+                sellerId, 
+                buyerId, 
+                project.sale_price || 99.99, 
+                (project.sale_price || 99.99) * 0.95, // 95% to seller
+                (project.sale_price || 99.99) * 0.05, // 5% commission
+                'completed',
+                'debug_session_' + Date.now()
+            ]
+        );
+        
+        const transactionId = transactionResult.rows[0].transaction_id;
+        console.log(`DEBUG: Created transaction ID: ${transactionId}`);
+        
+        // Update the project ownership
+        console.log('DEBUG: Updating project ownership...');
+        const updateResult = await db.query(
+            `UPDATE projects 
+            SET is_for_sale = FALSE, 
+                owner_id = $1, 
+                previous_owner_id = $2, 
+                transfer_date = NOW(),
+                purchased_at = NOW(),
+                source = 'purchased'
+            WHERE project_id = $3
+            RETURNING project_id, name, owner_id, source, purchased_at`,
+            [buyerId, sellerId, projectId]
+        );
+        
+        if (updateResult.rows.length === 0) {
+            throw new Error('Failed to update project ownership');
+        }
+        
+        const updatedProject = updateResult.rows[0];
+        console.log('DEBUG: Project ownership updated:', updatedProject);
+        
+        // Create a transfer record
+        console.log('DEBUG: Creating transfer record...');
+        const transferResult = await db.query(
+            `INSERT INTO project_transfers 
+            (project_id, transaction_id, status, transfer_type, assets_transferred)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING transfer_id`,
+            [projectId, transactionId, 'completed', 'full_ownership', true]
+        );
+        
+        const transferId = transferResult.rows[0].transfer_id;
+        console.log(`DEBUG: Created transfer record ID: ${transferId}`);
+        
+        // Create a certificate
+        console.log('DEBUG: Creating seller certificate...');
+        const verificationCode = require('crypto').randomBytes(16).toString('hex').toUpperCase();
+        const certificateResult = await db.query(
+            `INSERT INTO seller_certificates
+            (seller_id, project_id, transaction_id, buyer_id, sale_amount, verification_code)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING certificate_id`,
+            [sellerId, projectId, transactionId, buyerId, project.sale_price || 99.99, verificationCode]
+        );
+        
+        const certificateId = certificateResult.rows[0].certificate_id;
+        console.log(`DEBUG: Created certificate ID: ${certificateId}`);
+        
+        // Verify the changes are properly applied
+        console.log('DEBUG: Verifying project transfer...');
+        const verifyResult = await db.query(
+            'SELECT owner_id, source, purchased_at FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+        
+        if (verifyResult.rows.length > 0) {
+            const verifiedProject = verifyResult.rows[0];
+            console.log('DEBUG: Verification result:', verifiedProject);
+            
+            if (verifiedProject.owner_id !== buyerId) {
+                console.warn('WARNING: Project ownership transfer might have failed');
+            }
+            
+            if (verifiedProject.source !== 'purchased') {
+                console.warn('WARNING: Project source was not set to "purchased"');
+            }
+            
+            if (!verifiedProject.purchased_at) {
+                console.warn('WARNING: Project purchased_at was not set');
+            }
+        } else {
+            console.warn('WARNING: Could not verify project transfer');
+        }
+        
+        console.log(`DEBUG: Manual project transfer completed. Project ${projectId} transferred to user ${buyerId}.`);
+        
+        return res.json({
+            success: true,
+            message: 'Project transferred successfully',
+            transaction_id: transactionId,
+            project_id: projectId,
+            transfer_id: transferId,
+            certificate_id: certificateId,
+            redirect_url: '/dashboard?purchased=true'
+        });
+        
+    } catch (error) {
+        console.error('ERROR in debug transfer route:', error);
+        return res.status(500).json({ error: 'Server error during manual transfer: ' + error.message });
+    }
+});
 
 // Export both the router and the webhook handler
 module.exports = { router, webhookHandler }; 

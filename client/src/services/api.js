@@ -218,4 +218,34 @@ export const getUserTransactions = async () => {
     return response.data;
 };
 
+// Transfer status API calls
+export const getTransferStatus = async (projectId) => {
+    try {
+        const response = await apiClient.get(`/payments/transfers/${projectId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching transfer status:', error);
+        throw error.response?.data || error;
+    }
+};
+
+export const updateTransferStatus = async (projectId, statusData) => {
+    try {
+        const response = await apiClient.post(`/payments/transfers/${projectId}/update`, statusData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating transfer status:', error);
+        throw error.response?.data || error;
+    }
+};
+
+// Debug API calls (development only)
+export const debugTransferProject = async (projectId, sellerId) => {
+    const response = await apiClient.post('/payments/debug/transfer-project', { 
+        projectId, 
+        sellerId
+    });
+    return response.data;
+};
+
 export default apiClient; // Export the configured instance if needed elsewhere 

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { getMarketplaceProjects } from '../services/api';
+import { getMarketplaceProjects, debugTransferProject } from '../services/api';
 import apiClient from '../services/api';
 import { useStripe } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext'; // Import auth context to get current user
 import ProjectTable from '../components/ProjectTable';
 import { createAndRedirectToCheckout } from '../utils/stripe-helper';
+import { useNavigate } from 'react-router-dom';
 import './MarketplacePage.css';
+
+// Set the dev flag - should be false in production builds
+const ENABLE_DEBUG = true; // process.env.NODE_ENV !== 'production';
 
 // Icons
 
@@ -17,6 +21,7 @@ function MarketplacePage() {
     const [checkoutError, setCheckoutError] = useState('');
     const [processingPaymentId, setProcessingPaymentId] = useState(null);
     const { user } = useAuth(); // Get the current user
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchMarketplaceProjects = async () => {
@@ -129,6 +134,67 @@ function MarketplacePage() {
         }
     };
 
+    const handleDebugPurchase = async (projectId) => {
+        if (!ENABLE_DEBUG) return;
+        
+        try {
+            // Find the project
+            const project = projects.find(p => p.project_id === projectId);
+            if (!project) {
+                console.error('Project not found for debug purchase');
+                setCheckoutError("Project not found");
+                return;
+            }
+            
+            setProcessingPaymentId(projectId);
+            console.log('Initiating debug transfer for project:', project);
+            console.log('Project details:', {
+                id: project.project_id,
+                name: project.name,
+                owner_id: project.owner_id,
+                price: project.sale_price
+            });
+            
+            // Additional validation before calling the API
+            if (!project.owner_id) {
+                console.error('Project has no owner_id', project);
+                setCheckoutError("Project has no seller information");
+                setProcessingPaymentId(null);
+                return;
+            }
+            
+            // Call the debug endpoint to transfer the project without payment
+            console.log(`Calling debugTransferProject with projectId=${projectId}, sellerId=${project.owner_id}`);
+            const result = await debugTransferProject(projectId, project.owner_id);
+            console.log('Debug transfer result:', result);
+            
+            // Show success message
+            setCheckoutError('');
+            
+            // Redirect to dashboard with purchased flag
+            navigate('/dashboard?purchased=true');
+        } catch (error) {
+            console.error('Debug transfer failed:', error);
+            // Provide detailed error info
+            let errorMessage = 'Debug transfer failed';
+            
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+                errorMessage = error.response.data?.error || error.response.data?.message || 'Server error';
+            } else if (error.request) {
+                console.error('No response received:', error.request);
+                errorMessage = 'No response from server';
+            } else {
+                errorMessage = error.message || 'Unknown error';
+            }
+            
+            setCheckoutError(errorMessage);
+        } finally {
+            setProcessingPaymentId(null);
+        }
+    };
+
     // Add Buy Now action buttons to the table
     const projectsWithActions = projects.map(project => {
         const isOwnProject = user && project.owner_id === user.id;
@@ -136,15 +202,29 @@ function MarketplacePage() {
         return {
             ...project,
             buy_action: (
-                <button 
-                    onClick={() => handlePurchase(project.project_id)}
-                    disabled={!stripe || processingPaymentId === project.project_id || isOwnProject}
-                    className={`buy-button ${isOwnProject ? 'disabled' : ''}`}
-                    title={isOwnProject ? "You cannot purchase your own project" : ""}
-                > 
-                    {processingPaymentId === project.project_id ? 'Processing...' : 
-                     isOwnProject ? 'Your Project' : 'Buy Now'}
-                </button>
+                <div className="action-buttons">
+                    <button 
+                        onClick={() => handlePurchase(project.project_id)}
+                        disabled={!stripe || processingPaymentId === project.project_id || isOwnProject}
+                        className={`buy-button ${isOwnProject ? 'disabled' : ''}`}
+                        title={isOwnProject ? "You cannot purchase your own project" : ""}
+                    > 
+                        {processingPaymentId === project.project_id ? 'Processing...' : 
+                         isOwnProject ? 'Your Project' : 'Buy Now'}
+                    </button>
+                    
+                    {/* Debug button - only show in development */}
+                    {ENABLE_DEBUG && !isOwnProject && (
+                        <button 
+                            onClick={() => handleDebugPurchase(project.project_id)}
+                            disabled={processingPaymentId === project.project_id}
+                            className="debug-button"
+                            title="Debug: Transfer Without Payment"
+                        >
+                            Debug Buy
+                        </button>
+                    )}
+                </div>
             )
         };
     });
@@ -178,22 +258,22 @@ function MarketplacePage() {
                     <div className="step">
                         <div className="step-number">1</div>
                         <h4>Purchase Project</h4>
-                        <p>Complete secure payment via our Stripe checkout process.</p>
+                        <p>Complete secure payment via our Stripe checkout process. Ownership is immediately updated in your dashboard.</p>
                     </div>
                     <div className="step">
                         <div className="step-number">2</div>
                         <h4>Transfer Coordination</h4>
-                        <p>We coordinate code, domain, and asset transfers within 24 hours.</p>
+                        <p>Within 24 hours, we coordinate the transfer of code, domain, and assets between you and the seller. All transfers are tracked in your dashboard.</p>
                     </div>
                     <div className="step">
                         <div className="step-number">3</div>
                         <h4>Verification Period</h4>
-                        <p>7-day verification period to ensure everything works as advertised.</p>
+                        <p>7-day verification period begins once transfers are complete, ensuring everything works as advertised. Seller support is available during this time.</p>
                     </div>
                     <div className="step">
                         <div className="step-number">4</div>
                         <h4>Final Handover</h4>
-                        <p>Full ownership transfer complete. Enjoy your new project!</p>
+                        <p>After verification, the sale is finalized with a transfer certificate. You'll have full ownership and control of all project assets.</p>
                     </div>
                 </div>
             </div>
@@ -203,7 +283,23 @@ function MarketplacePage() {
                 
                 <div className="faq-item">
                     <h4>What happens after I purchase?</h4>
-                    <p>After purchase, you'll receive a confirmation email with next steps. Our transfer team will contact you within 24 hours to begin the transfer process.</p>
+                    <p>After purchase, you'll receive a confirmation email with next steps. Our transfer team will contact you within 24 hours to begin the transfer process. The project will immediately appear in your dashboard marked as "Purchased".</p>
+                </div>
+                
+                <div className="faq-item">
+                    <h4>How are project assets transferred?</h4>
+                    <p>The transfer process is semi-manual and coordinated between buyer and seller:</p>
+                    <ul className="faq-list">
+                        <li><strong>Code Transfer:</strong> The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</li>
+                        <li><strong>Domain Transfer:</strong> Domain ownership is transferred through the domain registrar (GoDaddy, Namecheap, etc.) using their standard transfer process.</li>
+                        <li><strong>Design Assets:</strong> Additional assets like design files, documentation, and credentials are shared via secure file transfer.</li>
+                    </ul>
+                    <p>You can track the progress of these transfers in your dashboard.</p>
+                </div>
+                
+                <div className="faq-item">
+                    <h4>Is there a verification period?</h4>
+                    <p>Yes, a 7-day verification period begins once all assets are transferred. During this time, you can confirm everything works as advertised and request support from the seller if needed. If significant issues are discovered, you may be eligible for a refund.</p>
                 </div>
                 
                 <div className="faq-item">
@@ -217,8 +313,8 @@ function MarketplacePage() {
                 </div>
                 
                 <div className="faq-item">
-                    <h4>Can I transfer the domain name?</h4>
-                    <p>Yes, domain transfer is included when applicable. We'll guide you through the transfer process to ensure a smooth transition.</p>
+                    <h4>How long does the full transfer process take?</h4>
+                    <p>While ownership is updated immediately in your dashboard, the complete transfer typically takes 2-7 days depending on the complexity of the project and responsiveness of both parties.</p>
                 </div>
             </div>
         </div>

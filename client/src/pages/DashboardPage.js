@@ -21,6 +21,7 @@ function DashboardPage() {
     const [error, setError] = useState('');
     const [deleteError, setDeleteError] = useState('');
     const [hasNewPurchase, setHasNewPurchase] = useState(false);
+    const [refreshCounter, setRefreshCounter] = useState(0);
     // eslint-disable-next-line no-unused-vars
     const [deletingId, setDeletingId] = useState(null);
 
@@ -41,6 +42,9 @@ function DashboardPage() {
                 position: "top"
             });
             
+            // Trigger a refresh
+            setRefreshCounter(prev => prev + 1);
+            
             // Clear the URL parameter
             navigate('/dashboard', { replace: true });
         }
@@ -49,9 +53,12 @@ function DashboardPage() {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
+                console.log('Fetching user projects...');
                 setError('');
                 setLoading(true);
                 const userProjects = await getProjects();
+                
+                console.log(`Received ${userProjects.length} projects:`, userProjects);
                 
                 // Sort projects to show recently purchased ones first
                 userProjects.sort((a, b) => {
@@ -65,7 +72,34 @@ function DashboardPage() {
                     return new Date(bDate) - new Date(aDate);
                 });
                 
+                // Log projects after sorting
+                console.log('Sorted projects (purchased first):', 
+                    userProjects.map(p => ({ 
+                        name: p.name, 
+                        source: p.source, 
+                        purchased_at: p.purchased_at,
+                        updated_at: p.updated_at
+                    }))
+                );
+                
                 setProjects(userProjects);
+                
+                // If we just purchased something, check if it shows up
+                if (hasNewPurchase) {
+                    const purchasedProjects = userProjects.filter(p => p.source === 'purchased');
+                    console.log(`Found ${purchasedProjects.length} purchased projects:`, purchasedProjects);
+                    
+                    if (purchasedProjects.length > 0) {
+                        // Reset the purchase flag
+                        setHasNewPurchase(false);
+                    } else {
+                        // If we didn't find any purchased projects but should have, try refreshing again
+                        console.log('No purchased projects found, will retry in 2 seconds...');
+                        setTimeout(() => {
+                            setRefreshCounter(prev => prev + 1);
+                        }, 2000);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to fetch projects:", err);
                 setError(err.message || 'Failed to load projects.');
@@ -79,7 +113,7 @@ function DashboardPage() {
         };
 
         fetchProjects();
-    }, [logout, navigate, hasNewPurchase]); // Add hasNewPurchase dependency
+    }, [logout, navigate, hasNewPurchase, refreshCounter]); // Add refreshCounter as a dependency
 
     const handleDelete = async (projectId) => {
         if (!window.confirm('Are you sure you want to delete this project?')) {
@@ -110,6 +144,10 @@ function DashboardPage() {
             setDeletingId(null);
         }
     };
+
+    // Add this after setting projects state
+    const purchasedProjects = projects.filter(p => p.source === 'purchased');
+    const hasRecentPurchases = purchasedProjects.length > 0 && hasNewPurchase;
 
     return (
         <Container maxW="1200px" pt="80px" px={6}>
@@ -157,6 +195,33 @@ function DashboardPage() {
                     </Button>
                 </Flex>
 
+                {hasRecentPurchases && (
+                    <Box 
+                        bg="blue.50" 
+                        color="blue.800" 
+                        p={4} 
+                        borderRadius="md" 
+                        mb={6}
+                        borderLeft="4px solid"
+                        borderColor="blue.500"
+                    >
+                        <Heading size="sm" mb={2}>Project Transfer In Progress</Heading>
+                        <Text mb={3}>
+                            You've recently purchased {purchasedProjects.length > 1 ? `${purchasedProjects.length} projects` : 'a project'}. 
+                            Check the transfer status to see progress on code, domain and asset transfers.
+                        </Text>
+                        <Button 
+                            as={RouterLink} 
+                            to={`/projects/${purchasedProjects[0].project_id}/transfer`}
+                            size="sm"
+                            colorScheme="blue"
+                            variant="outline"
+                        >
+                            View Transfer Status
+                        </Button>
+                    </Box>
+                )}
+                
                 {deleteError && (
                     <Alert status="error" mb={4} borderRadius="md">
                         <AlertIcon />
