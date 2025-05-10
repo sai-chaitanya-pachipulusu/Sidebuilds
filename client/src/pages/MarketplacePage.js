@@ -211,11 +211,20 @@ function MarketplacePage() {
                 <div className="faq-item">
                     <h4>How are project assets transferred?</h4>
                     <p>The transfer process is semi-manual and coordinated between buyer and seller:</p>
-                    <ul className="faq-list">
-                        <li><strong>Code Transfer:</strong> The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</li>
-                        <li><strong>Domain Transfer:</strong> Domain ownership is transferred through the domain registrar (GoDaddy, Namecheap, etc.) using their standard transfer process.</li>
-                        <li><strong>Design Assets:</strong> Additional assets like design files, documentation, and credentials are shared via secure file transfer.</li>
-                    </ul>
+                    <div className="transfer-steps">
+                        <div className="transfer-step">
+                            <span className="step-label">Code Transfer:</span> 
+                            <span className="step-text">The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</span>
+                        </div>
+                        <div className="transfer-step">
+                            <span className="step-label">Domain Transfer:</span> 
+                            <span className="step-text">Domain ownership is transferred through the domain registrar (GoDaddy, Namecheap, etc.) using their standard transfer process.</span>
+                        </div>
+                        <div className="transfer-step">
+                            <span className="step-label">Design Assets:</span> 
+                            <span className="step-text">Additional assets like design files, documentation, and credentials are shared via secure file transfer.</span>
+                        </div>
+                    </div>
                     <p>You can track the progress of these transfers in your dashboard.</p>
                 </div>
                 
