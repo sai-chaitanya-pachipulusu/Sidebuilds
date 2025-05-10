@@ -104,60 +104,52 @@
 /* Action buttons */
 .project-actions {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.8rem;
   justify-content: flex-end;
+  align-items: center;
 }
 
-.action-button {
+/* Remove old action button styles and replace with direct icon styles */
+.table-icon {
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  font-size: 0.8rem;
-  border-radius: 4px;
-  background-color: transparent;
-  transition: all 0.2s;
-  cursor: pointer;
-  text-decoration: none;
-  border: none;
-  margin: 0 3px;
 }
 
-.action-button svg {
+.table-icon svg {
+  width: 18px;
+  height: 18px;
   stroke-width: 2;
   fill: none;
   stroke: currentColor;
-  width: 20px;
-  height: 20px;
 }
 
-.action-button.view {
-  color: #2a69ac;
+.edit-icon {
+  color: #2563eb;
 }
 
-.action-button.view:hover {
-  color: #1a52a4;
-  transform: scale(1.15);
+.edit-icon:hover {
+  color: #1d4ed8;
+  transform: scale(1.2);
 }
 
-.action-button.transfer {
+.transfer-icon {
   color: #805ad5;
 }
 
-.action-button.transfer:hover {
+.transfer-icon:hover {
   color: #6b46c1;
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 
-.action-button.delete {
+.delete-icon {
   color: #e53e3e;
 }
 
-.action-button.delete:hover {
+.delete-icon:hover {
   color: #c53030;
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 
 /* Create a responsive table container */

@@ -290,22 +290,23 @@
 }
 
 .faq-list li {
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--secondary-text);
-  line-height: 1.5;
-  background-color: transparent;
-  padding: 0.5rem 0.5rem 0.5rem 2rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  line-height: 1.6;
+  padding-left: 1.75rem;
   position: relative;
+  background: transparent;
 }
 
 .faq-list li:before {
   content: "•";
   position: absolute;
-  left: 0.75rem;
+  left: 0.5rem;
   color: var(--primary-color);
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   line-height: 1;
+  top: 0;
 }
 
 .faq-list li:last-child {
@@ -313,11 +314,8 @@
 }
 
 .faq-list strong {
-  color: var(--text-color);
+  color: var(--primary-color);
   font-weight: 600;
-  position: relative;
-  display: inline-block;
-  margin-right: 0.25rem;
 }
 
 .error-message {
