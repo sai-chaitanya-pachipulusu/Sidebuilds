@@ -4,7 +4,6 @@ import {
   Box, Flex, Heading, Text, Button, Alert, AlertIcon,
   Container, useToast, Badge
 } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, deleteProject } from '../services/api';
 import { checkAndProcessPendingPurchase } from '../utils/stripe-helper';

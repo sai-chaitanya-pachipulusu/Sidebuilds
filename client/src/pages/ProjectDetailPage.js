@@ -13,7 +13,7 @@ const paymentMethods = ['Direct', 'Stripe', 'Paypal'];
 function ProjectDetailPage() {
     const { id: projectId } = useParams(); // Get project ID from URL
     const navigate = useNavigate();
-    const { } = useAuth(); // Keep the auth context connection for token expiration handling
+    useAuth(); // Use auth context without destructuring, fixes the empty pattern error
     const [project, setProject] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
