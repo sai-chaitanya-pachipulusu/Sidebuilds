@@ -41,6 +41,11 @@ export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe,
     
     console.log(`Checkout session created: ${sessionId}. Redirecting to Stripe...`);
     
+    // Store the session ID in localStorage so we can check it later
+    localStorage.setItem('lastCheckoutSessionId', sessionId);
+    localStorage.setItem('checkoutProjectId', projectId);
+    localStorage.setItem('checkoutTimestamp', Date.now().toString());
+    
     // Use the standard Stripe.js method to redirect
     const { error } = await stripe.redirectToCheckout({ sessionId });
     
@@ -59,5 +64,59 @@ export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe,
     console.error('Error during checkout creation or redirect:', error);
     // Re-throw the error so the calling component (MarketplacePage) can handle it (e.g., show error message)
     throw error;
+  }
+};
+
+/**
+ * Manually check and process a completed payment if the webhook hasn't done so
+ * This is a fallback to ensure purchases appear in the user's dashboard
+ * 
+ * @param {Object} api - Axios or API client instance
+ * @returns {Promise<boolean>} True if a manual processing was initiated
+ */
+export const checkAndProcessPendingPurchase = async (api) => {
+  try {
+    // Check if we have a recent checkout session stored
+    const sessionId = localStorage.getItem('lastCheckoutSessionId');
+    const projectId = localStorage.getItem('checkoutProjectId');
+    const timestamp = localStorage.getItem('checkoutTimestamp');
+    
+    // If no session or too old (more than 30 minutes), ignore
+    if (!sessionId || !projectId || !timestamp) {
+      return false;
+    }
+    
+    const timestampAge = Date.now() - parseInt(timestamp);
+    if (timestampAge > 30 * 60 * 1000) { // 30 minutes
+      // Clear old data
+      localStorage.removeItem('lastCheckoutSessionId');
+      localStorage.removeItem('checkoutProjectId');
+      localStorage.removeItem('checkoutTimestamp');
+      return false;
+    }
+    
+    console.log(`Checking status of pending purchase session: ${sessionId}`);
+    
+    // Call an API to manually process this purchase if needed
+    const response = await api.post('/payments/manual-process', { 
+      sessionId, 
+      projectId
+    });
+    
+    if (response.data.success) {
+      console.log('Manual processing of purchase succeeded:', response.data);
+      
+      // Clear the stored session data
+      localStorage.removeItem('lastCheckoutSessionId');
+      localStorage.removeItem('checkoutProjectId');
+      localStorage.removeItem('checkoutTimestamp');
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking pending purchase:', error);
+    return false;
   }
 }; 

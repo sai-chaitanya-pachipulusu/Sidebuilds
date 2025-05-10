@@ -1051,5 +1051,223 @@ router.post('/debug/transfer-project', authMiddleware, async (req, res) => {
     }
 });
 
+// --- Manual Processing for Purchased Projects ---
+// POST /api/payments/manual-process
+router.post('/manual-process', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId, projectId } = req.body;
+        const userId = req.user.id;
+        
+        if (!sessionId || !projectId) {
+            return res.status(400).json({ error: 'Missing session ID or project ID' });
+        }
+        
+        console.log(`[MANUAL PROCESS] Processing purchase manually for session ${sessionId}, project ${projectId}, user ${userId}`);
+        
+        // Check if the session exists and get its details from Stripe
+        let session;
+        try {
+            session = await stripe.checkout.sessions.retrieve(sessionId);
+            console.log(`[MANUAL PROCESS] Retrieved session: ${session.id}, status: ${session.status}`);
+        } catch (stripeError) {
+            console.error('[MANUAL PROCESS] Error retrieving Stripe session:', stripeError);
+            return res.status(404).json({ error: 'Session not found or invalid' });
+        }
+        
+        // Verify the session is completed/paid
+        if (session.status !== 'complete' && session.payment_status !== 'paid') {
+            console.log(`[MANUAL PROCESS] Session ${sessionId} is not complete (status: ${session.status}, payment_status: ${session.payment_status})`);
+            return res.status(400).json({ error: 'Payment not completed' });
+        }
+        
+        // Check if we already have a transaction record for this session
+        const existingTransactionResult = await db.query(
+            'SELECT * FROM project_transactions WHERE stripe_session_id = $1',
+            [sessionId]
+        );
+        
+        const transaction = existingTransactionResult.rows[0];
+        
+        if (transaction) {
+            // Check if the transaction is already completed
+            if (transaction.status === 'completed') {
+                console.log(`[MANUAL PROCESS] Transaction ${transaction.transaction_id} already completed`);
+                
+                // Check if the project ownership has been transferred
+                const projectResult = await db.query(
+                    'SELECT * FROM projects WHERE project_id = $1',
+                    [projectId]
+                );
+                
+                if (projectResult.rows.length === 0) {
+                    return res.status(404).json({ error: 'Project not found' });
+                }
+                
+                const project = projectResult.rows[0];
+                
+                // If the buyer is already the owner, everything is good
+                if (project.owner_id === userId) {
+                    return res.json({ 
+                        success: true, 
+                        message: 'Project already purchased and transferred', 
+                        alreadyProcessed: true 
+                    });
+                }
+                
+                // If the transaction is completed but ownership isn't transferred, fix it
+                if (transaction.buyer_id === userId) {
+                    // Transfer ownership to the buyer and update project status
+                    await db.query(
+                        `UPDATE projects 
+                        SET is_for_sale = FALSE, 
+                            owner_id = $1, 
+                            previous_owner_id = $2, 
+                            transfer_date = NOW(),
+                            purchased_at = NOW(),
+                            source = 'purchased'
+                        WHERE project_id = $3`,
+                        [userId, project.owner_id, projectId]
+                    );
+                    
+                    console.log(`[MANUAL PROCESS] Fixed project ownership for ${projectId}, new owner: ${userId}`);
+                    
+                    return res.json({ 
+                        success: true, 
+                        message: 'Project ownership fixed', 
+                        fixedOwnership: true 
+                    });
+                }
+            }
+            
+            // Transaction exists but isn't completed - run the processing function
+            await processCheckoutCompleted(session);
+            
+            return res.json({ 
+                success: true, 
+                message: 'Purchase processed manually', 
+                manuallyProcessed: true 
+            });
+        }
+        
+        // No transaction record found - could be webhook failure or delay
+        // Let's check the project first
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+        
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+        
+        const project = projectResult.rows[0];
+        
+        // If the buyer is already the owner, everything is good
+        if (project.owner_id === userId) {
+            return res.json({ 
+                success: true, 
+                message: 'Project already purchased and transferred', 
+                alreadyProcessed: true 
+            });
+        }
+        
+        // Check if the project is still for sale
+        if (!project.is_for_sale) {
+            return res.status(400).json({ error: 'Project is no longer for sale' });
+        }
+        
+        // Calculate commission and amounts
+        const totalAmount = parseFloat(project.sale_price);
+        const commissionAmount = (totalAmount * COMMISSION_RATE) / 100;
+        const sellerAmount = totalAmount - commissionAmount;
+        
+        // Create a transaction record
+        const transactionResult = await db.query(
+            `INSERT INTO project_transactions 
+            (project_id, buyer_id, seller_id, amount, status, payment_method, stripe_session_id, commission_amount, seller_amount, payment_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING transaction_id`,
+            [
+                projectId, 
+                userId, 
+                project.owner_id, 
+                totalAmount, 
+                'completed', 
+                'stripe', 
+                sessionId, 
+                commissionAmount, 
+                sellerAmount,
+                session.payment_intent
+            ]
+        );
+        
+        const transactionId = transactionResult.rows[0].transaction_id;
+        console.log(`[MANUAL PROCESS] Created transaction record ${transactionId}`);
+        
+        // Create a transfer record
+        const transferResult = await db.query(
+            `INSERT INTO project_transfers 
+            (project_id, transaction_id, status, transfer_type, assets_transferred, certificate_generated)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING transfer_id`,
+            [projectId, transactionId, 'pending', 'full_ownership', false, false]
+        );
+        
+        const transferId = transferResult.rows[0].transfer_id;
+        console.log(`[MANUAL PROCESS] Created transfer record ${transferId}`);
+        
+        // Transfer ownership to the buyer and update project status
+        await db.query(
+            `UPDATE projects 
+            SET is_for_sale = FALSE, 
+                owner_id = $1, 
+                previous_owner_id = $2, 
+                transfer_date = NOW(),
+                purchased_at = NOW(),
+                source = 'purchased'
+            WHERE project_id = $3`,
+            [userId, project.owner_id, projectId]
+        );
+        
+        console.log(`[MANUAL PROCESS] Updated project ownership, new owner: ${userId}`);
+        
+        // Generate a unique verification code for the certificate
+        const verificationCode = crypto
+            .randomBytes(16)
+            .toString('hex')
+            .toUpperCase();
+        
+        // Create a seller certificate
+        await db.query(
+            `INSERT INTO seller_certificates
+            (seller_id, project_id, transaction_id, buyer_id, sale_amount, verification_code)
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+                project.owner_id,
+                projectId,
+                transactionId,
+                userId,
+                totalAmount,
+                verificationCode
+            ]
+        );
+        
+        console.log(`[MANUAL PROCESS] Created seller certificate for transaction ${transactionId}`);
+        
+        return res.json({ 
+            success: true, 
+            message: 'Purchase processed manually', 
+            manuallyProcessed: true 
+        });
+        
+    } catch (error) {
+        console.error('[MANUAL PROCESS] Error processing purchase manually:', error);
+        res.status(500).json({ 
+            error: 'Failed to process purchase manually',
+            message: error.message
+        });
+    }
+});
+
 // Export both the router and the webhook handler
 module.exports = { router, webhookHandler }; 

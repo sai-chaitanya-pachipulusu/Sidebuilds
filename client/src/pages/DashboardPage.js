@@ -7,6 +7,8 @@ import {
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, deleteProject } from '../services/api';
+import { checkAndProcessPendingPurchase } from '../utils/stripe-helper';
+import apiClient from '../services/api';
 import ProjectTable from '../components/ProjectTable';
 
 const MotionBox = motion(Box);
@@ -42,18 +44,31 @@ function DashboardPage() {
                 position: "top"
             });
             
-            // Force multiple refreshes to ensure data is updated
-            // First immediate refresh
-            setRefreshCounter(prev => prev + 1);
-            
-            // Schedule additional refreshes with increasing delays
-            setTimeout(() => setRefreshCounter(prev => prev + 1), 500);
-            setTimeout(() => setRefreshCounter(prev => prev + 1), 1500);
+            // Force only one additional refresh after 2 seconds
+            setTimeout(() => setRefreshCounter(prev => prev + 1), 2000);
             
             // Clear the URL parameter but keep the history
             navigate('/dashboard', { replace: true });
         }
     }, [location, navigate, toast]);
+
+    // Check for and process any pending purchases that might have failed webhook processing
+    useEffect(() => {
+        const manuallyCheckPurchase = async () => {
+            try {
+                const processed = await checkAndProcessPendingPurchase(apiClient);
+                if (processed) {
+                    console.log('Manually processed a pending purchase');
+                    // Force a refresh
+                    setRefreshCounter(prev => prev + 1);
+                }
+            } catch (error) {
+                console.error('Error checking pending purchases:', error);
+            }
+        };
+        
+        manuallyCheckPurchase();
+    }, []);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -105,15 +120,17 @@ function DashboardPage() {
                     if (purchasedProjects.length > 0) {
                         // Reset the purchase flag after we confirmed projects are present
                         setHasNewPurchase(false);
-                    } else if (refreshCounter < 5) {
-                        // If we didn't find any purchased projects but should have, try refreshing again
-                        console.log('No purchased projects found, will retry in 2 seconds...');
-                        setTimeout(() => {
-                            setRefreshCounter(prev => prev + 1);
-                        }, 2000);
-                    } else {
-                        // If we've tried too many times, give up and reset the flag
-                        console.log('Max retries reached, resetting purchase flag');
+                    } else if (refreshCounter === 1) {
+                        // If we've already tried once and still don't see the project, show a message
+                        // and reset the purchase flag
+                        toast({
+                            title: "Project will appear soon",
+                            description: "Your purchased project may take a few moments to appear in your dashboard. Please check back shortly.",
+                            status: "info",
+                            duration: 7000,
+                            isClosable: true,
+                            position: "top"
+                        });
                         setHasNewPurchase(false);
                     }
                 }
@@ -130,7 +147,7 @@ function DashboardPage() {
         };
 
         fetchProjects();
-    }, [logout, navigate, hasNewPurchase, refreshCounter]);
+    }, [logout, navigate, hasNewPurchase, refreshCounter, toast]);
 
     const handleDelete = async (projectId) => {
         if (!window.confirm('Are you sure you want to delete this project?')) {
