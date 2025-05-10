@@ -39,6 +39,7 @@
   background-color: #000000;
   padding: 1.5rem;
   border-radius: 8px;
+  border: none;
 }
 
 .badge-icon {
@@ -74,6 +75,7 @@
   background-color: #000000;
   padding: 1.25rem;
   border-radius: 8px;
+  border: none;
 }
 
 .secure-payment-notice svg {

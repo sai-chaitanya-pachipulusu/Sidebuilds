@@ -100,6 +100,27 @@ export const loginUser = async (credentials) => {
     }
 };
 
+// --- User Profile API Calls ---
+export const getUserProfile = async () => {
+    try {
+        const response = await apiClient.get('/users/profile');
+        return response.data;
+    } catch (error) {
+        console.error('Get User Profile API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to fetch user profile');
+    }
+};
+
+export const updateUserProfile = async (profileData) => {
+    try {
+        const response = await apiClient.put('/users/profile', profileData);
+        return response.data; // Returns the updated profile
+    } catch (error) {
+        console.error('Update User Profile API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to update user profile');
+    }
+};
+
 // --- Project API Calls (Placeholder - Add more as needed) ---
 
 export const getProjects = async () => {

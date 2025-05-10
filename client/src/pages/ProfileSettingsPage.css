@@ -1,0 +1,90 @@
+.profile-settings-page {
+  padding: 2rem;
+  background-color: #000000; /* Ensuring black background */
+  color: #ffffff; /* Ensuring text is white */
+  max-width: 700px; /* Limit width for better readability */
+  margin: 2rem auto; /* Center the form */
+}
+
+.profile-settings-page h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.profile-settings-page form div {
+  margin-bottom: 1.25rem;
+}
+
+.profile-settings-page label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.profile-settings-page input[type="text"],
+.profile-settings-page input[type="email"],
+.profile-settings-page input[type="url"],
+.profile-settings-page textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #000000; /* Slightly lighter than page background */
+  border: 1px solid #000000; /* Subtle border */
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.profile-settings-page input[type="text"]:focus,
+.profile-settings-page input[type="email"]:focus,
+.profile-settings-page input[type="url"]:focus,
+.profile-settings-page textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3);
+}
+
+.profile-settings-page textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.profile-settings-page button[type="submit"] {
+  display: block;
+  width: 100%;
+  padding: 0.85rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.profile-settings-page button[type="submit"]:hover:not(:disabled) {
+  background-color: rgba(var(--primary-color-rgb), 0.85);
+}
+
+.profile-settings-page button[type="submit"]:disabled {
+  background-color: #555555;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff4d4f;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #cc0000;
+}
+
+.success-message {
+  background-color: rgba(0, 255, 0, 0.1);
+  color: #4caf50;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #388e3c;
+} 

@@ -82,6 +82,9 @@ app.use('/api/payments', require('./routes/payments-extensions'));
 // Mount authentication routes
 app.use('/api/auth', require('./routes/auth')); 
 
+// Mount user profile routes
+app.use('/api/users', require('./routes/users'));
+
 // Mount project routes (protected by middleware within the file)
 app.use('/api/projects', require('./routes/projects')); 
 

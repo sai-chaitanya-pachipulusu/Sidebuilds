@@ -16,6 +16,7 @@ import PublicProjectsPage from './pages/PublicProjectsPage'; // Import public pa
 import MarketplacePage from './pages/MarketplacePage'; // Import Marketplace page
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchase success page
 import ProjectTransferPage from './pages/ProjectTransferPage'; // Import transfer status page
+import ProfileSettingsPage from './pages/ProfileSettingsPage'; // Import profile settings page
 
 // Import new certificate components
 import CertificatePage from './pages/CertificatePage';
@@ -56,6 +57,7 @@ function App() {
                         <Route path="/public-projects" element={<PublicProjectsPage />} />
                         <Route path="/marketplace" element={<MarketplacePage />} />
                         <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/profile-settings" element={<ProfileSettingsPage />} />
                         <Route path="/projects/new" element={<ProjectFormPage />} />
                         <Route path="/projects/:id" element={<ProjectDetailPage />} />
                         <Route path="/projects/:projectId/transfer" element={<ProjectTransferPage />} />
