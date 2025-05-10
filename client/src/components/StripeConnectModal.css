@@ -13,7 +13,7 @@
 }
 
 .stripe-connect-modal {
-    background-color: var(--card-bg, #1e1e1e);
+    background-color: #000000; /* Pure black */
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     width: 90%;
@@ -73,6 +73,7 @@
 
 .stripe-connect-modal-content {
     padding: 1.5rem;
+    background-color: #000000; /* Pure black */
 }
 
 .stripe-connect-info {
@@ -151,7 +152,8 @@
 }
 
 .error-message {
-    background-color: rgba(220, 53, 69, 0.1);
+    background-color: #000000; /* Pure black */
+    border: 1px solid rgba(220, 53, 69, 0.3);
     color: #dc3545;
     padding: 0.75rem 1rem;
     border-radius: 4px;

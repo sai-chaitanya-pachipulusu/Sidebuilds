@@ -1,6 +1,6 @@
 import { extendTheme } from '@chakra-ui/react';
 
-// SideBuilds custom theme
+// SideBuilds custom theme with pure black backgrounds
 const theme = extendTheme({
   config: {
     initialColorMode: 'dark',
@@ -28,8 +28,8 @@ const theme = extendTheme({
       500: '#737373',
       600: '#595959',
       700: '#404040',
-      800: '#262626',
-      900: '#0d0d0d',
+      800: '#000000', // Changed to pure black
+      900: '#000000', // Changed to pure black
     },
   },
   fonts: {
@@ -39,8 +39,20 @@ const theme = extendTheme({
   styles: {
     global: props => ({
       body: {
-        bg: 'black',
+        bg: '#000000', // Pure black
         color: 'white',
+      },
+      // Force all containers to have black backgrounds
+      '.chakra-container': {
+        bg: '#000000',
+      },
+      // Force all modal contents to have black backgrounds
+      '.chakra-modal__content': {
+        bg: '#000000',
+      },
+      // Force all cards to have black backgrounds
+      '.chakra-card': {
+        bg: '#000000',
       },
     }),
   },
@@ -72,6 +84,7 @@ const theme = extendTheme({
         },
         ghost: {
           color: 'gray.300',
+          bg: '#000000', // Pure black
           _hover: {
             bg: 'whiteAlpha.100',
           },
@@ -81,7 +94,7 @@ const theme = extendTheme({
     Card: {
       baseStyle: {
         container: {
-          bg: 'gray.800',
+          bg: '#000000', // Changed to pure black
           borderRadius: 'lg',
           borderWidth: '1px',
           borderColor: 'gray.700',
@@ -89,6 +102,35 @@ const theme = extendTheme({
           _hover: {
             transform: 'translateY(-5px)',
             boxShadow: 'lg',
+          },
+        },
+      },
+    },
+    Modal: {
+      baseStyle: {
+        dialog: {
+          bg: '#000000', // Pure black for modals
+        },
+        header: {
+          bg: '#000000', // Pure black for modal headers
+        },
+        body: {
+          bg: '#000000', // Pure black for modal body
+        },
+        footer: {
+          bg: '#000000', // Pure black for modal footer
+        },
+      },
+    },
+    Menu: {
+      baseStyle: {
+        list: {
+          bg: '#000000', // Pure black for dropdown menus
+        },
+        item: {
+          bg: '#000000', // Pure black for menu items
+          _hover: {
+            bg: 'whiteAlpha.100',
           },
         },
       },

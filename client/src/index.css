@@ -43,7 +43,7 @@ code {
   --text-color: #ffffff;
   --secondary-text: white; /* Made secondary text fully white */
   --bg-color: #000000;
-  --card-bg: #111111;
+  --card-bg: #000000; /* Changed from #111111 to pure black */
   --card-radius: 12px;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   --border-color: rgba(255, 255, 255, 0.1);
@@ -291,4 +291,29 @@ p, a, li, label, input, textarea {
 .arrow-link:hover {
   transform: translateX(5px);
   opacity: 0.8;
+}
+
+/* Force black background on all common components */
+.feature-card, .card, .modal, .dropdown, .panel, 
+.menu, .sidebar, .footer, .header, .tab, .accordion, 
+.alert, .dialog, .toast, .tooltip, .popover {
+  background-color: #000000 !important; 
+}
+
+/* Override any background colors in child elements */
+* {
+  background-color: inherit;
+}
+
+/* Force specific components that might have their own background */
+.chakra-modal__content,
+.chakra-menu__menu-list,
+.chakra-card,
+.chakra-tabs__tabpanel,
+.chakra-collapse,
+.chakra-alert,
+.chakra-toast,
+.chakra-popover__content,
+.chakra-popover__arrow {
+  background-color: #000000 !important;
 }

@@ -2,7 +2,7 @@
   width: 100%;
   border-collapse: collapse;
   overflow-x: auto;
-  background-color: var(--card-bg);
+  background-color: #000000; /* Pure black */
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   margin-bottom: 2rem;
@@ -12,7 +12,7 @@
 .project-table th {
   text-align: left;
   padding: 1rem;
-  background-color: var(--card-bg);
+  background-color: #000000; /* Pure black */
   border-bottom: 1px solid var(--border-color);
   font-weight: 600;
   color: var(--text-color);
@@ -34,7 +34,7 @@
 }
 
 .project-table tbody tr:hover {
-  background-color: var(--hover-bg);
+  background-color: rgba(255, 255, 255, 0.05); /* Keep hover effect but keep it dark */
 }
 
 .project-table tbody tr:last-child td {
@@ -163,7 +163,7 @@
 .empty-table {
   padding: 2rem;
   text-align: center;
-  background-color: var(--card-bg);
+  background-color: #000000; /* Pure black */
   border-radius: var(--card-radius);
   border: 1px dashed var(--border-color);
   color: var(--secondary-text);

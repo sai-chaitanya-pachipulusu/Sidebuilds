@@ -117,7 +117,7 @@ function NavBar() {
       left="0"
       right="0"
       zIndex="1000"
-      bg={scrolled ? 'rgba(0, 0, 0, 0.8)' : 'black'}
+      bg="#000000"
       borderBottom={scrolled ? '1px' : 'none'}
       borderColor="whiteAlpha.100"
       backdropFilter={scrolled ? 'blur(10px)' : 'none'}
@@ -132,15 +132,18 @@ function NavBar() {
         px={6}
         align="center"
         justify="space-between"
+        bg="#000000"
       >
         <MotionBox
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          bg="#000000"
         >
           <Link 
             as={RouterLink} 
             to="/"
             _hover={{ textDecoration: 'none' }}
+            bg="#000000"
           >
             <Text
               fontSize="2xl"
@@ -148,6 +151,7 @@ function NavBar() {
               letterSpacing="wider"
               textTransform="lowercase"
               color="white"
+              bg="#000000"
             >
               sidebuilds.
             </Text>
@@ -155,7 +159,7 @@ function NavBar() {
         </MotionBox>
 
         {/* Desktop Navigation */}
-        <HStack spacing={10} display={{ base: 'none', md: 'flex' }}>
+        <HStack spacing={10} display={{ base: 'none', md: 'flex' }} bg="#000000">
           {isAuthenticated && (
             <>
               <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
@@ -178,6 +182,7 @@ function NavBar() {
               onClick={handleLogout}
               mt={-1}
               _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
+              bg="#000000"
             />
           ) : (
             <>
@@ -188,6 +193,8 @@ function NavBar() {
                 leftIcon={<LoginIcon />}
                 fontWeight="normal"
                 px={6}
+                bg="#000000"
+                _hover={{ bg: '#000000', opacity: 0.8, transform: 'translateY(-2px)' }}
               >
                 Login
               </Button>
@@ -197,6 +204,7 @@ function NavBar() {
                 colorScheme="blue"
                 leftIcon={<RegisterIcon />}
                 px={6}
+                _hover={{ transform: 'translateY(-2px)' }}
               >
                 Register
               </Button>
@@ -212,24 +220,26 @@ function NavBar() {
           fontSize="20px"
           aria-label="Open menu"
           icon={
-            <Box>
+            <Box bg="#000000">
               <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
               <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
               <Box as="span" display="block" w="24px" h="2px" bg="white" />
             </Box>
           }
+          bg="#000000"
+          _hover={{ bg: '#000000' }}
         />
 
         {/* Mobile drawer */}
         <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
           <DrawerOverlay />
-          <DrawerContent bg="gray.900">
+          <DrawerContent bg="#000000">
             <DrawerCloseButton color="white" />
-            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
+            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200" bg="#000000">
               Menu
             </DrawerHeader>
-            <DrawerBody>
-              <Flex direction="column" mt={4} spacing={4}>
+            <DrawerBody bg="#000000">
+              <Flex direction="column" mt={4} spacing={4} bg="#000000">
                 {isAuthenticated && (
                   <>
                     <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
@@ -290,12 +300,13 @@ const NavItem = ({ icon, children, isActive, to }) => {
       position="relative"
       _hover={{ textDecoration: 'none' }}
       whileHover={{ y: -2 }}
+      bg="#000000"
     >
-      <HStack spacing={3} align="center">
-        <Box display="flex" alignItems="center" justifyContent="center" minW="18px">
+      <HStack spacing={3} align="center" bg="#000000">
+        <Box display="flex" alignItems="center" justifyContent="center" minW="18px" bg="#000000">
           {icon}
         </Box>
-        <Text color={isActive ? 'brand.500' : 'white'} fontWeight={isActive ? "600" : "400"}>{children}</Text>
+        <Text color={isActive ? 'brand.500' : 'white'} fontWeight={isActive ? "600" : "400"} bg="#000000">{children}</Text>
       </HStack>
       {isActive && (
         <Box
@@ -324,12 +335,12 @@ const MobileNavItem = ({ icon, children, isActive, to }) => {
       leftIcon={icon}
       borderLeft={isActive ? '3px solid' : 'none'}
       borderColor={isActive ? 'brand.500' : 'transparent'}
-      bg={isActive ? 'whiteAlpha.100' : 'transparent'}
+      bg={isActive ? 'rgba(255, 255, 255, 0.05)' : '#000000'}
       borderRadius="0"
       pl={isActive ? 4 : 2}
       py={5}
       mb={3}
-      _hover={{ bg: 'whiteAlpha.100' }}
+      _hover={{ bg: 'rgba(255, 255, 255, 0.05)' }}
       fontSize="1.1rem"
     >
       {children}
