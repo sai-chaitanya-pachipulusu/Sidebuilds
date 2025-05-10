@@ -39,7 +39,7 @@
   background-color: #000000;
   padding: 1.5rem;
   border-radius: 8px;
-  border: none;
+  border: none !important;
 }
 
 .badge-icon {

@@ -318,10 +318,14 @@ function DashboardPage() {
                 </Alert>
             )}
 
+            <Heading size="md" mb={4} mt={hasRecentPurchase && !showPurchased ? 6 : 0}>
+                {showPurchased ? 'Purchased Projects' : 'My Projects'}
+            </Heading>
             <ProjectTable 
                 projects={displayedProjects} 
+                type="dashboard" 
                 onDelete={handleDelete}
-                loading={loading}
+                isLoading={loading}
                 error={error}
                 showSource={showPurchased}
                 highlightId={lastPurchasedProjectId}

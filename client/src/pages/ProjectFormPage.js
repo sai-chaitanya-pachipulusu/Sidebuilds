@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createProject } from '../services/api';
+import { useNavigate, useParams } from 'react-router-dom';
+import { createProject, getProjectById, updateProject } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import StripeConnectModal from '../components/StripeConnectModal';
@@ -12,8 +12,10 @@ const paymentMethods = ['direct', 'stripe', 'paypal'];
 
 function ProjectFormPage() {
     const navigate = useNavigate();
+    const { projectId } = useParams();
     const { user } = useAuth();
     
+    const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -28,6 +30,7 @@ function ProjectFormPage() {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(false);
     const [showStripeModal, setShowStripeModal] = useState(false);
     const [stripeAccountStatus, setStripeAccountStatus] = useState({
         hasStripeAccount: false,
@@ -35,9 +38,32 @@ function ProjectFormPage() {
     });
 
     useEffect(() => {
-        // Check if user has a Stripe account
         checkStripeConnectStatus();
-    }, []);
+        if (projectId) {
+            setEditMode(true);
+            setPageLoading(true);
+            getProjectById(projectId)
+                .then(data => {
+                    setFormData({
+                        name: data.name || '',
+                        description: data.description || '',
+                        stage: data.stage || projectStages[0],
+                        domain: data.domain || '',
+                        is_public: data.is_public || false,
+                        is_for_sale: data.is_for_sale || false,
+                        sale_price: data.sale_price ? String(data.sale_price) : '',
+                        contact_email: data.contact_email || user?.email || '',
+                        contact_phone: data.contact_phone || '',
+                        payment_method: data.payment_method || 'direct'
+                    });
+                })
+                .catch(err => {
+                    console.error("Failed to fetch project for editing:", err);
+                    setError('Failed to load project data. Please try again.');
+                })
+                .finally(() => setPageLoading(false));
+        }
+    }, [projectId, user?.email]);
 
     const checkStripeConnectStatus = async () => {
         try {
@@ -48,7 +74,6 @@ function ProjectFormPage() {
             });
         } catch (err) {
             console.error("Failed to check Stripe account status:", err);
-            // Don't set an error here, just log it
         }
     };
 
@@ -71,7 +96,6 @@ function ProjectFormPage() {
             return;
         }
 
-        // Validate contact info if project is for sale
         if (formData.is_for_sale) {
             if (!formData.sale_price) {
                 setError('Sale price is required for projects listed for sale.');
@@ -85,7 +109,6 @@ function ProjectFormPage() {
                 return;
             }
             
-            // Check if user has a Stripe account before allowing them to list for sale
             if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
                 setShowStripeModal(true);
                 setLoading(false);
@@ -93,19 +116,20 @@ function ProjectFormPage() {
             }
         }
 
-        // Prepare data for API (e.g., convert numbers)
         const projectData = {
             ...formData,
             sale_price: formData.is_for_sale && formData.sale_price ? parseFloat(formData.sale_price) : 0
         };
 
         try {
-            await createProject(projectData);
-            navigate('/dashboard'); // Go back to dashboard after creation
+            if (editMode && projectId) {
+                await updateProject(projectId, projectData);
+            } else {
+                await createProject(projectData);
+            }
+            navigate('/dashboard'); 
         } catch (err) {
             console.error("Failed to create project:", err);
-            
-            // Check if this is a Stripe account error
             if (err.response && err.response.data && err.response.data.error_code === 'stripe_account_required') {
                 setShowStripeModal(true);
             } else {
@@ -121,21 +145,22 @@ function ProjectFormPage() {
     };
     
     const handleStripeConnectSuccess = async () => {
-        // Wait a bit for the backend to process the connection
         setTimeout(async () => {
             await checkStripeConnectStatus();
             setShowStripeModal(false);
-            
-            // If the user now has a connected account, try saving again
             if (stripeAccountStatus.hasStripeAccount && stripeAccountStatus.isOnboardingComplete) {
                 handleSubmit({ preventDefault: () => {} });
             }
         }, 2000);
     };
 
+    if (pageLoading) {
+        return <div className="project-form-container"><p>Loading project details...</p></div>;
+    }
+
     return (
         <div className="project-form-container">
-            <h2>Add New Project</h2>
+            <h2>{editMode ? 'Edit Project' : 'Add New Project'}</h2>
             {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -183,7 +208,6 @@ function ProjectFormPage() {
                     )}
                 </div>
                 
-                {/* Additional fields for projects listed for sale */}
                 {formData.is_for_sale && (
                     <div className="sale-options">
                         <div className="form-group">
@@ -223,14 +247,13 @@ function ProjectFormPage() {
                 )}
 
                 <div className="form-actions">
-                    <button type="submit" className="submit-button" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Project'}
+                    <button type="submit" className="submit-button" disabled={loading || pageLoading}>
+                        {loading ? (editMode ? 'Saving...' : 'Creating...') : (editMode ? 'Save Changes' : 'Create Project')}
                     </button>
-                    <button type="button" className="cancel-button" onClick={() => navigate('/dashboard')} disabled={loading}>Cancel</button>
+                    <button type="button" className="cancel-button" onClick={() => navigate('/dashboard')} disabled={loading || pageLoading}>Cancel</button>
                 </div>
             </form>
             
-            {/* Stripe Connect Modal */}
             <StripeConnectModal 
                 isOpen={showStripeModal} 
                 onClose={handleStripeModalClose} 

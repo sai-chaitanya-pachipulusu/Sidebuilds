@@ -243,10 +243,15 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
       case 'actions':
         return (
           <div className="project-actions">
-            <Link to={`/projects/${project.project_id}`} className="table-icon edit-icon" title="Edit Project">
+            <Link to={`/projects/${project.project_id}/edit`} className="table-icon edit-icon" title="Edit Project">
               <EditIcon />
             </Link>
-            
+            {/* Delete button - ensure onDelete is passed from DashboardPage */}
+            {onDelete && (
+              <button onClick={() => onDelete(project.project_id)} className="table-icon delete-icon" title="Delete Project">
+                <DeleteIcon />
+              </button>
+            )}
             {/* Add View Transfer button for purchased projects */}
             {project.source === 'purchased' && (
               <Link to={`/projects/${project.project_id}/transfer`} className="table-icon transfer-icon" title="View Transfer Status">
@@ -256,14 +261,6 @@ const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
                 </svg>
               </Link>
             )}
-            
-            <span 
-              onClick={() => onDelete(project.project_id)} 
-              className="table-icon delete-icon"
-              title="Delete Project"
-            >
-              <DeleteIcon />
-            </span>
           </div>
         );
       default:
