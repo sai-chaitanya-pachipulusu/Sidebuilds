@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "@chakra-ui/react": "^3.17.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@chakra-ui/react": "^2.8.2",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.5.0",
-    "framer-motion": "^12.10.4",
+    "framer-motion": "^10.18.0",
     "pg": "^8.15.6"
   }
 }

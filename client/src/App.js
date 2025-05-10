@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import './App.css'; // Import the CSS file
 import NavBar from './components/NavBar';
