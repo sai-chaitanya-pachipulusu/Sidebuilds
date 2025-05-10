@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getProjectById, updateProject } from '../services/api';
+import axios from 'axios';
+import StripeConnectModal from '../components/StripeConnectModal';
+import { useAuth } from '../context/AuthContext';
 import './ProjectDetailPage.css';
 
 // Reuse stages from form or define centrally
@@ -9,12 +12,19 @@ const paymentMethods = ['direct', 'stripe', 'paypal'];
 
 function ProjectDetailPage() {
     const { id: projectId } = useParams(); // Get project ID from URL
+    const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
     const [project, setProject] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [saveLoading, setSaveLoading] = useState(false);
+    const [showStripeModal, setShowStripeModal] = useState(false);
+    const [stripeAccountStatus, setStripeAccountStatus] = useState({
+        hasStripeAccount: false,
+        isOnboardingComplete: false
+    });
 
     useEffect(() => {
         const fetchProject = async () => {
@@ -39,6 +49,9 @@ function ProjectDetailPage() {
                     contact_phone: data.contact_phone || '',
                     payment_method: data.payment_method || 'direct'
                 });
+                
+                // Check Stripe Connect status
+                await checkStripeConnectStatus();
             } catch (err) {
                 console.error("Failed to fetch project:", err);
                 setError(err.message || 'Failed to load project details.');
@@ -51,7 +64,55 @@ function ProjectDetailPage() {
         };
 
         fetchProject();
+        
+        // Check for previously saved form data on page load
+        const savedFormData = sessionStorage.getItem(`project_edit_${projectId}`);
+        if (savedFormData) {
+            try {
+                const parsedData = JSON.parse(savedFormData);
+                setFormData(parsedData);
+                setIsEditing(true);
+                // Clear the saved data after loading it
+                sessionStorage.removeItem(`project_edit_${projectId}`);
+            } catch (err) {
+                console.error("Error parsing saved form data:", err);
+            }
+        }
     }, [projectId]);
+
+    // Handle token expiration during editing
+    useEffect(() => {
+        const handleTokenExpired = (event) => {
+            if (isEditing) {
+                // Save the current form data to session storage
+                sessionStorage.setItem(`project_edit_${projectId}`, JSON.stringify(formData));
+                alert("Your session has expired. Please log in again to continue editing. Your changes will be restored after you log in.");
+            }
+            // Navigate to login
+            navigate('/login', { state: { returnTo: `/project/${projectId}` } });
+        };
+
+        // Add event listener for token expired events
+        window.addEventListener('tokenExpired', handleTokenExpired);
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('tokenExpired', handleTokenExpired);
+        };
+    }, [isEditing, formData, projectId, navigate]);
+
+    const checkStripeConnectStatus = async () => {
+        try {
+            const response = await axios.get('/api/projects/check-stripe-account');
+            setStripeAccountStatus({
+                hasStripeAccount: response.data.hasStripeAccount,
+                isOnboardingComplete: response.data.isOnboardingComplete
+            });
+        } catch (err) {
+            console.error("Failed to check Stripe account status:", err);
+            // Don't set an error here, just log it
+        }
+    };
 
     const handleEditToggle = () => {
         setIsEditing(!isEditing);
@@ -107,6 +168,13 @@ function ProjectDetailPage() {
                 setSaveLoading(false);
                 return;
             }
+            
+            // Check if user has a Stripe account before allowing them to list for sale
+            if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
+                setShowStripeModal(true);
+                setSaveLoading(false);
+                return;
+            }
         }
 
         const updatedData = {
@@ -121,11 +189,34 @@ function ProjectDetailPage() {
             setProject(updatedProjectData); // Update local state with saved data
             setIsEditing(false); // Exit edit mode
         } catch (err) {
-             console.error("Failed to update project:", err);
-             setError(err.message || 'Failed to save changes.');
+            console.error("Failed to update project:", err);
+            
+            // Check if this is a Stripe account error
+            if (err.response && err.response.data && err.response.data.error_code === 'stripe_account_required') {
+                setShowStripeModal(true);
+            } else {
+                setError(err.message || 'Failed to save changes.');
+            }
         } finally {
-             setSaveLoading(false);
+            setSaveLoading(false);
         }
+    };
+    
+    const handleStripeModalClose = () => {
+        setShowStripeModal(false);
+    };
+    
+    const handleStripeConnectSuccess = async () => {
+        // Wait a bit for the backend to process the connection
+        setTimeout(async () => {
+            await checkStripeConnectStatus();
+            setShowStripeModal(false);
+            
+            // If the user now has a connected account, try saving again
+            if (stripeAccountStatus.hasStripeAccount && stripeAccountStatus.isOnboardingComplete) {
+                handleSaveChanges({ preventDefault: () => {} });
+            }
+        }, 2000);
     };
 
     if (loading) return <p>Loading project details...</p>;
@@ -266,6 +357,20 @@ function ProjectDetailPage() {
                                     <input type="checkbox" id="is_for_sale" name="is_for_sale" checked={formData.is_for_sale} onChange={handleChange} />
                                     <span>List for Sale?</span>
                                 </label>
+                                {formData.is_for_sale && !stripeAccountStatus.hasStripeAccount && (
+                                    <div className="stripe-account-required">
+                                        <span className="stripe-warning">
+                                            Requires Stripe Connect
+                                            <button 
+                                                type="button" 
+                                                className="connect-stripe-btn"
+                                                onClick={() => setShowStripeModal(true)}
+                                            >
+                                                Connect Now
+                                            </button>
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         
@@ -301,6 +406,11 @@ function ProjectDetailPage() {
                                 
                                 <div className="info-text">
                                     <p>At least one contact method is required for projects listed for sale.</p>
+                                    {formData.payment_method === 'stripe' && (
+                                        <p className="stripe-info">
+                                            <strong>Note:</strong> Stripe payments require you to connect your Stripe account to receive funds directly.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -314,6 +424,13 @@ function ProjectDetailPage() {
                     </form>
                 </div>
             )}
+            
+            {/* Stripe Connect Modal */}
+            <StripeConnectModal 
+                isOpen={showStripeModal} 
+                onClose={handleStripeModalClose} 
+                onSuccess={handleStripeConnectSuccess} 
+            />
         </div>
     );
 }

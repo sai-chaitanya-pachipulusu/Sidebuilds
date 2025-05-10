@@ -7,6 +7,21 @@ const router = express.Router();
 // === Protect all routes in this file with authMiddleware ===
 router.use(authMiddleware);
 
+// Helper function to check if user has a Stripe account
+async function checkUserStripeAccount(userId) {
+    const userResult = await db.query(
+        'SELECT stripe_account_id, onboarding_complete FROM users WHERE user_id = $1',
+        [userId]
+    );
+    
+    const user = userResult.rows[0];
+    return {
+        hasStripeAccount: !!user.stripe_account_id,
+        isOnboardingComplete: !!user.onboarding_complete,
+        stripeAccountId: user.stripe_account_id
+    };
+}
+
 // --- CREATE Project --- 
 // POST /api/projects
 router.post('/', async (req, res) => {
@@ -53,6 +68,15 @@ router.post('/', async (req, res) => {
             if (!contact_email && !contact_phone) {
                 console.log('Validation error: Missing contact information for project listed for sale');
                 return res.status(400).json({ message: 'At least one contact method (email or phone) is required for projects listed for sale.' });
+            }
+            
+            // Check if user has connected their Stripe account
+            const stripeAccountStatus = await checkUserStripeAccount(userId);
+            if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
+                return res.status(403).json({ 
+                    message: 'You must connect your Stripe account before listing projects for sale.',
+                    error_code: 'stripe_account_required'
+                });
             }
         }
 
@@ -212,6 +236,15 @@ router.put('/:id', async (req, res) => {
             if (!contact_email && !contact_phone) {
                 return res.status(400).json({ message: 'At least one contact method (email or phone) is required for projects listed for sale.' });
             }
+            
+            // Check if user has connected their Stripe account
+            const stripeAccountStatus = await checkUserStripeAccount(userId);
+            if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
+                return res.status(403).json({ 
+                    message: 'You must connect your Stripe account before listing projects for sale.',
+                    error_code: 'stripe_account_required'
+                });
+            }
         }
 
         // Build SQL SET clause and values array dynamically
@@ -311,6 +344,23 @@ router.delete('/:id', async (req, res) => {
             return res.status(400).json({ message: 'Invalid project ID format.' });
         }
         res.status(500).send('Server error deleting project.');
+    }
+});
+
+// --- Check if user has Stripe Connect account --- 
+// GET /api/projects/check-stripe-account
+router.get('/check-stripe-account', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const stripeStatus = await checkUserStripeAccount(userId);
+        
+        res.json({
+            hasStripeAccount: stripeStatus.hasStripeAccount,
+            isOnboardingComplete: stripeStatus.isOnboardingComplete
+        });
+    } catch (err) {
+        console.error("Check Stripe account error:", err.message);
+        res.status(500).json({ message: 'Failed to check Stripe account status.' });
     }
 });
 

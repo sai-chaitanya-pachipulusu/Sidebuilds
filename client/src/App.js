@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useTheme } from './context/ThemeContext';
 import './App.css'; // Import the CSS file
 import NavBar from './components/NavBar';
 import HomePage from './pages/HomePage';
@@ -34,16 +33,14 @@ import VerifyPage from './pages/VerifyPage';
 // const PlaceholderProjectPage = () => <div>Single Project Page - Protected</div>;
 
 function App() {
-    const { isDarkMode } = useTheme();
-
-    // Apply theme to document.body for full coverage
-    React.useEffect(() => {
-        document.body.className = isDarkMode ? 'dark-theme' : 'light-theme';
-        document.documentElement.className = isDarkMode ? 'dark-theme' : 'light-theme';
-    }, [isDarkMode]);
+    // Apply dark theme to document.body for full coverage
+    useEffect(() => {
+        document.body.className = 'dark-theme';
+        document.documentElement.className = 'dark-theme';
+    }, []);
 
     return (
-        <div className={`app-container ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+        <div className="app-container dark-theme">
             <NavBar />
             <main>
                 <Routes>

@@ -7,7 +7,6 @@ import {
   Link
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import './NavBar.css';
 
@@ -200,7 +199,6 @@ function NavBar() {
               </Button>
             </>
           )}
-          <ThemeToggle />
         </HStack>
 
         {/* Mobile hamburger */}
@@ -248,34 +246,21 @@ function NavBar() {
                     leftIcon={<LogoutIcon />} 
                     colorScheme="red" 
                     variant="ghost" 
-                    justifyContent="flex-start" 
-                    mt={2}
+                    w="100%"
+                    justifyContent="flex-start"
                     onClick={handleLogout}
+                    mb={2}
                   >
                     Logout
                   </Button>
                 ) : (
                   <>
-                    <Button 
-                      as={RouterLink}
-                      to="/login"
-                      leftIcon={<LoginIcon />}
-                      variant="ghost"
-                      justifyContent="flex-start"
-                      mt={2}
-                    >
+                    <MobileNavItem to="/login" icon={<LoginIcon />} isActive={isActive('/login')}>
                       Login
-                    </Button>
-                    <Button 
-                      as={RouterLink}
-                      to="/register"
-                      leftIcon={<RegisterIcon />}
-                      colorScheme="blue"
-                      justifyContent="flex-start"
-                      mt={2}
-                    >
+                    </MobileNavItem>
+                    <MobileNavItem to="/register" icon={<RegisterIcon />} isActive={isActive('/register')}>
                       Register
-                    </Button>
+                    </MobileNavItem>
                   </>
                 )}
               </Flex>

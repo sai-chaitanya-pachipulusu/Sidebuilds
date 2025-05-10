@@ -498,6 +498,7 @@ async function processCheckoutCompleted(session) {
         const updateResult = await db.query(
             `UPDATE projects 
             SET is_for_sale = FALSE, 
+                is_public = FALSE,
                 owner_id = $1, 
                 previous_owner_id = $2, 
                 transfer_date = NOW(),
@@ -963,6 +964,7 @@ router.post('/debug/transfer-project', authMiddleware, async (req, res) => {
         const updateResult = await db.query(
             `UPDATE projects 
             SET is_for_sale = FALSE, 
+                is_public = FALSE,
                 owner_id = $1, 
                 previous_owner_id = $2, 
                 transfer_date = NOW(),

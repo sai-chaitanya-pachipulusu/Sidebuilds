@@ -10,6 +10,7 @@ The platform now includes the following features:
 2. **Visual Distinction**: Built vs. bought projects are visually distinguished in project listings with clear badges.
 3. **Seller Certificates**: When a project is sold, a digital certificate is generated for the seller as proof of the transaction.
 4. **Certificate Verification**: Anyone can verify the authenticity of a seller certificate using its verification code.
+5. **Automatic Privacy**: When purchased, projects are automatically set to private (not public) and removed from the marketplace.
 
 ## Implementation Status
 

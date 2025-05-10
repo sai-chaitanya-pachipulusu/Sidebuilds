@@ -252,4 +252,45 @@
 /* Error message styling */
 .project-edit-form .error-message {
   margin-bottom: 20px;
+}
+
+/* Stripe Connect integration styles */
+.stripe-account-required {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+    margin-left: 25px; /* Align with checkbox label */
+}
+
+.stripe-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: #f59f00; /* Warning color */
+}
+
+.connect-stripe-btn {
+    background-color: #6772e5; /* Stripe purple */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.connect-stripe-btn:hover {
+    background-color: #5469d4; /* Darker Stripe purple */
+    transform: translateY(-1px);
+}
+
+.stripe-info {
+    font-size: 0.9rem;
+    color: #6772e5; /* Stripe purple */
+    background-color: rgba(103, 114, 229, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
 } 

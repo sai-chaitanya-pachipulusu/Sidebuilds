@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loginUser } from '../services/api';
 import './LoginPage.css';
@@ -11,12 +11,16 @@ function LoginPage() {
     const [loading, setLoading] = useState(false);
     const { login, isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    // Get the return path from location state, or default to dashboard
+    const returnTo = location.state?.returnTo || '/dashboard';
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            navigate('/dashboard', { replace: true });
+            navigate(returnTo, { replace: true });
         }
-    }, [isLoading, isAuthenticated, navigate]);
+    }, [isLoading, isAuthenticated, navigate, returnTo]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,7 +36,7 @@ function LoginPage() {
         try {
             const { token, user } = await loginUser({ email, password });
             login(token, user); // Update auth context
-            navigate('/dashboard'); // Redirect to dashboard on successful login
+            navigate(returnTo); // Redirect to return path on successful login
         } catch (err) {
             console.error("Login failed:", err);
             setError(err.message || 'Login failed. Please check your credentials.');
@@ -55,6 +59,9 @@ function LoginPage() {
         <div className="login-container">
             <div className="login-card">
                 <h2>Login</h2>
+                {location.state?.returnTo && (
+                    <p className="return-note">Please log in to continue editing your project.</p>
+                )}
                 {error && <p className="error-message">{error}</p>}
                 <form onSubmit={handleSubmit} className="login-form">
                     <div className="form-group">

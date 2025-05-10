@@ -9,6 +9,7 @@ A platform for tracking, sharing, and selling side projects. Built with React, N
 - 🌐 Publish projects to a public directory
 - 💲 List projects for sale in the marketplace
 - 💳 Process payments with Stripe integration
+- 💸 Direct payouts to sellers via Stripe Connect
 - 🌓 Dark/light theme support
 - 📱 Fully responsive design
 
@@ -47,6 +48,17 @@ The transfer process is semi-manual and includes the following steps:
 
 To view the transfer status of a purchased project, click the "Transfer Status" button in your dashboard.
 
+## Stripe Connect for Sellers
+
+The platform requires all sellers to connect their Stripe accounts before listing projects for sale. This enables:
+
+- Direct fund transfers to sellers when their projects are purchased
+- Automated marketplace commission handling
+- Secure payment processing
+- Compliance with financial regulations
+
+For detailed information on how to connect your Stripe account and start selling, see the [Stripe Connect Guide](docs/stripe-connect-guide.md).
+
 ## Tech Stack
 
 ### Frontend
@@ -61,6 +73,7 @@ To view the transfer status of a purchased project, click the "Transfer Status" 
 - Express
 - JWT Authentication
 - Stripe API
+- Stripe Connect
 - PostgreSQL (CockroachDB)
 
 ### Deployment
@@ -109,6 +122,9 @@ To view the transfer status of a purchased project, click the "Transfer Status" 
 
      # Commission Rate (%)
      COMMISSION_RATE=5
+     
+     # Stripe Connect Configuration
+     STRIPE_CONNECT_ACCOUNT_TYPE=express
      ```
    
    - Create a `.env` file in the client directory with the following variables:
@@ -166,9 +182,12 @@ For testing Stripe payments, use the following test card numbers:
 
 For more test cards and options, see the [Stripe Testing documentation](https://stripe.com/docs/testing).
 
-## Deployment
+## Documentation
 
-For detailed deployment instructions, please see [docs/deployment-guide.md](docs/deployment-guide.md).
+- [Deployment Guide](docs/deployment-guide.md)
+- [Stripe Integration Guide](docs/stripe-integration-guide.md)
+- [Stripe Connect Guide](docs/stripe-connect-guide.md)
+- [Project Transfer Guide](docs/project-transfer-guide.md)
 
 ## Project Structure
 
@@ -190,6 +209,11 @@ For detailed deployment instructions, please see [docs/deployment-guide.md](docs
 ├── database/             # Database scripts
 │   ├── schema.sql        # Database schema
 │   └── seed.sql          # Sample data
+├── docs/                 # Documentation
+│   ├── deployment-guide.md
+│   ├── stripe-integration-guide.md
+│   ├── stripe-connect-guide.md
+│   └── project-transfer-guide.md
 └── scripts/              # Utility scripts
     └── deploy-database.js # Database deployment script
 ```

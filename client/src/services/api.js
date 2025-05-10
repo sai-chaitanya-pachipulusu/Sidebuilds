@@ -56,14 +56,21 @@ apiClient.interceptors.response.use(
 
         // Handle unauthorized errors (401)
         if (error.response.status === 401) {
-            // If token is expired, redirect to login
+            // If token is expired, dispatch a custom event instead of immediate redirect
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
-            // Only redirect if we're not already on the login page
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
-            }
+            // Dispatch a custom event that components can listen for
+            const tokenExpiredEvent = new CustomEvent('tokenExpired', {
+                detail: { 
+                    path: window.location.pathname,
+                    message: 'Your session has expired. Please log in again.'
+                }
+            });
+            window.dispatchEvent(tokenExpiredEvent);
+            
+            // Don't redirect immediately - let the component handle it
+            // This gives components a chance to save state
         }
 
         return Promise.reject(error);
