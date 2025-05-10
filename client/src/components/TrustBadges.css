@@ -63,4 +63,24 @@
   margin: 0;
   color: var(--secondary-text);
   line-height: 1.4;
+}
+
+.trust-badges-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #000000;
+  border-radius: var(--card-radius);
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 2rem;
+}
+
+.gradient-badge {
+  position: relative;
+  background-color: #000000;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+  padding: 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
 } 

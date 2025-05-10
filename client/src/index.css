@@ -317,3 +317,90 @@ p, a, li, label, input, textarea {
 .chakra-popover__arrow {
   background-color: #000000 !important;
 }
+
+/* Extra force rules for black background */
+body::before,
+html::before,
+#root::before,
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000 !important;
+  z-index: -100;
+  pointer-events: none;
+}
+
+/* Ultimate selector forcing all elements to be black unless explicitly styled otherwise */
+[class*="chakra"],
+[class*="container"],
+[class*="wrapper"],
+[class*="header"],
+[class*="footer"],
+[class*="sidebar"],
+[class*="panel"],
+[class*="modal"],
+[class*="dialog"],
+[class*="card"],
+[class*="box"],
+[class*="section"],
+[class*="content"],
+header, 
+footer, 
+nav, 
+aside, 
+article, 
+section,
+main,
+.container,
+.wrapper,
+.panel,
+.content,
+.modal,
+.box {
+  background-color: #000000 !important;
+}
+
+/* Force modals to be black no matter what */
+.chakra-modal__content,
+.MuiModal-root,
+.modal,
+.modal-content,
+dialog,
+.dialog-content,
+[role="dialog"],
+[aria-modal="true"] {
+  background-color: #000000 !important;
+}
+
+/* Force form fields to be black */
+input,
+textarea,
+select,
+.form-control,
+.input,
+.select,
+.textarea {
+  background-color: #000000 !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Force tables to be black */
+table,
+tr,
+td,
+th,
+thead,
+tbody,
+tfoot {
+  background-color: #000000 !important;
+}
+
+/* Override any automatic background colors that might be set by frameworks */
+[style*="background-color"] {
+  background-color: #000000 !important;
+}

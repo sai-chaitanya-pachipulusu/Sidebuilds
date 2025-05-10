@@ -8,6 +8,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import theme from './theme';
 import './index.css';
+import './black-override.css'; // Import black override CSS last to ensure it takes precedence
 import App from './App';
 
 // Load Stripe outside of component render to avoid recreating on every render

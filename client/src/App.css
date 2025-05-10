@@ -259,7 +259,7 @@ input[type="checkbox"] + label {
 
 /* Utility classes */
 .error-message {
-  background-color: #ffdddd;
+  background-color: #000000;
   color: #cc0000;
   padding: 12px 15px;
   border-radius: 5px;
@@ -312,18 +312,18 @@ input[type="checkbox"] + label {
 /* New global variables */
 :root {
   --primary-color: #0070f3;
-  --text-color: #333333;
-  --bg-color: #f7f7f7;
-  --card-bg: #ffffff;
+  --text-color: #ffffff;
+  --bg-color: #000000;
+  --card-bg: #000000;
   --card-radius: 8px;
-  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Page container */
 .app-container {
   max-width: 1200px;
   margin: 2rem auto;
-  background: var(--card-bg);
+  background: #000000;
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   overflow: hidden;
@@ -332,7 +332,7 @@ input[type="checkbox"] + label {
 /* Main content wrapper */
 main {
   padding: 2rem;
-  background: var(--bg-color);
+  background: #000000;
 }
 
 /* Typography */
@@ -344,7 +344,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding: 20px;
-  background-color: #f4f7f6;
+  background-color: #000000;
 }
 h1, h2, h3, h4 {
   color: var(--text-color);
@@ -358,11 +358,12 @@ p {
 
 /* Card style for lists and sections */
 .card {
-  background: var(--card-bg);
+  background: #000000;
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
 }
 
 /* Buttons to match primary color */
@@ -389,7 +390,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding: 20px;
-  background-color: #f4f7f6;
+  background-color: #000000;
 }
 
 nav ul {
@@ -399,9 +400,10 @@ nav ul {
   display: flex;
   gap: 15px;
   align-items: center;
-  background-color: #e3e3e3;
+  background-color: #000000;
   padding: 10px;
   border-radius: 5px;
+  border: 1px solid var(--border-color);
 }
 
 nav a {
@@ -481,8 +483,8 @@ ul {
 }
 
 li {
-    background-color: #fff;
-    border: 1px solid #ddd;
+    background-color: #000000;
+    border: 1px solid var(--border-color);
     padding: 15px;
     margin-bottom: 10px;
     border-radius: 5px;
@@ -506,7 +508,7 @@ li span {
 
 /* Add info text styling */
 .info-text {
-  background-color: #f8f9fa;
+  background-color: #000000;
   padding: 10px 15px;
   border-radius: 5px;
   margin-bottom: 15px;
@@ -515,6 +517,6 @@ li span {
 }
 
 .dark-theme .info-text {
-  background-color: #222;
+  background-color: #000000;
   border-left: 4px solid #0070f3;
 }

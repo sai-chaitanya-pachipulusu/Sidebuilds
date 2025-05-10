@@ -1,0 +1,102 @@
+/* Black Override CSS - Applied globally to force pure black backgrounds */
+
+/* Direct element selectors */
+html, body, #root, #app, #___gatsby, #gatsby-focus-wrapper,
+div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  background-color: #000000 !important;
+}
+
+/* Force all ChakraUI elements to be black */
+.chakra-modal__content,
+.chakra-modal__header,
+.chakra-modal__footer,
+.chakra-modal__body,
+.chakra-menu__menu-list,
+.chakra-menu__menu-item,
+.chakra-toast,
+.chakra-toast__inner,
+.chakra-alert,
+.chakra-alert__wrapper,
+.chakra-badge,
+.chakra-card,
+.chakra-button,
+.chakra-container,
+.chakra-input,
+.chakra-select,
+.chakra-tabs__tab,
+.chakra-tabs__tabpanel,
+.chakra-popover__content,
+.chakra-popover__arrow,
+.chakra-collapse,
+.chakra-accordion__item,
+.chakra-accordion__button,
+.chakra-accordion__panel {
+  background-color: #000000 !important;
+}
+
+/* Form elements */
+input, textarea, select, button, .btn {
+  background-color: #000000 !important;
+}
+
+/* Special elements that might have their own styling */
+.card,
+.modal,
+.dialog,
+.popover,
+.tooltip,
+.menu,
+.dropdown,
+.sidebar,
+.panel,
+.tabpanel,
+.accordion {
+  background-color: #000000 !important;
+}
+
+/* Status chips and badges - maintain them with borders instead of backgrounds */
+.status-chip,
+.badge,
+.chip,
+.tag,
+[class*="status-"],
+[class*="badge-"],
+[class*="chip-"],
+[class*="tag-"] {
+  border: 1px solid currentColor !important;
+}
+
+/* Elements with hover states - preserve functionality but default to black */
+button:not(:hover),
+.btn:not(:hover),
+a:not(:hover) {
+  background-color: #000000 !important;
+}
+
+/* Ensure functional elements maintain visibility */
+.source-badge,
+.status-badge {
+  border: 1px solid currentColor !important;
+}
+
+/* Super-high priority override for any inline styles */
+[style*="background"] {
+  background-color: #000000 !important;
+}
+
+/* Extra layer to catch any other elements */
+*:not([class*="hover"]):not([class*="active"]):not([class*="focus"]) {
+  background-color: #000000 !important;
+} 
