@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMarketplaceProjects, debugTransferProject } from '../services/api';
+import { getMarketplaceProjects } from '../services/api';
 import apiClient from '../services/api';
 import { useStripe } from '@stripe/react-stripe-js';
 import { useAuth } from '../context/AuthContext'; // Import auth context to get current user
@@ -7,9 +7,6 @@ import ProjectTable from '../components/ProjectTable';
 import { createAndRedirectToCheckout } from '../utils/stripe-helper';
 import { useNavigate } from 'react-router-dom';
 import './MarketplacePage.css';
-
-// Set the dev flag - should be false in production builds
-const ENABLE_DEBUG = true; // process.env.NODE_ENV !== 'production';
 
 // Icons
 
@@ -131,67 +128,6 @@ function MarketplacePage() {
             setTimeout(() => {
                 setProcessingPaymentId(null);
             }, 1000);
-        }
-    };
-
-    const handleDebugPurchase = async (projectId) => {
-        if (!ENABLE_DEBUG) return;
-        
-        try {
-            // Find the project
-            const project = projects.find(p => p.project_id === projectId);
-            if (!project) {
-                console.error('Project not found for debug purchase');
-                setCheckoutError("Project not found");
-                return;
-            }
-            
-            setProcessingPaymentId(projectId);
-            console.log('Initiating debug transfer for project:', project);
-            console.log('Project details:', {
-                id: project.project_id,
-                name: project.name,
-                owner_id: project.owner_id,
-                price: project.sale_price
-            });
-            
-            // Additional validation before calling the API
-            if (!project.owner_id) {
-                console.error('Project has no owner_id', project);
-                setCheckoutError("Project has no seller information");
-                setProcessingPaymentId(null);
-                return;
-            }
-            
-            // Call the debug endpoint to transfer the project without payment
-            console.log(`Calling debugTransferProject with projectId=${projectId}, sellerId=${project.owner_id}`);
-            const result = await debugTransferProject(projectId, project.owner_id);
-            console.log('Debug transfer result:', result);
-            
-            // Show success message
-            setCheckoutError('');
-            
-            // Redirect to dashboard with purchased flag
-            navigate('/dashboard?purchased=true');
-        } catch (error) {
-            console.error('Debug transfer failed:', error);
-            // Provide detailed error info
-            let errorMessage = 'Debug transfer failed';
-            
-            if (error.response) {
-                console.error('Response data:', error.response.data);
-                console.error('Response status:', error.response.status);
-                errorMessage = error.response.data?.error || error.response.data?.message || 'Server error';
-            } else if (error.request) {
-                console.error('No response received:', error.request);
-                errorMessage = 'No response from server';
-            } else {
-                errorMessage = error.message || 'Unknown error';
-            }
-            
-            setCheckoutError(errorMessage);
-        } finally {
-            setProcessingPaymentId(null);
         }
     };
 
