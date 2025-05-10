@@ -56,10 +56,10 @@
 
 .badge-content h4 {
   font-size: 1.1rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0.5rem 0.5rem 0.5rem 0.5rem;
   color: var(--text-color);
   font-weight: 600;
-  
+  border: none !important;
 }
 
 .badge-content p {
@@ -67,7 +67,6 @@
   margin: 0;
   color: var(--secondary-text);
   line-height: 1.4;
-  border: none !important;
 }
 
 .secure-payment-notice {
