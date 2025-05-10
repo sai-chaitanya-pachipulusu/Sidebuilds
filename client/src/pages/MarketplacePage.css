@@ -286,6 +286,7 @@
 .faq-list {
   margin: 0.5rem 0 0.75rem 1.25rem;
   padding: 0;
+  list-style-type: disc;
 }
 
 .faq-list li {
@@ -293,6 +294,10 @@
   font-size: 0.9rem;
   color: var(--secondary-text);
   line-height: 1.5;
+  background-color: transparent;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 2px solid var(--primary-color);
 }
 
 .faq-list li:last-child {
@@ -302,6 +307,9 @@
 .faq-list strong {
   color: var(--text-color);
   font-weight: 600;
+  position: relative;
+  display: inline-block;
+  margin-right: 0.25rem;
 }
 
 .error-message {

@@ -126,34 +126,38 @@
 
 .action-button svg {
   stroke-width: 2;
+  fill: none;
+  stroke: currentColor;
+  width: 18px;
+  height: 18px;
 }
 
 .action-button.view {
-  color: var(--text-color);
+  color: #2a69ac;
 }
 
 .action-button.view:hover {
-  background-color: var(--bg-hover);
-  color: var(--primary-color);
+  background-color: rgba(66, 153, 225, 0.1);
+  color: #2b6cb0;
 }
 
 .action-button.transfer {
-  color: var(--primary-color);
-  border-color: rgba(var(--primary-color-rgb), 0.3);
+  color: #805ad5;
+  border-color: rgba(128, 90, 213, 0.3);
 }
 
 .action-button.transfer:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.05);
+  background-color: rgba(128, 90, 213, 0.1);
   transform: translateY(-2px);
 }
 
 .action-button.delete {
-  color: var(--danger-color, #e53e3e);
+  color: #e53e3e;
   border-color: rgba(229, 62, 62, 0.3);
 }
 
 .action-button.delete:hover {
-  background-color: rgba(229, 62, 62, 0.05);
+  background-color: rgba(229, 62, 62, 0.1);
   color: #c53030;
 }
 
