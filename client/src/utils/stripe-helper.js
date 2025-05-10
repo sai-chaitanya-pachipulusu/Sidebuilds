@@ -61,3 +61,49 @@ export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe,
     throw error;
   }
 }; 
+
+/**
+ * Check and process a pending purchase after redirecting back from Stripe
+ * 
+ * @param {string} sessionId - Stripe checkout session ID
+ * @param {string} projectId - Project ID that was purchased
+ * @param {Object} apiClient - Axios or API client instance
+ * @returns {Promise<Object>} Transaction details if successful
+ */
+export const checkAndProcessPendingPurchase = async (sessionId, projectId, apiClient) => {
+  try {
+    console.log(`Checking transaction status for session ${sessionId}, project ${projectId}`);
+    
+    // First, check the transaction status
+    const response = await apiClient.get(`/payments/status/${sessionId}`);
+    
+    if (!response || !response.data) {
+      throw new Error('No transaction data found for this session');
+    }
+    
+    const transaction = response.data;
+    console.log(`Transaction status: ${transaction.status}`);
+    
+    // If the transaction is completed, we're good to go
+    if (transaction.status === 'completed') {
+      console.log('Transaction is already completed');
+      return transaction;
+    }
+    
+    // If the transaction is still pending, try to poll for updates
+    if (transaction.status === 'pending') {
+      console.log('Transaction is pending, waiting for completion...');
+      // You could implement polling logic here if needed
+      // For now, just return the pending transaction
+      return transaction;
+    }
+    
+    // Handle other statuses
+    console.warn(`Transaction has unexpected status: ${transaction.status}`);
+    return transaction;
+    
+  } catch (error) {
+    console.error('Error checking transaction status:', error);
+    throw error;
+  }
+} 
