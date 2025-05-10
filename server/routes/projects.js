@@ -140,7 +140,9 @@ router.get('/', async (req, res) => {
                 COALESCE(contact_email, '') as contact_email, 
                 COALESCE(contact_phone, '') as contact_phone, 
                 created_at, 
-                updated_at 
+                updated_at,
+                COALESCE(source, 'created') as source,
+                purchased_at
             FROM projects 
             WHERE owner_id = $1 
             ORDER BY created_at DESC`,
