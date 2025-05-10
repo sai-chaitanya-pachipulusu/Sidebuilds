@@ -123,12 +123,13 @@ function NavBar() {
       backdropFilter={scrolled ? 'blur(10px)' : 'none'}
       transition="all 0.3s ease"
       boxShadow={scrolled ? '0 4px 20px rgba(0, 0, 0, 0.2)' : 'none'}
+      py={2}
     >
       <Flex
         maxW="1200px"
         mx="auto"
-        py={5}
-        px={4}
+        py={6}
+        px={6}
         align="center"
         justify="space-between"
       >
@@ -154,7 +155,7 @@ function NavBar() {
         </MotionBox>
 
         {/* Desktop Navigation */}
-        <HStack spacing={8} display={{ base: 'none', md: 'flex' }}>
+        <HStack spacing={10} display={{ base: 'none', md: 'flex' }}>
           {isAuthenticated && (
             <>
               <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
@@ -186,6 +187,7 @@ function NavBar() {
                 variant="ghost"
                 leftIcon={<LoginIcon />}
                 fontWeight="normal"
+                px={6}
               >
                 Login
               </Button>
@@ -194,6 +196,7 @@ function NavBar() {
                 to="/register"
                 colorScheme="blue"
                 leftIcon={<RegisterIcon />}
+                px={6}
               >
                 Register
               </Button>
@@ -280,28 +283,28 @@ const NavItem = ({ icon, children, isActive, to }) => {
     <MotionLink
       as={RouterLink}
       to={to}
-      px={2}
-      py={1}
+      px={4}
+      py={2}
       display="flex"
       alignItems="center"
       position="relative"
       _hover={{ textDecoration: 'none' }}
       whileHover={{ y: -2 }}
     >
-      <HStack spacing={2} align="center">
+      <HStack spacing={3} align="center">
         <Box display="flex" alignItems="center" justifyContent="center" minW="18px">
           {icon}
         </Box>
-        <Text color={isActive ? 'brand.500' : 'white'}>{children}</Text>
+        <Text color={isActive ? 'brand.500' : 'white'} fontWeight={isActive ? "600" : "400"}>{children}</Text>
       </HStack>
       {isActive && (
         <Box
           position="absolute"
-          bottom="-6px"
+          bottom="-8px"
           left="50%"
           transform="translateX(-50%)"
-          height="2px"
-          width="20px"
+          height="3px"
+          width="30px"
           bg="brand.500"
           borderRadius="full"
         />
@@ -323,10 +326,11 @@ const MobileNavItem = ({ icon, children, isActive, to }) => {
       borderColor={isActive ? 'brand.500' : 'transparent'}
       bg={isActive ? 'whiteAlpha.100' : 'transparent'}
       borderRadius="0"
-      pl={isActive ? 3 : 0}
-      py={4}
-      mb={2}
+      pl={isActive ? 4 : 2}
+      py={5}
+      mb={3}
       _hover={{ bg: 'whiteAlpha.100' }}
+      fontSize="1.1rem"
     >
       {children}
     </Button>
