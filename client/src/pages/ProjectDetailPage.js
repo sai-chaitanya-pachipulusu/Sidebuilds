@@ -7,13 +7,13 @@ import { useAuth } from '../context/AuthContext';
 import './ProjectDetailPage.css';
 
 // Reuse stages from form or define centrally
-const projectStages = ['idea', 'planning', 'mvp', 'development', 'launched', 'on_hold'];
-const paymentMethods = ['direct', 'stripe', 'paypal'];
+const projectStages = ['Idea', 'Planning', 'Mvp', 'Development', 'Launched', 'On hold'];
+const paymentMethods = ['Direct', 'Stripe', 'Paypal'];
 
 function ProjectDetailPage() {
     const { id: projectId } = useParams(); // Get project ID from URL
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useAuth();
+    const { } = useAuth(); // Keep the auth context connection for token expiration handling
     const [project, setProject] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});

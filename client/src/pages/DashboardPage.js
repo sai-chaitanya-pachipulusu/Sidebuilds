@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Box, Flex, Heading, Text, Button, Alert, AlertIcon,
-  Container, useToast, Badge, Link
+  Container, useToast, Badge
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -13,17 +13,14 @@ import axios from 'axios';
 import ProjectTable from '../components/ProjectTable';
 import StripeConnectModal from '../components/StripeConnectModal';
 
-const MotionBox = motion(Box);
-
 function DashboardPage() {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const toast = useToast();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [deleteError, setDeleteError] = useState('');
     const [refreshCounter, setRefreshCounter] = useState(0);
     // eslint-disable-next-line no-unused-vars
     const [deletingId, setDeletingId] = useState(null);
