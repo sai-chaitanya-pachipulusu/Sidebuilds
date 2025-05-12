@@ -18,13 +18,13 @@
 
 .faq-header h1 {
   font-size: 2.5rem;
-  color: #2c3e50;
+  color: #2a2cbb;
   margin-bottom: 0.5rem;
 }
 
 .faq-header p {
   font-size: 1.1rem;
-  color: #555;
+  color: #d1cece;
 }
 
 .faq-list {
@@ -47,7 +47,7 @@
 
 .faq-item h3 {
   font-size: 1.4rem;
-  color: #3498db;
+  color: #1879b9;
   margin-top: 0;
   margin-bottom: 0.75rem;
 }
@@ -55,7 +55,7 @@
 .faq-item p {
   font-size: 1rem;
   line-height: 1.6;
-  color: #444;
+  color: #f3efef;
   margin-bottom: 0;
 }
 

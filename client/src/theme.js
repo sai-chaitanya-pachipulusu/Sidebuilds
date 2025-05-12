@@ -20,12 +20,12 @@ const theme = extendTheme({
       900: '#001626',
     },
     gray: {
-      50: '#FFFFFF',
-      100: '#FFFFFF',
-      200: '#FFFFFF',
-      300: '#FFFFFF',
-      400: '#FFFFFF',
-      500: '#FFFFFF',
+      50: '#f2f2f2',
+      100: '#d9d9d9',
+      200: '#bfbfbf',
+      300: '#a6a6a6',
+      400: '#8c8c8c',
+      500: '#737373',
       600: '#595959',
       700: '#404040',
       800: '#000000', // Changed to pure black
@@ -83,7 +83,7 @@ const theme = extendTheme({
           },
         },
         ghost: {
-          color: 'white',
+          color: 'gray.300',
           bg: '#000000', // Pure black
           _hover: {
             bg: 'whiteAlpha.100',

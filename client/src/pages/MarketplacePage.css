@@ -391,7 +391,7 @@
 }
 
 .step-text {
-  color: var(--secondary-text);
+  color: #ffffff;
   font-size: 0.95rem;
   line-height: 1.6;
 } 
