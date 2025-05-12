@@ -75,6 +75,25 @@ const ProfileIcon = () => (
   </svg>
 );
 
+const FAQIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9.09 9C9.3251 8.33167 9.78915 7.76261 10.4056 7.37333C11.022 6.98405 11.7579 6.79901 12.5 6.80001C13.2421 6.79901 13.978 6.98405 14.5944 7.37333C15.2108 7.76261 15.6749 8.33167 15.91 9.00001" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M12 16V16.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 10C3 15 3 17 9.5 21C16 17 16 15 16 10C16 5.66667 13.2 3.16667 12 2.5C10.8 3.16667 8 5.66667 8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+     <path d="M18 10C18 11.8856 18.4717 13.6826 19.3261 15.1906C20.1806 16.6985 21.3794 17.8562 22.8023 18.5293" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const TermsIcon = () => ( // Simple document icon for Terms
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 function NavBar() {
   const location = useLocation();
   const { isAuthenticated, logout } = useAuth();
@@ -181,6 +200,9 @@ function NavBar() {
               <NavItem to="/profile-settings" isActive={isActive('/profile-settings')}>
                 Profile Settings
               </NavItem>
+              <NavItem to="/faq" isActive={isActive('/faq')}>
+                FAQ
+              </NavItem>
             </>
           )}
           
@@ -264,17 +286,27 @@ function NavBar() {
                     <MobileNavItem to="/profile-settings" icon={<ProfileIcon />} isActive={isActive('/profile-settings')}>
                       Profile Settings
                     </MobileNavItem>
+                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
+                      FAQ
+                    </MobileNavItem>
+                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
+                      FAQ
+                    </MobileNavItem>
+                     <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
+                      Terms & Conditions
+                    </MobileNavItem>
                   </>
                 )}
                 
                 {isAuthenticated ? (
-                  <Button 
-                    leftIcon={<LogoutIcon />} 
-                    colorScheme="red" 
-                    variant="ghost" 
+                  <Button
+                    leftIcon={<LogoutIcon />}
+                    colorScheme="red"
+                    variant="ghost"
                     w="100%"
                     justifyContent="flex-start"
                     onClick={handleLogout}
+                    mt={4} // Add some margin top if it's the last auth item
                     mb={2}
                   >
                     Logout
@@ -286,6 +318,13 @@ function NavBar() {
                     </MobileNavItem>
                     <MobileNavItem to="/register" icon={<RegisterIcon />} isActive={isActive('/register')}>
                       Register
+                    </MobileNavItem>
+                    {/* Public links also in mobile when not authenticated */}
+                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
+                      FAQ
+                    </MobileNavItem>
+                    <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
+                      Terms & Conditions
                     </MobileNavItem>
                   </>
                 )}

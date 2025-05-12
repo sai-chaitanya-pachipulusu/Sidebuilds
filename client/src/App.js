@@ -21,6 +21,8 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage'; // Import profile
 // Import new certificate components
 import CertificatePage from './pages/CertificatePage';
 import VerifyPage from './pages/VerifyPage';
+import FAQPage from './pages/FAQPage'; // Import FAQPage
+import TermsPage from './pages/TermsPage'; // Import TermsPage
 
 // Placeholder components for pages not yet created
 // const HomePage = () => <div>Home Page - Publicly Accessible</div>;
@@ -51,6 +53,8 @@ function App() {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/verify" element={<VerifyPage />} />
                     <Route path="/verify/:verificationCode" element={<VerifyPage />} />
+                    <Route path="/faq" element={<FAQPage />} /> {/* Add FAQ route */}
+                    <Route path="/terms" element={<TermsPage />} /> {/* Add Terms route */}
                     
                     {/* Protected Routes - Everything else requires login */}
                     <Route element={<ProtectedRoute />}>

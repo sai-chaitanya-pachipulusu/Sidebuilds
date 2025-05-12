@@ -1,4 +1,4 @@
-# Stripe Connect Integration Guide
+# Stripe Connect Integration Guide & FAQ's
 
 ## Overview
 
@@ -55,14 +55,18 @@ Attempts to list a project without a connected Stripe account will return a `403
 You can check your Stripe Connect status at any time:
 
 ```
-GET /api/projects/check-stripe-account
+GET /api/stripe/check-onboarding-status
 ```
 
-Response:
+Response (example):
 ```json
 {
-  "hasStripeAccount": true,
-  "isOnboardingComplete": true
+  "accountId": "acct_xxxxxxxxxxxxxx",
+  "isOnboardingComplete": true,
+  "arePayoutsEnabled": true,
+  "areChargesEnabled": true,
+  "areDetailsSubmitted": true,
+  "needsAttention": false
 }
 ```
 
@@ -95,3 +99,25 @@ No, connecting your Stripe account is free. Standard marketplace commission fees
 ### What if my connection is rejected?
 
 Stripe may request additional information to verify your identity or business. Follow their guidance to complete the verification process. 
+
+### Summary: Stripe Connect & Payments:
+
+Updated the user profile settings page to include a Stripe Connect section, allowing users to connect or manage their Stripe accounts.
+Added backend API endpoints to create Stripe Account Links and check onboarding status.
+Modified the project creation/edit page to require a fully onboarded Stripe account with payouts enabled before a project can be listed for sale, prompting users to complete setup if necessary.
+Updated the payment processing logic in server/routes/payments.js to correctly transfer project ownership upon successful sale. This includes setting is_for_sale and is_public to FALSE, updating owner_id, owner_username, previous_owner_id, source, purchased_at, and transfer_date.
+
+
+#### Documentation & Legal:
+
+Created a new FAQ page (client/src/pages/FAQPage.js and FAQPage.css) and included information about the 5% platform commission.
+Added a route for the FAQ page and a link in the navigation bar.
+Created a basic Terms and Conditions page (client/src/pages/TermsPage.js and TermsPage.css) with placeholder content and sections relevant to a marketplace, including commission and Stripe Connect.
+Added a route for the Terms page and a link in the mobile navigation menu.
+Advisory:
+
+#### Provided suggestions for additional features for a robust product launch.
+
+Offered ideas for a Product Hunt launch strategy and gaining traction.
+Listed potential competitors in the side project marketplace space.
+Suggested niche positioning strategies and unique "crazy" add-on features to differentiate the platform.

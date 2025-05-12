@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { createProject, getProjectById, updateProject } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+// import axios from 'axios'; // No longer needed for direct call
 import StripeConnectModal from '../components/StripeConnectModal';
 import './ProjectFormPage.css';
 
@@ -32,13 +32,25 @@ function ProjectFormPage() {
     const [loading, setLoading] = useState(false);
     const [pageLoading, setPageLoading] = useState(false);
     const [showStripeModal, setShowStripeModal] = useState(false);
-    const [stripeAccountStatus, setStripeAccountStatus] = useState({
-        hasStripeAccount: false,
-        isOnboardingComplete: false
-    });
+    const [stripeStatus, setStripeStatus] = useState(null);
+    const [isStripeStatusLoading, setIsStripeStatusLoading] = useState(true);
 
-    useEffect(() => {
-        checkStripeConnectStatus();
+
+    const fetchProjectAndStripeStatus = useCallback(async () => {
+        setIsStripeStatusLoading(true);
+        if (user) { // Ensure user context is available
+            try {
+                const status = await checkStripeOnboardingStatus();
+                setStripeStatus(status);
+            } catch (err) {
+                console.error("Failed to check Stripe account status:", err);
+                setError(err.message || "Could not verify Stripe account status. Please try again.");
+                // Set a default status to allow form rendering but block sales
+                setStripeStatus({ accountId: null, isOnboardingComplete: false, arePayoutsEnabled: false, needsAttention: true });
+            }
+        }
+        setIsStripeStatusLoading(false);
+
         if (projectId) {
             setEditMode(true);
             setPageLoading(true);
@@ -63,19 +75,11 @@ function ProjectFormPage() {
                 })
                 .finally(() => setPageLoading(false));
         }
-    }, [projectId, user?.email]);
+    }, [projectId, user]); // Depend on user to ensure auth context is ready
 
-    const checkStripeConnectStatus = async () => {
-        try {
-            const response = await axios.get('/api/projects/check-stripe-account');
-            setStripeAccountStatus({
-                hasStripeAccount: response.data.hasStripeAccount,
-                isOnboardingComplete: response.data.isOnboardingComplete
-            });
-        } catch (err) {
-            console.error("Failed to check Stripe account status:", err);
-        }
-    };
+    useEffect(() => {
+        fetchProjectAndStripeStatus();
+    }, [fetchProjectAndStripeStatus]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -109,8 +113,16 @@ function ProjectFormPage() {
                 return;
             }
             
-            if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
-                setShowStripeModal(true);
+            if (isStripeStatusLoading) {
+                setError('Stripe status is still loading. Please wait a moment.');
+                setLoading(false);
+                return;
+            }
+
+            if (!stripeStatus || !stripeStatus.accountId || !stripeStatus.isOnboardingComplete || !stripeStatus.arePayoutsEnabled) {
+                setError('Your Stripe account is not fully set up for payouts. Please complete your Stripe onboarding in Profile Settings.');
+                // Optionally, direct them or show modal:
+                // setShowStripeModal(true); // Or navigate them: navigate('/profile-settings');
                 setLoading(false);
                 return;
             }
@@ -145,18 +157,48 @@ function ProjectFormPage() {
     };
     
     const handleStripeConnectSuccess = async () => {
-        setTimeout(async () => {
-            await checkStripeConnectStatus();
-            setShowStripeModal(false);
-            if (stripeAccountStatus.hasStripeAccount && stripeAccountStatus.isOnboardingComplete) {
+        // After Stripe modal interaction, re-check status
+        setShowStripeModal(false);
+        setIsStripeStatusLoading(true);
+        try {
+            const status = await checkStripeOnboardingStatus();
+            setStripeStatus(status);
+            if (status.isOnboardingComplete && status.arePayoutsEnabled) {
+                 // Automatically try to submit the form again if Stripe setup is now complete
                 handleSubmit({ preventDefault: () => {} });
+            } else {
+                setError('Stripe setup is still not complete. Please ensure payouts are enabled.');
             }
-        }, 2000);
+        } catch (err) {
+            setError(err.message || "Could not re-verify Stripe account status.");
+        } finally {
+            setIsStripeStatusLoading(false);
+        }
     };
 
-    if (pageLoading) {
+    if (pageLoading || (editMode && isStripeStatusLoading && !stripeStatus)) {
         return <div className="project-form-container"><p>Loading project details...</p></div>;
     }
+    
+    const renderStripeWarning = () => {
+        if (isStripeStatusLoading) {
+            return <p className="info-text">Checking Stripe account status...</p>;
+        }
+        if (!stripeStatus) {
+            return <p className="error-message">Could not load Stripe status. Cannot list project for sale.</p>;
+        }
+        if (!stripeStatus.accountId || !stripeStatus.isOnboardingComplete || !stripeStatus.arePayoutsEnabled) {
+            return (
+                <div className="stripe-account-required">
+                    <span className="stripe-warning">
+                        To sell projects, please complete your Stripe account setup for payouts.
+                        <Link to="/profile-settings" className="stripe-setup-link">Go to Profile Settings</Link>
+                    </span>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="project-form-container">
@@ -192,20 +234,7 @@ function ProjectFormPage() {
                         <input type="checkbox" id="is_for_sale" name="is_for_sale" checked={formData.is_for_sale} onChange={handleChange} />
                         <span>List for Sale?</span>
                     </label>
-                    {formData.is_for_sale && !stripeAccountStatus.hasStripeAccount && (
-                        <div className="stripe-account-required">
-                            <span className="stripe-warning">
-                                Requires Stripe Connect
-                                <button 
-                                    type="button" 
-                                    className="connect-stripe-btn"
-                                    onClick={() => setShowStripeModal(true)}
-                                >
-                                    Connect Now
-                                </button>
-                            </span>
-                        </div>
-                    )}
+                    {formData.is_for_sale && renderStripeWarning()}
                 </div>
                 
                 {formData.is_for_sale && (

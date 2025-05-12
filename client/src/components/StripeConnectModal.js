@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createStripeAccountLink } from '../services/api'; // Import the new API function
 import './StripeConnectModal.css';
 
 const StripeConnectModal = ({ isOpen, onClose, onSuccess }) => {
@@ -7,26 +7,30 @@ const StripeConnectModal = ({ isOpen, onClose, onSuccess }) => {
     const [error, setError] = useState('');
     const [connectUrl, setConnectUrl] = useState('');
 
-    useEffect(() => {
-        if (isOpen) {
-            getConnectUrl();
-        }
-    }, [isOpen]);
+    const getConnectUrl = useCallback(async () => {
+        if (!isOpen) return; // Don't fetch if modal is not open
 
-    const getConnectUrl = async () => {
         setLoading(true);
         setError('');
-        
         try {
-            const response = await axios.post('/api/payments/connect/create-account');
-            setConnectUrl(response.data.url);
+            // Use the new API function
+            const data = await createStripeAccountLink('account_onboarding');
+            if (data.url) {
+                setConnectUrl(data.url);
+            } else {
+                throw new Error('No URL returned from Stripe account link creation.');
+            }
         } catch (err) {
-            console.error('Failed to create Stripe Connect account:', err);
-            setError('Failed to create Stripe Connect account. Please try again later.');
+            console.error('Failed to create Stripe Connect account link:', err);
+            setError(err.message || 'Failed to create Stripe Connect link. Please try again later.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [isOpen]);
+
+    useEffect(() => {
+        getConnectUrl();
+    }, [getConnectUrl]); // Rerun when isOpen changes (via getConnectUrl dependency)
 
     if (!isOpen) return null;
 

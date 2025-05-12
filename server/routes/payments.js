@@ -495,21 +495,26 @@ async function processCheckoutCompleted(session) {
         console.log(`Updated transaction status to 'completed'`);
 
         // Mark the project as sold and transfer ownership
+        const buyerUsernameResult = await db.query('SELECT username FROM users WHERE user_id = $1', [transaction.buyer_id]);
+        const buyerUsername = buyerUsernameResult.rows.length > 0 ? buyerUsernameResult.rows[0].username : 'unknown_buyer';
+
         const updateResult = await db.query(
-            `UPDATE projects 
-            SET is_for_sale = FALSE, 
+            `UPDATE projects
+            SET is_for_sale = FALSE,
                 is_public = FALSE,
-                owner_id = $1, 
-                previous_owner_id = $2, 
-                transfer_date = NOW(),
-                purchased_at = NOW(),
-                source = 'purchased'
-            WHERE project_id = $3
-            RETURNING project_id, name, owner_id`,
-            [transaction.buyer_id, transaction.seller_id, transaction.project_id]
+                owner_id = $1,
+                owner_username = $2,
+                previous_owner_id = $3,
+                source = 'purchased',
+                purchased_at = CURRENT_TIMESTAMP,
+                transfer_date = CURRENT_TIMESTAMP,
+                updated_at = NOW()
+            WHERE project_id = $4
+            RETURNING project_id, name, owner_id, owner_username, is_for_sale, is_public, source`,
+            [transaction.buyer_id, buyerUsername, transaction.seller_id, transaction.project_id]
         );
         
-        console.log(`Updated project ownership. Result:`, updateResult.rows[0]);
+        console.log(`Updated project ownership and status. Result:`, updateResult.rows[0]);
         
         // Generate a unique verification code for the certificate
         const verificationCode = crypto

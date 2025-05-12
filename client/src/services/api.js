@@ -267,13 +267,45 @@ export const updateTransferStatus = async (projectId, statusData) => {
     }
 };
 
+// --- Stripe Connect API Calls ---
+export const getStripeAccountStatus = async () => {
+    try {
+        const response = await apiClient.get('/users/stripe-status');
+        return response.data;
+    } catch (error) {
+        console.error('Get Stripe Account Status API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to fetch Stripe account status');
+    }
+};
+
+export const createStripeAccountLink = async (type = 'account_onboarding') => {
+    try {
+        const response = await apiClient.post('/stripe/create-account-link', { type });
+        return response.data; // Should return { url }
+    } catch (error) {
+        console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to create Stripe account link');
+    }
+};
+
+export const checkStripeOnboardingStatus = async () => {
+    try {
+        const response = await apiClient.get('/stripe/check-onboarding-status');
+        return response.data; // { isOnboardingComplete: boolean, needsAttention: boolean, accountId: string | null }
+    } catch (error) {
+        console.error('Check Stripe Onboarding Status API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to check Stripe onboarding status');
+    }
+};
+
+
 // Debug API calls (development only)
 export const debugTransferProject = async (projectId, sellerId) => {
-    const response = await apiClient.post('/payments/debug/transfer-project', { 
-        projectId, 
+    const response = await apiClient.post('/payments/debug/transfer-project', {
+        projectId,
         sellerId
     });
     return response.data;
 };
 
-export default apiClient; // Export the configured instance if needed elsewhere 
+export default apiClient; // Export the configured instance if needed elsewhere

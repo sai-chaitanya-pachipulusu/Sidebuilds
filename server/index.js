@@ -90,11 +90,15 @@ app.use('/api/projects', require('./routes/projects'));
 
 // Import the certificates routes
 const certificatesRoutes = require('./routes/certificates');
+const stripeRoutes = require('./routes/stripe'); // Import Stripe routes
 
 // Mount certificates routes
 app.use('/api/certificates', certificatesRoutes);
 
-// --- Server Initialization --- 
+// Mount Stripe Connect routes
+app.use('/api/stripe', stripeRoutes);
+
+// --- Server Initialization ---
 const PORT = process.env.PORT || 5001; // Use port from .env or default to 5001
 
 // Uncaught exception handling

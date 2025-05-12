@@ -105,4 +105,43 @@ router.put('/profile', authMiddleware, async (req, res) => {
     }
 });
 
-module.exports = router; 
+// --- GET current user's Stripe Connect status ---
+// GET /api/users/stripe-status
+router.get('/stripe-status', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const result = await db.query(
+            'SELECT stripe_account_id, onboarding_complete, payout_enabled, stripe_charges_enabled, stripe_details_submitted FROM users WHERE user_id = $1',
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const {
+            stripe_account_id,
+            onboarding_complete,
+            payout_enabled,
+            stripe_charges_enabled,
+            stripe_details_submitted
+        } = result.rows[0];
+
+        res.json({
+            accountId: stripe_account_id,
+            isOnboardingComplete: onboarding_complete,
+            arePayoutsEnabled: payout_enabled,
+            areChargesEnabled: stripe_charges_enabled,
+            areDetailsSubmitted: stripe_details_submitted,
+            // You might want to add a more comprehensive check for "needsAttention"
+            // This often involves calling the Stripe API directly to get the latest account status
+            // For now, we'll base it on whether onboarding is complete but payouts/charges are not enabled
+            needsAttention: onboarding_complete && (!payout_enabled || !stripe_charges_enabled)
+        });
+    } catch (err) {
+        console.error("Get Stripe status error:", err.message);
+        res.status(500).json({ message: 'Server error fetching Stripe status.' });
+    }
+});
+
+module.exports = router;
