@@ -8,42 +8,140 @@ const db = require('../db');
 // POST /api/stripe/create-account-link
 // Creates a Stripe account link for onboarding or account updates
 router.post('/create-account-link', authMiddleware, async (req, res) => {
+    // Allow CORS for this specific endpoint
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    console.log('==== CREATE STRIPE ACCOUNT LINK ====');
+    console.log('User:', req.user.id);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Client URL:', process.env.CLIENT_URL);
+    
     try {
         const userId = req.user.id;
         let { type } = req.body;
         type = type || 'account_onboarding'; // Default to onboarding
 
+        // Validate the type
+        if (type !== 'account_onboarding' && type !== 'account_update') {
+            return res.status(400).json({ 
+                message: 'Invalid link type', 
+                error: 'Type must be either account_onboarding or account_update'
+            });
+        }
+
+        // Verify client URL is set
+        if (!process.env.CLIENT_URL) {
+            console.error('CLIENT_URL environment variable is not set');
+            return res.status(500).json({ 
+                message: 'Server configuration error', 
+                error: 'Missing CLIENT_URL configuration'
+            });
+        }
+
         // Get user's Stripe account ID from DB
-        const userResult = await db.query('SELECT stripe_account_id FROM users WHERE user_id = $1', [userId]);
-        let stripeAccountId = userResult.rows.length > 0 ? userResult.rows[0].stripe_account_id : null;
+        const userResult = await db.query('SELECT stripe_account_id, email FROM users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            console.error('User not found:', userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        let stripeAccountId = userResult.rows[0].stripe_account_id;
+        const email = userResult.rows[0].email;
+
+        console.log('Creating account link for user:', userId);
+        console.log('Existing Stripe account ID:', stripeAccountId ? 'Found (masked)' : 'Not found');
 
         if (!stripeAccountId) {
             // Create a new Stripe Express account if one doesn't exist
-            const account = await stripe.accounts.create({
-                type: process.env.STRIPE_CONNECT_ACCOUNT_TYPE || 'express', // 'express' or 'standard'
-                country: 'US', // Or dynamically determine based on user
-                email: req.user.email, // Pre-fill email
-                capabilities: {
-                    card_payments: { requested: true },
-                    transfers: { requested: true },
-                },
-            });
-            stripeAccountId = account.id;
-            // Save the new Stripe account ID to the user's record
-            await db.query('UPDATE users SET stripe_account_id = $1 WHERE user_id = $2', [stripeAccountId, userId]);
+            console.log('Creating new Stripe account for email:', email);
+            try {
+                const account = await stripe.accounts.create({
+                    type: process.env.STRIPE_CONNECT_ACCOUNT_TYPE || 'express',
+                    country: 'US',
+                    email: email,
+                    capabilities: {
+                        card_payments: { requested: true },
+                        transfers: { requested: true },
+                    },
+                });
+                stripeAccountId = account.id;
+                console.log('New Stripe account created with ID:', stripeAccountId.substring(0, 8) + '...');
+                
+                // Save the new Stripe account ID to the user's record
+                await db.query('UPDATE users SET stripe_account_id = $1 WHERE user_id = $2', [stripeAccountId, userId]);
+                console.log('User record updated with new Stripe account ID');
+            } catch (accountError) {
+                console.error('Error creating Stripe account:', accountError);
+                return res.status(500).json({
+                    message: 'Failed to create Stripe account',
+                    error: accountError.message,
+                    type: accountError.type || 'unknown'
+                });
+            }
         }
 
-        const accountLink = await stripe.accountLinks.create({
-            account: stripeAccountId,
-            refresh_url: `${process.env.CLIENT_URL}/profile-settings?stripe_refresh=true`, // User is redirected here if link expires
-            return_url: `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`,   // User is redirected here after completing flow
-            type: type, // 'account_onboarding' or 'account_update'
-        });
-
-        res.json({ url: accountLink.url });
+        console.log('Creating account link with type:', type);
+        console.log('Return URL:', `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`);
+        
+        try {
+            const accountLink = await stripe.accountLinks.create({
+                account: stripeAccountId,
+                refresh_url: `${process.env.CLIENT_URL}/profile-settings?stripe_refresh=true`,
+                return_url: `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`,
+                type: type,
+            });
+            
+            console.log('Account link created successfully');
+            res.json({ url: accountLink.url });
+        } catch (linkError) {
+            console.error('Error creating account link:', linkError);
+            
+            // Handle specific Stripe errors
+            if (linkError.type === 'StripeInvalidRequestError') {
+                if (linkError.message.includes('already onboarded')) {
+                    // Account is already onboarded, create an account update link instead
+                    try {
+                        console.log('Account already onboarded, creating account update link instead');
+                        const accountLink = await stripe.accountLinks.create({
+                            account: stripeAccountId,
+                            refresh_url: `${process.env.CLIENT_URL}/profile-settings?stripe_refresh=true`,
+                            return_url: `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`,
+                            type: 'account_update',
+                        });
+                        
+                        console.log('Account update link created successfully');
+                        return res.json({ url: accountLink.url });
+                    } catch (updateError) {
+                        console.error('Error creating account update link:', updateError);
+                        return res.status(500).json({ 
+                            message: 'Failed to create account update link', 
+                            error: updateError.message,
+                            type: updateError.type || 'unknown'
+                        });
+                    }
+                }
+            }
+            
+            res.status(500).json({ 
+                message: 'Failed to create Stripe account link', 
+                error: linkError.message,
+                type: linkError.type || 'unknown'
+            });
+        }
     } catch (error) {
-        console.error('Error creating Stripe account link:', error);
-        res.status(500).json({ message: 'Failed to create Stripe account link', error: error.message });
+        console.error('Unexpected error creating Stripe account link:', error);
+        res.status(500).json({ 
+            message: 'Server error while creating Stripe account link', 
+            error: error.message 
+        });
     }
 });
 

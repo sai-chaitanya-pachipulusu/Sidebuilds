@@ -280,11 +280,39 @@ export const getStripeAccountStatus = async () => {
 
 export const createStripeAccountLink = async (type = 'account_onboarding') => {
     try {
+        console.log('Creating Stripe account link, type:', type);
         const response = await apiClient.post('/stripe/create-account-link', { type });
+        console.log('Stripe account link created successfully');
         return response.data; // Should return { url }
     } catch (error) {
-        console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to create Stripe account link');
+        console.error('Create Stripe Account Link API error:');
+        
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+            
+            // Pass through Stripe-specific error details if available
+            if (error.response.data?.type?.startsWith('Stripe')) {
+                const stripeError = {
+                    message: error.response.data.message || 'Stripe API error',
+                    type: error.response.data.type,
+                    code: error.response.data.code
+                };
+                console.error('Stripe-specific error details:', stripeError);
+                throw stripeError;
+            }
+            
+            throw error.response.data || new Error('Failed to create Stripe account link');
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+            throw new Error('Network error while connecting to Stripe. Please check your connection and try again.');
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error setting up request:', error.message);
+            throw new Error('Failed to create Stripe account link: ' + error.message);
+        }
     }
 };
 
