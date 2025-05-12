@@ -198,7 +198,7 @@ function NavBar() {
                 Dashboard
               </NavItem>
               <NavItem to="/profile-settings" isActive={isActive('/profile-settings')}>
-                Profile Settings
+                Profile
               </NavItem>
               <NavItem to="/faq" isActive={isActive('/faq')}>
                 FAQ
@@ -284,15 +284,12 @@ function NavBar() {
                       Dashboard
                     </MobileNavItem>
                     <MobileNavItem to="/profile-settings" icon={<ProfileIcon />} isActive={isActive('/profile-settings')}>
-                      Profile Settings
+                      Profile
                     </MobileNavItem>
                     <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
                       FAQ
                     </MobileNavItem>
-                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
-                      FAQ
-                    </MobileNavItem>
-                     <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
+                    <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
                       Terms & Conditions
                     </MobileNavItem>
                   </>

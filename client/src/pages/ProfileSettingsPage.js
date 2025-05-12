@@ -145,7 +145,7 @@ function ProfileSettingsPage() {
 
   return (
     <div className="profile-settings-page">
-      <h2>Profile Settings</h2>
+      <h2>Profile & Payment Settings</h2>
       {error && <p className="error-message">{error}</p>}
       {success && <p className="success-message">{success}</p>}
       
