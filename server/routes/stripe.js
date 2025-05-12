@@ -133,13 +133,28 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
 
     } catch (error) {
         console.error('Error checking Stripe onboarding status:', error);
+
         // Handle cases where the Stripe account might not exist or other API errors
         if (error.type === 'StripeInvalidRequestError' && error.code === 'resource_missing') {
             // If account doesn't exist on Stripe's side, clear it from our DB
-            await db.query('UPDATE users SET stripe_account_id = NULL, onboarding_complete = FALSE, payout_enabled = FALSE, stripe_charges_enabled = FALSE, stripe_details_submitted = FALSE WHERE user_id = $1', [req.user.id]);
-            return res.status(404).json({ message: 'Stripe account not found. Please try connecting again.', accountId: null, isOnboardingComplete: false, arePayoutsEnabled: false, areChargesEnabled: false, areDetailsSubmitted: false, needsAttention: true });
+            try {
+              await db.query('UPDATE users SET stripe_account_id = NULL, onboarding_complete = FALSE, payout_enabled = FALSE, stripe_charges_enabled = FALSE, stripe_details_submitted = FALSE WHERE user_id = $1', [req.user.id]);
+              return res.status(404).json({ message: 'Stripe account not found on Stripe. Cleared local record. Please try connecting again.', accountId: null, isOnboardingComplete: false, arePayoutsEnabled: false, areChargesEnabled: false, areDetailsSubmitted: false, needsAttention: true });
+            } catch (dbError) {
+              console.error('Error clearing stale Stripe account ID from DB:', dbError);
+              // Still return an error to the client, but indicate DB update failed
+              return res.status(500).json({ message: 'Stripe account not found, but failed to update local record. Please contact support.', error: error.message });
+            }
+        } else if (error.type === 'StripeAuthenticationError') {
+            // Handle authentication errors (e.g., invalid API key)
+             return res.status(500).json({ message: 'Stripe API authentication failed. Please check server configuration.', error: error.message });
+        } else if (error.type) {
+            // Handle other specific Stripe errors
+            return res.status(500).json({ message: `Stripe API error: ${error.message}`, type: error.type, code: error.code });
+        } else {
+            // Handle generic server errors
+            res.status(500).json({ message: 'Failed to check Stripe onboarding status due to a server error', error: error.message });
         }
-        res.status(500).json({ message: 'Failed to check Stripe onboarding status', error: error.message });
     }
 });
 
