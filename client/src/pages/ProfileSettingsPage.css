@@ -87,4 +87,24 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   border-left: 3px solid #388e3c;
+}
+
+.retry-button {
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.retry-button:hover {
+  background-color: #0060d3;
+}
+
+.retry-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 } 

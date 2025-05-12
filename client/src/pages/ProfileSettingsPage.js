@@ -151,7 +151,18 @@ function ProfileSettingsPage() {
       
       <div className="stripe-connect-section">
         <h3>Stripe Account for Payouts</h3>
-        {stripeError && <p className="error-message">{stripeError}</p>}
+        {stripeError && (
+          <div className="error-message">
+            <p>{stripeError}</p>
+            <button 
+              onClick={fetchProfileAndStripeStatus} 
+              className="retry-button"
+              disabled={isStripeLoading}
+            >
+              {isStripeLoading ? 'Retrying...' : 'Retry'}
+            </button>
+          </div>
+        )}
         {isStripeLoading && <p>Loading Stripe status...</p>}
         {!isStripeLoading && stripeStatus && (
           <div>

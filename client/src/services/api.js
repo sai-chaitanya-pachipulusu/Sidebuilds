@@ -290,11 +290,28 @@ export const createStripeAccountLink = async (type = 'account_onboarding') => {
 
 export const checkStripeOnboardingStatus = async () => {
     try {
+        console.log("Calling Stripe onboarding status endpoint...");
         const response = await apiClient.get('/stripe/check-onboarding-status');
+        console.log("Stripe onboarding status response:", response.data);
         return response.data; // { isOnboardingComplete: boolean, needsAttention: boolean, accountId: string | null }
     } catch (error) {
-        console.error('Check Stripe Onboarding Status API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to check Stripe onboarding status');
+        console.error('Check Stripe Onboarding Status API error:');
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+            throw error.response.data;
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+            throw new Error('No response received from server when checking Stripe status. Please try again later.');
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error setting up request:', error.message);
+            throw new Error('Failed to check Stripe onboarding status: ' + error.message);
+        }
     }
 };
 

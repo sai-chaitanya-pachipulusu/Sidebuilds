@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Use the pre-configured Stripe instance from config
+const { stripe } = require('../config/stripe.config');
 const authMiddleware = require('../middleware/authMiddleware');
 const db = require('../db');
 
@@ -158,5 +159,75 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/stripe/debug
+// A simple endpoint to test the Stripe configuration
+router.get('/debug', authMiddleware, async (req, res) => {
+    try {
+        // Just try to retrieve basic info from Stripe to test the connection
+        const account = await stripe.accounts.retrieve();
+        res.json({ 
+            message: 'Stripe connection successful',
+            accountType: account.type,
+            isEnabled: account.charges_enabled
+        });
+    } catch (error) {
+        console.error('Stripe debug error:', error);
+        res.status(500).json({ 
+            message: 'Stripe connection failed', 
+            error: error.message,
+            errorType: error.type,
+            // Don't include the key itself in the response
+            keyProvided: !!process.env.STRIPE_SECRET_KEY
+        });
+    }
+});
+
+// GET /api/stripe/public-debug
+// A simple endpoint to test the Stripe configuration WITHOUT authentication
+router.get('/public-debug', async (req, res) => {
+    try {
+        // Verify Stripe secret key is present
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return res.status(500).json({ 
+                message: 'Stripe configuration issue: Missing STRIPE_SECRET_KEY',
+                error: 'No API key provided'
+            });
+        }
+        
+        // Verify the first few characters of the key to check if it's a secret key
+        const key = process.env.STRIPE_SECRET_KEY;
+        const isTestKey = key.startsWith('sk_test_');
+        const isLiveKey = key.startsWith('sk_live_');
+        
+        if (!isTestKey && !isLiveKey) {
+            return res.status(500).json({ 
+                message: 'Stripe configuration issue: STRIPE_SECRET_KEY is not valid',
+                error: 'Invalid secret key format - should start with sk_test_ or sk_live_'
+            });
+        }
+        
+        // Try a simple Stripe API call
+        try {
+            const balance = await stripe.balance.retrieve();
+            return res.json({ 
+                message: 'Stripe connection successful',
+                keyType: isTestKey ? 'test' : 'live',
+                balanceAvailable: balance.available.length > 0
+            });
+        } catch (stripeError) {
+            return res.status(500).json({ 
+                message: 'Stripe API call failed',
+                error: stripeError.message,
+                type: stripeError.type
+            });
+        }
+    } catch (error) {
+        console.error('Stripe public debug error:', error);
+        res.status(500).json({ 
+            message: 'Stripe connection test failed', 
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
