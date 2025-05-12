@@ -164,7 +164,9 @@ function ProfileSettingsPage() {
               </button>
               <button 
                 onClick={() => {
-                  window.open('/api/stripe/test-status', '_blank');
+                  // Try each diagnostic endpoint
+                  window.open('/api/public/stripe-status', '_blank');
+                  setTimeout(() => window.open('/api/stripe/test-status', '_blank'), 500);
                 }}
                 className="test-api-button"
               >

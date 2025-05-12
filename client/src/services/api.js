@@ -2,13 +2,13 @@ import axios from 'axios';
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use environment variable for base URL, fallback for development
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api', 
+    // Use environment variable for base URL
+    baseURL: process.env.REACT_APP_API_URL || '/api', // Fall back to relative path if env var not set
     headers: {
         'Content-Type': 'application/json',
     },
     // Add timeout to prevent hanging requests
-    timeout: 10000,
+    timeout: 15000, // 15 seconds timeout for production
 });
 
 // --- Interceptor to add JWT token to requests --- 

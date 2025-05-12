@@ -96,6 +96,119 @@ router.get('/projects/:id', async (req, res) => {
     }
 });
 
+// Add a health check endpoint
+router.get('/health', async (req, res) => {
+  const healthData = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    services: {}
+  };
+
+  // Check database
+  try {
+    const dbStart = Date.now();
+    const result = await db.query('SELECT 1 AS health_check');
+    const dbDuration = Date.now() - dbStart;
+    
+    healthData.services.database = {
+      status: 'up',
+      responseTime: `${dbDuration}ms`
+    };
+  } catch (error) {
+    healthData.services.database = {
+      status: 'down',
+      error: error.message
+    };
+    healthData.status = 'degraded';
+  }
+
+  // Check Stripe availability
+  try {
+    const { stripe, stripeConfigValid, configErrors } = require('../config/stripe.config');
+    
+    if (!stripeConfigValid) {
+      healthData.services.stripe = {
+        status: 'misconfigured',
+        errors: configErrors
+      };
+      healthData.status = 'degraded';
+    } else {
+      try {
+        const stripeStart = Date.now();
+        // Simple check without actually making API call to avoid rate limits
+        healthData.services.stripe = {
+          status: 'configured',
+          keyType: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'live',
+          webhookConfigured: !!process.env.STRIPE_WEBHOOK_SECRET
+        };
+      } catch (stripeError) {
+        healthData.services.stripe = {
+          status: 'error',
+          error: stripeError.message
+        };
+        healthData.status = 'degraded';
+      }
+    }
+  } catch (error) {
+    healthData.services.stripe = {
+      status: 'unknown',
+      error: error.message
+    };
+    healthData.status = 'degraded';
+  }
+
+  // Return health information
+  res.json(healthData);
+});
+
+// Add a Stripe-specific health check for public diagnostics
+router.get('/stripe-status', async (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  const data = {
+    status: 'checking',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  };
+
+  try {
+    // Import Stripe config
+    const { stripe, stripeConfigValid, configErrors } = require('../config/stripe.config');
+    
+    if (!stripeConfigValid) {
+      data.status = 'misconfigured';
+      data.errors = configErrors;
+    } else {
+      // Try a simple Stripe API call
+      try {
+        const balance = await stripe.balance.retrieve();
+        data.status = 'connected';
+        data.keyType = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'live';
+        data.hasBalance = balance.available.length > 0;
+      } catch (stripeErr) {
+        data.status = 'error';
+        data.errorType = stripeErr.type;
+        data.errorCode = stripeErr.code;
+        data.message = stripeErr.message;
+      }
+    }
+  } catch (error) {
+    data.status = 'failed';
+    data.error = error.message;
+  }
+
+  res.json(data);
+});
+
 // Add other public routes here if needed (e.g., view single public project?)
 
 module.exports = router; 
