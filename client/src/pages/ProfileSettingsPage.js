@@ -154,13 +154,23 @@ function ProfileSettingsPage() {
         {stripeError && (
           <div className="error-message">
             <p>{stripeError}</p>
-            <button 
-              onClick={fetchProfileAndStripeStatus} 
-              className="retry-button"
-              disabled={isStripeLoading}
-            >
-              {isStripeLoading ? 'Retrying...' : 'Retry'}
-            </button>
+            <div className="debug-actions">
+              <button 
+                onClick={fetchProfileAndStripeStatus} 
+                className="retry-button"
+                disabled={isStripeLoading}
+              >
+                {isStripeLoading ? 'Retrying...' : 'Retry'}
+              </button>
+              <button 
+                onClick={() => {
+                  window.open('/api/stripe/test-status', '_blank');
+                }}
+                className="test-api-button"
+              >
+                Test Stripe API
+              </button>
+            </div>
           </div>
         )}
         {isStripeLoading && <p>Loading Stripe status...</p>}

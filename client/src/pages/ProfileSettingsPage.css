@@ -89,6 +89,26 @@
   border-left: 3px solid #388e3c;
 }
 
+.debug-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.test-api-button {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.test-api-button:hover {
+  background-color: #444;
+}
+
 .retry-button {
   background-color: #0070f3;
   color: white;
@@ -96,7 +116,7 @@
   padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 0; /* Reset margin since we're using debug-actions container */
   font-size: 14px;
 }
 

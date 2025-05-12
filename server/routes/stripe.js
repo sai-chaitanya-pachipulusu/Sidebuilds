@@ -50,22 +50,32 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
 // GET /api/stripe/check-onboarding-status
 // Checks the user's Stripe account status and updates the database
 router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
+    console.log('==== STRIPE STATUS CHECK START ====');
+    console.log('User:', req.user.id);
+    
     try {
+        console.log('Step 1: Getting user ID from request');
         const userId = req.user.id;
+        
+        console.log('Step 2: Querying database for user Stripe info');
         const userResult = await db.query(
             'SELECT stripe_account_id, email FROM users WHERE user_id = $1',
             [userId]
         );
+        console.log('Query complete, rows returned:', userResult.rows.length);
 
         if (userResult.rows.length === 0) {
+            console.log('No user found in database');
             return res.status(404).json({ message: 'User not found' });
         }
 
         let { stripe_account_id: stripeAccountId, email } = userResult.rows[0];
+        console.log('Stripe account ID from DB:', stripeAccountId ? 'Found (masked)' : 'Not found');
 
         if (!stripeAccountId) {
-            // Attempt to create an account if one doesn't exist - this might happen if user navigates away during initial link creation
+            console.log('Step 3A: No Stripe account ID, creating new account');
             try {
+                console.log('Creating new Stripe account for email:', email);
                 const account = await stripe.accounts.create({
                     type: process.env.STRIPE_CONNECT_ACCOUNT_TYPE || 'express',
                     country: 'US',
@@ -76,8 +86,13 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                     },
                 });
                 stripeAccountId = account.id;
+                console.log('New Stripe account created with ID (masked)');
+                
+                console.log('Updating user record with new Stripe account ID');
                 await db.query('UPDATE users SET stripe_account_id = $1 WHERE user_id = $2', [stripeAccountId, userId]);
-                 return res.json({ 
+                console.log('User record updated');
+                
+                return res.json({ 
                     accountId: stripeAccountId, 
                     isOnboardingComplete: false, 
                     arePayoutsEnabled: false,
@@ -86,59 +101,85 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                     needsAttention: true 
                 });
             } catch (createError) {
-                 console.error('Error creating Stripe account during status check:', createError);
-                 return res.status(500).json({ message: 'Failed to initialize Stripe account.' });
+                console.error('Error creating Stripe account:', createError);
+                return res.status(500).json({ message: 'Failed to initialize Stripe account.', error: createError.message });
             }
         }
         
-        const account = await stripe.accounts.retrieve(stripeAccountId);
-
-        const onboardingComplete = account.details_submitted && account.charges_enabled && account.payouts_enabled;
-        const payoutsEnabled = account.payouts_enabled;
-        const chargesEnabled = account.charges_enabled;
-        const detailsSubmitted = account.details_submitted;
-        
-        // Determine if account needs attention
-        // This is a basic check. Stripe's `requirements.currently_due` and `requirements.eventually_due` provide more detail.
-        let needsAttention = false;
-        if (account.requirements) {
-            if (account.requirements.disabled_reason) {
-                needsAttention = true; // Account is disabled for some reason
-            } else if (account.requirements.currently_due && account.requirements.currently_due.length > 0) {
-                needsAttention = true; // There are current requirements
-            } else if (account.requirements.past_due && account.requirements.past_due.length > 0) {
-                needsAttention = true; // There are past_due requirements
+        console.log('Step 3B: Retrieving Stripe account details');
+        try {
+            console.log('Calling stripe.accounts.retrieve with ID (masked)');
+            const account = await stripe.accounts.retrieve(stripeAccountId);
+            console.log('Stripe account retrieved successfully');
+            
+            console.log('Checking account status flags');
+            const onboardingComplete = account.details_submitted && account.charges_enabled && account.payouts_enabled;
+            const payoutsEnabled = account.payouts_enabled;
+            const chargesEnabled = account.charges_enabled;
+            const detailsSubmitted = account.details_submitted;
+            
+            console.log('Account status:', { 
+                onboardingComplete, 
+                payoutsEnabled, 
+                chargesEnabled, 
+                detailsSubmitted 
+            });
+            
+            // Determine if account needs attention
+            console.log('Checking if account needs attention');
+            let needsAttention = false;
+            if (account.requirements) {
+                if (account.requirements.disabled_reason) {
+                    console.log('Account has disabled reason:', account.requirements.disabled_reason);
+                    needsAttention = true; // Account is disabled for some reason
+                } else if (account.requirements.currently_due && account.requirements.currently_due.length > 0) {
+                    console.log('Account has currently due requirements:', account.requirements.currently_due.length);
+                    needsAttention = true; // There are current requirements
+                } else if (account.requirements.past_due && account.requirements.past_due.length > 0) {
+                    console.log('Account has past due requirements:', account.requirements.past_due.length);
+                    needsAttention = true; // There are past_due requirements
+                }
             }
+            if (!onboardingComplete && detailsSubmitted) {
+                console.log('Details submitted but onboarding not complete');
+                needsAttention = true;
+            }
+
+            console.log('Step 4: Updating user record with Stripe status');
+            try {
+                await db.query(
+                    'UPDATE users SET onboarding_complete = $1, payout_enabled = $2, stripe_charges_enabled = $3, stripe_details_submitted = $4, updated_at = NOW() WHERE user_id = $5',
+                    [onboardingComplete, payoutsEnabled, chargesEnabled, detailsSubmitted, userId]
+                );
+                console.log('User record updated with Stripe status');
+            } catch (dbUpdateError) {
+                console.error('Error updating user record:', dbUpdateError);
+                // Continue and return data even if DB update fails
+            }
+
+            console.log('Step 5: Sending success response');
+            console.log('==== STRIPE STATUS CHECK COMPLETE ====');
+            return res.json({ 
+                accountId: stripeAccountId, 
+                isOnboardingComplete: onboardingComplete,
+                arePayoutsEnabled: payoutsEnabled,
+                areChargesEnabled: chargesEnabled,
+                areDetailsSubmitted: detailsSubmitted,
+                needsAttention: needsAttention
+            });
+        } catch (retrieveError) {
+            console.error('Error retrieving Stripe account:', retrieveError);
+            throw retrieveError; // Let the outer catch block handle this
         }
-        if (!onboardingComplete && detailsSubmitted) { // If details are submitted but not fully onboarded (e.g. payouts/charges not enabled)
-            needsAttention = true;
-        }
-
-
-        // Update user's Stripe status in DB
-        await db.query(
-            'UPDATE users SET onboarding_complete = $1, payout_enabled = $2, stripe_charges_enabled = $3, stripe_details_submitted = $4, updated_at = NOW() WHERE user_id = $5',
-            [onboardingComplete, payoutsEnabled, chargesEnabled, detailsSubmitted, userId]
-        );
-
-        res.json({ 
-            accountId: stripeAccountId, 
-            isOnboardingComplete: onboardingComplete,
-            arePayoutsEnabled: payoutsEnabled,
-            areChargesEnabled: chargesEnabled,
-            areDetailsSubmitted: detailsSubmitted,
-            needsAttention: needsAttention,
-            // Optionally return more details from the account object if needed by the frontend
-            // requirements: account.requirements 
-        });
-
     } catch (error) {
+        console.error('==== STRIPE STATUS CHECK FAILED ====');
         console.error('Error checking Stripe onboarding status:', error);
 
         // Handle cases where the Stripe account might not exist or other API errors
         if (error.type === 'StripeInvalidRequestError' && error.code === 'resource_missing') {
             // If account doesn't exist on Stripe's side, clear it from our DB
             try {
+              console.log('Clearing invalid Stripe account ID from DB');
               await db.query('UPDATE users SET stripe_account_id = NULL, onboarding_complete = FALSE, payout_enabled = FALSE, stripe_charges_enabled = FALSE, stripe_details_submitted = FALSE WHERE user_id = $1', [req.user.id]);
               return res.status(404).json({ message: 'Stripe account not found on Stripe. Cleared local record. Please try connecting again.', accountId: null, isOnboardingComplete: false, arePayoutsEnabled: false, areChargesEnabled: false, areDetailsSubmitted: false, needsAttention: true });
             } catch (dbError) {
@@ -148,12 +189,15 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             }
         } else if (error.type === 'StripeAuthenticationError') {
             // Handle authentication errors (e.g., invalid API key)
+             console.log('Stripe authentication error - API key issue');
              return res.status(500).json({ message: 'Stripe API authentication failed. Please check server configuration.', error: error.message });
         } else if (error.type) {
             // Handle other specific Stripe errors
+            console.log('Other Stripe API error:', error.type, error.code);
             return res.status(500).json({ message: `Stripe API error: ${error.message}`, type: error.type, code: error.code });
         } else {
             // Handle generic server errors
+            console.log('Generic server error');
             res.status(500).json({ message: 'Failed to check Stripe onboarding status due to a server error', error: error.message });
         }
     }
@@ -227,6 +271,42 @@ router.get('/public-debug', async (req, res) => {
             message: 'Stripe connection test failed', 
             error: error.message
         });
+    }
+});
+
+// GET /api/stripe/test-status
+// A TEMPORARY route to check/debug Stripe status without authentication
+// SECURITY WARNING: For development/debugging only. Do not deploy to production!
+router.get('/test-status', async (req, res) => {
+    console.log('==== STRIPE TEST STATUS CHECK ====');
+    try {
+        // Make sure we have config data
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return res.status(500).json({ message: 'Missing STRIPE_SECRET_KEY in environment' });
+        }
+        
+        // Test basic Stripe access
+        try {
+            const balance = await stripe.balance.retrieve();
+            console.log('Stripe balance check successful');
+            
+            // Return success with basic Stripe info but not account details
+            return res.json({
+                message: 'Stripe API connection working',
+                balanceAvailable: balance.available.length > 0,
+                stripeKeyType: process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') ? 'test' : 'live'
+            });
+        } catch (stripeError) {
+            console.error('Stripe balance check failed:', stripeError);
+            return res.status(500).json({
+                message: 'Failed to connect to Stripe API',
+                error: stripeError.message,
+                type: stripeError.type
+            });
+        }
+    } catch (error) {
+        console.error('Unexpected error in test-status endpoint:', error);
+        return res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
