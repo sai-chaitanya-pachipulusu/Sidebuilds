@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { createStripeAccountLink } from '../services/api';
 import './StripeConnectModal.css';
 
 function StripeConnectModal({ isOpen, onClose, onSuccess }) {
-    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
