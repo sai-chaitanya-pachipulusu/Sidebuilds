@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUserProfile, updateUserProfile, getStripeAccountStatus, createStripeAccountLink, checkStripeOnboardingStatus } from '../services/api';
+import { getUserProfile, updateUserProfile, createStripeAccountLink, checkStripeOnboardingStatus } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './ProfileSettingsPage.css';
 import StripeConnectModal from '../components/StripeConnectModal'; // Assuming you have this or will create it
