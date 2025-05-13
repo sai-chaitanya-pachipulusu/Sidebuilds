@@ -2,27 +2,35 @@ import React, { useState } from 'react';
 import { createStripeAccountLink } from '../services/api';
 import './StripeConnectModal.css';
 
-function StripeConnectModal({ isOpen, onClose, onSuccess }) {
+function StripeConnectModal({ isOpen, onClose, onSuccess, accountType = 'account_onboarding' }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
 
     const handleConnectStripe = async () => {
         setIsLoading(true);
         setError('');
+        setSuccess(false);
         try {
             // Add a small delay to ensure API connection is established
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            console.log('Initiating Stripe Connect...');
-            const { url } = await createStripeAccountLink();
+            console.log('Initiating Stripe Connect with type:', accountType);
+            const { url } = await createStripeAccountLink(accountType);
             
             if (!url) {
                 throw new Error('No URL returned from Stripe. Please try again.');
             }
             
             console.log('Stripe link created successfully, redirecting to:', url);
-            // Redirect to Stripe in a new window for better UX
-            window.location.href = url;
+            
+            // Show success message before redirecting
+            setSuccess(true);
+            
+            // Redirect after a short delay to allow the user to see the success message
+            setTimeout(() => {
+                window.location.href = url;
+            }, 1500);
             
         } catch (err) {
             console.error("Stripe Connect error:", err);
@@ -37,6 +45,7 @@ function StripeConnectModal({ isOpen, onClose, onSuccess }) {
             } else {
                 setError(err.message || 'Failed to connect to Stripe. Please try again.');
             }
+            setSuccess(false);
         } finally {
             setIsLoading(false);
         }
@@ -136,10 +145,16 @@ function StripeConnectModal({ isOpen, onClose, onSuccess }) {
                         <p>Stripe is trusted by millions of businesses worldwide</p>
                     </div>
                     
+                    {success && (
+                        <div className="success-message">
+                            <p>Success! You'll be redirected to Stripe to complete your account setup...</p>
+                        </div>
+                    )}
+                    
                     <div className="stripe-connect-actions">
                         <button 
                             onClick={handleConnectStripe} 
-                            disabled={isLoading} 
+                            disabled={isLoading || success} 
                             className="stripe-connect-button"
                         >
                             {isLoading ? (
@@ -148,6 +163,13 @@ function StripeConnectModal({ isOpen, onClose, onSuccess }) {
                                     <span className="loading-dot"></span>
                                     <span className="loading-dot"></span>
                                 </span>
+                            ) : success ? (
+                                <>
+                                    Redirecting to Stripe
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </>
                             ) : (
                                 <>
                                     Connect with Stripe
@@ -158,7 +180,7 @@ function StripeConnectModal({ isOpen, onClose, onSuccess }) {
                                 </>
                             )}
                         </button>
-                        <button onClick={onClose} className="cancel-button">
+                        <button onClick={onClose} className="cancel-button" disabled={isLoading || success}>
                             Cancel
                         </button>
                     </div>

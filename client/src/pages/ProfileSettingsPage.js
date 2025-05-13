@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getUserProfile, updateUserProfile, createStripeAccountLink, checkStripeOnboardingStatus } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './ProfileSettingsPage.css';
 import StripeConnectModal from '../components/StripeConnectModal'; // Assuming you have this or will create it
 
 function ProfileSettingsPage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     username: '',
     email: '',
@@ -25,7 +28,6 @@ function ProfileSettingsPage() {
   const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState('');
   const [showStripeModal, setShowStripeModal] = useState(false);
-
 
   const fetchProfileAndStripeStatus = useCallback(async () => {
     setLoading(true);
@@ -70,6 +72,29 @@ function ProfileSettingsPage() {
     }
   }, [user, fetchProfileAndStripeStatus]);
 
+  // Handle URL parameters when returning from Stripe
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const stripeReturn = query.get('stripe_return');
+    const stripeRefresh = query.get('stripe_refresh');
+    
+    if (stripeReturn === 'true') {
+      // User has returned from successful Stripe onboarding
+      console.log('User returned from Stripe onboarding');
+      setSuccess('Stripe account connection successful! Refreshing your status...');
+      fetchProfileAndStripeStatus();
+      // Clear the URL parameters
+      navigate('/profile-settings', { replace: true });
+    } else if (stripeRefresh === 'true') {
+      // User needs to retry Stripe onboarding
+      console.log('User needs to refresh Stripe onboarding');
+      setStripeError('Stripe onboarding session expired. Please try connecting again.');
+      setShowStripeModal(true);
+      // Clear the URL parameters
+      navigate('/profile-settings', { replace: true });
+    }
+  }, [location, navigate, fetchProfileAndStripeStatus]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'email') return;
@@ -103,41 +128,6 @@ function ProfileSettingsPage() {
       setLoading(false);
     }
   };
-
-  const handleStripeConnect = async () => {
-    setIsStripeLoading(true);
-    setStripeError('');
-    try {
-      const { url } = await createStripeAccountLink();
-      window.location.href = url; // Redirect user to Stripe onboarding
-    } catch (err) {
-      setStripeError(err.message || 'Failed to connect to Stripe. Please try again.');
-      console.error("Stripe Connect error:", err);
-      setIsStripeLoading(false);
-    }
-  };
-  
-  const handleManageStripeAccount = async () => {
-    setIsStripeLoading(true);
-    setStripeError('');
-    try {
-      // This typically requires a different type of account link, e.g., 'account_update'
-      // Or a direct link to the Stripe Express dashboard if available
-      // For now, let's assume createStripeAccountLink can handle this or redirect to a generic Stripe dashboard link
-      // const { url } = await createStripeAccountLink('account_update'); // Or a specific dashboard link
-      // window.location.href = url;
-      // As a placeholder, we can re-trigger onboarding or show a message.
-      // A more robust solution would involve a specific "login link" for Stripe Express.
-      const { url } = await createStripeAccountLink('account_onboarding'); // Re-onboarding for simplicity here
-      window.location.href = url;
-    } catch (err) {
-      setStripeError(err.message || 'Failed to generate Stripe management link.');
-      console.error("Stripe Manage error:", err);
-    } finally {
-      setIsStripeLoading(false);
-    }
-  };
-
 
   if (loading && !profile.username && !stripeStatus) { // Show loading only on initial load
     return <div className="profile-settings-page"><p>Loading profile and payment settings...</p></div>;
@@ -183,22 +173,27 @@ function ProfileSettingsPage() {
                 <p className="success-message">Your Stripe account is connected and ready for payouts.</p>
                 <p>Stripe Account ID: {stripeStatus.accountId}</p>
                 {stripeStatus.needsAttention && <p className="warning-message">Your Stripe account requires attention. Please update your details.</p>}
-                <button onClick={handleManageStripeAccount} disabled={isStripeLoading} className="stripe-button">
-                  {isStripeLoading ? 'Processing...' : 'Manage Stripe Account'}
+                <button 
+                  onClick={() => {
+                    setShowStripeModal(true);
+                  }} 
+                  className="stripe-button"
+                >
+                  Manage Stripe Account
                 </button>
               </>
             ) : stripeStatus.accountId && !stripeStatus.isOnboardingComplete ? (
               <>
                 <p className="warning-message">Your Stripe onboarding is incomplete. Please complete the setup to receive payouts.</p>
-                <button onClick={handleStripeConnect} disabled={isStripeLoading} className="stripe-button">
-                  {isStripeLoading ? 'Processing...' : 'Complete Stripe Onboarding'}
+                <button onClick={() => setShowStripeModal(true)} className="stripe-button">
+                  Complete Stripe Onboarding
                 </button>
               </>
             ) : (
               <>
                 <p>Connect your Stripe account to receive payouts for your sold projects.</p>
-                <button onClick={handleStripeConnect} disabled={isStripeLoading} className="stripe-button">
-                  {isStripeLoading ? 'Processing...' : 'Connect with Stripe'}
+                <button onClick={() => setShowStripeModal(true)} className="stripe-button">
+                  Connect with Stripe
                 </button>
               </>
             )}
@@ -259,6 +254,7 @@ function ProfileSettingsPage() {
             setShowStripeModal(false);
             fetchProfileAndStripeStatus(); // Refresh status after modal interaction
           }}
+          accountType={stripeStatus?.isOnboardingComplete ? 'account_update' : 'account_onboarding'}
         />
       )}
     </div>
