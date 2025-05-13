@@ -213,7 +213,7 @@ function MarketplacePage() {
                     <div className="transfer-steps">
                         <div className="transfer-step">
                             <span className="step-label">Code Transfer:</span> 
-                            <span className="step-text">The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</span>
+                            <span className="-textstep">The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</span>
                         </div>
                         <div className="transfer-step">
                             <span className="step-label">Domain Transfer:</span> 
