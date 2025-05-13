@@ -91,7 +91,7 @@
 .page-section-heading {
   text-transform: uppercase;
   letter-spacing: 0.75px;
-  color: var(--secondary-text);
+  color: white;
   font-size: 0.85rem;
   margin-bottom: 1rem;
   font-weight: 600;
