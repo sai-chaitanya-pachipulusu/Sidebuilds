@@ -29,9 +29,9 @@ function ProfileSettingsPage() {
   const [stripeError, setStripeError] = useState('');
   const [showStripeModal, setShowStripeModal] = useState(false);
 
-  // Utility function to create a direct Stripe link if needed - keeps createStripeAccountLink in use
-  // Note: This function is primarily kept to ensure the createStripeAccountLink import is used,
-  // avoiding ESLint unused variable warnings during build. The primary usage is in StripeConnectModal.
+  // Utility function to create a direct Stripe link as a fallback mechanism
+  // This provides an alternative way to connect with Stripe if the modal approach fails
+  // It's used by the "Direct Stripe Link" button in the error handling UI
   const getStripeLink = async (type = 'account_onboarding') => {
     try {
       const { url } = await createStripeAccountLink(type);
@@ -164,6 +164,26 @@ function ProfileSettingsPage() {
                 disabled={isStripeLoading}
               >
                 {isStripeLoading ? 'Retrying...' : 'Retry'}
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    setIsStripeLoading(true);
+                    // Try to get a direct Stripe link as a fallback method
+                    const url = await getStripeLink();
+                    if (url) {
+                      window.location.href = url; // Direct redirect if modal approach fails
+                    }
+                  } catch (err) {
+                    setStripeError(`Failed direct link method: ${err.message}`);
+                  } finally {
+                    setIsStripeLoading(false);
+                  }
+                }}
+                className="direct-link-button"
+                disabled={isStripeLoading}
+              >
+                Direct Stripe Link
               </button>
               <button 
                 onClick={() => {

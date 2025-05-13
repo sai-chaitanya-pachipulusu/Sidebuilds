@@ -127,4 +127,23 @@
 .retry-button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.direct-link-button {
+  background-color: #6772e5; /* Stripe purple */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.direct-link-button:hover {
+  background-color: #5469d4; /* Darker Stripe purple */
+}
+
+.direct-link-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
 } 
