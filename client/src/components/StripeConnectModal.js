@@ -1,16 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createStripeAccountLink } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './StripeConnectModal.css';
 
 function StripeConnectModal({ isOpen, onClose, onSuccess, accountType = 'account_onboarding' }) {
+    const { isAuthenticated, token, logout } = useAuth();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [isAuthError, setIsAuthError] = useState(false);
+    
+    // Check authentication on mount
+    useEffect(() => {
+        if (isOpen && !isAuthenticated) {
+            setError('Authentication required. Please log in again to connect with Stripe.');
+            setIsAuthError(true);
+        }
+    }, [isOpen, isAuthenticated]);
+
+    const handleLogoutAndRedirect = () => {
+        logout();
+        onClose();
+        navigate('/login');
+    };
 
     const handleConnectStripe = async () => {
         setIsLoading(true);
         setError('');
         setSuccess(false);
+        
+        // Verify authentication before proceeding
+        if (!isAuthenticated || !token) {
+            setError('You must be logged in to connect with Stripe. Please log in again.');
+            setIsLoading(false);
+            setIsAuthError(true);
+            return;
+        }
+        
         try {
             // Add a small delay to ensure API connection is established
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -40,6 +68,9 @@ function StripeConnectModal({ isOpen, onClose, onSuccess, accountType = 'account
                 setError('Network error: Unable to connect to our payment service. Please check your internet connection and try again.');
             } else if (err.message?.includes('timeout')) {
                 setError('Connection timeout: Our payment service is taking longer than expected to respond. Please try again.');
+            } else if (err.message?.includes('No token') || err.message?.includes('authorization denied') || err.response?.status === 401) {
+                setError('Authentication error: Your session may have expired. Please refresh the page and log in again.');
+                setIsAuthError(true);
             } else if (err.type === 'StripeInvalidRequestError') {
                 setError('Stripe API error: ' + (err.message || 'Please try again or contact support.'));
             } else {
@@ -71,12 +102,21 @@ function StripeConnectModal({ isOpen, onClose, onSuccess, accountType = 'account
                     {error && (
                         <div className="error-message">
                             <p>{error}</p>
-                            <button 
-                                onClick={handleRetry}
-                                className="error-retry-button"
-                            >
-                                Retry Connection
-                            </button>
+                            {isAuthError ? (
+                                <button 
+                                    onClick={handleLogoutAndRedirect}
+                                    className="auth-error-button"
+                                >
+                                    Log Out and Try Again
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={handleRetry}
+                                    className="error-retry-button"
+                                >
+                                    Retry Connection
+                                </button>
+                            )}
                         </div>
                     )}
                     

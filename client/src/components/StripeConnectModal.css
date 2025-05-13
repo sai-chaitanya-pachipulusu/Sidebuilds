@@ -270,6 +270,24 @@
     transform: translateY(-1px);
 }
 
+.auth-error-button {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: all 0.2s;
+}
+
+.auth-error-button:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+}
+
 /* Loading indicator */
 .loading-indicator {
     display: flex;
