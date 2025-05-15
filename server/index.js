@@ -99,6 +99,10 @@ app.use('/api/certificates', certificatesRoutes);
 // Mount Stripe Connect routes
 app.use('/api/stripe', stripeRoutes);
 
+// Mount Purchase Request routes
+const purchaseRequestRoutes = require('./routes/purchaseRequests');
+app.use('/api/purchase-requests', purchaseRequestRoutes);
+
 // --- Server Initialization ---
 const PORT = process.env.PORT || 5001; // Use port from .env or default to 5001
 
