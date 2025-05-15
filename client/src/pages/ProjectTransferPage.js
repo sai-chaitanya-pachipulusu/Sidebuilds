@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { apiClient } from '../services/api'; // Assuming apiClient is exported from api.js
+import apiClient from '../services/api'; // Changed to default import
 import {
     Box, Container, Heading, Text, Spinner, Alert, AlertIcon, Button,
     VStack, HStack, Tag, Textarea, useToast
