@@ -433,4 +433,4 @@ export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId)
     }
 };
 
-export default apiClient; // Export the configured instance if needed elsewhere
+export { apiClient }; // Add this line to export the apiClient instance

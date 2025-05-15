@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Assuming your db config is here
+const db = require('../db'); // Corrected path to db.js
 const authMiddleware = require('../middleware/authMiddleware'); // Assuming auth middleware
 
 // --- Create a new Purchase Request (Buyer Action) ---
