@@ -16,7 +16,7 @@ const formatStatus = (status) => {
 };
 
 function ProjectTransferPage() {
-    const { projectId } = useParams(); // Project ID from route
+    // const { projectId } = useParams(); // Project ID from route - This was unused
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();

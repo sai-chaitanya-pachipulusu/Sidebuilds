@@ -5,7 +5,7 @@ import {
   Container, useToast, Badge,
   Table, Thead, Tbody, Tr, Th, Td, IconButton,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, useDisclosure, Textarea,
-  VStack, Spinner,
+  Spinner,
 } from '@chakra-ui/react';
 import { CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,6 @@ function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshCounter, setRefreshCounter] = useState(0);
-    const [deletingId, setDeletingId] = useState(null);
     const [showPurchased, setShowPurchased] = useState(false);
     const [showDashboardRefreshToast, setShowDashboardRefreshToast] = useState(false);
     const [lastPurchasedProjectId, setLastPurchasedProjectId] = useState(null);
@@ -233,7 +232,6 @@ function DashboardPage() {
         if (!projectId) return;
         
         try {
-            setDeletingId(projectId);
             await deleteProject(projectId);
             
             // Remove deleted project from state
@@ -255,8 +253,6 @@ function DashboardPage() {
                 duration: 5000,
                 isClosable: true,
             });
-        } finally {
-            setDeletingId(null);
         }
     };
 
@@ -357,7 +353,7 @@ function DashboardPage() {
     const handleConfirmTransfer = async (purchaseRequestId) => {
         setConfirmingTransferId(purchaseRequestId);
         try {
-            const response = await apiClient.post(`/purchase-requests/${purchaseRequestId}/confirm-transfer`);
+            /*const response =*/ await apiClient.post(`/purchase-requests/${purchaseRequestId}/confirm-transfer`);
             
             toast({
                 title: "Transfer Confirmed",
