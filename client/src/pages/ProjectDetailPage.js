@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProjectById, updateProject } from '../services/api';
+import { getProjectById, updateProject, requestProjectPurchase } from '../services/api';
 import axios from 'axios';
 import StripeConnectModal from '../components/StripeConnectModal';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ const paymentMethods = ['Direct', 'Stripe', 'Paypal'];
 function ProjectDetailPage() {
     const { id: projectId } = useParams(); // Get project ID from URL
     const navigate = useNavigate();
-    useAuth(); // Use auth context without destructuring, fixes the empty pattern error
+    const { user, isAuthenticated } = useAuth(); // Destructure user and isAuthenticated from useAuth
     const [project, setProject] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
@@ -25,60 +25,60 @@ function ProjectDetailPage() {
         hasStripeAccount: false,
         isOnboardingComplete: false
     });
+    const [requestingPurchase, setRequestingPurchase] = useState(false);
+    const [purchaseRequestError, setPurchaseRequestError] = useState('');
+    const [purchaseRequestSuccess, setPurchaseRequestSuccess] = useState('');
+
+    const fetchProjectDetails = useCallback(async () => {
+        if (!projectId) return;
+        setLoading(true);
+        setError('');
+        try {
+            const data = await getProjectById(projectId);
+            setProject(data);
+            setFormData({
+                name: data.name || '',
+                description: data.description || '',
+                stage: data.stage || projectStages[0],
+                domain: data.domain || '',
+                revenue: data.revenue || 0,
+                user_growth: data.user_growth || 0,
+                is_public: data.is_public || false,
+                is_for_sale: data.is_for_sale || false,
+                sale_price: data.sale_price || '',
+                contact_email: data.contact_email || '',
+                contact_phone: data.contact_phone || '',
+                payment_method: data.payment_method || 'direct'
+            });
+            if (user && user.id === data.owner_id) {
+                await checkStripeConnectStatus();
+            }
+        } catch (err) {
+            console.error("Failed to fetch project:", err);
+            setError(err.message || 'Failed to load project details.');
+            if (err.response && err.response.status === 404) {
+                setError('Project not found.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [projectId, user]);
 
     useEffect(() => {
-        const fetchProject = async () => {
-            if (!projectId) return; // Should have ID
-            setLoading(true);
-            setError('');
-            try {
-                const data = await getProjectById(projectId);
-                setProject(data);
-                // Initialize form data for editing
-                setFormData({
-                    name: data.name || '',
-                    description: data.description || '',
-                    stage: data.stage || projectStages[0],
-                    domain: data.domain || '',
-                    revenue: data.revenue || 0,
-                    user_growth: data.user_growth || 0,
-                    is_public: data.is_public || false,
-                    is_for_sale: data.is_for_sale || false,
-                    sale_price: data.sale_price || '',
-                    contact_email: data.contact_email || '',
-                    contact_phone: data.contact_phone || '',
-                    payment_method: data.payment_method || 'direct'
-                });
-                
-                // Check Stripe Connect status
-                await checkStripeConnectStatus();
-            } catch (err) {
-                console.error("Failed to fetch project:", err);
-                setError(err.message || 'Failed to load project details.');
-                if (err.message.includes('404')) {
-                    setError('Project not found.'); // More specific error
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProject();
+        fetchProjectDetails();
         
-        // Check for previously saved form data on page load
         const savedFormData = sessionStorage.getItem(`project_edit_${projectId}`);
         if (savedFormData) {
             try {
                 const parsedData = JSON.parse(savedFormData);
                 setFormData(parsedData);
                 setIsEditing(true);
-                // Clear the saved data after loading it
                 sessionStorage.removeItem(`project_edit_${projectId}`);
             } catch (err) {
                 console.error("Error parsing saved form data:", err);
             }
         }
-    }, [projectId]);
+    }, [projectId, fetchProjectDetails]);
 
     // Handle token expiration during editing
     useEffect(() => {
@@ -212,11 +212,45 @@ function ProjectDetailPage() {
             await checkStripeConnectStatus();
             setShowStripeModal(false);
             
-            // If the user now has a connected account, try saving again
-            if (stripeAccountStatus.hasStripeAccount && stripeAccountStatus.isOnboardingComplete) {
-                handleSaveChanges({ preventDefault: () => {} });
+            // If the user now has a connected account, try saving again (owner context)
+            if (project && user && user.id === project.owner_id && stripeAccountStatus.hasStripeAccount && stripeAccountStatus.isOnboardingComplete) {
+                 // Re-trigger form save if it was interrupted by Stripe connect
+                const mockEvent = { preventDefault: () => {} };
+                await handleSaveChanges(mockEvent);
             }
         }, 2000);
+    };
+
+    const handleRequestPurchase = async () => {
+        setPurchaseRequestError('');
+        setPurchaseRequestSuccess('');
+        if (!isAuthenticated) {
+            setPurchaseRequestError('You must be logged in to request a purchase.');
+            navigate('/login', { state: { returnTo: `/projects/${projectId}` } });
+            return;
+        }
+        // Simple confirmation for now. Replace with a proper modal for T&C.
+        const agreesToTerms = window.confirm(
+            `You are about to request the purchase of "${project.name}" for $${parseFloat(project.sale_price).toFixed(2)}.\n\n` +
+            `By proceeding, you agree to the platform's Terms and Conditions. ` +
+            `The seller will be notified and will need to accept your request before you can proceed with payment.\n\nDo you want to continue?`
+        );
+
+        if (agreesToTerms) {
+            setRequestingPurchase(true);
+            try {
+                // TODO: Get actual terms version, e.g., from a global config or fetched T&C
+                const termsVersion = '1.0'; 
+                await requestProjectPurchase(projectId, termsVersion);
+                setPurchaseRequestSuccess('Purchase request sent successfully! The seller has been notified. You can track the status in your dashboard.');
+                // Optionally, navigate to buyer's dashboard or show a more persistent success message.
+            } catch (err) {
+                console.error("Failed to send purchase request:", err);
+                setPurchaseRequestError(err.error || err.message || 'Failed to send purchase request. Please try again.');
+            } finally {
+                setRequestingPurchase(false);
+            }
+        }
     };
 
     if (loading) return <p>Loading project details...</p>;
@@ -235,7 +269,9 @@ function ProjectDetailPage() {
                 <div className="project-details">
                     <div className="project-header">
                         <h2>{project.name}</h2>
-                        <button onClick={handleEditToggle} className="edit-button">Edit Project</button>
+                        {isAuthenticated && user && project.owner_id === user.id && (
+                            <button onClick={handleEditToggle} className="edit-button">Edit Project</button>
+                        )}
                     </div>
                     
                     <div className="detail-grid">
@@ -300,6 +336,23 @@ function ProjectDetailPage() {
                         <div>Created: {new Date(project.created_at).toLocaleString()}</div>
                         <div>Last Updated: {new Date(project.updated_at).toLocaleString()}</div>
                     </div>
+
+                    {/* Purchase Request Button Area */}
+                    {isAuthenticated && user && project.owner_id !== user.id && project.is_for_sale && (
+                        <div className="purchase-actions">
+                            <p>This project is listed for sale at: <strong>${parseFloat(project.sale_price).toFixed(2)}</strong></p>
+                            <button 
+                                onClick={handleRequestPurchase} 
+                                className="request-purchase-button" 
+                                disabled={requestingPurchase}
+                            >
+                                {requestingPurchase ? 'Sending Request...' : 'Request to Purchase'}
+                            </button>
+                            {purchaseRequestSuccess && <p className="success-message">{purchaseRequestSuccess}</p>}
+                            {purchaseRequestError && <p className="error-message">{purchaseRequestError}</p>}
+                        </div>
+                    )}
+                    {/* End Purchase Request Button Area */}
                 </div>
             ) : (
                 // --- Edit Mode --- 

@@ -1,3 +1,8 @@
+/* This file is intentionally left blank or with minimal overrides.
+   Global dark theme is primarily managed by client/src/index.css and Chakra UI theme configuration.
+   Aggressive !important overrides have been removed to allow for better component-level styling and Chakra UI integration.
+*/
+
 /* Black Override CSS - Applied globally to force pure black backgrounds */
 
 /* Direct element selectors */

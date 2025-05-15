@@ -7,46 +7,55 @@ A platform for tracking, sharing, and selling side projects. Built with React, N
 - 🚀 Track your side projects from idea to launch
 - 🔄 Monitor progress and update project status
 - 🌐 Publish projects to a public directory
-- 💲 List projects for sale in the marketplace
-- 💳 Process payments with Stripe integration
-- 💸 Direct payouts to sellers via Stripe Connect
-- 🌓 Dark/light theme support
+- 🛒 List projects for sale in the marketplace
+- 🤝 Secure request-to-buy workflow: Buyers request, sellers approve, then payment occurs.
+- 💳 Stripe-powered payments with automated platform fee deduction.
+- 💸 Direct payouts to sellers via Stripe Connect.
+- 🌃 Consistent Dark Theme with subtle animated background for enhanced UI/UX.
 - 📱 Fully responsive design
 
 ## Project Transfer System
 
-The SideProject Tracker includes a comprehensive project transfer system for handling the purchase and transfer of projects:
+The SideBuilds platform includes a robust, multi-step system for project purchases and asset transfers:
 
 ### Purchase Workflow
 
-1. **Buying a Project**: Users can purchase projects through the marketplace using Stripe integration
-2. **Payment Processing**: The system handles payments with a 5% commission fee
-3. **Post-Purchase UI**: Purchased projects appear in the buyer's dashboard with distinct highlighting
+The new workflow ensures clarity and commitment from both buyer and seller:
 
-### Transfer Process
+1.  **Buyer Initiates Purchase Request**: On a project listing, a potential buyer can request to purchase the project, agreeing to preliminary terms.
+2.  **Seller Review & Action**: The project seller is notified and can review the request. They can then:
+    *   **Accept**: Signaling they agree to sell to this buyer under the listed terms.
+    *   **Reject**: If they do not wish to proceed with the sale to this buyer.
+3.  **Payment (If Accepted)**: Once a seller accepts, the buyer is notified and can proceed to make the payment through Stripe.
+4.  **Automated Fee Deduction**: The platform's commission fee (e.g., 5%) is automatically deducted during the Stripe transaction.
+5.  **Notification & Next Steps**: Both parties are notified upon successful payment, and the process moves to asset transfer.
 
-The transfer process is semi-manual and includes the following steps:
+### Asset Transfer Process
 
-1. **Transfer Status Tracking**: A dedicated transfer status page for each purchased project
-2. **Transfer Checklist**: Three key transfer components tracked individually:
-   - Code Repository Access
-   - Domain Transfer
-   - Assets & Documentation
+Once payment is confirmed, the focus shifts to the secure transfer of project assets. This process is tracked on a dedicated Project Transfer Page:
 
-### Verification Period
+1.  **Transfer Status Tracking**: Both buyer and seller can view the current status of the asset transfer.
+2.  **Seller Actions**: The seller updates the status as they transfer assets (e.g., "Assets Transferred, Awaiting Buyer Confirmation") and can add notes or instructions for the buyer.
+3.  **Transfer Checklist (Conceptual)**: While not individual checkboxes, the transfer implies the delivery of agreed-upon assets, such as:
+    *   Code Repository Access
+    *   Domain Transfer (if applicable)
+    *   Databases, customer lists, brand assets, etc.
+    *   Documentation
+4.  **Buyer Confirmation**: Once the buyer has received and verified all assets, they confirm receipt on the Transfer Page. This marks the transaction as complete.
 
-- All purchased projects have a 7-day verification period
-- During this time, buyers can confirm all project assets have been properly transferred
-- A visual countdown timer shows the remaining verification days
+### Verification Period & Support
 
-### UI Elements
+- All purchases include a 7-day period post-buyer-confirmation for addressing any immediate, unforeseen issues with the received assets. (This relies on clear Terms & Conditions).
+- Clear communication channels (e.g., using contact details, or a future in-app messaging system) are encouraged during the transfer.
 
-- **Dashboard Indicators**: Recently purchased projects are highlighted
-- **Transfer Status Button**: Quick access to view transfer details from the dashboard
-- **Status Badges**: Clear pending/complete status indicators for each transfer item
-- **Seller Contact**: Direct access to seller's contact information
+### UI Elements for the New Flow
 
-To view the transfer status of a purchased project, click the "Transfer Status" button in your dashboard.
+- **Project Detail Page**: "Request to Purchase" button for potential buyers.
+- **Dashboard - Seller View**: Section for "Incoming Purchase Requests" with Accept/Reject actions.
+- **Dashboard - Buyer View**: Section for "My Purchase Requests" showing status, and a "Proceed to Payment" button when a request is accepted by the seller.
+- **Project Transfer Page**: Dedicated page accessible from the buyer/seller dashboard to track asset transfer, update status (seller), and confirm receipt (buyer).
+
+To manage or track a purchase/sale, navigate to your Dashboard.
 
 ## Stripe Connect for Sellers
 

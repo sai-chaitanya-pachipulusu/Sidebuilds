@@ -88,6 +88,38 @@ router.get('/buyer', authMiddleware, async (req, res) => {
     }
 });
 
+// --- Get Specific Purchase Request Details ---
+// GET /api/purchase-requests/:requestId
+router.get('/:requestId', authMiddleware, async (req, res) => {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const result = await db.query(
+            `SELECT 
+                ppr.*, 
+                p.name AS project_name, 
+                p.owner_id AS project_owner_id, 
+                u_seller.username AS seller_username, 
+                u_buyer.username AS buyer_username
+            FROM project_purchase_requests ppr
+            JOIN projects p ON ppr.project_id = p.id
+            JOIN users u_seller ON ppr.seller_id = u_seller.id
+            JOIN users u_buyer ON ppr.buyer_id = u_buyer.id
+            WHERE ppr.request_id = $1 AND (ppr.buyer_id = $2 OR ppr.seller_id = $2)`,
+            [requestId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Purchase request not found or you do not have permission to view it.' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error fetching purchase request details:", err);
+        res.status(500).json({ error: 'Failed to fetch purchase request details', details: err.message });
+    }
+});
+
 // --- Accept a Purchase Request (Seller Action) ---
 // POST /api/purchase-requests/:requestId/accept
 router.post('/:requestId/accept', authMiddleware, async (req, res) => {
@@ -212,5 +244,67 @@ router.post('/:requestId/confirm-transfer', authMiddleware, async (req, res) => 
     }
 });
 
+// --- Seller Updates Transfer Status/Notes ---
+// PUT /api/purchase-requests/:requestId/transfer-status
+router.put('/:requestId/transfer-status', authMiddleware, async (req, res) => {
+    const { requestId } = req.params;
+    const sellerId = req.user.id;
+    const { status, message } = req.body;
+
+    if (!status) {
+        return res.status(400).json({ error: 'New status is required.' });
+    }
+
+    // Define allowed statuses for seller to set via this route
+    const allowedSellerStatuses = [
+        'transfer_in_progress', 
+        'assets_transferred_pending_buyer_confirmation',
+        // Potentially others like 'transfer_issue_seller_action_needed'
+    ];
+
+    if (!allowedSellerStatuses.includes(status)) {
+        return res.status(400).json({ error: `Invalid status update: '${status}'. Seller can only set specific transfer-related statuses.` });
+    }
+
+    try {
+        // First, verify the request exists and the user is the seller
+        const requestCheck = await db.query(
+            'SELECT project_id, buyer_id, status FROM project_purchase_requests WHERE request_id = $1 AND seller_id = $2',
+            [requestId, sellerId]
+        );
+
+        if (requestCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Purchase request not found or you are not the seller.' });
+        }
+        
+        const currentStatus = requestCheck.rows[0].status;
+        // Optional: Add logic here to prevent setting certain statuses if current status is not compatible
+        // e.g., if currentStatus is 'completed' or 'rejected', don't allow further seller updates.
+
+        const result = await db.query(
+            `UPDATE project_purchase_requests 
+             SET status = $1, transfer_notes = $2, status_last_updated = CURRENT_TIMESTAMP 
+             WHERE request_id = $3 AND seller_id = $4
+             RETURNING *`,
+            [status, message, requestId, sellerId]
+        );
+
+        if (result.rows.length === 0) {
+            // Should not happen if previous check passed, but as a safeguard
+            return res.status(404).json({ error: 'Failed to update transfer status. Request not found or not authorized.' });
+        }
+
+        // TODO: Consider sending a notification to the buyer about the status/note update
+        // For example, using a simple notification system if available:
+        // await createNotification(requestCheck.rows[0].buyer_id, 
+        //    `Seller updated transfer status for project ${requestCheck.rows[0].project_id} to ${status}. Message: ${message}`,
+        //    `/projects/${requestCheck.rows[0].project_id}/transfer?request_id=${requestId}`);
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error updating transfer status:", err);
+        res.status(500).json({ error: 'Failed to update transfer status', details: err.message });
+    }
+});
 
 module.exports = router; 

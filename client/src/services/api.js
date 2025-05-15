@@ -353,4 +353,84 @@ export const debugTransferProject = async (projectId, sellerId) => {
     return response.data;
 };
 
+export const getProjectAnalytics = async (projectId) => {
+    const response = await apiClient.get(`/projects/${projectId}/analytics`);
+    return response.data;
+};
+
+// --- Purchase Request API Calls ---
+
+export const requestProjectPurchase = async (projectId, termsAgreedVersion) => {
+    try {
+        const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { terms_agreed_version: termsAgreedVersion });
+        return response.data;
+    } catch (error) {
+        console.error('Error requesting project purchase:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const getSellerPurchaseRequests = async () => {
+    try {
+        const response = await apiClient.get('/purchase-requests/seller');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching seller purchase requests:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const getBuyerPurchaseRequests = async () => {
+    try {
+        const response = await apiClient.get('/purchase-requests/buyer');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching buyer purchase requests:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const acceptPurchaseRequest = async (requestId, termsAgreedVersion) => {
+    try {
+        const response = await apiClient.post(`/purchase-requests/${requestId}/accept`, { terms_agreed_version: termsAgreedVersion });
+        return response.data;
+    } catch (error) {
+        console.error('Error accepting purchase request:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const rejectPurchaseRequest = async (requestId, rejectionReason) => {
+    try {
+        const response = await apiClient.post(`/purchase-requests/${requestId}/reject`, { rejection_reason: rejectionReason });
+        return response.data;
+    } catch (error) {
+        console.error('Error rejecting purchase request:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const confirmTransferReceived = async (requestId) => {
+    try {
+        const response = await apiClient.post(`/purchase-requests/${requestId}/confirm-transfer`);
+        return response.data;
+    } catch (error) {
+        console.error('Error confirming transfer received:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// --- End Purchase Request API Calls ---
+
+// Function to create Stripe Checkout session for a purchase request
+export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId) => {
+    try {
+        const response = await apiClient.post('/payments/create-checkout-session', { purchase_request_id: purchaseRequestId });
+        return response.data; // Should contain { url: checkoutSessionUrl, sessionId: ... }
+    } catch (error) {
+        console.error('Error creating checkout session for purchase request:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
 export default apiClient; // Export the configured instance if needed elsewhere
