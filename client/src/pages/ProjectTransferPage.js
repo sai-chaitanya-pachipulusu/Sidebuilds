@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/api'; // Changed to default import
 import {
@@ -16,7 +16,6 @@ const formatStatus = (status) => {
 };
 
 function ProjectTransferPage() {
-    // const { projectId } = useParams(); // Project ID from route - This was unused
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
