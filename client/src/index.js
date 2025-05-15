@@ -14,16 +14,28 @@ import App from './App';
 // Load Stripe outside of component render to avoid recreating on every render
 // Ensure your publishable key is in client/.env as REACT_APP_STRIPE_PUBLISHABLE_KEY
 const STRIPE_PUBLISHABLE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+let stripePromise = null; // Initialize to null
 
-// Add a prominent alert to check the key
-alert("Stripe Key Check: " + process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+// Log the value of the Stripe key attempt
+console.log("Attempting to load Stripe. REACT_APP_STRIPE_PUBLISHABLE_KEY:", STRIPE_PUBLISHABLE_KEY);
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+if (STRIPE_PUBLISHABLE_KEY) {
+  try {
+    stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+    console.log('Stripe initialized successfully.');
+  } catch (error) {
+    console.error('Error initializing Stripe:', error);
+    // stripePromise remains null
+  }
+} else {
+  console.error('ERROR: REACT_APP_STRIPE_PUBLISHABLE_KEY is not set or not found in the environment. Stripe payments will not be available. Please check your client/.env file and ensure the development server has been restarted.');
+}
 
 // Log Stripe configuration status
 console.log('Stripe configuration status:', {
   publishableKeyAvailable: !!STRIPE_PUBLISHABLE_KEY,
-  source: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 'environment' : 'fallback'
+  isStripePromiseSet: !!stripePromise,
+  keyPrefix: STRIPE_PUBLISHABLE_KEY ? STRIPE_PUBLISHABLE_KEY.substring(0, 10) + "..." : "N/A" // Log a prefix for verification
 });
 
 // For development debugging - expose utils globally if not in production
