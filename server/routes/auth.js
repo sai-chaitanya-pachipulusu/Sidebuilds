@@ -3,12 +3,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db'); // Adjust path as needed
 
+console.log('AUTH_ROUTES: File loaded and router being configured.');
+
 const router = express.Router();
 const SALT_ROUNDS = 10; // Cost factor for bcrypt hashing
 
 // --- Registration Route --- 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
+    console.log('AUTH_ROUTES: Reached /register handler');
     const { username, email, password } = req.body;
 
     // Basic validation
@@ -63,6 +66,7 @@ router.post('/register', async (req, res) => {
 // --- Login Route --- 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
+    console.log('AUTH_ROUTES: Reached /login handler with body:', req.body);
     const { email, password } = req.body;
 
     // Basic validation

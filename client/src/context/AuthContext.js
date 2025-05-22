@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import apiClient from '../services/api'; // For potential future use like fetching user data on load
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import apiClient, { getUserProfile } from '../services/api'; // Import getUserProfile
+import { initializeSocket, disconnectSocket } from '../utils/socket'; // Import socket utils
 
 const AuthContext = createContext(null);
 
@@ -13,37 +14,74 @@ export const AuthProvider = ({ children }) => {
         isLoading: true, // Initially loading until we check token/user
     });
 
-    // Optional: Effect to verify token or fetch user data on initial load
-    useEffect(() => {
-        // If you wanted to verify the token against the backend on load:
-        // const verifyToken = async () => {
-        //     if (authState.token) {
-        //         try {
-        //             // Example: Add an API endpoint like /api/auth/me to get user data
-        //             // const response = await apiClient.get('/auth/me'); 
-        //             // setAuthState(prev => ({ ...prev, user: response.data, isAuthenticated: true, isLoading: false }));
-                    
-        //             // For now, just assume token is valid if present
-        //             setAuthState(prev => ({ ...prev, isLoading: false }));
-        //         } catch (error) {
-        //             console.error("Token validation failed:", error);
-        //             logout(); // Log out if token is invalid
-        //         }
-        //     } else {
-        //         setAuthState(prev => ({ ...prev, isLoading: false }));
-        //     }
-        // };
-        // verifyToken();
-        
-        // Simplified: Just set loading to false after initial check
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+    const connectUserSocket = useCallback((token, user) => {
+        if (token && user && user.id) {
+            try {
+                const socket = initializeSocket(token); // Pass token for auth
+                // Backend should handle user room joining based on authenticated socket
+                // If direct event is needed after connect:
+                socket.on('connect', () => {
+                    console.log('[AuthContext] Socket connected, attempting to join user room for:', user.id);
+                    // Emit an event that the backend will use to join this socket to a user-specific room
+                    // The backend should ideally derive user.id from the token provided during socket handshake
+                    socket.emit('join_user_room', { userId: user.id }); 
+                });
+            } catch (error) {
+                console.error('[AuthContext] Failed to initialize socket:', error);
+            }
+        }
+    }, []);
 
-    }, []); // Run only once on mount
+    const fetchUserProfile = useCallback(async (currentToken) => {
+        const tokenToUse = currentToken || authState.token;
+        if (tokenToUse) {
+            try {
+                console.log('AuthContext: Fetching user profile...');
+                const profileData = await getUserProfile();
+                localStorage.setItem('user', JSON.stringify(profileData));
+                setAuthState(prev => ({ 
+                    ...prev, 
+                    user: profileData, 
+                    isAuthenticated: true,
+                }));
+                console.log('AuthContext: User profile updated', profileData);
+                // Connect socket after profile is successfully fetched and user ID is available
+                connectUserSocket(tokenToUse, profileData);
+                return profileData;
+            } catch (error) {
+                console.error("AuthContext: Failed to fetch user profile:", error);
+                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                    console.log("AuthContext: Auth error during profile fetch, logging out.");
+                    logout(); 
+                }
+                throw error; 
+            }
+        }
+        return null; 
+    }, [authState.token, connectUserSocket]);
+
+    useEffect(() => {
+        const verifyUserAndToken = async () => {
+            const storedToken = localStorage.getItem('token');
+            if (storedToken) {
+                // Set token in API client header first
+                apiClient.defaults.headers.common['x-auth-token'] = storedToken;
+                try {
+                    // Fetch profile which will also set user in state and connect socket
+                    await fetchUserProfile(storedToken);
+                } catch (error) {
+                    console.log("Initial profile fetch failed. User might have been logged out.");
+                }
+            }
+            setAuthState(prev => ({ ...prev, isLoading: false }));
+        };
+
+        verifyUserAndToken();
+    }, [fetchUserProfile]);
 
     const login = (token, user) => {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        // Update axios Authorization header immediately for subsequent requests in the same session
         apiClient.defaults.headers.common['x-auth-token'] = token;
         setAuthState({
             token,
@@ -51,9 +89,13 @@ export const AuthProvider = ({ children }) => {
             isAuthenticated: true,
             isLoading: false,
         });
+        // Connect socket after login
+        connectUserSocket(token, user);
     };
 
     const logout = () => {
+        console.log('[AuthContext] Logging out, disconnecting socket...');
+        disconnectSocket(); // Disconnect socket on logout
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         delete apiClient.defaults.headers.common['x-auth-token'];
@@ -63,18 +105,17 @@ export const AuthProvider = ({ children }) => {
             isAuthenticated: false,
             isLoading: false,
         });
-        // Optionally redirect to login page using navigate (import useNavigate from react-router-dom)
     };
 
     const value = {
         ...authState,
         login,
         logout,
+        fetchUserProfile,
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {/* Don't render children until loading is false */} 
             {!authState.isLoading ? children : <div>Loading authentication...</div>} 
         </AuthContext.Provider>
     );

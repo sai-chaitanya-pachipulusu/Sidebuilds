@@ -229,12 +229,14 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                         needsAttention: true 
                     });
                 } catch (createError) {
-                    console.error('Error creating Stripe account:', createError);
+                    console.error('Error auto-creating Stripe account during status check:', createError);
+                    // Return a more specific error for this scenario
                     return res.status(500).json({ 
-                        message: 'Failed to initialize Stripe account', 
+                        message: 'Failed to automatically initialize a new Stripe account during status check.', 
                         error: createError.message,
                         type: createError.type || 'unknown',
-                        solution: 'Please try again or contact support'
+                        code: 'STRIPE_ACCOUNT_AUTOCREATE_FAILED', // Custom code
+                        solution: 'This can sometimes happen with new accounts. Please try the "Direct Stripe Link" or "Connect with Stripe" button on the profile page, or contact support if the issue persists.'
                     });
                 }
             }

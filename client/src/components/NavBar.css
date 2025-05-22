@@ -1,3 +1,95 @@
+/* NavBar.css - Simplified for theme consistency */
+
+/* 
+  The main navbar structure is now primarily handled by Chakra UI components in NavBar.js 
+  and styled via client/src/theme.js and CSS variables in client/src/index.css.
+  This file should only contain styles that are NOT easily achievable via the Chakra theme
+  or are for very specific custom elements within the NavBar.
+*/
+
+/* Example: Custom underline for active NavItem (if not handled by Chakra Link styles) */
+/* This was in NavItem in NavBar.js, if we want a custom underline not from Chakra Link directly */
+/*
+.nav-item-active-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+*/
+
+/* Mobile menu toggle icon specific styles (hamburger lines) if not using Chakra Icon */
+/* The existing styles for .mobile-menu-toggle and .mobile-menu-toggle.open span 
+   for the hamburger animation can largely remain if they are for a custom icon implementation.
+   However, ensure their colors use theme variables if needed.
+   The <Box> implementation in NavBar.js for the hamburger seems to handle this directly now.
+*/
+
+/* Minimal styles for .nav-logo if needed, but Text component in NavBar.js should handle most */
+/*
+.nav-logo { */
+  /* text-decoration: none; */ /* Handled by Chakra Link component */
+  /* color: var(--text-color); */ /* Handled by Text component color prop *//*
+}*/
+
+/* Styles for .nav-menu links if not fully covered by NavItem component logic in NavBar.js */
+.nav-menu a {
+  /*font-size: var(--secondary-text-size);*/ /* Consider setting in NavItem component props if possible */
+  /*color: var(--secondary-text);*/ /* Default NavItem link color in NavBar.js is now var(--secondary-text) */
+  text-decoration: none;
+  padding: 8px 12px; /* Consistent padding */
+  border-radius: var(--card-radius); /* Use theme card radius */
+  font-weight: 500;
+  transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+}
+
+.nav-menu a:hover {
+  color: var(--text-color);
+  background-color: var(--hover-bg); /* Use theme hover background */
+}
+
+.nav-menu a.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  /* background-color: transparent; */ /* Active state might not need a different background */
+}
+
+/* Keep mobile menu animation styles if they are for a custom hamburger icon */
+.mobile-menu-toggle span {
+  display: block;
+  width: 24px; /* Consistent with Box in NavBar.js */
+  height: 2px; /* Consistent with Box in NavBar.js */
+  margin: 4px 0; /* Consistent with Box in NavBar.js */
+  position: relative;
+  background: var(--text-color); /* Use theme text color for hamburger lines */
+  border-radius: 3px;
+  z-index: 1;
+  transform-origin: center center;
+  transition: transform 0.3s ease,
+              opacity 0.3s ease;
+}
+
+.mobile-menu-toggle.open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.mobile-menu-toggle.open span:nth-child(2) {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.mobile-menu-toggle.open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Any other highly specific custom styles for NavBar that don't fit the theme system can go here. */
+/* But the goal is to minimize this file. */
+
 .navbar {
   background: #000000;
   position: fixed;
@@ -36,19 +128,6 @@
 }
 
 /* Logo styling */
-.nav-logo {
-  font-weight: 700;
-  color: var(--text-color);
-  text-decoration: none;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  margin-right: 2rem;
-  position: relative;
-  left: 0;
-  background-color: #000000;
-}
-
 .logo-text {
   font-size: 1.6rem;
   letter-spacing: 1px;
@@ -75,45 +154,6 @@
   justify-content: center;
   gap: 2rem;
   background-color: #000000;
-}
-
-.nav-menu a {
-  font-size: var(--secondary-text-size);
-  color: var(--secondary-text);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  position: relative;
-  background-color: #000000;
-}
-
-.nav-menu a:hover {
-  color: var(--text-color);
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateY(-2px);
-}
-
-.nav-menu a.active {
-  color: var(--primary-color);
-  font-weight: 600;
-  background-color: #000000;
-}
-
-.nav-menu a.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
-  background-color: var(--primary-color);
-  border-radius: 3px;
 }
 
 /* Special buttons styling */
@@ -199,34 +239,6 @@
   padding: 10px;
   z-index: 1100;
   position: relative;
-}
-
-.mobile-menu-toggle span {
-  display: block;
-  width: 25px;
-  height: 2px;
-  margin: 5px 0;
-  position: relative;
-  background: var(--text-color);
-  border-radius: 3px;
-  z-index: 1;
-  transform-origin: 4px 0px;
-  transition: transform 0.5s cubic-bezier(0.77,0.2,0.05,1.0),
-              background 0.5s cubic-bezier(0.77,0.2,0.05,1.0),
-              opacity 0.55s ease;
-}
-
-.mobile-menu-toggle.open span:first-child {
-  transform: rotate(45deg) translate(2px, -2px);
-}
-
-.mobile-menu-toggle.open span:nth-child(2) {
-  opacity: 0;
-  transform: rotate(0deg) scale(0.2, 0.2);
-}
-
-.mobile-menu-toggle.open span:nth-child(3) {
-  transform: rotate(-45deg) translate(0, 0px);
 }
 
 /* Mobile navigation adjustments */

@@ -9,12 +9,18 @@ const PROFILE_FIELDS = [
     'user_id', 'username', 'email', 'created_at', 'updated_at',
     /*'profile_picture_url',*/ 'bio', 'location', /*'skills',*/ 'phone_number',
     'portfolio_link', 'linkedin_profile_url', 'github_profile_url', 'twitter_profile_url',
-    'stripe_account_id', 'onboarding_complete', 'payout_enabled' // Include Stripe fields if they should be part of the general profile view
+    // Stripe fields - ensure these match actual column names and what client might expect for general profile context
+    'stripe_account_id', 
+    'onboarding_complete AS stripe_onboarding_complete', 
+    'stripe_payouts_enabled AS stripe_payouts_enabled', 
+    'stripe_charges_enabled AS stripe_charges_enabled', 
+    'stripe_details_submitted AS stripe_details_submitted'
 ].join(', ');
 
 // --- GET current user's profile ---
 // GET /api/users/profile
 router.get('/profile', authMiddleware, async (req, res) => {
+    console.log('GET /profile - req.user:', JSON.stringify(req.user, null, 2));
     try {
         const userId = req.user.id;
         const userProfile = await db.query(
@@ -36,6 +42,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // --- UPDATE current user's profile ---
 // PUT /api/users/profile
 router.put('/profile', authMiddleware, async (req, res) => {
+    console.log('PUT /profile - req.user:', JSON.stringify(req.user, null, 2));
+    console.log('PUT /profile - req.body:', JSON.stringify(req.body, null, 2));
     try {
         const userId = req.user.id;
         const {
@@ -111,7 +119,7 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
         const result = await db.query(
-            'SELECT stripe_account_id, onboarding_complete, payout_enabled, stripe_charges_enabled, stripe_details_submitted FROM users WHERE user_id = $1',
+            'SELECT stripe_account_id, onboarding_complete, stripe_payouts_enabled, stripe_charges_enabled, stripe_details_submitted FROM users WHERE user_id = $1',
             [userId]
         );
 
@@ -122,7 +130,7 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
         const {
             stripe_account_id,
             onboarding_complete,
-            payout_enabled,
+            stripe_payouts_enabled,
             stripe_charges_enabled,
             stripe_details_submitted
         } = result.rows[0];
@@ -130,13 +138,10 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
         res.json({
             accountId: stripe_account_id,
             isOnboardingComplete: onboarding_complete,
-            arePayoutsEnabled: payout_enabled,
+            arePayoutsEnabled: stripe_payouts_enabled,
             areChargesEnabled: stripe_charges_enabled,
             areDetailsSubmitted: stripe_details_submitted,
-            // You might want to add a more comprehensive check for "needsAttention"
-            // This often involves calling the Stripe API directly to get the latest account status
-            // For now, we'll base it on whether onboarding is complete but payouts/charges are not enabled
-            needsAttention: onboarding_complete && (!payout_enabled || !stripe_charges_enabled)
+            needsAttention: onboarding_complete && (!stripe_payouts_enabled || !stripe_charges_enabled)
         });
     } catch (err) {
         console.error("Get Stripe status error:", err.message);

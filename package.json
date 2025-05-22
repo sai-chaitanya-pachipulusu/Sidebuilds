@@ -7,5 +7,9 @@
     "dotenv": "^16.5.0",
     "framer-motion": "^10.18.0",
     "pg": "^8.15.6"
+  },
+  "scripts": {
+    "seed": "node scripts/seedProjects.js seed",
+    "seed:delete": "node scripts/seedProjects.js delete"
   }
 }

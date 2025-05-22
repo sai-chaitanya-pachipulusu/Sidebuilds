@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, Flex, HStack, Button, IconButton, Text, 
   useDisclosure, Drawer, DrawerBody,
   DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
-  Link
+  Link,
+  Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverArrow, PopoverCloseButton, PopoverBody, PopoverFooter,
+  Badge, VStack, Spinner, Tooltip, Icon, useToast,
 } from '@chakra-ui/react';
+import { BellIcon, CheckCircleIcon, InfoIcon } from '@chakra-ui/icons';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
+import { getSocket, subscribeToSocketStatus, getCurrentSocketStatus } from '../utils/socket';
 import './NavBar.css';
 
 // Icons
@@ -96,11 +101,167 @@ const TermsIcon = () => ( // Simple document icon for Terms
 
 function NavBar() {
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
+  const toast = useToast();
   const [scrolled, setScrolled] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
+  const { isOpen: isNotifOpen, onOpen: onNotifOpen, onClose: onNotifClose } = useDisclosure();
+
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [socketStatus, setSocketStatus] = useState(getCurrentSocketStatus());
+  const lastToastIdRef = useRef(null); // To prevent multiple toasts for the same status
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSocketStatus((status, details) => {
+      setSocketStatus(status);
+      // Handle toasts for specific statuses
+      if (status === 'error' || (status === 'disconnected' && details !== 'User initiated logout')) {
+        if (lastToastIdRef.current) toast.close(lastToastIdRef.current);
+        lastToastIdRef.current = toast({
+          title: "Connection Issue",
+          description: status === 'error' ? details : "Disconnected. Trying to reconnect...",
+          status: "warning",
+          duration: status === 'error' ? 6000 : null, // Longer or indefinite for errors/disconnected
+          isClosable: true,
+          position: "top"
+        });
+      } else if (status === 'connected') {
+        if (lastToastIdRef.current && toast.isActive(lastToastIdRef.current)) {
+            // If a warning/error toast was active, replace it with a success message
+            toast.update(lastToastIdRef.current, {
+                title: "Connection Restored",
+                description: "Successfully connected to the server.",
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+            });
+        } else if (details && details.startsWith('Reconnected')) { // Show toast for reconnection
+             toast({
+                title: "Reconnected!",
+                description: details,
+                status: "success",
+                duration: 3000,
+                isClosable: true,
+                position: "top"
+            });
+        }
+        // No new toast if it was just a normal initial connection without a prior warning toast
+      }
+    });
+    return unsubscribe;
+  }, [toast]);
+
+  const fetchUserNotifications = useCallback(async (showToast = false) => {
+    if (!isAuthenticated || !user) return;
+    setIsLoadingNotifications(true);
+    try {
+      const data = await getNotifications();
+      const newNotifications = data || [];
+      setNotifications(newNotifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+      const newUnreadCount = newNotifications.filter(n => !n.is_read).length;
+      setUnreadCount(newUnreadCount);
+      if (showToast && newUnreadCount > unreadCount) {
+        toast({
+            title: "New Notification!",
+            description: "You have new unread notifications.",
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+            icon: <InfoIcon />
+        });
+      }
+    } catch (error) {
+      console.error("NavBar: Failed to fetch notifications:", error);
+      // Avoid toast for fetch errors unless critical, as polling might recover
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, [isAuthenticated, user, toast, unreadCount]);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchUserNotifications(); // Initial fetch
+
+      try {
+        const socket = getSocket();
+
+        const handleNewNotification = (newNotification) => {
+          console.log('[Socket.IO] Received new_notification:', newNotification);
+          setNotifications(prev => [newNotification, ...prev].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+          setUnreadCount(prev => prev + 1);
+          toast({
+            title: "New Notification!",
+            description: newNotification.message.substring(0, 50) + (newNotification.message.length > 50 ? '...' : ''),
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+            icon: <InfoIcon />,
+            position: "top-right",
+          });
+        };
+
+        socket.on('new_notification', handleNewNotification);
+        // Also listen for messages if NavBar needs to show a general alert, though typically Dashboard handles this.
+        // socket.on('new_message', handleNewMessageInNavBar); 
+
+        return () => {
+          console.log('[Socket.IO] Cleaning up NavBar listeners');
+          socket.off('new_notification', handleNewNotification);
+          // socket.off('new_message', handleNewMessageInNavBar);
+        };
+      } catch (error) {
+          console.warn('[NavBar] Socket not available or error setting up listeners:', error.message);
+          // Fallback to polling if socket setup fails
+          const intervalId = setInterval(() => fetchUserNotifications(true), 60000);
+          return () => clearInterval(intervalId);
+      }
+    } else {
+        // Clear notifications if user logs out
+        setNotifications([]);
+        setUnreadCount(0);
+    }
+  }, [isAuthenticated, user, fetchUserNotifications, toast]);
   
-  // Determine active link
+  const handleMarkOneAsRead = async (notificationId) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      // Optimistically update UI or refetch
+      setNotifications(prev => 
+        prev.map(n => n.notification_id === notificationId ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1)); // Ensure count doesn't go below 0
+    } catch (error) {
+      console.error("NavBar: Failed to mark notification as read:", error);
+      toast({ title: "Error", description: "Could not mark notification as read.", status: "error"});
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+      onNotifClose(); // Close popover after action
+      toast({ title: "Success", description: "All notifications marked as read.", status: "success", icon: <CheckCircleIcon /> });
+    } catch (error) {
+      console.error("NavBar: Failed to mark all notifications as read:", error);
+      toast({ title: "Error", description: "Could not mark all as read.", status: "error"});
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.is_read) {
+        handleMarkOneAsRead(notification.notification_id); // Mark as read only if unread
+    }
+    if (notification.link) {
+      navigate(notification.link);
+    }
+    onNotifClose(); // Close popover after click
+  };
+  
   const isActive = (path) => {
     return location.pathname === path;
   };
@@ -108,32 +269,31 @@ function NavBar() {
   const handleLogout = (e) => {
     e.preventDefault();
     logout();
-    onClose();
+    onMobileMenuClose(); // Ensure mobile menu closes
+    onNotifClose(); // Ensure notification popover closes
   };
   
-  // Handle scroll for navbar style changes
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.scrollY;
-      if (offset > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(offset > 50);
     };
     
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Close mobile menu when route changes
   useEffect(() => {
-    onClose();
-  }, [location.pathname, onClose]);
+    // Close mobile menu on path change
+    if(isMobileMenuOpen) onMobileMenuClose(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [location.pathname]); // Only trigger on path change
 
   const MotionBox = motion(Box);
+
+  // Determine correct disclosure handlers for mobile menu
+  const { isOpen: finalIsMobileMenuOpen, onOpen: finalOnMobileMenuOpen, onClose: finalOnMobileMenuClose } = 
+    { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose };
 
   return (
     <Box 
@@ -143,257 +303,354 @@ function NavBar() {
       left="0"
       right="0"
       zIndex="1000"
-      bg="#000000"
+      bg={scrolled ? 'var(--card-bg)' : 'transparent'}
       borderBottom={scrolled ? '1px' : 'none'}
-      borderColor="whiteAlpha.100"
+      borderColor={scrolled ? 'var(--border-color)' : 'transparent'}
       backdropFilter={scrolled ? 'blur(10px)' : 'none'}
       transition="all 0.3s ease"
-      boxShadow={scrolled ? '0 4px 20px rgba(0, 0, 0, 0.2)' : 'none'}
+      boxShadow={scrolled ? 'var(--card-shadow)' : 'none'}
       py={2}
     >
       <Flex
         maxW="1200px"
         mx="auto"
-        py={6}
-        px={6}
+        py={4}
+        px={{ base: 4, md: 6 }} // Responsive padding
         align="center"
         justify="space-between"
-        bg="#000000"
       >
         <MotionBox
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          bg="#000000"
         >
           <Link 
             as={RouterLink} 
             to="/"
             _hover={{ textDecoration: 'none' }}
-            bg="#000000"
           >
-            <Text
-              fontSize="2xl"
-              fontWeight="bold"
-              letterSpacing="wider"
-              textTransform="lowercase"
-              color="white"
-              bg="#000000"
-            >
-              sidebuilds.
-            </Text>
+            <HStack alignItems="center">
+              <Text
+                fontSize={{ base: 'xl', md: '2xl' }} // Responsive font size
+                fontWeight="bold"
+                letterSpacing="wider"
+                textTransform="lowercase"
+                color="var(--text-color)"
+              >
+                sidebuilds.
+              </Text>
+              {/* Socket Status Indicator */}
+              <Tooltip 
+                label={socketStatus === 'connected' ? `Connected (${user?.username || ''})` : socketStatus === 'connecting' ? 'Connecting...' : socketStatus === 'error' ? 'Connection Error' : 'Disconnected'} 
+                placement="bottom" 
+                hasArrow
+              >
+                <Box 
+                    ml={2} 
+                    w="10px" 
+                    h="10px" 
+                    borderRadius="50%" 
+                    bg={socketStatus === 'connected' ? 'green.500' : socketStatus === 'connecting' ? 'yellow.500' : 'red.500'}
+                    transition="background-color 0.3s ease"
+                />
+              </Tooltip>
+            </HStack>
           </Link>
         </MotionBox>
 
         {/* Desktop Navigation */}
-        <HStack spacing={10} display={{ base: 'none', md: 'flex' }} bg="#000000">
-          {isAuthenticated && (
+        <HStack spacing={{ base: 2, md: 4}} display={{ base: 'none', md: 'flex' }} alignItems="center">
+          {isAuthenticated && user && (
             <>
-              <NavItem to="/public-projects" isActive={isActive('/public-projects')}>
+              <NavItem to="/public-projects" isActive={isActive('/public-projects')} icon={ProjectsIcon}>
                 Projects
               </NavItem>
-              <NavItem to="/marketplace" isActive={isActive('/marketplace')}>
+              <NavItem to="/marketplace" isActive={isActive('/marketplace')} icon={MarketplaceIcon}>
                 Marketplace
               </NavItem>
-              <NavItem to="/dashboard" isActive={isActive('/dashboard')}>
+              <NavItem to="/dashboard" isActive={isActive('/dashboard')} icon={DashboardIcon}>
                 Dashboard
               </NavItem>
-              <NavItem to="/profile-settings" isActive={isActive('/profile-settings')}>
+              <NavItem to="/profile-settings" isActive={isActive('/profile-settings')} icon={ProfileIcon}>
                 Profile
-              </NavItem>
-              <NavItem to="/faq" isActive={isActive('/faq')}>
-                FAQ
               </NavItem>
             </>
           )}
-          
-          {isAuthenticated ? (
-            <IconButton
-              aria-label="Logout"
-              variant="ghost"
-              icon={<LogoutIcon />}
-              onClick={handleLogout}
-              mt={-1}
-              _hover={{ transform: 'translateY(-2px)', color: 'red.400' }}
-              bg="#000000"
-            />
-          ) : (
+          {!isAuthenticated && (
             <>
-              <Button 
-                as={RouterLink} 
-                to="/login"
-                variant="ghost"
-                leftIcon={<LoginIcon />}
-                fontWeight="normal"
-                px={6}
-                bg="#000000"
-                _hover={{ bg: '#000000', opacity: 0.8, transform: 'translateY(-2px)' }}
-              >
-                Login
-              </Button>
-              <Button 
-                as={RouterLink} 
-                to="/register"
-                colorScheme="blue"
-                leftIcon={<RegisterIcon />}
-                px={6}
-                _hover={{ transform: 'translateY(-2px)' }}
-              >
-                Register
-              </Button>
+                <NavItem to="/public-projects" isActive={isActive('/public-projects')} icon={ProjectsIcon}>
+                    Browse Projects
+                </NavItem>
+                <NavItem to="/faq" isActive={isActive('/faq')} icon={FAQIcon}>
+                    FAQ
+                </NavItem>
+                <NavItem to="/terms" isActive={isActive('/terms')} icon={TermsIcon}>
+                    Terms
+                </NavItem>
             </>
           )}
         </HStack>
 
-        {/* Mobile hamburger */}
-        <IconButton
-          display={{ base: 'flex', md: 'none' }}
-          onClick={onOpen}
-          variant="ghost"
-          fontSize="20px"
-          aria-label="Open menu"
-          icon={
-            <Box bg="#000000">
-              <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
-              <Box as="span" display="block" w="24px" h="2px" bg="white" mb="4px" />
-              <Box as="span" display="block" w="24px" h="2px" bg="white" />
-            </Box>
-          }
-          bg="#000000"
-          _hover={{ bg: '#000000' }}
-        />
+        {/* Auth Buttons & Notification Icon (Desktop and Mobile common right part) */}
+        <HStack spacing={{ base: 2, md: 4 }} alignItems="center">
+          {isAuthenticated && user && (
+            <Popover 
+                isOpen={isNotifOpen} 
+                onOpen={onNotifOpen} 
+                onClose={onNotifClose}
+                placement="bottom-end"
+                closeOnBlur={true}
+            >
+                <PopoverTrigger>
+                    <Tooltip label="View notifications" placement="bottom" hasArrow>
+                        <IconButton 
+                            icon={<BellIcon />} 
+                            variant="ghost" 
+                            aria-label="Notifications" 
+                            fontSize="xl"
+                            position="relative"
+                            color={unreadCount > 0 ? 'blue.400' : 'currentColor'}
+                        >
+                            {unreadCount > 0 && (
+                                <Badge 
+                                    colorScheme="blue" 
+                                    variant="solid"
+                                    borderRadius="full"
+                                    boxSize="1.2em" 
+                                    fontSize="0.7em"
+                                    position="absolute"
+                                    top="0px"
+                                    right="0px"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                >
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </Badge>
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                </PopoverTrigger>
+                <PopoverContent zIndex={1100} w={{ base: "calc(100vw - 30px)", sm: "380px" }} maxH="400px" overflowY="auto" borderColor="var(--border-color)" bg="var(--card-bg)">
+                    <PopoverArrow bg="var(--card-bg)" />
+                    <PopoverCloseButton />
+                    <PopoverHeader fontWeight="semibold">Notifications</PopoverHeader>
+                    <PopoverBody p={0}>
+                        {isLoadingNotifications ? (
+                            <VStack p={4}><Spinner size="md" /><Text>Loading...</Text></VStack>
+                        ) : notifications.length === 0 ? (
+                            <Text p={4} textAlign="center" color="gray.500">No new notifications.</Text>
+                        ) : (
+                            <VStack spacing={0} align="stretch">
+                                {notifications.map(notif => (
+                                    <Box 
+                                        key={notif.notification_id} 
+                                        p={3} 
+                                        borderBottomWidth="1px" 
+                                        borderColor="var(--border-color)"
+                                        _hover={{ bg: 'var(--hover-bg)' }} 
+                                        cursor="pointer"
+                                        onClick={() => handleNotificationClick(notif)}
+                                        bg={notif.is_read ? 'transparent' : 'blue.50'} // Use a subtle bg for unread
+                                        // _dark={{ bg: notif.is_read ? 'transparent' : 'blue.800' }} // Dark mode consideration
+                                    >
+                                        <Text fontWeight={notif.is_read ? 'normal' : 'bold'} fontSize="sm" noOfLines={2}>{notif.message}</Text>
+                                        <Text fontSize="xs" color="gray.500">
+                                            {new Date(notif.created_at).toLocaleDateString()} - {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                                        </Text>
+                                    </Box>
+                                ))}
+                            </VStack>
+                        )}
+                    </PopoverBody>
+                    {notifications.length > 0 && (
+                         <PopoverFooter borderTopWidth="1px" borderColor="var(--border-color)" d="flex" justifyContent="flex-end" p={2}>
+                            <Button size="xs" variant="ghost" onClick={handleMarkAllRead} disabled={unreadCount === 0}>
+                                Mark All Read
+                            </Button>
+                        </PopoverFooter>
+                    )}
+                </PopoverContent>
+            </Popover>
+          )}
 
-        {/* Mobile drawer */}
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-          <DrawerOverlay />
-          <DrawerContent bg="#000000">
-            <DrawerCloseButton color="white" />
-            <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200" bg="#000000">
-              Menu
-            </DrawerHeader>
-            <DrawerBody bg="#000000">
-              <Flex direction="column" mt={4} spacing={4} bg="#000000">
-                {isAuthenticated && (
-                  <>
-                    <MobileNavItem to="/public-projects" icon={<ProjectsIcon />} isActive={isActive('/public-projects')}>
-                      Projects
-                    </MobileNavItem>
-                    <MobileNavItem to="/marketplace" icon={<MarketplaceIcon />} isActive={isActive('/marketplace')}>
-                      Marketplace
-                    </MobileNavItem>
-                    <MobileNavItem to="/dashboard" icon={<DashboardIcon />} isActive={isActive('/dashboard')}>
-                      Dashboard
-                    </MobileNavItem>
-                    <MobileNavItem to="/profile-settings" icon={<ProfileIcon />} isActive={isActive('/profile-settings')}>
-                      Profile
-                    </MobileNavItem>
-                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
-                      FAQ
-                    </MobileNavItem>
-                    <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
-                      Terms & Conditions
-                    </MobileNavItem>
-                  </>
-                )}
-                
-                {isAuthenticated ? (
-                  <Button
-                    leftIcon={<LogoutIcon />}
+          {/* Auth buttons for desktop */}
+          <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
+            {isAuthenticated ? (
+                <Button 
+                    variant="ghost" 
+                    onClick={handleLogout} 
+                    size="sm" 
                     colorScheme="red"
-                    variant="ghost"
-                    w="100%"
-                    justifyContent="flex-start"
-                    onClick={handleLogout}
-                    mt={4} // Add some margin top if it's the last auth item
-                    mb={2}
-                  >
+                    leftIcon={<Icon as={LogoutIcon} />}
+                >
                     Logout
-                  </Button>
-                ) : (
-                  <>
-                    <MobileNavItem to="/login" icon={<LoginIcon />} isActive={isActive('/login')}>
-                      Login
-                    </MobileNavItem>
-                    <MobileNavItem to="/register" icon={<RegisterIcon />} isActive={isActive('/register')}>
-                      Register
-                    </MobileNavItem>
-                    {/* Public links also in mobile when not authenticated */}
-                    <MobileNavItem to="/faq" icon={<FAQIcon />} isActive={isActive('/faq')}>
-                      FAQ
-                    </MobileNavItem>
-                    <MobileNavItem to="/terms" icon={<TermsIcon />} isActive={isActive('/terms')}>
-                      Terms & Conditions
-                    </MobileNavItem>
-                  </>
-                )}
-              </Flex>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
+                </Button>
+            ) : (
+              <>
+                <Button as={RouterLink} to="/login" variant="outline" size="sm" leftIcon={<Icon as={LoginIcon} />}>Login</Button>
+                <Button as={RouterLink} to="/register" variant="solid" colorScheme="blue" size="sm" leftIcon={<Icon as={RegisterIcon} />}>Sign Up</Button>
+              </>
+            )}
+          </HStack>
+
+          {/* Mobile Menu Trigger (Hamburger Icon) */}
+          <IconButton 
+            aria-label="Open Menu"
+            icon={<HamburgerIcon />} 
+            display={{ base: 'flex', md: 'none' }}
+            onClick={finalOnMobileMenuOpen}
+            variant="ghost"
+          />
+        </HStack>
       </Flex>
+
+      {/* Mobile Drawer Menu */}
+      <Drawer isOpen={finalIsMobileMenuOpen} placement="right" onClose={finalOnMobileMenuClose}>
+        <DrawerOverlay />
+        <DrawerContent bg="var(--card-bg)">
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px" borderColor="var(--border-color)">
+            <Text fontSize="lg" fontWeight="bold" textTransform="lowercase" color="var(--text-color)">sidebuilds.</Text>
+          </DrawerHeader>
+          <DrawerBody py={6}>
+            <VStack spacing={5} align="stretch">
+                <MobileNavItem to="/" icon={HomeIcon} isActive={isActive('/')} onClick={finalOnMobileMenuClose}>Home</MobileNavItem>
+                {isAuthenticated && user && (
+                    <>
+                        <MobileNavItem to="/public-projects" icon={ProjectsIcon} isActive={isActive('/public-projects')} onClick={finalOnMobileMenuClose}>Projects</MobileNavItem>
+                        <MobileNavItem to="/marketplace" icon={MarketplaceIcon} isActive={isActive('/marketplace')} onClick={finalOnMobileMenuClose}>Marketplace</MobileNavItem>
+                        <MobileNavItem to="/dashboard" icon={DashboardIcon} isActive={isActive('/dashboard')} onClick={finalOnMobileMenuClose}>Dashboard</MobileNavItem>
+                        <MobileNavItem to="/profile-settings" icon={ProfileIcon} isActive={isActive('/profile-settings')} onClick={finalOnMobileMenuClose}>Profile</MobileNavItem>
+                    </>
+                )}
+                {!isAuthenticated && (
+                    <>
+                        <MobileNavItem to="/public-projects" icon={ProjectsIcon} isActive={isActive('/public-projects')} onClick={finalOnMobileMenuClose}>Browse Projects</MobileNavItem>
+                        <MobileNavItem to="/faq" icon={FAQIcon} isActive={isActive('/faq')} onClick={finalOnMobileMenuClose}>FAQ</MobileNavItem>
+                        <MobileNavItem to="/terms" icon={TermsIcon} isActive={isActive('/terms')} onClick={finalOnMobileMenuClose}>Terms</MobileNavItem>
+                        <Button as={RouterLink} to="/login" variant="outline" w="full" leftIcon={<Icon as={LoginIcon} />} onClick={finalOnMobileMenuClose}>Login</Button>
+                        <Button as={RouterLink} to="/register" variant="solid" colorScheme="blue" w="full" leftIcon={<Icon as={RegisterIcon} />} onClick={finalOnMobileMenuClose}>Sign Up</Button>
+                    </>
+                )}
+                 {isAuthenticated && (
+                    <Button 
+                        variant="ghost" 
+                        onClick={handleLogout} 
+                        w="full" 
+                        colorScheme="red" 
+                        leftIcon={<Icon as={LogoutIcon} />}
+                        mt={4}
+                    >
+                        Logout
+                    </Button>
+                )}
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 }
 
-// Desktop Navigation Item
-const NavItem = ({ icon, children, isActive, to }) => {
-  const MotionLink = motion(Link);
-  
+// Helper components for Nav items
+// ... (NavItem and MobileNavItem definitions remain the same)
+const HamburgerIcon = (props) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <path
+      d="M3 12H21"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M3 6H21"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M3 18H21"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const NavItem = ({ icon, children, isActive, to, ...rest }) => {
+  const location = useLocation();
+  const active = isActive !== undefined ? isActive : location.pathname === to;
+
   return (
-    <MotionLink
-      as={RouterLink}
+    <Link 
+      as={RouterLink} 
       to={to}
-      px={4}
+      px={3}
       py={2}
+      rounded={'md'}
+      fontWeight={active ? 'semibold' : 'normal'}
+      color={active ? 'var(--accent-color)' : 'var(--text-color-secondary)'}
+      borderBottom={active ? '2px solid var(--accent-color)' : '2px solid transparent'} // Underline for active link
+      _hover={{
+        textDecoration: 'none',
+        color: 'var(--accent-color-hover)',
+        // bg: 'var(--hover-bg)', // subtle background hover
+        borderBottomColor: 'var(--accent-color-hover)' // Underline hover effect
+      }}
       display="flex"
       alignItems="center"
-      position="relative"
-      _hover={{ textDecoration: 'none' }}
-      whileHover={{ y: -2 }}
-      bg="#000000"
+      {...rest}
     >
-      <HStack spacing={3} align="center" bg="#000000">
-        <Box display="flex" alignItems="center" justifyContent="center" minW="18px" bg="#000000">
-          {icon}
-        </Box>
-        <Text color={isActive ? 'brand.500' : 'white'} fontWeight={isActive ? "600" : "400"} bg="#000000">{children}</Text>
-      </HStack>
-      {isActive && (
-        <Box
-          position="absolute"
-          bottom="-8px"
-          left="50%"
-          transform="translateX(-50%)"
-          height="3px"
-          width="30px"
-          bg="brand.500"
-          borderRadius="full"
-        />
-      )}
-    </MotionLink>
+      {icon && <Icon as={icon} mr={2} />}
+      {children}
+    </Link>
   );
 };
 
-// Mobile Navigation Item
-const MobileNavItem = ({ icon, children, isActive, to }) => {
+const MobileNavItem = ({ icon, children, isActive, to, onClick, ...rest }) => {
+    const location = useLocation();
+    const active = isActive !== undefined ? isActive : location.pathname === to;
   return (
-    <Button
+    <Link
       as={RouterLink}
       to={to}
-      variant="ghost"
-      justifyContent="flex-start"
-      leftIcon={icon}
-      borderLeft={isActive ? '3px solid' : 'none'}
-      borderColor={isActive ? 'brand.500' : 'transparent'}
-      bg={isActive ? 'rgba(255, 255, 255, 0.05)' : '#000000'}
-      borderRadius="0"
-      pl={isActive ? 4 : 2}
-      py={5}
-      mb={3}
-      _hover={{ bg: 'rgba(255, 255, 255, 0.05)' }}
-      fontSize="1.1rem"
+      onClick={onClick} // Ensure mobile menu closes on navigation
+      display="flex"
+      alignItems="center"
+      px={4}
+      py={3}
+      w="full"
+      rounded="md"
+      fontWeight={active ? 'bold' : 'normal'}
+      color={active ? 'var(--accent-color)': 'var(--text-color)'}
+      bg={active ? 'var(--active-bg)' : 'transparent'} 
+      _hover={{
+        textDecoration: 'none',
+        bg: 'var(--hover-bg)',
+        color: 'var(--accent-color-hover)'
+      }}
+      {...rest}
     >
+      {icon && <Icon as={icon} mr={3} />}
       {children}
-    </Button>
+    </Link>
   );
 };
 

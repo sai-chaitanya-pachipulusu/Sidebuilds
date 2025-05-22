@@ -1,15 +1,19 @@
 .marketplace-trust-section {
-  margin: 2rem 0;
-  padding: 2rem;
-  background-color: #000000;
+  margin: 3rem 0;
+  padding: 2rem 0;
+  background-color: transparent;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .trust-title {
-  font-size: 1.3rem;
-  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  margin-bottom: 2.5rem;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .trust-badges-grid {
@@ -37,31 +41,44 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  background-color: #000000;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: none !important; /* Ensure no border */
-  box-shadow: none !important; /* Ensure no shadow */
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: var(--card-radius);
+  border: 1px solid #222;
+  box-shadow: none;
+  transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.marketplace-trust-section .trust-badge:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .badge-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   color: var(--primary-color);
-  background-color: #000000;
+  background-color: var(--hover-bg);
+  border: 1px solid var(--primary-color);
+}
+
+.badge-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .badge-content h4 {
-  font-size: 1.1rem;
-  margin: 0rem 0rem 0.5rem 0rem;
+  font-size: 1.2rem;
+  margin: 0rem 0rem 0.75rem 0rem;
   color: var(--text-color);
   font-weight: 600;
-  border: none !important;
+  border: transparent;
 }
 
 .badge-content p {
@@ -74,11 +91,13 @@
 .secure-payment-notice {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
-  background-color: #000000;
-  padding: 1.25rem;
-  border-radius: 8px;
-  border: none;
+  background-color: transparent;
+  padding: 1.5rem 1rem;
+  border-radius: var(--card-radius);
+  border: 1px dashed var(--border-color);
+  margin-top: 2rem;
 }
 
 .secure-payment-notice svg {

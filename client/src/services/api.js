@@ -257,12 +257,14 @@ export const getTransferStatus = async (projectId) => {
     }
 };
 
-export const updateTransferStatus = async (projectId, statusData) => {
+// CORRECTED: Function for seller to update transfer status of a purchase request
+export const updateSellerTransferStatus = async (requestId, statusData) => {
+    // statusData should be an object like { status: 'new_status', message: 'optional_notes' }
     try {
-        const response = await apiClient.post(`/payments/transfers/${projectId}/update`, statusData);
+        const response = await apiClient.put(`/purchase-requests/${requestId}/transfer-status`, statusData);
         return response.data;
     } catch (error) {
-        console.error('Error updating transfer status:', error);
+        console.error('Error updating seller transfer status:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -278,41 +280,27 @@ export const getStripeAccountStatus = async () => {
     }
 };
 
-export const createStripeAccountLink = async (type = 'account_onboarding') => {
+export const createStripeAccountLink = async (/* type = 'account_onboarding' */) => { // type is handled by backend or defaults
     try {
-        console.log('Creating Stripe account link, type:', type);
-        const response = await apiClient.post('/stripe/create-account-link', { type });
-        console.log('Stripe account link created successfully');
-        return response.data; // Should return { url }
-    } catch (error) {
-        console.error('Create Stripe Account Link API error:');
-        
-        if (error.response) {
-            // The request was made and the server responded with a status code
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
-            
-            // Pass through Stripe-specific error details if available
-            if (error.response.data?.type?.startsWith('Stripe')) {
-                const stripeError = {
-                    message: error.response.data.message || 'Stripe API error',
-                    type: error.response.data.type,
-                    code: error.response.data.code
-                };
-                console.error('Stripe-specific error details:', stripeError);
-                throw stripeError;
-            }
-            
-            throw error.response.data || new Error('Failed to create Stripe account link');
-        } else if (error.request) {
-            // The request was made but no response was received
-            console.error('No response received:', error.request);
-            throw new Error('Network error while connecting to Stripe. Please check your connection and try again.');
-        } else {
-            // Something happened in setting up the request that triggered an Error
-            console.error('Error setting up request:', error.message);
-            throw new Error('Failed to create Stripe account link: ' + error.message);
+        // console.log(`API: Creating Stripe Account Link, type: ${type}`); // Type no longer sent
+        console.log('API: Initiating Stripe Connect account link creation/retrieval.');
+        // Corrected endpoint and removed 'type' from body as backend /connect/create-account handles it
+        const response = await apiClient.post('/payments/connect/create-account', {}); 
+        console.log('API: Stripe Account Link call successful', response.data);
+        // Backend route /connect/create-account returns { success: true, url: accountLink.url } 
+        // or { success: true, onboarding_complete: true, message: '...' }
+        if (!response.data.url && !response.data.onboarding_complete) {
+            throw new Error('Stripe account link URL not provided and onboarding not marked complete.');
         }
+        return response.data; // Expects { url: '...' } or info about completion
+    } catch (error) {
+        console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
+        if (error.response && error.response.data && error.response.data.error_code === 'stripe_account_not_found') {
+            throw new Error('Stripe account not found. Please ensure your account is set up.');
+        }
+        // Provide a more generic error, or let the component handle specific messages from response
+        const defaultMessage = 'Failed to create or retrieve Stripe account link. Please try again.';
+        throw new Error(error.response?.data?.error || error.message || defaultMessage);
     }
 };
 
@@ -375,8 +363,9 @@ export const getSellerPurchaseRequests = async () => {
         const response = await apiClient.get('/purchase-requests/seller');
         return response.data;
     } catch (error) {
-        console.error('Error fetching seller purchase requests:', error.response?.data || error.message);
-        throw error.response?.data || error;
+        const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to fetch seller purchase requests.';
+        console.error('Error fetching seller purchase requests:', errorMessage, error.response?.data);
+        throw new Error(errorMessage);
     }
 };
 
@@ -385,8 +374,9 @@ export const getBuyerPurchaseRequests = async () => {
         const response = await apiClient.get('/purchase-requests/buyer');
         return response.data;
     } catch (error) {
-        console.error('Error fetching buyer purchase requests:', error.response?.data || error.message);
-        throw error.response?.data || error;
+        const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to fetch buyer purchase requests.';
+        console.error('Error fetching buyer purchase requests:', errorMessage, error.response?.data);
+        throw new Error(errorMessage);
     }
 };
 
@@ -432,5 +422,140 @@ export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId)
         throw error.response?.data || error;
     }
 };
+
+// --- New Workflow API Calls ---
+
+// Called by buyer to initiate interest with initial commitments
+export const expressInterestInProject = async (projectId, buyerInitialCommitments, buyerIntroMessage) => {
+    try {
+        const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { 
+            buyer_initial_commitments: buyerInitialCommitments, 
+            buyer_intro_message: buyerIntroMessage 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error expressing interest in project:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// Called by seller to propose terms, including asset list
+export const sellerProposeTerms = async (requestId, sellerCommitments, agreedTransferableAssets, sellerProposalMessage) => {
+    try {
+        const response = await apiClient.put(`/purchase-requests/${requestId}/seller-propose-terms`, { 
+            seller_commitments: sellerCommitments, 
+            agreed_transferable_assets: agreedTransferableAssets, 
+            seller_proposal_message: sellerProposalMessage 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error for seller proposing terms:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// Called by buyer to accept seller's proposed terms
+export const buyerAcceptsTerms = async (requestId, buyerFinalAgreement, buyerDigitalSignature) => {
+    try {
+        const response = await apiClient.put(`/purchase-requests/${requestId}/buyer-accepts-terms`, { 
+            buyer_final_agreement: buyerFinalAgreement, 
+            buyer_digital_signature: buyerDigitalSignature 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error for buyer accepting terms:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// Called by buyer to withdraw their interest
+export const buyerWithdrawInterest = async (requestId, withdrawalReason) => {
+    try {
+        const response = await apiClient.put(`/purchase-requests/${requestId}/withdraw-interest`, { 
+            withdrawal_reason: withdrawalReason 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error for buyer withdrawing interest:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// Called by seller to decline buyer's initial interest
+export const sellerDeclineInterest = async (requestId, declineReason) => {
+    try {
+        const response = await apiClient.put(`/purchase-requests/${requestId}/decline-interest`, { 
+            decline_reason: declineReason 
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error for seller declining interest:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+// --- End New Workflow API Calls ---
+
+// --- Notification API Calls ---
+export const getNotifications = async () => {
+    try {
+        const response = await apiClient.get('/notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching notifications:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+    try {
+        const response = await apiClient.post(`/notifications/${notificationId}/mark-read`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error marking notification ${notificationId} as read:`, error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const markAllNotificationsAsRead = async () => {
+    try {
+        const response = await apiClient.post('/notifications/mark-all-read');
+        return response.data;
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+// --- End Notification API Calls ---
+
+// --- Purchase Request Message API Calls ---
+export const getPurchaseRequestMessages = async (requestId) => {
+    if (!requestId) {
+        console.error('Error: requestId is required to fetch messages.');
+        throw new Error('Request ID is required.');
+    }
+    try {
+        const response = await apiClient.get(`/purchase-requests/${requestId}/messages`);
+        return response.data; // Expected to be an array of message objects
+    } catch (error) {
+        console.error(`Error fetching messages for request ${requestId}:`, error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export const sendPurchaseRequestMessage = async (requestId, content) => {
+    if (!requestId || !content) {
+        console.error('Error: requestId and content are required to send a message.');
+        throw new Error('Request ID and message content are required.');
+    }
+    try {
+        const response = await apiClient.post(`/purchase-requests/${requestId}/messages`, { content });
+        return response.data; // Expected to be the newly created message object
+    } catch (error) {
+        console.error(`Error sending message for request ${requestId}:`, error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+// --- End Purchase Request Message API Calls ---
 
 export default apiClient; // Ensure apiClient is the default export

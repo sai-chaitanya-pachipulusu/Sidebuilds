@@ -68,7 +68,6 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
                 ppr.*, 
                 p.name AS project_name, 
                 p.description AS project_description, 
-                p.preview_image_url,
                 p.is_for_sale AS project_is_for_sale,
                 s_user.user_id AS seller_id,
                 s_user.email AS seller_email, 
@@ -77,7 +76,7 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
              FROM project_purchase_requests ppr
              JOIN projects p ON ppr.project_id = p.project_id
              JOIN users s_user ON ppr.seller_id = s_user.user_id
-             WHERE ppr.request_id = $1 AND ppr.buyer_id = $2`,
+             WHERE ppr.purchase_request_id = $1 AND ppr.buyer_id = $2`,
             [purchase_request_id, buyerId]
         );
 
@@ -99,7 +98,7 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
         if (!purchaseRequest.project_is_for_sale) {
             console.log(`[STRIPE DEBUG] Project ${projectId} (from purchase request) is no longer for sale.`);
             // Optionally update purchase_request status here
-            await db.query("UPDATE project_purchase_requests SET status = 'aborted_project_unavailable' WHERE request_id = $1", [purchase_request_id]);
+            await db.query("UPDATE project_purchase_requests SET status = 'aborted_project_unavailable' WHERE purchase_request_id = $1", [purchase_request_id]);
             return res.status(400).json({ error: 'This project is no longer available for sale.' });
         }
 
@@ -136,7 +135,6 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
                 product_data: {
                     name: purchaseRequest.project_name.substring(0, 100),
                     description: productDescription,
-                    images: purchaseRequest.preview_image_url ? [purchaseRequest.preview_image_url] : [],
                 },
                 unit_amount: Math.round(totalAmount * 100), // Price in cents
             },
@@ -181,7 +179,7 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
 
         // Update purchase request status to 'payment_processing' and store session ID
         await db.query(
-            "UPDATE project_purchase_requests SET stripe_checkout_session_id = $1, status = 'payment_processing', updated_at = current_timestamp WHERE request_id = $2",
+            "UPDATE project_purchase_requests SET stripe_checkout_session_id = $1, status = 'payment_processing', updated_at = current_timestamp WHERE purchase_request_id = $2",
             [session.id, purchase_request_id]
         );
 
@@ -321,7 +319,7 @@ async function processCheckoutCompleted(session) {
 
         // 2. Fetch current purchase request details to get buyer_id, seller_id, project_id
         const prQuery = await client.query(
-            'SELECT * FROM project_purchase_requests WHERE request_id = $1',
+            'SELECT * FROM project_purchase_requests WHERE purchase_request_id = $1',
             [purchaseRequestId]
         );
         if (prQuery.rows.length === 0) {
@@ -345,7 +343,7 @@ async function processCheckoutCompleted(session) {
                  stripe_payment_intent_id = $1, 
                  payment_date = CURRENT_TIMESTAMP, 
                  status_last_updated = CURRENT_TIMESTAMP 
-             WHERE request_id = $2 AND status != 'payment_completed_pending_transfer' RETURNING *`,
+             WHERE purchase_request_id = $2 AND status != 'payment_completed_pending_transfer' RETURNING *`,
             [paymentIntentId, purchaseRequestId]
         );
         if (updatePrStatusQuery.rowCount === 0) {

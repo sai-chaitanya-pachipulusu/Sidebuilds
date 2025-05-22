@@ -1,6 +1,6 @@
 import { extendTheme } from '@chakra-ui/react';
 
-// SideBuilds custom theme using CSS variables from index.css
+// SideBuilds custom theme - REVERTED to simpler version
 const theme = extendTheme({
   config: {
     initialColorMode: 'dark',
@@ -8,241 +8,84 @@ const theme = extendTheme({
   },
   colors: {
     brand: {
-      50: '#e6f0ff', // Consider deriving from --primary-color if needed
-      100: '#b3d1ff',
-      200: '#80b3ff',
-      300: '#4d94ff',
-      400: '#1a75ff',
-      500: 'var(--primary-color)', // Using CSS variable for primary brand color
-      600: '#005abf',
-      700: '#00438c',
-      800: '#002d59',
-      900: '#001626',
+      // Assuming 500 was the main brand color, mapped to --primary-color from index.css
+      50: '#EBF8FF', // Lightest blue, for example
+      100: '#BEE3F8',
+      200: '#90CDF4',
+      300: '#63B3ED',
+      400: '#4299E1',
+      500: 'var(--primary-color)', // This will pick up #60A5FA from index.css
+      600: '#2B6CB0',
+      700: '#2C5282',
+      800: '#2A4365',
+      900: '#1A365D', // Darkest blue
     },
-    // It's often better to let Chakra handle its gray scale unless specific overrides are needed.
-    // If --bg-color is pure black, many gray shades might not be distinct.
-    // Forcing gray.800 and gray.900 to black might be too aggressive if other grays are used for text/borders.
-    // We will rely on var(--bg-color) for backgrounds primarily.
+    // Grays are often best left to Chakra's defaults or controlled by --text-color and --bg-color
   },
   fonts: {
-    heading: 'var(--base-font)', // Using CSS variable
-    body: 'var(--base-font)',    // Using CSS variable
+    heading: 'var(--base-font)', // From index.css
+    body: 'var(--base-font)',    // From index.css
   },
   styles: {
     global: props => ({
       body: {
-        bg: 'var(--bg-color)',
-        color: 'var(--text-color)',
-        fontFamily: 'var(--base-font)', // Ensure base font is applied via Chakra too
+        bg: 'var(--bg-color)',      // From index.css, expected to be #000000 or overridden
+        color: 'var(--text-color)',  // From index.css
+        fontFamily: 'var(--base-font)',
+        fontSize: 'var(--base-font-size)',
+        lineHeight: '1.6',
       },
-      // Removing direct .chakra-container, .chakra-modal__content, .chakra-card overrides here
-      // as they will be handled by component styles or inherit from body/var(--bg-color).
+      'h1, h2, h3, h4, h5, h6': {
+        color: 'var(--text-color)', // Default headings to text color; specific can override
+        fontFamily: 'var(--base-font)',
+        // fontWeight: 'bold', // Keep Chakra's defaults or specific overrides
+        // marginBottom: '0.5em',
+      },
+      a: {
+        color: 'brand.500', // Use the brand color for links
+        _hover: {
+          textDecoration: 'underline',
+        },
+      },
+      // Keep other global styles minimal to allow index.css and overrides to work
     }),
   },
   components: {
+    // REVERTING MOST COMPONENT CUSTOMIZATIONS to rely on Chakra defaults + CSS overrides
     Button: {
       baseStyle: {
-        fontWeight: 600,
-        borderRadius: 'md',
-        _hover: {
-          transform: 'translateY(-2px)',
-          transition: 'all 0.2s ease-in-out',
-        },
+        // Minimal base style, rely on Chakra defaults primarily
       },
       variants: {
         solid: {
-          bg: 'brand.500', // This will use var(--primary-color)
-          color: 'var(--text-color)', // Explicitly white text for solid buttons
-          _hover: {
-            bg: 'brand.400', // A lighter shade of primary for hover
-          },
+          // bg: 'brand.500', // Let default Chakra theming handle this with brand color
+          // color: 'white',
         },
-        outline: {
-          borderColor: 'brand.500', // var(--primary-color)
-          color: 'brand.500',       // var(--primary-color)
-          _hover: {
-            bg: 'var(--hover-bg)', // Use subtle hover from index.css
-            color: 'var(--text-color)',
-          },
-        },
-        ghost: {
-          color: 'var(--secondary-text)', // Use CSS var for secondary text color
-          bg: 'transparent', // Ensure ghost buttons are truly transparent initially
-          _hover: {
-            bg: 'var(--hover-bg)', // Use subtle hover from index.css
-            color: 'var(--text-color)', // Text becomes primary on hover for visibility
-          },
-        },
+        // Other variants (outline, ghost) will use Chakra defaults
       },
     },
-    Card: { // For Chakra UI Card component
+    Card: {
       baseStyle: {
-        container: {
-          bg: 'var(--card-bg)', // Use CSS variable, could be slightly off-black if desired
-          color: 'var(--text-color)',
-          borderRadius: 'var(--card-radius)',
-          borderWidth: '1px',
-          borderColor: 'var(--border-color)',
-          transition: 'all 0.2s ease-in-out',
-          _hover: {
-            transform: 'translateY(-5px)',
-            boxShadow: 'lg',
-          },
-        },
+        // container: { // Remove specific card styling to let CSS or Chakra handle it
+        //   bg: 'var(--card-bg)',
+        //   color: 'var(--text-color)',
+        // },
       },
     },
     Modal: {
       baseStyle: {
-        dialog: {
-          bg: 'var(--card-bg)', // Modals can use card background or pure bg-color
-          color: 'var(--text-color)',
-          borderRadius: 'var(--card-radius)',
-        },
-        header: {
-          // bg: 'transparent', // Keep header transparent to dialog bg
-          // color: 'var(--text-color)',
-          borderBottomWidth: '1px',
-          borderColor: 'var(--border-color)',
-        },
-        body: {
-          // bg: 'transparent',
-          // color: 'var(--text-color)',
-        },
-        footer: {
-          // bg: 'transparent',
-          borderTopWidth: '1px',
-          borderColor: 'var(--border-color)',
-        },
+        // dialog: { bg: 'var(--card-bg)' }, // Let it be dark by default due to global styles
       },
     },
-    Menu: {
-      baseStyle: {
-        list: {
-          bg: 'var(--card-bg)', // Dropdown menus background
-          borderColor: 'var(--border-color)',
-          borderWidth: '1px',
-          color: 'var(--text-color)',
-        },
-        item: {
-          bg: 'transparent', // Items transparent to list background
-          color: 'var(--text-color)',
-          _hover: {
-            bg: 'var(--hover-bg)',
-          },
-          _focus: { // Ensure focus is visible
-            bg: 'var(--hover-bg)',
-          }
-        },
-      },
-    },
-    Link: {
-      baseStyle: {
-        color: 'brand.500', // var(--primary-color)
-        _hover: {
-          textDecoration: 'none',
-          color: 'brand.400', // Lighter primary shade
-        },
-      },
-    },
-    Input: { // Adding base style for Input
-      baseStyle: {
-        field: {
-          bg: 'var(--hover-bg)', // Slightly different from main bg for visibility
-          borderColor: 'var(--border-color)',
-          color: 'var(--text-color)',
-          _hover: {
-            borderColor: 'var(--primary-color)',
-          },
-          _focus: {
-            borderColor: 'var(--primary-color)',
-            boxShadow: `0 0 0 1px var(--primary-color)`,
-          },
-          _placeholder: { // Style placeholder text
-            color: 'gray.500', // Chakra's gray, or a var(--secondary-text) if more subtle needed
-          }
-        },
-      },
-      variants: {
-        outline: {
-          field: {
-            border: "1px solid",
-            borderColor: "var(--border-color)",
-            bg: "transparent", // Or var(--hover-bg) for slight differentiation
-            _hover: {
-              borderColor: "var(--primary-color)",
-            }
-          }
-        },
-        filled: {
-          field: {
-            border: "1px solid",
-            borderColor: "var(--border-color)",
-            bg: "var(--hover-bg)", 
-            _hover: {
-              bg: "rgba(255,255,255,0.08)", // Slightly lighter hover for filled
-              borderColor: "var(--primary-color)",
-            }
-          }
-        }
-      }
-    },
-    Textarea: { // Mirroring Input styles for Textarea
+    Input: {
         baseStyle: {
-          bg: 'var(--hover-bg)',
-          borderColor: 'var(--border-color)',
-          color: 'var(--text-color)',
-          _hover: {
-            borderColor: 'var(--primary-color)',
-          },
-          _focus: {
-            borderColor: 'var(--primary-color)',
-            boxShadow: `0 0 0 1px var(--primary-color)`,
-          },
-          _placeholder: {
-            color: 'gray.500',
-          }
-        },
-    },
-    Select: { // Mirroring Input styles for Select
-        baseStyle: {
-          field: {
-            bg: 'var(--hover-bg)',
-            borderColor: 'var(--border-color)',
-            color: 'var(--text-color)',
-            _hover: {
-              borderColor: 'var(--primary-color)',
-            },
-          },
-          icon: {
-            color: 'var(--primary-color)', // Make dropdown icon more visible
-          }
-        },
-    },
-    Table: { // Basic styling for tables
-      baseStyle: {
-        table: {
-          color: 'var(--text-color)',
-        },
-        th: {
-          borderColor: 'var(--border-color)',
-          color: 'var(--secondary-text)', // Table headers slightly less prominent
-        },
-        td: {
-          borderColor: 'var(--border-color)',
-        }
-      }
-    },
-    Alert: { // Ensure alerts are readable
-        baseStyle: {
-            container: {
-                // Chakra usually handles status colors well, but ensure background doesn't clash
-                // If using solid status colors, ensure text contrast is good.
-                // Example for 'error' status if needed:
-                // bg: 'red.800', // Darker red for background
-                // color: 'white',
+            field: {
+                // Rely on Chakra's dark theme adaptations or global input styles in index.css/black-override.css
             }
         }
     }
+    // Other components like Menu, Link, Textarea, Select, Table, Alert will use Chakra defaults
+    // or be styled by global CSS / black-override.css
   },
 });
 

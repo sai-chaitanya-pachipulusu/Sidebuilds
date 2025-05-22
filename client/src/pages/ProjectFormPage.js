@@ -10,12 +10,13 @@ import './ProjectFormPage.css';
 const projectStages = ['idea', 'planning', 'mvp', 'development', 'launched', 'on_hold'];
 const paymentMethods = ['direct', 'stripe', 'paypal'];
 
-function ProjectFormPage() {
+function ProjectFormPage({ editMode: propEditMode }) {
     const navigate = useNavigate();
-    const { projectId } = useParams();
+    const { id: projectIdFromParams } = useParams();
     const { user } = useAuth();
     
-    const [editMode, setEditMode] = useState(false);
+    const isEditMode = propEditMode || !!projectIdFromParams;
+    
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -30,7 +31,7 @@ function ProjectFormPage() {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [pageLoading, setPageLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(isEditMode);
     const [showStripeModal, setShowStripeModal] = useState(false);
     const [stripeStatus, setStripeStatus] = useState(null);
     const [isStripeStatusLoading, setIsStripeStatusLoading] = useState(true);
@@ -51,10 +52,8 @@ function ProjectFormPage() {
         }
         setIsStripeStatusLoading(false);
 
-        if (projectId) {
-            setEditMode(true);
-            setPageLoading(true);
-            getProjectById(projectId)
+        if (isEditMode && projectIdFromParams) {
+            getProjectById(projectIdFromParams)
                 .then(data => {
                     setFormData({
                         name: data.name || '',
@@ -72,10 +71,13 @@ function ProjectFormPage() {
                 .catch(err => {
                     console.error("Failed to fetch project for editing:", err);
                     setError('Failed to load project data. Please try again.');
+                    navigate('/dashboard');
                 })
                 .finally(() => setPageLoading(false));
+        } else if (!isEditMode) {
+            setPageLoading(false);
         }
-    }, [projectId, user]); // Depend on user to ensure auth context is ready
+    }, [isEditMode, projectIdFromParams, user, navigate]);
 
     useEffect(() => {
         fetchProjectAndStripeStatus();
@@ -134,14 +136,15 @@ function ProjectFormPage() {
         };
 
         try {
-            if (editMode && projectId) {
-                await updateProject(projectId, projectData);
+            if (isEditMode && projectIdFromParams) {
+                await updateProject(projectIdFromParams, projectData);
+                navigate(`/projects/${projectIdFromParams}`);
             } else {
-                await createProject(projectData);
+                const newProject = await createProject(projectData);
+                navigate(`/projects/${newProject.project_id}`);
             }
-            navigate('/dashboard'); 
         } catch (err) {
-            console.error("Failed to create project:", err);
+            console.error(`Failed to ${isEditMode ? 'update' : 'create'} project:`, err);
             if (err.response && err.response.data && err.response.data.error_code === 'stripe_account_required') {
                 setShowStripeModal(true);
             } else {
@@ -176,7 +179,7 @@ function ProjectFormPage() {
         }
     };
 
-    if (pageLoading || (editMode && isStripeStatusLoading && !stripeStatus)) {
+    if (pageLoading) {
         return <div className="project-form-container"><p>Loading project details...</p></div>;
     }
     
@@ -202,7 +205,7 @@ function ProjectFormPage() {
 
     return (
         <div className="project-form-container">
-            <h2>{editMode ? 'Edit Project' : 'Add New Project'}</h2>
+            <h2>{isEditMode ? 'Edit Project' : 'Add New Project'}</h2>
             {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -277,7 +280,7 @@ function ProjectFormPage() {
 
                 <div className="form-actions">
                     <button type="submit" className="submit-button" disabled={loading || pageLoading}>
-                        {loading ? (editMode ? 'Saving...' : 'Creating...') : (editMode ? 'Save Changes' : 'Create Project')}
+                        {loading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Project')}
                     </button>
                     <button type="button" className="cancel-button" onClick={() => navigate('/dashboard')} disabled={loading || pageLoading}>Cancel</button>
                 </div>

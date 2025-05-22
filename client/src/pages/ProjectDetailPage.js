@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProjectById, updateProject, requestProjectPurchase } from '../services/api';
+import { getProjectById, updateProject, expressInterestInProject } from '../services/api';
 import axios from 'axios';
 import StripeConnectModal from '../components/StripeConnectModal';
 import { useAuth } from '../context/AuthContext';
+import {
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
+    Button, Checkbox, Textarea, VStack, Text, useDisclosure, useToast, Heading
+} from '@chakra-ui/react';
 import './ProjectDetailPage.css';
 
 // Reuse stages from form or define centrally
@@ -25,9 +29,17 @@ function ProjectDetailPage() {
         hasStripeAccount: false,
         isOnboardingComplete: false
     });
-    const [requestingPurchase, setRequestingPurchase] = useState(false);
-    const [purchaseRequestError, setPurchaseRequestError] = useState('');
-    const [purchaseRequestSuccess, setPurchaseRequestSuccess] = useState('');
+    const [isExpressingInterest, setIsExpressingInterest] = useState(false);
+    const [expressInterestError, setExpressInterestError] = useState('');
+    const [expressInterestSuccess, setExpressInterestSuccess] = useState('');
+    const { isOpen: isInterestModalOpen, onOpen: onInterestModalOpen, onClose: onInterestModalClose } = useDisclosure();
+    const toast = useToast();
+    const [interestFormData, setInterestFormData] = useState({
+        readProjectDescription: false,
+        agreePlatformTOS: false,
+        understandNonBinding: false,
+        introMessage: ''
+    });
 
     const fetchProjectDetails = useCallback(async () => {
         if (!projectId) return;
@@ -221,35 +233,52 @@ function ProjectDetailPage() {
         }, 2000);
     };
 
-    const handleRequestPurchase = async () => {
-        setPurchaseRequestError('');
-        setPurchaseRequestSuccess('');
+    const handleInterestFormChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setInterestFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+    
+    const handleExpressInterestSubmit = async () => {
+        setExpressInterestError('');
+        setExpressInterestSuccess('');
+
         if (!isAuthenticated) {
-            setPurchaseRequestError('You must be logged in to request a purchase.');
+            toast({ title: "Authentication Required", description: "You must be logged in to express interest.", status: "error", duration: 5000, isClosable: true });
             navigate('/login', { state: { returnTo: `/projects/${projectId}` } });
             return;
         }
-        // Simple confirmation for now. Replace with a proper modal for T&C.
-        const agreesToTerms = window.confirm(
-            `You are about to request the purchase of "${project.name}" for $${parseFloat(project.sale_price).toFixed(2)}.\n\n` +
-            `By proceeding, you agree to the platform's Terms and Conditions. ` +
-            `The seller will be notified and will need to accept your request before you can proceed with payment.\n\nDo you want to continue?`
-        );
 
-        if (agreesToTerms) {
-            setRequestingPurchase(true);
-            try {
-                // TODO: Get actual terms version, e.g., from a global config or fetched T&C
-                const termsVersion = '1.0'; 
-                await requestProjectPurchase(projectId, termsVersion);
-                setPurchaseRequestSuccess('Purchase request sent successfully! The seller has been notified. You can track the status in your dashboard.');
-                // Optionally, navigate to buyer's dashboard or show a more persistent success message.
-            } catch (err) {
-                console.error("Failed to send purchase request:", err);
-                setPurchaseRequestError(err.error || err.message || 'Failed to send purchase request. Please try again.');
-            } finally {
-                setRequestingPurchase(false);
-            }
+        // Validate checkboxes
+        if (!interestFormData.readProjectDescription || !interestFormData.agreePlatformTOS || !interestFormData.understandNonBinding) {
+            setExpressInterestError("Please agree to all initial commitments to proceed.");
+            toast({ title: "Commitments Required", description: "Please agree to all initial commitments.", status: "warning", duration: 5000, isClosable: true });
+            return;
+        }
+
+        setIsExpressingInterest(true);
+        try {
+            const buyerInitialCommitments = {
+                platform_tos_agreed: interestFormData.agreePlatformTOS,
+                project_details_read: interestFormData.readProjectDescription,
+                interest_non_binding_understood: interestFormData.understandNonBinding
+            };
+            
+            await expressInterestInProject(projectId, buyerInitialCommitments, interestFormData.introMessage);
+            
+            setExpressInterestSuccess('Your interest has been successfully expressed! The seller has been notified. You can track the status in your dashboard.');
+            toast({ title: "Interest Expressed!", description: "The seller has been notified.", status: "success", duration: 7000, isClosable: true });
+            onInterestModalClose(); // Close modal on success
+            // Optionally, navigate to buyer's dashboard or refresh data
+        } catch (err) {
+            console.error("Failed to express interest:", err);
+            const errorMessage = err.error || err.message || 'Failed to express interest. Please try again.';
+            setExpressInterestError(errorMessage);
+            toast({ title: "Error Expressing Interest", description: errorMessage, status: "error", duration: 7000, isClosable: true });
+        } finally {
+            setIsExpressingInterest(false);
         }
     };
 
@@ -342,14 +371,14 @@ function ProjectDetailPage() {
                         <div className="purchase-actions">
                             <p>This project is listed for sale at: <strong>${parseFloat(project.sale_price).toFixed(2)}</strong></p>
                             <button 
-                                onClick={handleRequestPurchase} 
+                                onClick={onInterestModalOpen} 
                                 className="request-purchase-button" 
-                                disabled={requestingPurchase}
+                                disabled={isExpressingInterest}
                             >
-                                {requestingPurchase ? 'Sending Request...' : 'Request to Purchase'}
+                                {isExpressingInterest ? 'Expressing Interest...' : 'Express Interest & Start Negotiation'}
                             </button>
-                            {purchaseRequestSuccess && <p className="success-message">{purchaseRequestSuccess}</p>}
-                            {purchaseRequestError && <p className="error-message">{purchaseRequestError}</p>}
+                            {expressInterestSuccess && <p className="success-message">{expressInterestSuccess}</p>}
+                            {expressInterestError && <p className="error-message">{expressInterestError}</p>}
                         </div>
                     )}
                     {/* End Purchase Request Button Area */}
@@ -484,6 +513,73 @@ function ProjectDetailPage() {
                 onClose={handleStripeModalClose} 
                 onSuccess={handleStripeConnectSuccess} 
             />
+
+            {/* Express Interest Modal */}
+            <Modal isOpen={isInterestModalOpen} onClose={onInterestModalClose} size="xl">
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Express Interest in "{project?.name}"</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody pb={6}>
+                        <Text mb={4}>You are about to express interest in purchasing "{project?.name}" for an indicative price of ${project?.sale_price ? parseFloat(project.sale_price).toFixed(2) : 'N/A'}.</Text>
+                        <Text mb={4} fontSize="sm">This initiates a structured process:</Text>
+                        <VStack spacing={1} align="start" fontSize="sm" mb={4} pl={4} borderLeft="2px solid teal" py={2}>
+                            <Text>1. You express interest with initial commitments.</Text>
+                            <Text>2. The Seller reviews your interest and can propose specific terms and assets to be transferred.</Text>
+                            <Text>3. You review the Seller's proposal and can agree to proceed.</Text>
+                            <Text>4. If mutual agreement is reached, you can then proceed to secure payment.</Text>
+                        </VStack>
+                        
+                        <VStack spacing={3} align="start" mb={4}>
+                            <Heading size="sm" mt={4}>Your Initial Commitments:</Heading>
+                            <Checkbox 
+                                name="readProjectDescription"
+                                isChecked={interestFormData.readProjectDescription}
+                                onChange={handleInterestFormChange}
+                            >
+                                I confirm I have read the project description and understand what is being offered.
+                            </Checkbox>
+                            <Checkbox 
+                                name="agreePlatformTOS"
+                                isChecked={interestFormData.agreePlatformTOS}
+                                onChange={handleInterestFormChange}
+                            >
+                                I agree to the platform's general <Link to="/terms" target="_blank" style={{textDecoration: 'underline', color: 'teal'}}>Terms of Service</Link> for initiating a purchase.
+                            </Checkbox>
+                            <Checkbox 
+                                name="understandNonBinding"
+                                isChecked={interestFormData.understandNonBinding}
+                                onChange={handleInterestFormChange}
+                            >
+                                I understand this expression of interest is not binding but a step towards negotiation.
+                            </Checkbox>
+                        </VStack>
+
+                        <Heading size="sm" mt={4} mb={2}>Optional Message to Seller:</Heading>
+                        <Textarea
+                            name="introMessage"
+                            placeholder="Introduce yourself or ask any initial high-level questions (e.g., about seller's availability for handover)..."
+                            value={interestFormData.introMessage}
+                            onChange={handleInterestFormChange}
+                            rows={3}
+                        />
+                        {expressInterestError && <Text color="red.500" mt={2} fontSize="sm">{expressInterestError}</Text>}
+                    </ModalBody>
+
+                    <ModalFooter>
+                        <Button 
+                            colorScheme="teal" 
+                            mr={3} 
+                            onClick={handleExpressInterestSubmit}
+                            isLoading={isExpressingInterest}
+                            isDisabled={!interestFormData.readProjectDescription || !interestFormData.agreePlatformTOS || !interestFormData.understandNonBinding}
+                        >
+                            Submit Interest
+                        </Button>
+                        <Button variant="ghost" onClick={onInterestModalClose}>Cancel</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

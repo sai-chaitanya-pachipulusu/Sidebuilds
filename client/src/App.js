@@ -21,6 +21,8 @@ import MarketplacePage from './pages/MarketplacePage'; // Import Marketplace pag
 import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchase success page
 import ProjectTransferPage from './pages/ProjectTransferPage'; // Import transfer status page
 import ProfileSettingsPage from './pages/ProfileSettingsPage'; // Import profile settings page
+import StripeConnectCompletePage from './pages/StripeConnectCompletePage'; // Import the new page
+import NotificationsPage from './pages/NotificationsPage'; // Import NotificationsPage
 
 // Import new certificate components
 import CertificatePage from './pages/CertificatePage';
@@ -67,12 +69,15 @@ function App() {
                                 <Route path="/public-projects" element={<PageTransition><PublicProjectsPage /></PageTransition>} />
                                 <Route path="/marketplace" element={<PageTransition><MarketplacePage /></PageTransition>} />
                                 <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+                                <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} /> {/* Added Notifications Route */}
                                 <Route path="/profile-settings" element={<PageTransition><ProfileSettingsPage /></PageTransition>} />
                                 <Route path="/projects/new" element={<PageTransition><ProjectFormPage /></PageTransition>} />
                                 <Route path="/projects/:id" element={<PageTransition><ProjectDetailPage /></PageTransition>} />
+                                <Route path="/projects/:id/edit" element={<PageTransition><ProjectFormPage editMode={true} /></PageTransition>} />
                                 <Route path="/projects/:projectId/transfer" element={<PageTransition><ProjectTransferPage /></PageTransition>} />
                                 <Route path="/purchase/success" element={<PageTransition><PurchaseSuccessPage /></PageTransition>} />
                                 <Route path="/certificates/:certificateId" element={<PageTransition><CertificatePage /></PageTransition>} />
+                                <Route path="/dashboard/connect/complete" element={<PageTransition><StripeConnectCompletePage /></PageTransition>} />
                             </Route>
                             
                             {/* Catch-all route for 404 Not Found */}

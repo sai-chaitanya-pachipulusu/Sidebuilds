@@ -71,7 +71,11 @@ function ProfileSettingsPage() {
       const stripeData = await checkStripeOnboardingStatus(); // Use the new endpoint
       setStripeStatus(stripeData);
     } catch (err) {
-      setStripeError(err.message || 'Failed to fetch Stripe status.');
+      let specificMessage = err.message || 'Failed to fetch Stripe status.';
+      if (err.code === 'STRIPE_ACCOUNT_AUTOCREATE_FAILED') {
+        specificMessage = `Initial Stripe setup failed: ${err.error || err.message} You might be able to proceed using the "Direct Stripe Link" button below, or try the main connect button again.`;
+      }
+      setStripeError(specificMessage);
       console.error("Fetch Stripe status error:", err);
     } finally {
       setLoading(false);

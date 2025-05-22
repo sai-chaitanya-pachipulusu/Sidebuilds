@@ -1,6 +1,12 @@
 const { Pool } = require('pg');
-require('dotenv').config(); // Load environment variables from .env file
+const path = require('path'); // Import the path module
 
+// Explicitly load .env file from the server directory
+// REMOVED: require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+// REMOVED: console.log("DATABASE_URL from env:", process.env.DATABASE_URL);
+
+console.log("[SERVER/DB.JS] Initializing Pool. DATABASE_URL=", process.env.DATABASE_URL);
 // Configure connection pool with optimized settings for CockroachDB
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -148,4 +154,4 @@ module.exports = {
     pool, // Export the pool itself if needed
     isConnectionHealthy,
     checkConnection
-}; 
+};

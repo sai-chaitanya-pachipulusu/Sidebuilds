@@ -9,30 +9,31 @@
  * Create a checkout session and then redirect to Stripe using stripe.redirectToCheckout()
  * 
  * @param {Object} params - Parameters for checkout
- * @param {string} params.projectId - ID of the project being purchased
- * @param {boolean} params.isSeeded - Whether this is a seeded project
+ * @param {string} params.purchaseRequestId - ID of the purchase request being purchased
  * @param {Object} params.stripe - Stripe.js instance (from useStripe() hook)
  * @param {Object} params.api - Axios or API client instance
  * @returns {Promise<void>} Redirects the user to Stripe checkout or throws error
  */
-export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe, api }) => {
-  console.log(`Creating checkout session for project ${projectId}`);
-  console.log(`Is seeded project: ${isSeeded}`);
+export const createAndRedirectToCheckout = async ({ purchaseRequestId, stripe, api }) => {
+  console.log(`Creating checkout session for purchase request ID: ${purchaseRequestId}`);
 
   if (!stripe) {
     console.error("Stripe.js has not been loaded yet. Cannot redirect.");
     throw new Error("Payment system not ready.");
+  }
+  if (!purchaseRequestId) {
+    console.error("Purchase Request ID is missing. Cannot create checkout session.");
+    throw new Error("Purchase Request ID is required.");
   }
 
   try {
     // Create the checkout session via API
     console.log('Calling backend to create checkout session...');
     const response = await api.post('/payments/create-checkout-session', { 
-      projectId,
-      isSeeded // Pass isSeeded status if backend uses it
+      purchase_request_id: purchaseRequestId // Send purchase_request_id to the backend
     });
     
-    const { id: sessionId } = response.data;
+    const { id: sessionId, url: checkoutUrl } = response.data; // Backend might return full URL or just session ID
     
     if (!sessionId) {
       console.error('No session ID returned from server.');
@@ -41,6 +42,11 @@ export const createAndRedirectToCheckout = async ({ projectId, isSeeded, stripe,
     
     console.log(`Checkout session created: ${sessionId}. Redirecting to Stripe...`);
     
+    // If the backend already provides the full Stripe checkout URL, we can use it directly
+    // This is often not the case; typically, only session ID is returned for client-side redirect.
+    // However, if `checkoutUrl` is provided by our backend, it might be used for a direct window.location change.
+    // For standard Stripe.js integration, `stripe.redirectToCheckout` is preferred.
+
     // Use the standard Stripe.js method to redirect
     const { error } = await stripe.redirectToCheckout({ sessionId });
     

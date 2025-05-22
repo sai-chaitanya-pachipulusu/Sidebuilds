@@ -38,22 +38,19 @@ code {
 
 /* Dark theme (always on) */
 :root {
-  --primary-color: #0070f3;
-  --primary-color-rgb: 0, 112, 243; /* Added RGB value for primary color */
-  --text-color: #ffffff;
-  --secondary-text: white; /* Made secondary text fully white */
-  --bg-color: #000000;
-  --card-bg: #000000; /* Changed from #111111 to pure black */
-  --card-radius: 12px;
-  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --hover-bg: rgba(255, 255, 255, 0.05);
-  --header-height: 70px;
-  --transition-speed: 0.2s;
-  --max-width: 800px;
-  --base-font: Arial, Helvetica, sans-serif; /* Added base font variable */
-  --base-font-size: 14px; /* reduced base font size */
-  --secondary-text-size: 1.2rem; /* manual control for secondary text */
+  --primary-color: #60A5FA; /* Original Blue */
+  --text-color: #F0F0F0;    /* Original Off-White */
+  --bg-color: #000000;      /* Explicitly black for base, to work with black-override */
+  --secondary-text: #cccccc; /* A guess for original secondary text, can be adjusted */
+  --border-color: #333333;   /* A guess for original border color */
+  --card-bg: #1a1a1a;        /* A guess for original card background */
+  --hover-bg: #2a2a2a;        /* A guess for original hover background */
+  --header-height: 60px;    /* Common default */
+  --transition-speed: 0.3s; /* Common default */
+  --max-width: 1100px;      /* Common default */
+  --base-font: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; /* More standard fonts */
+  --base-font-size: 16px;
+  --secondary-text-size: 0.9rem;
 }
 
 /* Full width wrapper fix for black background */
@@ -186,75 +183,47 @@ code {
   }
 }
 
-/* Full viewport background with subtle animation */
+/* Full viewport background with subtle animation - REINSTATING */
 body::before {
   content: '';
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw; /* Changed from 200% for global application */
-  height: 100vh; /* Changed from 200% for global application */
-  background-color: var(--bg-color); /* Base black background */
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-color); /* Use the CSS variable */
   background-image: repeating-linear-gradient(
     45deg,
-    rgba(255, 255, 255, 0.02), /* Made stripes more subtle */
-    rgba(255, 255, 255, 0.02) 1px, /* Thinner stripes */
+    rgba(255, 255, 255, 0.015), 
+    rgba(255, 255, 255, 0.015) 1px,
     transparent 1px,
-    transparent 15px /* Wider spacing */
+    transparent 25px
   );
-  animation: moveStripes 20s linear infinite; /* Slower animation */
-  z-index: -2; /* Ensure it's behind everything, including other potential pseudo-elements */
-  /* Removed top: -50%; left: -50%; as we want it to cover the viewport correctly */
+  animation: moveStripes 30s linear infinite;
+  z-index: -2; /* Ensure it's behind content */
 }
 
-/* Ensure moveStripes animation is globally available */
+/* Ensure moveStripes animation is globally available - REINSTATING */
 @keyframes moveStripes {
   0% {
     background-position: 0 0;
   }
   100% {
-    background-position: 60px 60px; /* Adjust for seamless loop based on stripe width and angle */
+    background-position: 60px 60px; /* Adjust speed/density if needed */
   }
 }
 
-/* Override for all instances to use the main font */
-button, input, select, textarea, label, p, h1, h2, h3, h4, h5, h6, div, span, a {
+/* General typography from image - Bold, clean sans-serif */
+button, input, select, textarea, label, p, div, span, a {
   font-family: var(--base-font);
+  /* color: var(--text-color); Let Chakra handle component-specific text colors primarily */
 }
 
-/* Heading size adjustments */
-h1 {
-  font-size: 1.8rem; /* Slightly smaller */
-}
-
-h2 {
-  font-size: 1.6rem; /* Slightly smaller */
-}
-
-h3 {
-  font-size: 1.4rem; /* Slightly smaller */
-}
-
-/* Increase common text elements */
-p, a, li, label, input, textarea {
-  font-size: 1.2rem;
-}
-
-.section-heading {
-  font-size: var(--secondary-text-size);
-}
-
-.hero .subtitle {
-  font-size: var(--secondary-text-size);
-}
-
-.feature-card p {
-  font-size: 1rem; /* from 0.95rem */
-}
-
-/* Remove old .hero-btn if present */
-.hero-btn {
-  display: none;
+/* Specific heading overrides might be better in theme.js or component-level */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--base-font);
+  /* color: var(--primary-color); Will set in theme.js for Chakra components */
+  /* fontWeight: desiredWeight; Handled in theme.js */
 }
 
 /* Tagline styling */
@@ -305,116 +274,4 @@ p, a, li, label, input, textarea {
 .arrow-link:hover {
   transform: translateX(5px);
   opacity: 0.8;
-}
-
-/* Force black background on all common components */
-.feature-card, .card, .modal, .dropdown, .panel, 
-.menu, .sidebar, .footer, .header, .tab, .accordion, 
-.alert, .dialog, .toast, .tooltip, .popover {
-  background-color: #000000 !important; 
-}
-
-/* Override any background colors in child elements */
-* {
-  background-color: inherit;
-}
-
-/* Force specific components that might have their own background */
-.chakra-modal__content,
-.chakra-menu__menu-list,
-.chakra-card,
-.chakra-tabs__tabpanel,
-.chakra-collapse,
-.chakra-alert,
-.chakra-toast,
-.chakra-popover__content,
-.chakra-popover__arrow {
-  background-color: #000000 !important;
-}
-
-/* Extra force rules for black background */
-body::before,
-html::before,
-#root::before,
-.app-container::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #000000 !important;
-  z-index: -100;
-  pointer-events: none;
-}
-
-/* Ultimate selector forcing all elements to be black unless explicitly styled otherwise */
-[class*="chakra"],
-[class*="container"],
-[class*="wrapper"],
-[class*="header"],
-[class*="footer"],
-[class*="sidebar"],
-[class*="panel"],
-[class*="modal"],
-[class*="dialog"],
-[class*="card"],
-[class*="box"],
-[class*="section"],
-[class*="content"],
-header, 
-footer, 
-nav, 
-aside, 
-article, 
-section,
-main,
-.container,
-.wrapper,
-.panel,
-.content,
-.modal,
-.box {
-  background-color: #000000 !important;
-}
-
-/* Force modals to be black no matter what */
-.chakra-modal__content,
-.MuiModal-root,
-.modal,
-.modal-content,
-dialog,
-.dialog-content,
-[role="dialog"],
-[aria-modal="true"] {
-  background-color: #000000 !important;
-}
-
-/* Force form fields to be black */
-input,
-textarea,
-select,
-.form-control,
-.input,
-.select,
-.textarea {
-  background-color: #000000 !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Force tables to be black */
-table,
-tr,
-td,
-th,
-thead,
-tbody,
-tfoot {
-  background-color: #000000 !important;
-}
-
-/* Override any automatic background colors that might be set by frameworks */
-[style*="background-color"] {
-  background-color: #000000 !important;
 }

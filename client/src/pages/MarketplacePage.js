@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getMarketplaceProjects } from '../services/api';
 import apiClient from '../services/api';
-import { useStripe } from '@stripe/react-stripe-js';
+// import { useStripe } from '@stripe/react-stripe-js'; // Removed
 import { useAuth } from '../context/AuthContext'; // Import auth context to get current user
 import ProjectTable from '../components/ProjectTable';
-import { createAndRedirectToCheckout } from '../utils/stripe-helper';
+// import { createAndRedirectToCheckout } from '../utils/stripe-helper'; // Removed
 import './MarketplacePage.css';
 
 // Icons
@@ -13,7 +13,7 @@ function MarketplacePage() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const stripe = useStripe();
+    // const stripe = useStripe(); // Removed
     const [checkoutError, setCheckoutError] = useState('');
     const [processingPaymentId, setProcessingPaymentId] = useState(null);
     const { user } = useAuth(); // Get the current user
@@ -36,115 +36,103 @@ function MarketplacePage() {
         fetchMarketplaceProjects();
     }, []);
 
-    // Pre-validate before even attempting to purchase
-    const validatePurchase = (project) => {
+    // Pre-validate before even attempting to purchase/show interest
+    const validateShowInterest = (project) => { // Renamed from validatePurchase for clarity
         // Check if user is logged in
         if (!user) {
-            return "Please log in to purchase projects";
+            return "Please log in to show interest";
         }
         
-        // Check if user is trying to buy their own project
+        // Check if user is trying to show interest in their own project
         if (project.owner_id === user.id) {
-            return "You cannot purchase your own project";
+            // This case is usually handled by disabling the button, but good to have a check.
+            return "You cannot show interest in your own project";
         }
-        
-        // Check price is valid
-        if (!project.sale_price || project.sale_price <= 0) {
-            return "Project has an invalid price";
-        }
-        
+                
         return null; // No validation error
     };
 
-    const handlePurchase = async (projectId) => {
-        // Find the project in the list
+    const handleShowInterest = async (projectId) => { // Renamed from handlePurchase
         const project = projects.find(p => p.project_id === projectId);
         if (!project) {
-            setCheckoutError('Project not found');
+            setCheckoutError('Project not found'); // Keep error state for now, can be generalized
             return;
         }
         
-        // Check if this is a seeded project
-        const isSeededProject = projectId.includes('aaaaaaaa') || 
-                              projectId.includes('bbbbbbbb') || 
-                              projectId.includes('cccccccc') || 
-                              projectId.includes('dddddddd') || 
-                              projectId.includes('eeeeeeee') || 
-                              projectId.includes('ffffffff') || 
-                              projectId.includes('99999999') || 
-                              projectId.includes('88888888') || 
-                              projectId.includes('77777777');
-        
-        // Run validation
-        const validationError = validatePurchase(project);
+        const validationError = validateShowInterest(project);
         if (validationError) {
             setCheckoutError(validationError);
             return;
         }
         
-        if (!stripe) {
-            console.error('Stripe.js has not yet loaded.');
-            setCheckoutError('Payment system is not ready. Please try again in a moment.');
-            return;
-        }
+        // Stripe is not immediately needed for "Show Interest"
+        // if (!stripe) {
+        //     console.error('Stripe.js has not yet loaded.');
+        //     setCheckoutError('Payment system is not ready. Please try again in a moment.');
+        //     return;
+        // }
 
-        setProcessingPaymentId(projectId);
-        setCheckoutError('');
+        setProcessingPaymentId(projectId); // Indicates "Submitting interest..."
+        setCheckoutError(''); // Clear previous errors
 
         try {
-            console.log(`[CLIENT DEBUG] Initiating purchase for project ${projectId}`);
-            console.log(`[CLIENT DEBUG] Project details:`, {
-                name: project.name,
-                price: project.sale_price,
-                owner_id: project.owner_id,
-                is_for_sale: project.is_for_sale,
-                isSeeded: isSeededProject
-            });
+            console.log(`[CLIENT DEBUG] User ${user.email} showing interest in project ${projectId}`);
             
-            // Use the stripe helper to create checkout and redirect
-            await createAndRedirectToCheckout({
-                projectId,
-                isSeeded: isSeededProject,
-                stripe,
-                api: apiClient
-            });
-            
+            // Call the existing endpoint to create a purchase request with 'pending_seller_approval'
+            const response = await apiClient.post(
+                `/purchase-requests/projects/${projectId}/request`, 
+                { terms_agreed_version: 'v_show_interest_1.0' } // Example terms version
+            );
+
+            const newPurchaseRequest = response.data;
+            // The response object structure might vary, ensure it includes a success indicator or the new request.
+            // request_id is the alias used in some parts of purchaseRequests.js for purchase_request_id
+            const createdRequestId = newPurchaseRequest.purchase_request_id || newPurchaseRequest.request_id;
+
+            console.log(`[CLIENT DEBUG] "Show Interest" request successful for project ${projectId}. Request ID: ${createdRequestId}`);
+            // Update UI - e.g., disable button, show "Interest Shown" or redirect/notify user.
+            // For now, just log and clear processing state.
+            // You might want to re-fetch projects or update the specific project's state
+            // to reflect that interest has been shown.
+            alert('Interest shown successfully! The seller will be notified.'); // Simple feedback
+
         } catch (err) {
-            console.error('[CLIENT ERROR] Failed to initiate purchase:', err);
+            console.error('[CLIENT ERROR] Failed to show interest:', err);
             
-            // Extract error message from the response if available
-            let errorMessage = 'Failed to start purchase process. Please try again.';
+            let errorMessage = 'Failed to submit interest. Please try again.';
             if (err.response && err.response.data && err.response.data.error) {
                 errorMessage = err.response.data.error;
             } else if (err.message) {
                 errorMessage = err.message;
             }
             
-            setCheckoutError(errorMessage);
+            setCheckoutError(errorMessage); // Display error
         } finally {
-            // Add a slight delay so the user sees the processing state
             setTimeout(() => {
-                setProcessingPaymentId(null);
+                setProcessingPaymentId(null); // Clear processing state
             }, 1000);
         }
     };
 
-    // Add Buy Now action buttons to the table
+    // Add Show Interest action buttons to the table
     const projectsWithActions = projects.map(project => {
         const isOwnProject = user && project.owner_id === user.id;
+        // TODO: Add a check here if interest has already been shown for this project by this user
+        // This would require fetching the user's purchase requests and checking against project_id.
+        // For simplicity, this is omitted for now. A more robust solution would disable/change button text.
         
         return {
             ...project,
-            buy_action: (
+            buy_action: ( // Keep 'buy_action' key if ProjectTable expects it, or rename if ProjectTable is flexible
                 <div className="action-buttons">
                     <button 
-                        onClick={() => handlePurchase(project.project_id)}
-                        disabled={!stripe || processingPaymentId === project.project_id || isOwnProject}
-                        className={`buy-button ${isOwnProject ? 'disabled' : ''}`}
-                        title={isOwnProject ? "You cannot purchase your own project" : ""}
+                        onClick={() => handleShowInterest(project.project_id)}
+                        disabled={processingPaymentId === project.project_id || isOwnProject} // Stripe check removed for now
+                        className={`buy-button ${isOwnProject ? 'disabled' : ''}`} // Class name can be updated
+                        title={isOwnProject ? "This is your project" : "Show interest in this project"}
                     > 
-                        {processingPaymentId === project.project_id ? 'Processing...' : 
-                         isOwnProject ? 'Your Project' : 'Buy Now'}
+                        {processingPaymentId === project.project_id ? 'Submitting...' : 
+                         isOwnProject ? 'Your Project' : 'Show Interest'}
                     </button>
                 </div>
             )
@@ -199,53 +187,10 @@ function MarketplacePage() {
                 </div>
             </div>
             
-            <div className="faq-section">
-                <h3>Frequently Asked Questions</h3>
-                
-                <div className="faq-item">
-                    <h4>What happens after I purchase?</h4>
-                    <p>After purchase, you'll receive a confirmation email with next steps. Our transfer team will contact you within 24 hours to begin the transfer process. The project will immediately appear in your dashboard marked as "Purchased".</p>
-                </div>
-                
-                <div className="faq-item">
-                    <h4>How are project assets transferred?</h4>
-                    <p>The transfer process is semi-manual and coordinated between buyer and seller:</p>
-                    <div className="transfer-steps">
-                        <div className="transfer-step">
-                            <span className="step-label">Code Transfer:</span> 
-                            <span className="-textstep">The seller shares repository access, transfers GitHub ownership, or provides a download link within 48 hours.</span>
-                        </div>
-                        <div className="transfer-step">
-                            <span className="step-label">Domain Transfer:</span> 
-                            <span className="step-text">Domain ownership is transferred through the domain registrar (GoDaddy, Namecheap, etc.) using their standard transfer process.</span>
-                        </div>
-                        <div className="transfer-step">
-                            <span className="step-label">Design Assets:</span> 
-                            <span className="step-text">Additional assets like design files, documentation, and credentials are shared via secure file transfer.</span>
-                        </div>
-                    </div>
-                    <p>You can track the progress of these transfers in your dashboard.</p>
-                </div>
-                
-                <div className="faq-item">
-                    <h4>Is there a verification period?</h4>
-                    <p>Yes, a 7-day verification period begins once all assets are transferred. During this time, you can confirm everything works as advertised and request support from the seller if needed. If significant issues are discovered, you may be eligible for a refund.</p>
-                </div>
-                
-                <div className="faq-item">
-                    <h4>How does the money-back guarantee work?</h4>
-                    <p>If the project doesn't match the description or you encounter significant issues during the 7-day verification period, contact us for a full refund.</p>
-                </div>
-                
-                <div className="faq-item">
-                    <h4>Is technical support included?</h4>
-                    <p>Basic setup assistance is included with every purchase. Additional technical support can be arranged with the original developer at their discretion.</p>
-                </div>
-                
-                <div className="faq-item">
-                    <h4>How long does the full transfer process take?</h4>
-                    <p>While ownership is updated immediately in your dashboard, the complete transfer typically takes 2-7 days depending on the complexity of the project and responsiveness of both parties.</p>
-                </div>
+            <div className="faq-link-section">
+                <h3>Have Questions?</h3>
+                <p>Learn more about how purchasing projects, asset transfers, and payments work.</p>
+                <a href="/faqs" className="faq-link-button">View Full FAQs</a>
             </div>
         </div>
     );

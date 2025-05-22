@@ -113,6 +113,7 @@ This workflow is designed to be transparent and give both parties control at key
         - `source` is set to `purchased`.
         - `previous_owner_id` is set to the original seller's ID.
         - `purchased_at` and `transfer_date` (final) are recorded.
+        - The `projects.status` (e.g., to 'assets_transferred') is also updated by the application backend at this stage, based on the project's asset transfer boolean flags (`code_transferred`, `domain_transferred`, `assets_transferred`). This logic resides in the application layer, not as an automatic database trigger for this specific field.
     - Any finalization for the seller certificate occurs if it was pending.
 
 ### 8. Post-Transfer
