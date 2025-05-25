@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { ChakraProvider } from '@chakra-ui/react'; // Import ChakraProvider
+// import { ChakraProvider } from '@chakra-ui/react'; // Import ChakraProvider
 import { AnimatePresence } from 'framer-motion'; // Import AnimatePresence
-import theme from './theme'; // Import your custom theme
+// import theme from './theme'; // Import your custom theme
 import './App.css'; // Import the CSS file
 import NavBar from './components/NavBar';
 import HomePage from './pages/HomePage';
@@ -49,7 +49,7 @@ function App() {
     }, []);
 
     return (
-        <ChakraProvider theme={theme}> {/* Wrap application with ChakraProvider and theme */}
+        // <ChakraProvider theme={theme}> {/* Wrap application with ChakraProvider and theme */}
             <div className="app-container"> {/* Removed dark-theme class here as Chakra/index.css should handle */}
                 <NavBar />
                 <main>
@@ -86,7 +86,7 @@ function App() {
                     </AnimatePresence>
                 </main>
             </div>
-        </ChakraProvider>
+        // </ChakraProvider>
     );
 }
 

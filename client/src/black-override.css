@@ -104,4 +104,14 @@ a:not(:hover) {
 /* Extra layer to catch any other elements */
 *:not([class*="hover"]):not([class*="active"]):not([class*="focus"]) {
   background-color: #000000 !important;
-} 
+}
+
+html, body, #root {
+  background-color: var(--fey-bg-dark, #0D0D0D) !important; /* Fallback for safety */
+}
+
+/* 
+  The rest of the aggressive overrides are removed.
+  Styling will be primarily managed by index.css (:root variables) 
+  and the Chakra UI theme (theme.js).
+*/ 

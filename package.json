@@ -4,9 +4,12 @@
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
     "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "framer-motion": "^10.18.0",
-    "pg": "^8.15.6"
+    "pg": "^8.15.6",
+    "tailwind-merge": "^2.6.0"
   },
   "scripts": {
     "seed": "node scripts/seedProjects.js seed",

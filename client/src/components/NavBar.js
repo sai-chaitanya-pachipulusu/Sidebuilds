@@ -309,12 +309,11 @@ function NavBar() {
       backdropFilter={scrolled ? 'blur(10px)' : 'none'}
       transition="all 0.3s ease"
       boxShadow={scrolled ? 'var(--card-shadow)' : 'none'}
-      py={2}
+      py={8}
     >
       <Flex
-        maxW="1200px"
+        maxW="1100px"
         mx="auto"
-        py={4}
         px={{ base: 4, md: 6 }} // Responsive padding
         align="center"
         justify="space-between"
@@ -610,9 +609,8 @@ const NavItem = ({ icon, children, isActive, to, ...rest }) => {
       borderBottom={active ? '2px solid var(--accent-color)' : '2px solid transparent'} // Underline for active link
       _hover={{
         textDecoration: 'none',
-        color: 'var(--accent-color-hover)',
-        // bg: 'var(--hover-bg)', // subtle background hover
-        borderBottomColor: 'var(--accent-color-hover)' // Underline hover effect
+        color: active ? 'var(--accent-color-hover, var(--accent-color))' : 'var(--text-color)', // Brighter text on hover for inactive
+        ...(active && { borderBottomColor: 'var(--accent-color-hover, var(--accent-color))' }), // Change active underline color on hover
       }}
       display="flex"
       alignItems="center"

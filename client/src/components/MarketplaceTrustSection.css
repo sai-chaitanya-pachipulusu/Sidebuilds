@@ -1,26 +1,133 @@
+/* MarketplaceTrustSection.css - Inspired by Linear.app and Aino.agency */
+
 .marketplace-trust-section {
-  margin: 3rem 0;
-  padding: 2rem 0;
-  background-color: transparent;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #000000;
+  color: #ffffff;
+  padding: 6rem 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Gradient effect inspired by Aino.agency */
+.marketplace-trust-section::before {
+  content: '';
+  position: absolute;
+  top: -150px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(94, 94, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.marketplace-trust-section::after {
+  content: '';
+  position: absolute;
+  bottom: -150px;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(94, 94, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.trust-section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.trust-header {
+  margin-bottom: 4rem;
+  max-width: 800px;
 }
 
 .trust-title {
-  font-size: 1.8rem;
-  margin-bottom: 2.5rem;
-  text-align: center;
+  font-size: 3.5rem;
   font-weight: 700;
-  color: var(--text-color);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  background: linear-gradient(to right, #ffffff, #a0a0a0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 1.5rem;
+  line-height: 1.1;
 }
 
+.section-subheading {
+  font-size: 1.25rem;
+  color: #a0a0a0;
+  margin: 0 0 2rem;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.section-cta-link {
+  font-size: 1rem;
+  color: #5e5eff !important; /* Linear's blue */
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.section-cta-link:hover {
+  text-decoration: underline;
+}
+
+.section-cta-link .arrow {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 0.2s ease;
+}
+
+.section-cta-link:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* Stats section inspired by Aino.agency */
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+  margin-bottom: 4rem;
+}
+
+.stat-item {
+  flex: 1;
+  min-width: 120px;
+}
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(to right, #5e5eff, #a28bf9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: #a0a0a0;
+  font-weight: 400;
+}
+
+/* Trust badges grid */
 .trust-badges-grid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 4rem;
 }
 
 @media (min-width: 768px) {
@@ -29,95 +136,295 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .trust-badges-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+/* Badge styling with Shadcn Card */
+.trust-badge {
+  background-color: rgba(30, 30, 30, 0.6) !important;
+  border: 1px solid rgba(60, 60, 60, 0.8) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+  height: 100%;
 }
 
-/* Increased specificity for trust-badge to override global styles */
-.marketplace-trust-section .trust-badge {
+.trust-badge:hover {
+  transform: translateY(-8px);
+  border-color: rgba(94, 94, 255, 0.5) !important;
+  box-shadow: 0 8px 30px rgba(94, 94, 255, 0.1) !important;
+}
+
+/* Badge background pattern */
+.trust-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 800 800' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23333333' stroke-width='1'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126.5 879.5 40 599-197 493 102 382-31 229 126.5 79.5-69-63'/%3E%3Cpath d='M-31 229L237 261 390 382 731 737M639 880L520 660 309 538 295 764'/%3E%3Cpath d='M520 660L309 538 295 764 731 737 520 660 390 382 237 261 295 764'/%3E%3Cpath d='M-31 229L237 261 390 382 731 737'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: top right;
+  background-repeat: no-repeat;
+  background-size: 200%;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.badge-icon-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background-color: var(--card-bg);
-  padding: 2rem;
-  border-radius: var(--card-radius);
-  border: 1px solid #222;
-  box-shadow: none;
-  transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-}
-
-.marketplace-trust-section .trust-badge:hover {
-  transform: translateY(-5px);
-  border-color: var(--primary-color);
-  box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.3);
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.5rem 0;
+  border: none !important;
+  background: transparent !important;
 }
 
 .badge-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
-  color: var(--primary-color);
-  background-color: var(--hover-bg);
-  border: 1px solid var(--primary-color);
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .badge-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
+  color: #5e5eff;
 }
 
-.badge-content h4 {
-  font-size: 1.2rem;
-  margin: 0rem 0rem 0.75rem 0rem;
-  color: var(--text-color);
-  font-weight: 600;
-  border: transparent;
+.trust-badge-tag {
+  background-color: rgba(94, 94, 255, 0.15) !important;
+  border: 1px solid rgba(94, 94, 255, 0.3) !important;
+  color: #5e5eff !important;
+  font-size: 0.7rem;
+  padding: 0 0.5rem;
+  height: 1.5rem;
 }
 
-.badge-content p {
-  font-size: 1rem;
-  margin: 0;
-  color: var(--secondary-text);
-  line-height: 1.4;
+.badge-header {
+  padding: 1rem 1.5rem 0.5rem !important;
+  border: none !important;
+  background: transparent !important;
 }
 
-.secure-payment-notice {
+.badge-title {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: #ffffff !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.badge-description {
+  color: #a0a0a0 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.6 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.badge-footer {
+  padding: 0.5rem 1.5rem 1.5rem !important;
+  justify-content: flex-start !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.read-more-link {
+  color: #5e5eff !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.read-more-link:hover {
+  text-decoration: underline !important;
+}
+
+/* Fix any remaining white borders */
+.trust-badge h3,
+.trust-badge p,
+.trust-badge div {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Secure payment section */
+.secure-payment-section {
+  display: flex;
+  align-items: center;
+  max-width: 900px;
+  margin: 0 auto 4rem;
+  padding: 1.5rem;
+  background-color: rgba(30, 30, 30, 0.6);
+  border: 1px solid rgba(60, 60, 60, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.secure-payment-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  background-color: transparent;
-  padding: 1.5rem 1rem;
-  border-radius: var(--card-radius);
-  border: 1px dashed var(--border-color);
-  margin-top: 2rem;
-}
-
-.secure-payment-notice svg {
-  color: var(--primary-color);
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  margin-right: 1rem;
   flex-shrink: 0;
 }
 
-.secure-payment-notice p {
-  margin: 0;
+.secure-payment-icon svg {
+  color: #5e5eff;
+}
+
+.secure-payment-text {
   font-size: 0.9rem;
-  color: var(--secondary-text);
+  color: #a0a0a0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Call to action section inspired by Aino.agency */
+.cta-container {
+  text-align: center;
+  padding: 3rem;
+  background-color: rgba(30, 30, 30, 0.6);
+  border: 1px solid rgba(60, 60, 60, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(94, 94, 255, 0), rgba(94, 94, 255, 0.5), rgba(94, 94, 255, 0));
+}
+
+.cta-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: #ffffff;
+}
+
+.cta-description {
+  font-size: 1.1rem;
+  color: #a0a0a0;
+  margin: 0 0 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-button {
+  font-weight: 500 !important;
+  min-width: 180px;
+}
+
+.cta-button.primary {
+  background-color: #5e5eff !important;
+  color: white !important;
+}
+
+.cta-button.primary:hover {
+  background-color: #4b4bff !important;
+}
+
+.cta-button.secondary {
+  color: #5e5eff !important;
+  border-color: #5e5eff !important;
+}
+
+.cta-button.secondary:hover {
+  background-color: rgba(94, 94, 255, 0.1) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .trust-title {
+    font-size: 2.8rem;
+  }
+  
+  .stat-value {
+    font-size: 2.5rem;
+  }
+  
+  .cta-title {
+    font-size: 1.8rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .secure-payment-notice {
+  .marketplace-trust-section {
+    padding: 4rem 0;
+  }
+  
+  .trust-title {
+    font-size: 2.2rem;
+  }
+  
+  .section-subheading {
+    font-size: 1.1rem;
+  }
+  
+  .stats-container {
+    gap: 2rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+  }
+  
+  .secure-payment-section {
     flex-direction: column;
     text-align: center;
   }
   
-  .secure-payment-notice svg {
-    margin-bottom: 0.5rem;
+  .secure-payment-icon {
+    margin: 0 0 1rem 0;
+  }
+  
+  .cta-container {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .trust-title {
+    font-size: 1.8rem;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
   }
 } 

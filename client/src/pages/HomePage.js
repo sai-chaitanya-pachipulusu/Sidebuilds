@@ -20,14 +20,14 @@ function HomePage() {
         <div className="hero-content">
           <h1>Space for <span className="gradient-text">Side Hustle</span></h1>
           <p className="subtitle">Less hassle, more hustle.</p>
-          <p className="tagline">Empower. Innovate. Monetize.</p>
+          {/* <p className="tagline">Empower. Innovate. Monetize.</p> */} {/* Tagline can be optional or part of subtitle */}
           {!isAuthenticated ? (
-            <Link to="/register" className="cta-button">
-              <span className="button-text">Get Started</span> <ArrowIcon />
+            <Link to="/register" className="hero-btn">
+              <span className="button-text">Get Started</span>
             </Link>
           ) :(
-            <Link to="/dashboard" className="cta-button">
-              <span className="button-text">View Projects</span> <ArrowIcon />
+            <Link to="/dashboard" className="hero-btn">
+              <span className="button-text">View Projects</span>
             </Link>
           )}
         </div>
@@ -57,24 +57,24 @@ function HomePage() {
           <div className="feature-card">
             <h3>Project Dashboard</h3>
             <p>Track progress and set milestones for all your projects.</p>
-            <Link to={isAuthenticated ? "/public-projects" : "/login"} className="arrow-link">
-              <span className="button-text">Browse Projects</span> <ArrowIcon />
+            <Link to={isAuthenticated ? "/dashboard" : "/login"}>
+              Browse Projects <ArrowIcon />
             </Link>
           </div>
           
           <div className="feature-card">
             <h3>Public Sharing</h3>
             <p>Share your projects with the community to get feedback or collaborators.</p>
-            <Link to={isAuthenticated ? "/public-projects" : "/login"} className="arrow-link">
-              <span className="button-text">Public projects</span> <ArrowIcon />
+            <Link to={isAuthenticated ? "/public-projects" : "/login"}>
+              Public projects <ArrowIcon />
             </Link>
           </div>
           
           <div className="feature-card">
-            <h3>Project Marketplace</h3>
+            <h3>Project Marketplace</h3> 
             <p>Turn your side projects into income by selling them to interested buyers.</p>
-            <Link to={isAuthenticated ? "/marketplace" : "/login"} className="arrow-link">
-              <span className="button-text">Visit marketplace</span> <ArrowIcon />
+            <Link to={isAuthenticated ? "/marketplace" : "/login"}>
+              Visit marketplace <ArrowIcon />
             </Link>
           </div>
         </div>
