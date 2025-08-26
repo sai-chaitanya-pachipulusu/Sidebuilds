@@ -401,10 +401,10 @@ app.use('/api/purchase-requests', purchaseRequestRoutes);
 // it should be mounted on a path that already includes :requestId.
 
 // The most straightforward way if purchaseRequestRoutes does not have a way to nest routers:
-const purchaseRequestMessageRoutes = require('./routes/purchaseRequestMessages');
+// const purchaseRequestMessageRoutes = require('./routes/purchaseRequestMessages'); // DISABLED: Uses mongoose
 // We mount this router specifically for paths that include a purchase request ID.
 // The :requestId will be available in purchaseRequestMessageRoutes due to mergeParams.
-purchaseRequestRoutes.use('/:requestId/messages', purchaseRequestMessageRoutes);
+// purchaseRequestRoutes.use('/:requestId/messages', purchaseRequestMessageRoutes); // DISABLED: Uses mongoose
 
 // Mount Notification routes
 const notificationRoutes = require('./routes/notifications');
