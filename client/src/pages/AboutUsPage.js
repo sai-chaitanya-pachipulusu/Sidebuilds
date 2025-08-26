@@ -1,0 +1,465 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { 
+  Target, 
+  Heart, 
+  Shield, 
+  Zap, 
+  Users, 
+  Globe,
+  ArrowRight,
+  Linkedin,
+  Twitter,
+  Github,
+  Star,
+  TrendingUp,
+  Award,
+  Clock
+} from 'lucide-react';
+import SEO from '../components/SEO';
+
+const AboutUsPage = () => {
+  const values = [
+    {
+      icon: Heart,
+      title: 'Trust First',
+      description: 'We build every feature with trust and transparency at its core',
+      color: 'text-red-400',
+      bgColor: 'bg-red-500/10',
+    },
+    {
+      icon: Shield,
+      title: 'Security',
+      description: 'Bank-level security for all transactions and data protection',
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10',
+    },
+    {
+      icon: Users,
+      title: 'Community',
+      description: 'Fostering connections between makers and entrepreneurs',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+    },
+    {
+      icon: Zap,
+      title: 'Innovation',
+      description: 'Constantly improving to make project transfers seamless',
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+    },
+  ];
+
+  const milestones = [
+    { year: '2023', event: 'SideBuilds founded with a vision', side: 'left' },
+    { year: '2024', event: 'First 100 successful transfers', side: 'right' },
+    { year: '2024', event: '$1M+ in project transactions', side: 'left' },
+    { year: '2025', event: 'Launched enterprise features', side: 'right' },
+  ];
+
+  const team = [
+    {
+      name: 'Sai Chaitanya',
+      role: 'Founder & CEO',
+      bio: 'ML Enthusiast & Serial Entrepreneur',
+      avatar: null,
+      social: {
+        linkedin: '#',
+        twitter: '#',
+        github: '#'
+      }
+    },
+  ];
+
+  const stats = [
+    { 
+      label: 'Projects Listed', 
+      value: '2,500+',
+      icon: TrendingUp,
+      color: 'text-blue-400'
+    },
+    { 
+      label: 'Happy Users', 
+      value: '15,000+',
+      icon: Users,
+      color: 'text-green-400'
+    },
+    { 
+      label: 'Success Rate', 
+      value: '98%',
+      icon: Award,
+      color: 'text-purple-400'
+    },
+    { 
+      label: 'Avg Response Time', 
+      value: '< 2h',
+      icon: Clock,
+      color: 'text-orange-400'
+    },
+  ];
+
+  const reasons = [
+    'Trust & Security',
+    'Fair Pricing', 
+    'Smooth Transfers', 
+    'Community Support'
+  ];
+
+  return (
+    <>
+      <SEO 
+        title="About Us | SideBuilds" 
+        description="Learn about SideBuilds' mission to democratize buying and selling of side projects with trust, security, and transparency." 
+      />
+      
+      <div className="min-h-screen bg-black">
+        {/* Hero Section */}
+        <div className="relative bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10 border-b border-white/[0.08] overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-transparent to-blue-600/5" />
+          
+          <div className="relative max-w-7xl mx-auto px-4 py-20 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-12"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
+                <Heart className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-purple-300">About Us</span>
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+                Building the Future of{' '}
+                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Side Project Ownership
+                </span>
+              </h1>
+              <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+                We're on a mission to make buying and selling side projects as simple, 
+                secure, and transparent as possible. Every maker deserves a trusted 
+                marketplace for their creations.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Link
+                    to="/marketplace"
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25 flex items-center gap-2"
+                  >
+                    Explore Marketplace
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </motion.div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Link
+                    to="/how-it-works"
+                    className="px-8 py-4 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                  >
+                    How It Works
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 py-20">
+          <div className="space-y-20">
+            {/* Our Story */}
+            <div>
+              <div className="text-center mb-12">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <h2 className="text-3xl font-bold text-white mb-4">Our Story</h2>
+                  <p className="text-lg text-gray-400 max-w-3xl mx-auto">
+                    SideBuilds was born from a simple observation: talented developers build 
+                    amazing side projects, but lack a trusted platform to sell them. We experienced 
+                    this firsthand when trying to sell our own projects.
+                  </p>
+                </motion.div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-6"
+                >
+                  <h3 className="text-2xl font-bold text-white">Why We Started</h3>
+                  <p className="text-gray-400">
+                    After building and selling multiple side projects ourselves, we realized 
+                    the market needed a dedicated platform that prioritizes:
+                  </p>
+                  <div className="space-y-3">
+                    {reasons.map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                        className="flex items-center gap-3"
+                      >
+                        <Target className="w-5 h-5 text-purple-400" />
+                        <span className="text-gray-300">{item}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center"
+                >
+                  <Globe className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-white mb-2">Global Reach</h3>
+                  <p className="text-gray-400">
+                    Connecting makers and entrepreneurs from over 50 countries worldwide
+                  </p>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Mission & Vision */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
+              >
+                <Target className="w-12 h-12 text-purple-400 mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-4">Our Mission</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  To democratize the buying and selling of digital projects by providing 
+                  a secure, transparent, and user-friendly marketplace that empowers both 
+                  creators and entrepreneurs.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
+              >
+                <Zap className="w-12 h-12 text-blue-400 mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-4">Our Vision</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  To become the world's most trusted marketplace for side projects, 
+                  where every idea has the potential to find its perfect owner and 
+                  reach its full potential.
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Core Values */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-12"
+              >
+                <h2 className="text-3xl font-bold text-white mb-4">Our Core Values</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto">
+                  These principles guide everything we do and every decision we make
+                </p>
+              </motion.div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {values.map((value, index) => {
+                  const Icon = value.icon;
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-200 group hover:scale-105"
+                    >
+                      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${value.bgColor}`}>
+                        <Icon className={`w-6 h-6 ${value.color}`} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-200">
+                        {value.title}
+                      </h3>
+                      <p className="text-gray-400 text-sm leading-relaxed">
+                        {value.description}
+                      </p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Team Section */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-12"
+              >
+                <h2 className="text-3xl font-bold text-white mb-4">Meet Our Team</h2>
+                <p className="text-gray-400">
+                  Passionate about empowering makers and entrepreneurs
+                </p>
+              </motion.div>
+              
+              <div className="flex justify-center">
+                {team.map((member, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center hover:border-white/[0.12] transition-all duration-200 max-w-sm"
+                  >
+                    <div className="w-24 h-24 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                    <p className="text-purple-400 text-sm mb-3">{member.role}</p>
+                    <p className="text-gray-400 text-sm mb-6">{member.bio}</p>
+                    <div className="flex justify-center space-x-4">
+                      {member.social.linkedin && (
+                        <Linkedin className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                      )}
+                      {member.social.twitter && (
+                        <Twitter className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                      )}
+                      {member.social.github && (
+                        <Github className="w-5 h-5 text-gray-400 hover:text-purple-400 cursor-pointer transition-colors duration-200" />
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-12"
+            >
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                {stats.map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="text-center"
+                    >
+                      <Icon className={`w-8 h-8 ${stat.color} mx-auto mb-3`} />
+                      <div className={`text-3xl font-bold ${stat.color} mb-2`}>
+                        {stat.value}
+                      </div>
+                      <div className="text-gray-400 text-sm">{stat.label}</div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Timeline */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-12"
+              >
+                <h2 className="text-3xl font-bold text-white mb-4">Our Journey</h2>
+                <p className="text-gray-400">Key milestones in our mission</p>
+              </motion.div>
+              
+              <div className="relative">
+                <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gray-800" />
+                <div className="space-y-12">
+                  {milestones.map((milestone, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="relative flex items-center"
+                    >
+                      <div className={`flex-1 ${milestone.side === 'left' ? 'pr-8 text-right' : 'opacity-0'}`}>
+                        <div className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium mb-2">
+                          {milestone.year}
+                        </div>
+                        <p className="text-white">{milestone.event}</p>
+                      </div>
+                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-purple-500 rounded-full border-4 border-black" />
+                      <div className={`flex-1 ${milestone.side === 'right' ? 'pl-8 text-left' : 'opacity-0'}`}>
+                        <div className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium mb-2">
+                          {milestone.year}
+                        </div>
+                        <p className="text-white">{milestone.event}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-pink-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+            >
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Join Our Growing Community
+              </h2>
+              <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+                Whether you're looking to buy your next project or sell your creation,
+                we're here to make it happen.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Link
+                    to="/register"
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+                  >
+                    Get Started
+                  </Link>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Link
+                    to="/contact"
+                    className="px-8 py-4 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                  >
+                    Contact Us
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default AboutUsPage; 

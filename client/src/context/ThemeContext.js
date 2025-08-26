@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext({ isDarkMode: true });
 
 export const ThemeProvider = ({ children }) => {
   // Always use dark mode

@@ -21,7 +21,7 @@ async function findOrCreateSeedUser() {
         // Assuming 'username' is derived from email or a default can be set
         const username = SEED_USER_EMAIL.split('@')[0];
         const newUserResult = await db.query(
-            'INSERT INTO users (username, email, password_hash, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING user_id',
+            'INSERT INTO users (username, email, password_hash, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING user_id',
             [username, SEED_USER_EMAIL, hashedPassword]
         );
         userId = newUserResult.rows[0].user_id;
@@ -84,21 +84,20 @@ async function seedProjects() {
         try {
             console.log(`Inserting project: ${project.name}`);
             await db.query(
-                `INSERT INTO projects (owner_id, name, description, stage, domain, is_public, is_for_sale, sale_price, contact_email, contact_phone, payment_method, created_at, updated_at, owner_username)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), $12)`,
+                `INSERT INTO projects (user_id, name, description, stage, domain, is_public, is_for_sale, sale_price, contact_email, contact_phone, payment_method, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                 [
                     userId,
                     project.name,
                     project.description,
                     project.stage,
                     project.domain,
-                    project.is_public,
-                    project.is_for_sale,
+                    project.is_public ? 1 : 0,
+                    project.is_for_sale ? 1 : 0,
                     project.sale_price,
                     project.contact_email,
-                    project.contact_phone,
-                    project.payment_method,
-                    SEED_USER_EMAIL.split('@')[0] // owner_username
+                    project.contact_phone || null,
+                    project.payment_method || 'direct'
                 ]
             );
             console.log(`Project '${project.name}' seeded successfully.`);

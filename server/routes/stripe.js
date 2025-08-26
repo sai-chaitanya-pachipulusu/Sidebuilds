@@ -18,10 +18,13 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
         return res.status(200).end();
     }
     
-    console.log('==== CREATE STRIPE ACCOUNT LINK ====');
-    console.log('User:', req.user.id);
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Client URL:', process.env.CLIENT_URL);
+    // Production-safe logging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('==== CREATE STRIPE ACCOUNT LINK ====');
+        console.log('User:', req.user.id);
+        console.log('Environment:', process.env.NODE_ENV);
+        console.log('Client URL:', process.env.CLIENT_URL);
+    }
     
     try {
         const userId = req.user.id;
@@ -46,7 +49,12 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
         }
 
         // Get user's Stripe account ID from DB
-        const userResult = await db.query('SELECT stripe_account_id, email FROM users WHERE user_id = $1', [userId]);
+        const userResult = await db.query(`
+            SELECT u.email, sa.stripe_account_id 
+            FROM users u 
+            LEFT JOIN stripe_accounts sa ON u.user_id = sa.user_id 
+            WHERE u.user_id = $1
+        `, [userId]);
         
         if (userResult.rows.length === 0) {
             console.error('User not found:', userId);
@@ -56,12 +64,16 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
         let stripeAccountId = userResult.rows[0].stripe_account_id;
         const email = userResult.rows[0].email;
 
-        console.log('Creating account link for user:', userId);
-        console.log('Existing Stripe account ID:', stripeAccountId ? 'Found (masked)' : 'Not found');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Creating account link for user:', userId);
+            console.log('Existing Stripe account ID:', stripeAccountId ? 'Found (masked)' : 'Not found');
+        }
 
         if (!stripeAccountId) {
             // Create a new Stripe Express account if one doesn't exist
-            console.log('Creating new Stripe account for email:', email);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Creating new Stripe account for email:', email);
+            }
             try {
                 const account = await stripe.accounts.create({
                     type: process.env.STRIPE_CONNECT_ACCOUNT_TYPE || 'express',
@@ -73,11 +85,16 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
                     },
                 });
                 stripeAccountId = account.id;
-                console.log('New Stripe account created with ID:', stripeAccountId.substring(0, 8) + '...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('New Stripe account created with ID:', stripeAccountId.substring(0, 8) + '...');
+                    console.log('User record updated with new Stripe account ID');
+                }
                 
-                // Save the new Stripe account ID to the user's record
-                await db.query('UPDATE users SET stripe_account_id = $1 WHERE user_id = $2', [stripeAccountId, userId]);
-                console.log('User record updated with new Stripe account ID');
+                // Save the new Stripe account ID to the stripe_accounts table
+                await db.query(`
+                    INSERT OR REPLACE INTO stripe_accounts (user_id, stripe_account_id, account_status, created_at, updated_at) 
+                    VALUES ($1, $2, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                `, [userId, stripeAccountId]);
             } catch (accountError) {
                 console.error('Error creating Stripe account:', accountError);
                 return res.status(500).json({
@@ -88,8 +105,10 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
             }
         }
 
-        console.log('Creating account link with type:', type);
-        console.log('Return URL:', `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Creating account link with type:', type);
+            console.log('Return URL:', `${process.env.CLIENT_URL}/profile-settings?stripe_return=true`);
+        }
         
         try {
             const accountLink = await stripe.accountLinks.create({
@@ -99,7 +118,9 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
                 type: type,
             });
             
-            console.log('Account link created successfully');
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Account link created successfully');
+            }
             res.json({ url: accountLink.url });
         } catch (linkError) {
             console.error('Error creating account link:', linkError);
@@ -108,8 +129,11 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
             if (linkError.type === 'StripeInvalidRequestError') {
                 if (linkError.message.includes('already onboarded')) {
                     // Account is already onboarded, create an account update link instead
-                    try {
+                    if (process.env.NODE_ENV === 'development') {
                         console.log('Account already onboarded, creating account update link instead');
+                        console.log('Account update link created successfully');
+                    }
+                    try {
                         const accountLink = await stripe.accountLinks.create({
                             account: stripeAccountId,
                             refresh_url: `${process.env.CLIENT_URL}/profile-settings?stripe_refresh=true`,
@@ -117,7 +141,6 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
                             type: 'account_update',
                         });
                         
-                        console.log('Account update link created successfully');
                         return res.json({ url: accountLink.url });
                     } catch (updateError) {
                         console.error('Error creating account update link:', updateError);
@@ -186,10 +209,12 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
         
         console.log('Step 2: Querying database for user Stripe info');
         try {
-            const userResult = await db.query(
-                'SELECT stripe_account_id, email FROM users WHERE user_id = $1',
-                [userId]
-            );
+            const userResult = await db.query(`
+                SELECT u.email, sa.stripe_account_id 
+                FROM users u 
+                LEFT JOIN stripe_accounts sa ON u.user_id = sa.user_id 
+                WHERE u.user_id = $1
+            `, [userId]);
             console.log('Query complete, rows returned:', userResult.rows.length);
 
             if (userResult.rows.length === 0) {
@@ -216,9 +241,12 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                     stripeAccountId = account.id;
                     console.log('New Stripe account created with ID (masked)');
                     
-                    console.log('Updating user record with new Stripe account ID');
-                    await db.query('UPDATE users SET stripe_account_id = $1 WHERE user_id = $2', [stripeAccountId, userId]);
-                    console.log('User record updated');
+                    console.log('Updating stripe_accounts table with new Stripe account ID');
+                    await db.query(`
+                        INSERT OR REPLACE INTO stripe_accounts (user_id, stripe_account_id, account_status, created_at, updated_at) 
+                        VALUES ($1, $2, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    `, [userId, stripeAccountId]);
+                    console.log('Stripe accounts table updated');
                     
                     return res.json({ 
                         accountId: stripeAccountId, 
@@ -322,7 +350,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             // If account doesn't exist on Stripe's side, clear it from our DB
             try {
               console.log('Clearing invalid Stripe account ID from DB');
-              await db.query('UPDATE users SET stripe_account_id = NULL, onboarding_complete = FALSE, payout_enabled = FALSE, stripe_charges_enabled = FALSE, stripe_details_submitted = FALSE WHERE user_id = $1', [req.user.id]);
+              await db.query('DELETE FROM stripe_accounts WHERE user_id = $1', [req.user.id]);
               return res.status(404).json({ 
                 message: 'Your Stripe account was not found. We have reset your account. Please try connecting with Stripe again.',
                 accountId: null,

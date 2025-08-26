@@ -1,231 +1,115 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import apiClient from '../services/api'; // Changed to default import
-import {
-    Box, Container, Heading, Text, Spinner, Alert, AlertIcon, Button,
-    VStack, HStack, Tag, Textarea, useToast
-} from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '../shadcn/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../shadcn/ui/card';
+import { Checkbox } from '../shadcn/ui/checkbox';
+import { Label } from '../shadcn/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '../shadcn/ui/alert';
+import { CheckCircle, AlertTriangle, Package, Code2, Users, Globe } from 'lucide-react';
+import SEO from '../components/SEO';
+import toast from 'react-hot-toast';
 
-// Helper function to format status (can be copied from DashboardPage or moved to a shared utils file)
-const formatStatus = (status) => {
-    if (!status) return 'N/A';
-    return status.replace(/_/g, ' ').split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
+const assetList = [
+    { id: 'domain', label: 'Domain & DNS Records', icon: Globe },
+    { id: 'sourceCode', label: 'Full Source Code & History', icon: Code2 },
+    { id: 'socialMedia', label: 'Social Media Accounts', icon: Users },
+    { id: 'customerList', label: 'Customer List & Data', icon: Package }
+];
 
-function ProjectTransferPage() {
+const ProjectTransferPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const toast = useToast();
-    const { user, isAuthenticated } = useAuth();
+    const { projectId, sellerId } = location.state || {};
 
-    const queryParams = new URLSearchParams(location.search);
-    const requestId = queryParams.get('request_id');
-
-    const [purchaseRequest, setPurchaseRequest] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [sellerMessage, setSellerMessage] = useState(''); // For seller to update transfer notes
+    const [assets, setAssets] = useState({
+        domain: false,
+        sourceCode: false,
+        socialMedia: false,
+        customerList: false,
+    });
+    const [agreed, setAgreed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const fetchPurchaseRequestDetails = useCallback(async () => {
-        if (!requestId) {
-            setError('Purchase Request ID is missing.');
-            setLoading(false);
+    useEffect(() => {
+        if (!projectId || !sellerId) {
+            toast.error("No project information provided. Redirecting...");
+            navigate('/dashboard');
+        }
+    }, [projectId, sellerId, navigate]);
+
+    const handleCheckboxChange = (key) => {
+        setAssets(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const allAssetsConfirmed = Object.values(assets).every(Boolean);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!allAssetsConfirmed || !agreed) {
+            toast.error("Please confirm all assets and agree to the terms.");
             return;
         }
-        setLoading(true);
-        try {
-            // Assuming an endpoint like GET /api/purchase-requests/:requestId exists
-            // This endpoint might need to be created if not already present in purchaseRequests.js router
-            const response = await apiClient.get(`/purchase-requests/${requestId}`);
-            setPurchaseRequest(response.data);
-        } catch (err) {
-            console.error("Error fetching purchase request details:", err);
-            setError(err.response?.data?.error || err.message || 'Failed to load purchase request details.');
-        } finally {
-            setLoading(false);
-        }
-    }, [requestId]);
-
-    useEffect(() => {
-        if (isAuthenticated) { // Ensure user is loaded before fetching
-            fetchPurchaseRequestDetails();
-        } else if (isAuthenticated === false) { // Explicitly check for false to handle initial null state of isAuthenticated
-            navigate('/login', { state: { returnTo: location.pathname + location.search } });
-        }
-    }, [isAuthenticated, fetchPurchaseRequestDetails, navigate, location]);
-
-    const handleSellerUpdateTransferStatus = async (newStatus) => {
-        if (!purchaseRequest) return;
         setIsSubmitting(true);
-        try {
-            // Endpoint: PUT /api/purchase-requests/:requestId/transfer-status
-            // Body: { status: newStatus, message: sellerMessage (optional) }
-            await apiClient.put(`/purchase-requests/${requestId}/transfer-status`, {
-                status: newStatus,
-                message: sellerMessage
-            });
-            toast({
-                title: 'Transfer Status Updated',
-                description: `Successfully updated transfer status to ${formatStatus(newStatus)}. Message: ${sellerMessage}`,
-                status: 'success',
-                duration: 5000,
-                isClosable: true,
-            });
-            fetchPurchaseRequestDetails(); // Refresh details
-            setSellerMessage('');
-        } catch (err) {
-            toast({
-                title: 'Update Failed',
-                description: err.response?.data?.error || err.message || 'Could not update transfer status.',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+        // Mock API call
+        await new Promise(res => setTimeout(res, 1500));
+        toast.success("Transfer confirmed! The project is now yours.");
+        setIsSubmitting(false);
+        navigate(`/projects/${projectId}`);
     };
-
-    const handleBuyerConfirmReceipt = async () => {
-        if (!purchaseRequest) return;
-        setIsSubmitting(true);
-        try {
-            // Endpoint: POST /api/purchase-requests/:requestId/confirm-transfer (same as dashboard)
-            await apiClient.post(`/purchase-requests/${requestId}/confirm-transfer`);
-            toast({
-                title: 'Assets Receipt Confirmed',
-                description: 'Thank you for confirming. The transaction will now be marked as complete.',
-                status: 'success',
-                duration: 5000,
-                isClosable: true,
-            });
-            fetchPurchaseRequestDetails(); // Refresh details
-        } catch (err) {
-            toast({
-                title: 'Confirmation Failed',
-                description: err.response?.data?.error || err.message || 'Could not confirm receipt.',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    if (!isAuthenticated && isAuthenticated !== null) { // Don't render if auth state is definitively false and not initial null
-        return null; // Or a redirect, handled by useEffect
-    }
-
-    if (loading) {
-        return <Container centerContent p={5}><Spinner size="xl" /><Text mt={4}>Loading Transfer Details...</Text></Container>;
-    }
-
-    if (error) {
-        return <Container p={5}><Alert status="error"><AlertIcon />{error}</Alert></Container>;
-    }
-
-    if (!purchaseRequest) {
-        return <Container p={5}><Text>Purchase request not found.</Text></Container>;
-    }
-
-    const isUserSeller = user && purchaseRequest && user.id === purchaseRequest.seller_id;
-    const isUserBuyer = user && purchaseRequest && user.id === purchaseRequest.buyer_id;
 
     return (
-        <Container maxW="container.lg" py={8}>
-            <VStack spacing={6} align="stretch">
-                <Box p={5} shadow="md" borderWidth="1px" borderRadius="lg">
-                    <HStack justifyContent="space-between" mb={4}>
-                        <Heading size="lg">Project Transfer: {purchaseRequest.project_name}</Heading>
-                        <Tag colorScheme="blue" size="lg">Status: {formatStatus(purchaseRequest.status)}</Tag>
-                    </HStack>
-                    <Text><strong>Project ID:</strong> {purchaseRequest.project_id}</Text>
-                    <Text><strong>Request ID:</strong> {purchaseRequest.request_id}</Text>
-                    <Text><strong>Seller:</strong> {purchaseRequest.seller_username}</Text>
-                    <Text><strong>Buyer:</strong> {purchaseRequest.buyer_username}</Text>
-                    <Text><strong>Agreed Price:</strong> ${parseFloat(purchaseRequest.accepted_price).toFixed(2)}</Text>
-                    <Text><strong>Last Updated:</strong> {new Date(purchaseRequest.status_last_updated).toLocaleString()}</Text>
-                    {purchaseRequest.transfer_notes && (
-                        <Box mt={3} p={3} bg="gray.50" borderRadius="md">
-                            <Text fontWeight="bold">Transfer Notes/Updates:</Text>
-                            <Text whiteSpace="pre-wrap">{purchaseRequest.transfer_notes}</Text>
-                        </Box>
-                    )}
-                </Box>
+        <div className="min-h-screen bg-black text-white p-8">
+            <SEO title="Project Transfer" description="Finalize the transfer of your new project." />
+            <div className="max-w-2xl mx-auto">
+                <Card className="bg-gray-900/50 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="text-3xl">Finalize Project Transfer</CardTitle>
+                        <p className="text-gray-400 mt-2">Confirm receipt of all project assets from the seller to complete the transaction. This action is final.</p>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-4 rounded-lg border border-gray-700 p-4">
+                                <h3 className="font-semibold text-white">Asset Confirmation Checklist</h3>
+                                {assetList.map(asset => (
+                                    <div key={asset.id} className="flex items-start space-x-3">
+                                        <Checkbox 
+                                            id={asset.id} 
+                                            checked={assets[asset.id]} 
+                                            onCheckedChange={() => handleCheckboxChange(asset.id)}
+                                            className="mt-1"
+                                        />
+                                        <Label htmlFor={asset.id} className="flex items-center gap-2 cursor-pointer">
+                                            <asset.icon className="w-4 h-4 text-gray-400" />
+                                            {asset.label}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
 
-                {/* Seller Actions */}
-                {isUserSeller && (
-                    <Box p={5} shadow="md" borderWidth="1px" borderRadius="lg">
-                        <Heading size="md" mb={3}>Seller Actions</Heading>
-                        {/* Seller can update status to indicate assets sent, etc. */}
-                        { (purchaseRequest.status === 'payment_completed_pending_transfer' || purchaseRequest.status === 'transfer_in_progress') && (
-                             <VStack spacing={3} align="stretch">
-                                <Textarea 
-                                    placeholder="Provide an update or instructions for the buyer regarding asset transfer..."
-                                    value={sellerMessage}
-                                    onChange={(e) => setSellerMessage(e.target.value)}
-                                />
-                                <Button 
-                                    colorScheme="purple" 
-                                    onClick={() => handleSellerUpdateTransferStatus('assets_transferred_pending_buyer_confirmation')} 
-                                    isLoading={isSubmitting}
-                                >
-                                    Mark Assets as Transferred (Notifies Buyer)
-                                </Button>
-                                <Button 
-                                    colorScheme="orange" 
-                                    onClick={() => handleSellerUpdateTransferStatus('transfer_in_progress')} 
-                                    isLoading={isSubmitting} 
-                                    variant="outline"
-                                >
-                                    Update Transfer Notes / Mark as In Progress
-                                </Button>
-                            </VStack>
-                        )}
-                        {purchaseRequest.status === 'assets_transferred_pending_buyer_confirmation' && (
-                             <Text color="green.500">Waiting for buyer to confirm receipt.</Text>
-                        )}
-                         {purchaseRequest.status === 'completed' && (
-                             <Text color="green.500">Transfer completed and confirmed by buyer.</Text>
-                        )}
-                    </Box>
-                )}
+                            <Alert variant={allAssetsConfirmed ? "default" : "destructive"} className="bg-gray-800/50 border-gray-700">
+                                {allAssetsConfirmed ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                                <AlertTitle>{allAssetsConfirmed ? "Ready to Finalize" : "Awaiting Confirmation"}</AlertTitle>
+                                <AlertDescription>
+                                    {allAssetsConfirmed ? "All assets confirmed. You may now complete the transfer." : "Please check all boxes to confirm you have received all assets."}
+                                </AlertDescription>
+                            </Alert>
 
-                {/* Buyer Actions */}
-                {isUserBuyer && (
-                    <Box p={5} shadow="md" borderWidth="1px" borderRadius="lg">
-                        <Heading size="md" mb={3}>Buyer Actions</Heading>
-                        {purchaseRequest.status === 'assets_transferred_pending_buyer_confirmation' && (
-                            <Button 
-                                colorScheme="green" 
-                                onClick={handleBuyerConfirmReceipt} 
-                                isLoading={isSubmitting}
-                            >
-                                I Have Received the Assets & Confirm Completion
-                            </Button>
-                        )}
-                        {(purchaseRequest.status === 'payment_completed_pending_transfer' || purchaseRequest.status === 'transfer_in_progress') && (
-                             <Text color="blue.500">Seller is preparing/transferring assets. Check notes for updates.</Text>
-                        )}
-                        {purchaseRequest.status === 'completed' && (
-                             <Text color="green.500">You have confirmed receipt of the assets. This transaction is complete.</Text>
-                        )}
-                    </Box>
-                )}
-                
-                <Box textAlign="center" mt={4}>
-                    <Link to="/dashboard">
-                        <Button variant="link">Back to Dashboard</Button>
-                    </Link>
-                </Box>
-            </VStack>
-        </Container>
+                            <div className="border-t border-gray-700 pt-6 space-y-4">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="terms" checked={agreed} onCheckedChange={setAgreed} />
+                                    <Label htmlFor="terms">I understand that this action is irreversible and confirms the successful transfer of ownership.</Label>
+                                </div>
+                                <Button type="submit" disabled={!allAssetsConfirmed || !agreed || isSubmitting} className="w-full">
+                                    {isSubmitting ? 'Finalizing...' : 'Complete Transfer & Release Funds'}
+                                    {!isSubmitting && <CheckCircle className="ml-2 w-5 h-5" />}
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
     );
-}
+};
 
 export default ProjectTransferPage; 

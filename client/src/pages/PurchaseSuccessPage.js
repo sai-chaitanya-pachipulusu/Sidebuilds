@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { getTransactionStatus } from '../services/api';
-import './PurchaseSuccessPage.css';
 
 // Success icon
 const SuccessIcon = () => (

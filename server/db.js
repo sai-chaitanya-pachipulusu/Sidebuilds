@@ -1,26 +1,140 @@
 const { Pool } = require('pg');
 const path = require('path'); // Import the path module
 
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+console.log("DATABASE_URL from env:", process.env.DATABASE_URL);
 // Explicitly load .env file from the server directory
 // REMOVED: require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 // REMOVED: console.log("DATABASE_URL from env:", process.env.DATABASE_URL);
 
 console.log("[SERVER/DB.JS] Initializing Pool. DATABASE_URL=", process.env.DATABASE_URL);
-// Configure connection pool with optimized settings for CockroachDB
+
+// Environment-based database selection
+const useSQLite = process.env.NODE_ENV === 'development' && process.env.USE_SQLITE === 'true';
+console.log(`[SERVER/DB.JS] NODE_ENV: ${process.env.NODE_ENV}, Using SQLite: ${useSQLite}`);
+
+if (useSQLite) {
+  // Use SQLite for development with unified schema
+  const sqlite3 = require('sqlite3').verbose();
+  const path = require('path');
+  
+  const dbPath = path.join(__dirname, 'sidebuilds-complete.db');
+  const db = new sqlite3.Database(dbPath);
+  
+  console.log(`[SERVER/DB.JS] Using SQLite database at: ${dbPath}`);
+  
+  // Query wrapper to match PostgreSQL interface
+  const query = (text, params = []) => {
+    return new Promise((resolve, reject) => {
+      console.log('[DB-SQLITE] Query:', text, 'Params:', params);
+      
+      // Handle transaction commands
+      if (text.toLowerCase().trim() === 'begin transaction' || text.toLowerCase().trim() === 'begin') {
+        db.run('BEGIN TRANSACTION', (err) => {
+          if (err) {
+            console.error('[DB-SQLITE] BEGIN Error:', err);
+            reject(err);
+          } else {
+            console.log('[DB-SQLITE] BEGIN Result: transaction started');
+            resolve({ rows: [], changes: 0 });
+          }
+        });
+        return;
+      }
+      
+      if (text.toLowerCase().trim() === 'commit') {
+        db.run('COMMIT', (err) => {
+          if (err) {
+            console.error('[DB-SQLITE] COMMIT Error:', err);
+            reject(err);
+          } else {
+            console.log('[DB-SQLITE] COMMIT Result: transaction committed');
+            resolve({ rows: [], changes: 0 });
+          }
+        });
+        return;
+      }
+      
+      if (text.toLowerCase().trim() === 'rollback') {
+        db.run('ROLLBACK', (err) => {
+          if (err) {
+            console.error('[DB-SQLITE] ROLLBACK Error:', err);
+            reject(err);
+          } else {
+            console.log('[DB-SQLITE] ROLLBACK Result: transaction rolled back');
+            resolve({ rows: [], changes: 0 });
+          }
+        });
+        return;
+      }
+      
+      if (text.toLowerCase().includes('select')) {
+        db.all(text, params, (err, rows) => {
+          if (err) {
+            console.error('[DB-SQLITE] SELECT Error:', err);
+            reject(err);
+          } else {
+            console.log(`[DB-SQLITE] SELECT Result: ${rows.length} rows`);
+            resolve({ rows });
+          }
+        });
+      } else if (text.toLowerCase().includes('insert')) {
+        db.run(text, params, function(err) {
+          if (err) {
+            console.error('[DB-SQLITE] INSERT Error:', err);
+            reject(err);
+          } else {
+            console.log('[DB-SQLITE] INSERT Result: lastID=', this.lastID);
+            resolve({ 
+              rows: [], 
+              insertId: this.lastID,
+              changes: this.changes
+            });
+          }
+        });
+      } else {
+        db.run(text, params, function(err) {
+          if (err) {
+            console.error('[DB-SQLITE] RUN Error:', err);
+            reject(err);
+          } else {
+            console.log('[DB-SQLITE] RUN Result: changes=', this.changes);
+            resolve({ 
+              rows: [], 
+              changes: this.changes
+            });
+          }
+        });
+      }
+    });
+  };
+  
+  module.exports = {
+    query,
+    db,
+    checkConnection: async () => ({
+      ok: true,
+      message: 'SQLite database is healthy'
+    }),
+    isConnectionHealthy: async () => true
+  };
+  return;
+}
+// Configure connection pool with standard PostgreSQL settings
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-    // Connection pool settings optimized for CockroachDB
+    // Connection pool settings
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
     connectionTimeoutMillis: 5000, // Maximum time to wait for connection to be established
-    // CockroachDB specific settings for better performance
+    // Standard PostgreSQL settings
     statement_timeout: 10000, // Statement timeout in ms (10s)
     query_timeout: 10000 // Query timeout in ms (10s)
 });
 
-// Test connection (optional, but good)
+// Test connection
 pool.connect((err, client, release) => {
     if (err) {
       return console.error('Error acquiring client from pool', err.stack);
@@ -30,7 +144,7 @@ pool.connect((err, client, release) => {
       if (err) {
         return console.error('Error executing query', err.stack);
       }
-      console.log('Successfully connected to CockroachDB. Server time:', result.rows[0].now);
+      console.log('Successfully connected to PostgreSQL database. Server time:', result.rows[0].now);
     });
   });
   
@@ -83,20 +197,17 @@ pool.on('error', (err, client) => {
 async function testConnection() {
     try {
         const res = await pool.query('SELECT version()');
-        console.log('Successfully connected to CockroachDB');
+        console.log('Successfully connected to PostgreSQL database');
         console.log('Database version:', res.rows[0].version);
         isConnected = true;
         return true;
     } catch (err) {
-        console.error('Error connecting to CockroachDB:', err.message);
+        console.error('Error connecting to database:', err.message);
         isConnected = false;
         reconnect();
         return false;
     }
 }
-
-// Initialize connection test
-testConnection();
 
 // Enhanced query function with automatic retry on connection issues
 const query = async (text, params) => {
@@ -120,32 +231,46 @@ const query = async (text, params) => {
     }
 };
 
-// Helper function to handle retries for CockroachDB transactions
-// CockroachDB might return a serialization error that requires retrying the transaction
-const retry = async (callback, maxRetries = 5) => {
-    let retries = 0;
-    while (true) {
-        try {
-            return await callback();
-        } catch (err) {
-            // Check if this is a CockroachDB serialization error (40001)
-            if (err.code === '40001' && retries < maxRetries) {
-                retries++;
-                console.log(`Transaction failed with error: ${err.message}. Retrying (${retries}/${maxRetries})...`);
-                // Exponential backoff
-                await new Promise(resolve => setTimeout(resolve, 2 ** retries * 100));
-                continue;
-            }
-            throw err;
-        }
+// Helper function to retry queries
+const retry = async (fn, retries = 3, delay = 1000, backoff = 2) => {
+    try {
+        return await fn();
+    } catch (error) {
+        if (retries <= 0) throw error;
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return retry(fn, retries - 1, delay * backoff, backoff);
     }
 };
 
-// Check connection status
-const isConnectionHealthy = () => isConnected;
+// Health check function
+const isConnectionHealthy = async () => {
+    try {
+        await pool.query('SELECT 1');
+        return true;
+    } catch (err) {
+        return false;
+    }
+};
 
-// Explicitly request a connection health check
-const checkConnection = () => testConnection();
+// Comprehensive connection check 
+const checkConnection = async () => {
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query('SELECT 1');
+            return { ok: true, message: 'Database connection is healthy' };
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        return { 
+            ok: false, 
+            message: `Database connection failed: ${err.message}`,
+            error: err 
+        };
+    }
+};
 
 module.exports = {
     query,

@@ -1,655 +1,676 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Box, Flex, HStack, Button, IconButton, Text, 
-  useDisclosure, Drawer, DrawerBody,
-  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton,
-  Link,
-  Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverArrow, PopoverCloseButton, PopoverBody, PopoverFooter,
-  Badge, VStack, Spinner, Tooltip, Icon, useToast,
-} from '@chakra-ui/react';
-import { BellIcon, CheckCircleIcon, InfoIcon } from '@chakra-ui/icons';
-import { motion } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
-import { getSocket, subscribeToSocketStatus, getCurrentSocketStatus } from '../utils/socket';
-import './NavBar.css';
+import { getNotifications } from '../services/api';
 
-// Icons
-// const HomeIcon = () => (
-//   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-//     <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-//     <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-//   </svg>
-// );
+import { 
+  Menu,
+  X,
+  Home,
+  Grid3X3,
+  ShoppingBag,
+  PlusCircle,
+  Settings,
+  Bell,
+  LogOut,
+  HelpCircle,
+  Code2,
+  DollarSign,
+  Command,
+  User
+} from 'lucide-react';
+import { Badge } from '../shadcn/ui/badge';
 
-const MarketplaceIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M19.31 15.75L22.05 15.75C22.05 15.75 20.19 20.09 12.01 20.09C3.83 20.09 1.97 15.75 1.97 15.75L4.71 15.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M7.51 6L12 4L16.5 6V10C16.5 10 16.5 12 12 14C7.5 12 7.5 10 7.5 10V6H7.51Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ProjectsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M6 2L3 6V20C3 20.5304 3.21071 21.0391 3.58579 21.4142C3.96086 21.7893 4.46957 22 5 22H19C19.5304 22 20.0391 21.7893 20.4142 21.4142C20.7893 21.0391 21 20.5304 21 20V6L18 2H6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 10C16 11.0609 15.5786 12.0783 14.8284 12.8284C14.0783 13.5786 13.0609 14 12 14C10.9391 14 9.92172 13.5786 9.17157 12.8284C8.42143 12.0783 8 11.0609 8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const DashboardIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M10 3H3V10H10V3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M21 3H14V10H21V3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M21 14H14V21H21V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 14H3V21H10V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const LoginIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 17L15 12L10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const RegisterIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M20 8V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M23 11H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ProfileIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const FAQIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M9.09 9C9.3251 8.33167 9.78915 7.76261 10.4056 7.37333C11.022 6.98405 11.7579 6.79901 12.5 6.80001C13.2421 6.79901 13.978 6.98405 14.5944 7.37333C15.2108 7.76261 15.6749 8.33167 15.91 9.00001" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M12 16V16.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 10C3 15 3 17 9.5 21C16 17 16 15 16 10C16 5.66667 13.2 3.16667 12 2.5C10.8 3.16667 8 5.66667 8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-     <path d="M18 10C18 11.8856 18.4717 13.6826 19.3261 15.1906C20.1806 16.6985 21.3794 17.8562 22.8023 18.5293" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const TermsIcon = () => ( // Simple document icon for Terms
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-function NavBar() {
+const NavBar = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout, user } = useAuth();
-  const toast = useToast();
-  const [scrolled, setScrolled] = useState(false);
-  const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
-  const { isOpen: isNotifOpen, onOpen: onNotifOpen, onClose: onNotifClose } = useDisclosure();
-
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-  const [socketStatus, setSocketStatus] = useState(getCurrentSocketStatus());
-  const lastToastIdRef = useRef(null); // To prevent multiple toasts for the same status
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const navRef = useRef(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToSocketStatus((status, details) => {
-      setSocketStatus(status);
-      // Handle toasts for specific statuses
-      if (status === 'error' || (status === 'disconnected' && details !== 'User initiated logout')) {
-        if (lastToastIdRef.current) toast.close(lastToastIdRef.current);
-        lastToastIdRef.current = toast({
-          title: "Connection Issue",
-          description: status === 'error' ? details : "Disconnected. Trying to reconnect...",
-          status: "warning",
-          duration: status === 'error' ? 6000 : null, // Longer or indefinite for errors/disconnected
-          isClosable: true,
-          position: "top"
-        });
-      } else if (status === 'connected') {
-        if (lastToastIdRef.current && toast.isActive(lastToastIdRef.current)) {
-            // If a warning/error toast was active, replace it with a success message
-            toast.update(lastToastIdRef.current, {
-                title: "Connection Restored",
-                description: "Successfully connected to the server.",
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-        } else if (details && details.startsWith('Reconnected')) { // Show toast for reconnection
-             toast({
-                title: "Reconnected!",
-                description: details,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-                position: "top"
-            });
-        }
-        // No new toast if it was just a normal initial connection without a prior warning toast
-      }
-    });
-    return unsubscribe;
-  }, [toast]);
+  const scrollY = useMotionValue(0);
 
-  const fetchUserNotifications = useCallback(async (showToast = false) => {
-    if (!isAuthenticated || !user) return;
-    setIsLoadingNotifications(true);
-    try {
-      const data = await getNotifications();
-      const newNotifications = data || [];
-      setNotifications(newNotifications.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-      const newUnreadCount = newNotifications.filter(n => !n.is_read).length;
-      setUnreadCount(newUnreadCount);
-      if (showToast && newUnreadCount > unreadCount) {
-        toast({
-            title: "New Notification!",
-            description: "You have new unread notifications.",
-            status: "info",
-            duration: 5000,
-            isClosable: true,
-            icon: <InfoIcon />
-        });
-      }
-    } catch (error) {
-      console.error("NavBar: Failed to fetch notifications:", error);
-      // Avoid toast for fetch errors unless critical, as polling might recover
-    } finally {
-      setIsLoadingNotifications(false);
-    }
-  }, [isAuthenticated, user, toast, unreadCount]);
+  const navOpacity = useTransform(scrollY, [0, 50], [0.8, 0.95]);
+  const navBlur = useTransform(scrollY, [0, 50], [8, 20]);
+  const logoScale = useTransform(scrollY, [0, 100], [1, 0.9]);
+  const springConfig = { damping: 20, stiffness: 300, restDelta: 0.001 };
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchUserNotifications(); // Initial fetch
+  // Navigation items with enhanced structure
+  const navItems = [
+    { path: '/', label: 'Home', icon: Home, hasExternal: false },
+    { path: '/marketplace', label: 'Marketplace', icon: ShoppingBag, hasExternal: false },
+    { path: '/how-it-works', label: 'How it Works', icon: HelpCircle, hasExternal: false },
+    { path: '/dashboard', label: 'Dashboard', icon: Grid3X3, requiresAuth: true },
+  ];
 
-      try {
-        const socket = getSocket();
+  // User menu items with enhanced marketplace-focused options
+  const userMenuItems = [
+    { label: 'My Projects', icon: Code2, path: '/my-projects', description: 'Manage your project listings' },
+    { label: 'Purchase History', icon: ShoppingBag, path: '/dashboard?tab=purchases', description: 'View your bought projects' },
+    { label: 'Earnings & Sales', icon: DollarSign, path: '/dashboard?tab=sales', description: 'Track your revenue & sales' },
+    { type: 'divider' },
+    { label: 'Account Settings', icon: Settings, path: '/profile-settings', description: 'Profile & preferences' },
+    { label: 'Notifications', icon: Bell, path: '/notifications', description: 'Manage your alerts' },
+    { type: 'divider' },
+    { label: 'Help & Support', icon: HelpCircle, path: '/faq', description: 'Get help & documentation' },
+    { label: 'Logout', icon: LogOut, action: 'logout', description: 'Sign out securely' },
+  ];
 
-        const handleNewNotification = (newNotification) => {
-          console.log('[Socket.IO] Received new_notification:', newNotification);
-          setNotifications(prev => [newNotification, ...prev].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-          setUnreadCount(prev => prev + 1);
-          toast({
-            title: "New Notification!",
-            description: newNotification.message.substring(0, 50) + (newNotification.message.length > 50 ? '...' : ''),
-            status: "info",
-            duration: 5000,
-            isClosable: true,
-            icon: <InfoIcon />,
-            position: "top-right",
-          });
-        };
-
-        socket.on('new_notification', handleNewNotification);
-        // Also listen for messages if NavBar needs to show a general alert, though typically Dashboard handles this.
-        // socket.on('new_message', handleNewMessageInNavBar); 
-
-        return () => {
-          console.log('[Socket.IO] Cleaning up NavBar listeners');
-          socket.off('new_notification', handleNewNotification);
-          // socket.off('new_message', handleNewMessageInNavBar);
-        };
-      } catch (error) {
-          console.warn('[NavBar] Socket not available or error setting up listeners:', error.message);
-          // Fallback to polling if socket setup fails
-          const intervalId = setInterval(() => fetchUserNotifications(true), 60000);
-          return () => clearInterval(intervalId);
-      }
-    } else {
-        // Clear notifications if user logs out
-        setNotifications([]);
-        setUnreadCount(0);
-    }
-  }, [isAuthenticated, user, fetchUserNotifications, toast]);
-  
-  const handleMarkOneAsRead = async (notificationId) => {
-    try {
-      await markNotificationAsRead(notificationId);
-      // Optimistically update UI or refetch
-      setNotifications(prev => 
-        prev.map(n => n.notification_id === notificationId ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1)); // Ensure count doesn't go below 0
-    } catch (error) {
-      console.error("NavBar: Failed to mark notification as read:", error);
-      toast({ title: "Error", description: "Could not mark notification as read.", status: "error"});
-    }
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await markAllNotificationsAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
-      onNotifClose(); // Close popover after action
-      toast({ title: "Success", description: "All notifications marked as read.", status: "success", icon: <CheckCircleIcon /> });
-    } catch (error) {
-      console.error("NavBar: Failed to mark all notifications as read:", error);
-      toast({ title: "Error", description: "Could not mark all as read.", status: "error"});
-    }
-  };
-
-  const handleNotificationClick = (notification) => {
-    if (!notification.is_read) {
-        handleMarkOneAsRead(notification.notification_id); // Mark as read only if unread
-    }
-    if (notification.link) {
-      navigate(notification.link);
-    }
-    onNotifClose(); // Close popover after click
-  };
-  
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
-  const handleLogout = (e) => {
-    e.preventDefault();
-    logout();
-    onMobileMenuClose(); // Ensure mobile menu closes
-    onNotifClose(); // Ensure notification popover closes
-  };
-  
+  // Enhanced scroll effect with spring physics
   useEffect(() => {
     const handleScroll = () => {
-      const offset = window.scrollY;
-      setScrolled(offset > 50);
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 20);
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
+  // Close mobile menu on route change
   useEffect(() => {
-    // Close mobile menu on path change
-    if(isMobileMenuOpen) onMobileMenuClose(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [location.pathname]); // Only trigger on path change
+    setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
+    setIsNotificationOpen(false);
+  }, [location]);
 
-  const MotionBox = motion(Box);
+  // Fetch notifications
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
 
-  // Determine correct disclosure handlers for mobile menu
-  const { isOpen: finalIsMobileMenuOpen, onOpen: finalOnMobileMenuOpen, onClose: finalOnMobileMenuClose } = 
-    { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose };
+  const fetchNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.is_read).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setIsProfileOpen(false);
+    navigate('/');
+  };
+
+  const handleUserMenuAction = (action, path) => {
+    if (action === 'logout') {
+      handleLogout();
+    } else if (path) {
+      navigate(path);
+    }
+    setIsUserMenuOpen(false);
+  };
+
+  const openCommandPalette = () => {
+    window.dispatchEvent(new CustomEvent('openCommandPalette'));
+  };
 
   return (
-    <Box 
-      as="header"
-      position="fixed"
-      top="0"
-      left="0"
-      right="0"
-      zIndex="1000"
-      bg={scrolled ? 'var(--card-bg)' : 'transparent'}
-      borderBottom={scrolled ? '1px' : 'none'}
-      borderColor={scrolled ? 'var(--border-color)' : 'transparent'}
-      backdropFilter={scrolled ? 'blur(10px)' : 'none'}
-      transition="all 0.3s ease"
-      boxShadow={scrolled ? 'var(--card-shadow)' : 'none'}
-      py={8}
-    >
-      <Flex
-        maxW="1100px"
-        mx="auto"
-        px={{ base: 4, md: 6 }} // Responsive padding
-        align="center"
-        justify="space-between"
+    <>
+      {/* Enhanced floating navbar inspired by framer.com and liveblocks.io */}
+      <motion.nav
+        ref={navRef}
+        className={`fixed top-0 left-0 right-0 z-50 px-4 pt-4 ${
+          isScrolled 
+            ? 'bg-black/80 backdrop-blur-xl border-b border-gray-800/50' 
+            : 'bg-transparent'
+        }`}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <MotionBox
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <motion.div
+          className={`max-w-7xl mx-auto transition-all duration-700 ease-out ${
+            isScrolled 
+              ? 'bg-black/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/20 rounded-2xl' 
+              : 'bg-black/60 backdrop-blur-md border border-white/[0.05] rounded-2xl hover:bg-black/70'
+          }`}
+          style={{
+            backdropFilter: `blur(${navBlur}px)`,
+            opacity: navOpacity,
+          }}
+          whileHover={{ 
+            borderColor: 'rgba(255, 255, 255, 0.12)',
+            transition: { duration: 0.3 }
+          }}
         >
-          <Link 
-            as={RouterLink} 
-            to="/"
-            _hover={{ textDecoration: 'none' }}
-          >
-            <HStack alignItems="center">
-              <Text
-                fontSize={{ base: 'xl', md: '2xl' }} // Responsive font size
-                fontWeight="bold"
-                letterSpacing="wider"
-                textTransform="lowercase"
-                color="var(--text-color)"
-              >
-                sidebuilds.
-              </Text>
-              {/* Socket Status Indicator */}
-              <Tooltip 
-                label={socketStatus === 'connected' ? `Connected (${user?.username || ''})` : socketStatus === 'connecting' ? 'Connecting...' : socketStatus === 'error' ? 'Connection Error' : 'Disconnected'} 
-                placement="bottom" 
-                hasArrow
-              >
-                <Box 
-                    ml={2} 
-                    w="10px" 
-                    h="10px" 
-                    borderRadius="50%" 
-                    bg={socketStatus === 'connected' ? 'green.500' : socketStatus === 'connecting' ? 'yellow.500' : 'red.500'}
-                    transition="background-color 0.3s ease"
-                />
-              </Tooltip>
-            </HStack>
-          </Link>
-        </MotionBox>
-
-        {/* Desktop Navigation */}
-        <HStack spacing={{ base: 2, md: 4}} display={{ base: 'none', md: 'flex' }} alignItems="center">
-          {isAuthenticated && user && (
-            <>
-              <NavItem to="/public-projects" isActive={isActive('/public-projects')} icon={ProjectsIcon}>
-                Projects
-              </NavItem>
-              <NavItem to="/marketplace" isActive={isActive('/marketplace')} icon={MarketplaceIcon}>
-                Marketplace
-              </NavItem>
-              <NavItem to="/dashboard" isActive={isActive('/dashboard')} icon={DashboardIcon}>
-                Dashboard
-              </NavItem>
-              <NavItem to="/profile-settings" isActive={isActive('/profile-settings')} icon={ProfileIcon}>
-                Profile
-              </NavItem>
-            </>
-          )}
-          {!isAuthenticated && (
-            <>
-                <NavItem to="/public-projects" isActive={isActive('/public-projects')} icon={ProjectsIcon}>
-                    Browse Projects
-                </NavItem>
-                <NavItem to="/faq" isActive={isActive('/faq')} icon={FAQIcon}>
-                    FAQ
-                </NavItem>
-                <NavItem to="/terms" isActive={isActive('/terms')} icon={TermsIcon}>
-                    Terms
-                </NavItem>
-            </>
-          )}
-        </HStack>
-
-        {/* Auth Buttons & Notification Icon (Desktop and Mobile common right part) */}
-        <HStack spacing={{ base: 2, md: 4 }} alignItems="center">
-          {isAuthenticated && user && (
-            <Popover 
-                isOpen={isNotifOpen} 
-                onOpen={onNotifOpen} 
-                onClose={onNotifClose}
-                placement="bottom-end"
-                closeOnBlur={true}
+          <div className="flex items-center justify-between h-16 px-6">
+            
+            {/* Enhanced Logo with framer.com style scaling */}
+            <motion.div
+              className="flex items-center gap-3"
+              style={{ scale: logoScale }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-                <PopoverTrigger>
-                    <Tooltip label="View notifications" placement="bottom" hasArrow>
-                        <IconButton 
-                            icon={<BellIcon />} 
-                            variant="ghost" 
-                            aria-label="Notifications" 
-                            fontSize="xl"
-                            position="relative"
-                            color={unreadCount > 0 ? 'blue.400' : 'currentColor'}
-                        >
-                            {unreadCount > 0 && (
-                                <Badge 
-                                    colorScheme="blue" 
-                                    variant="solid"
-                                    borderRadius="full"
-                                    boxSize="1.2em" 
-                                    fontSize="0.7em"
-                                    position="absolute"
-                                    top="0px"
-                                    right="0px"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    {unreadCount > 9 ? '9+' : unreadCount}
-                                </Badge>
-                            )}
-                        </IconButton>
-                    </Tooltip>
-                </PopoverTrigger>
-                <PopoverContent zIndex={1100} w={{ base: "calc(100vw - 30px)", sm: "380px" }} maxH="400px" overflowY="auto" borderColor="var(--border-color)" bg="var(--card-bg)">
-                    <PopoverArrow bg="var(--card-bg)" />
-                    <PopoverCloseButton />
-                    <PopoverHeader fontWeight="semibold">Notifications</PopoverHeader>
-                    <PopoverBody p={0}>
-                        {isLoadingNotifications ? (
-                            <VStack p={4}><Spinner size="md" /><Text>Loading...</Text></VStack>
-                        ) : notifications.length === 0 ? (
-                            <Text p={4} textAlign="center" color="gray.500">No new notifications.</Text>
-                        ) : (
-                            <VStack spacing={0} align="stretch">
-                                {notifications.map(notif => (
-                                    <Box 
-                                        key={notif.notification_id} 
-                                        p={3} 
-                                        borderBottomWidth="1px" 
-                                        borderColor="var(--border-color)"
-                                        _hover={{ bg: 'var(--hover-bg)' }} 
-                                        cursor="pointer"
-                                        onClick={() => handleNotificationClick(notif)}
-                                        bg={notif.is_read ? 'transparent' : 'blue.50'} // Use a subtle bg for unread
-                                        // _dark={{ bg: notif.is_read ? 'transparent' : 'blue.800' }} // Dark mode consideration
-                                    >
-                                        <Text fontWeight={notif.is_read ? 'normal' : 'bold'} fontSize="sm" noOfLines={2}>{notif.message}</Text>
-                                        <Text fontSize="xs" color="gray.500">
-                                            {new Date(notif.created_at).toLocaleDateString()} - {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-                                        </Text>
-                                    </Box>
-                                ))}
-                            </VStack>
-                        )}
-                    </PopoverBody>
-                    {notifications.length > 0 && (
-                         <PopoverFooter borderTopWidth="1px" borderColor="var(--border-color)" d="flex" justifyContent="flex-end" p={2}>
-                            <Button size="xs" variant="ghost" onClick={handleMarkAllRead} disabled={unreadCount === 0}>
-                                Mark All Read
-                            </Button>
-                        </PopoverFooter>
-                    )}
-                </PopoverContent>
-            </Popover>
-          )}
+              <Link to="/" className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">S</span>
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-black animate-pulse" />
+                </div>
+                <span className="text-xl font-bold text-white">SideBuilds</span>
+                <Badge className="bg-purple-500/20 text-purple-300 text-xs border-purple-400/30">
+                  2.0
+                </Badge>
+              </Link>
+            </motion.div>
 
-          {/* Auth buttons for desktop */}
-          <HStack spacing={3} display={{ base: 'none', md: 'flex' }}>
-            {isAuthenticated ? (
-                <Button 
-                    variant="ghost" 
-                    onClick={handleLogout} 
-                    size="sm" 
-                    colorScheme="red"
-                    leftIcon={<Icon as={LogoutIcon} />}
+            {/* Enhanced Navigation Items with liveblocks.io styling */}
+            <div className="hidden lg:flex items-center space-x-1">
+              {navItems.map((item, index) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    delay: index * 0.05,
+                    type: "spring",
+                    ...springConfig
+                  }}
                 >
-                    Logout
-                </Button>
-            ) : (
-              <>
-                <Button as={RouterLink} to="/login" variant="outline" size="sm" leftIcon={<Icon as={LoginIcon} />}>Login</Button>
-                <Button as={RouterLink} to="/register" variant="solid" colorScheme="blue" size="sm" leftIcon={<Icon as={RegisterIcon} />}>Sign Up</Button>
-              </>
-            )}
-          </HStack>
-
-          {/* Mobile Menu Trigger (Hamburger Icon) */}
-          <IconButton 
-            aria-label="Open Menu"
-            icon={<HamburgerIcon />} 
-            display={{ base: 'flex', md: 'none' }}
-            onClick={finalOnMobileMenuOpen}
-            variant="ghost"
-          />
-        </HStack>
-      </Flex>
-
-      {/* Mobile Drawer Menu */}
-      <Drawer isOpen={finalIsMobileMenuOpen} placement="right" onClose={finalOnMobileMenuClose}>
-        <DrawerOverlay />
-        <DrawerContent bg="var(--card-bg)">
-          <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px" borderColor="var(--border-color)">
-            <Text fontSize="lg" fontWeight="bold" textTransform="lowercase" color="var(--text-color)">sidebuilds.</Text>
-          </DrawerHeader>
-          <DrawerBody py={6}>
-            <VStack spacing={5} align="stretch">
-                <MobileNavItem to="/" icon={HomeIcon} isActive={isActive('/')} onClick={finalOnMobileMenuClose}>Home</MobileNavItem>
-                {isAuthenticated && user && (
-                    <>
-                        <MobileNavItem to="/public-projects" icon={ProjectsIcon} isActive={isActive('/public-projects')} onClick={finalOnMobileMenuClose}>Projects</MobileNavItem>
-                        <MobileNavItem to="/marketplace" icon={MarketplaceIcon} isActive={isActive('/marketplace')} onClick={finalOnMobileMenuClose}>Marketplace</MobileNavItem>
-                        <MobileNavItem to="/dashboard" icon={DashboardIcon} isActive={isActive('/dashboard')} onClick={finalOnMobileMenuClose}>Dashboard</MobileNavItem>
-                        <MobileNavItem to="/profile-settings" icon={ProfileIcon} isActive={isActive('/profile-settings')} onClick={finalOnMobileMenuClose}>Profile</MobileNavItem>
-                    </>
-                )}
-                {!isAuthenticated && (
-                    <>
-                        <MobileNavItem to="/public-projects" icon={ProjectsIcon} isActive={isActive('/public-projects')} onClick={finalOnMobileMenuClose}>Browse Projects</MobileNavItem>
-                        <MobileNavItem to="/faq" icon={FAQIcon} isActive={isActive('/faq')} onClick={finalOnMobileMenuClose}>FAQ</MobileNavItem>
-                        <MobileNavItem to="/terms" icon={TermsIcon} isActive={isActive('/terms')} onClick={finalOnMobileMenuClose}>Terms</MobileNavItem>
-                        <Button as={RouterLink} to="/login" variant="outline" w="full" leftIcon={<Icon as={LoginIcon} />} onClick={finalOnMobileMenuClose}>Login</Button>
-                        <Button as={RouterLink} to="/register" variant="solid" colorScheme="blue" w="full" leftIcon={<Icon as={RegisterIcon} />} onClick={finalOnMobileMenuClose}>Sign Up</Button>
-                    </>
-                )}
-                 {isAuthenticated && (
-                    <Button 
-                        variant="ghost" 
-                        onClick={handleLogout} 
-                        w="full" 
-                        colorScheme="red" 
-                        leftIcon={<Icon as={LogoutIcon} />}
-                        mt={4}
+                  <Link
+                    to={item.path}
+                    className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 group overflow-hidden no-underline ${
+                      location.pathname === item.path
+                        ? 'text-white bg-white/[0.12]'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {/* Liveblocks.io precise hover background */}
+                    <motion.div
+                      className="absolute inset-0 bg-white/[0.08] rounded-lg"
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      whileHover={{ 
+                        scale: 1, 
+                        opacity: location.pathname === item.path ? 0 : 1,
+                        transition: { 
+                          type: "spring", 
+                          stiffness: 350, 
+                          damping: 25,
+                          duration: 0.25
+                        }
+                      }}
+                    />
+                    <motion.span 
+                      className="relative z-10"
+                      whileHover={{ 
+                        scale: 1.02,
+                        transition: { type: "spring", stiffness: 400, damping: 30 }
+                      }}
                     >
-                        Logout
-                    </Button>
-                )}
-            </VStack>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
-    </Box>
-  );
-}
+                      {item.label}
+                    </motion.span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
 
-// Helper components for Nav items
-// ... (NavItem and MobileNavItem definitions remain the same)
-const HamburgerIcon = (props) => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    {...props}
-  >
-    <path
-      d="M3 12H21"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M3 6H21"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M3 18H21"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+            {/* Enhanced Right Section */}
+            <div className="flex items-center space-x-3">
+              
+              {/* Enhanced Command Palette with liveblocks.io style */}
+              <motion.button
+                onClick={openCommandPalette}
+                className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white transition-all duration-200 group relative overflow-hidden"
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 400, damping: 25 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* Liveblocks.io hover background */}
+                <motion.div
+                  className="absolute inset-0 bg-white/[0.08] rounded-xl"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  whileHover={{ 
+                    scale: 1, 
+                    opacity: 1,
+                    transition: { type: "spring", stiffness: 200, damping: 20, duration: 0.3 }
+                  }}
+                />
+                <Command className="w-3.5 h-3.5 relative z-10" />
+                <span className="text-xs font-medium tracking-wider relative z-10">⌘K</span>
+              </motion.button>
 
-const HomeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+              {isAuthenticated ? (
+                <>
+                  {/* Enhanced Create Button with liveblocks.io effect */}
+                  <motion.button
+                    onClick={() => navigate('/projects/new')}
+                    className="hidden md:flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium text-sm shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-200 group relative overflow-hidden"
+                    whileHover={{ 
+                      scale: 1.02,
+                      transition: { type: "spring", stiffness: 400, damping: 25 }
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Enhanced gradient overlay for create button */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-xl"
+                      initial={{ opacity: 0 }}
+                      whileHover={{ 
+                        opacity: 1,
+                        transition: { duration: 0.2 }
+                      }}
+                    />
+                    <PlusCircle className="w-4 h-4 relative z-10" />
+                    <span className="relative z-10">Create</span>
+                  </motion.button>
 
-const NavItem = ({ icon, children, isActive, to, ...rest }) => {
-  const location = useLocation();
-  const active = isActive !== undefined ? isActive : location.pathname === to;
+                  {/* Enhanced Notifications with liveblocks.io hover */}
+                  <div className="relative">
+                    <motion.button
+                      onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                      className="relative p-2.5 rounded-xl text-gray-400 hover:text-white transition-all duration-200 group overflow-hidden"
+                      whileHover={{ 
+                        scale: 1.02,
+                        transition: { type: "spring", stiffness: 400, damping: 25 }
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {/* Liveblocks.io hover background */}
+                      <motion.div
+                        className="absolute inset-0 bg-white/[0.08] rounded-xl"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        whileHover={{ 
+                          scale: 1, 
+                          opacity: 1,
+                          transition: { type: "spring", stiffness: 200, damping: 20, duration: 0.3 }
+                        }}
+                      />
+                      <Bell className="w-5 h-5 relative z-10" />
+                      {unreadCount > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full flex items-center justify-center font-medium shadow-lg z-20"
+                        >
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </motion.span>
+                      )}
+                    </motion.button>
 
-  return (
-    <Link 
-      as={RouterLink} 
-      to={to}
-      px={3}
-      py={2}
-      rounded={'md'}
-      fontWeight={active ? 'semibold' : 'normal'}
-      color={active ? 'var(--accent-color)' : 'var(--text-color-secondary)'}
-      borderBottom={active ? '2px solid var(--accent-color)' : '2px solid transparent'} // Underline for active link
-      _hover={{
-        textDecoration: 'none',
-        color: active ? 'var(--accent-color-hover, var(--accent-color))' : 'var(--text-color)', // Brighter text on hover for inactive
-        ...(active && { borderBottomColor: 'var(--accent-color-hover, var(--accent-color))' }), // Change active underline color on hover
-      }}
-      display="flex"
-      alignItems="center"
-      {...rest}
-    >
-      {icon && <Icon as={icon} mr={2} />}
-      {children}
-    </Link>
+                    {/* Enhanced Notification Dropdown */}
+                    <AnimatePresence>
+                      {isNotificationOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                          transition={{ 
+                            duration: 0.2, 
+                            ease: [0.22, 1, 0.36, 1],
+                            type: "spring",
+                            ...springConfig
+                          }}
+                          className="absolute right-0 mt-3 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+                        >
+                          <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/40 to-pink-900/40">
+                            <h3 className="text-white font-semibold tracking-tight">Notifications</h3>
+                            {unreadCount > 0 && (
+                              <p className="text-xs text-purple-300 mt-1">{unreadCount} unread</p>
+                            )}
+                          </div>
+                          <div className="max-h-96 overflow-y-auto">
+                            {notifications.length > 0 ? (
+                              notifications.slice(0, 5).map((notification, index) => (
+                                <motion.div
+                                  key={index}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ 
+                                    delay: index * 0.05,
+                                    type: "spring",
+                                    ...springConfig
+                                  }}
+                                  className="p-4 hover:bg-gray-800 transition-colors duration-200 border-b border-gray-700 last:border-0 group cursor-pointer"
+                                >
+                                  <p className="text-sm text-gray-200 leading-relaxed group-hover:text-white transition-colors duration-200">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {new Date(notification.created_at).toLocaleDateString()}
+                                  </p>
+                                </motion.div>
+                              ))
+                            ) : (
+                              <div className="p-8 text-center text-gray-500">
+                                <Bell className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                                <p className="text-sm">No notifications yet</p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Enhanced User Menu with liveblocks.io hover */}
+                  <div className="relative" ref={profileRef}>
+                    <motion.button
+                      onClick={() => setIsProfileOpen(!isProfileOpen)}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-800/50 rounded-lg transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {user?.username?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div className="hidden md:block text-left">
+                        <div className="text-sm text-white font-medium">
+                          {user?.username || 'User'}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {user?.email}
+                        </div>
+                      </div>
+                    </motion.button>
+
+                    {/* Enhanced Dropdown Menu */}
+                    <AnimatePresence>
+                      {isProfileOpen && (
+                        <motion.div
+                          className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {/* User info header */}
+                          <div className="p-4 border-b border-gray-700">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                <span className="text-white font-medium">
+                                  {user?.username?.[0]?.toUpperCase() || 'U'}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-white font-medium">{user?.username}</div>
+                                <div className="text-xs text-gray-400">{user?.email}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Menu items */}
+                          <div className="py-2">
+                            {userMenuItems.map((item, index) => {
+                              if (item.type === 'divider') {
+                                return <div key={index} className="border-t border-gray-700 my-2" />;
+                              }
+                              
+                              if (item.action === 'logout') {
+                                return <React.Fragment key={`logout-${index}`} />; // Empty fragment with key
+                              }
+                              
+                              const Icon = item.icon;
+                              
+                              if (!Icon) {
+                                return <React.Fragment key={`no-icon-${index}`} />; // Empty fragment with key
+                              }
+                              
+                              return (
+                                <motion.div 
+                                  key={item.label}
+                                  whileHover={{ x: 4 }}
+                                >
+                                  <Link
+                                    to={item.path}
+                                    className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
+                                    onClick={() => setIsProfileOpen(false)}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                    {item.label}
+                                  </Link>
+                                </motion.div>
+                              );
+                            })}
+                            
+                            <div className="border-t border-gray-700 mt-2 pt-2">
+                              <motion.button
+                                onClick={handleLogout}
+                                className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors"
+                                whileHover={{ x: 4 }}
+                              >
+                                <LogOut className="w-4 h-4" />
+                                Sign Out
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
+              ) : (
+                <div className="hidden md:flex items-center space-x-2">
+                  {/* Liveblocks.io style Sign In button */}
+                  <motion.div
+                    whileHover={{ 
+                      scale: 1.02,
+                      transition: { type: "spring", stiffness: 400, damping: 25 }
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Link
+                      to="/login"
+                      className="relative px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors duration-200 rounded-lg overflow-hidden group no-underline"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {/* Liveblocks.io hover background */}
+                      <motion.div
+                        className="absolute inset-0 bg-white/[0.08] rounded-lg"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        whileHover={{ 
+                          scale: 1, 
+                          opacity: 1,
+                          transition: { type: "spring", stiffness: 350, damping: 25, duration: 0.25 }
+                        }}
+                      />
+                      <span className="relative z-10">Sign in</span>
+                    </Link>
+                  </motion.div>
+                  
+                  {/* Liveblocks.io style Get Started button */}
+                  <motion.div
+                    whileHover={{ 
+                      scale: 1.02,
+                      transition: { type: "spring", stiffness: 400, damping: 25 }
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Link
+                      to="/register"
+                      className="relative px-4 py-2 text-sm font-medium text-black bg-white rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-sm no-underline"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      Get started
+                    </Link>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Enhanced Mobile Menu Toggle */}
+              <motion.button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.div
+                  animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </motion.div>
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.nav>
+
+      {/* Enhanced Mobile Menu with premium animations */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 lg:hidden"
+          >
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ 
+                type: 'spring', 
+                damping: 25, 
+                stiffness: 200,
+                duration: 0.6 
+              }}
+              className="absolute right-4 top-4 bottom-4 w-80 bg-gray-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl"
+            >
+              <div className="flex flex-col h-full pt-16 pb-6 px-6">
+                
+                {/* Mobile Navigation Items */}
+                <div className="space-y-2">
+                  {navItems.map((item, index) => {
+                    if (item.requiresAuth && !user) return null;
+                    const isActive = location.pathname === item.path;
+                    const Icon = item.icon;
+                    
+                    return (
+                      <motion.div
+                        key={item.path}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ 
+                          delay: index * 0.1, 
+                          duration: 0.3,
+                          type: "spring",
+                          ...springConfig
+                        }}
+                      >
+                        <Link
+                          to={item.path}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 ${
+                            isActive
+                              ? 'bg-white/[0.08] text-white border border-white/10'
+                              : 'text-gray-300 hover:text-white hover:bg-white/[0.05]'
+                          }`}
+                        >
+                          <Icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : ''}`} />
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Mobile User Section */}
+                <div className="mt-auto space-y-4">
+                  {isAuthenticated ? (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, type: "spring", ...springConfig }}
+                      >
+                        <Link
+                          to="/projects/new"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center justify-center space-x-2 px-4 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg"
+                        >
+                          <PlusCircle className="w-5 h-5" />
+                          <span>Create Project</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, type: "spring", ...springConfig }}
+                      >
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center justify-center space-x-2 px-4 py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span>Logout</span>
+                        </button>
+                      </motion.div>
+                    </>
+                  ) : (
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, type: "spring", ...springConfig }}
+                      >
+                        <Link
+                          to="/login"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block w-full text-center px-4 py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300"
+                        >
+                          Sign In
+                        </Link>
+                      </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, type: "spring", ...springConfig }}
+                      >
+                        <Link
+                          to="/register"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block w-full text-center px-4 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg"
+                        >
+                          Get Started
+                        </Link>
+                      </motion.div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Click outside handlers */}
+      {(isUserMenuOpen || isNotificationOpen) && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => {
+            setIsUserMenuOpen(false);
+            setIsNotificationOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 };
 
-const MobileNavItem = ({ icon, children, isActive, to, onClick, ...rest }) => {
-    const location = useLocation();
-    const active = isActive !== undefined ? isActive : location.pathname === to;
-  return (
-    <Link
-      as={RouterLink}
-      to={to}
-      onClick={onClick} // Ensure mobile menu closes on navigation
-      display="flex"
-      alignItems="center"
-      px={4}
-      py={3}
-      w="full"
-      rounded="md"
-      fontWeight={active ? 'bold' : 'normal'}
-      color={active ? 'var(--accent-color)': 'var(--text-color)'}
-      bg={active ? 'var(--active-bg)' : 'transparent'} 
-      _hover={{
-        textDecoration: 'none',
-        bg: 'var(--hover-bg)',
-        color: 'var(--accent-color-hover)'
-      }}
-      {...rest}
-    >
-      {icon && <Icon as={icon} mr={3} />}
-      {children}
-    </Link>
-  );
-};
-
-export default NavBar; 
+export default NavBar;

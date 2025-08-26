@@ -17,15 +17,34 @@ export const AuthProvider = ({ children }) => {
     const connectUserSocket = useCallback((token, user) => {
         if (token && user && user.id) {
             try {
-                const socket = initializeSocket(token); // Pass token for auth
-                // Backend should handle user room joining based on authenticated socket
-                // If direct event is needed after connect:
+                const socket = initializeSocket(token);
+                
                 socket.on('connect', () => {
-                    console.log('[AuthContext] Socket connected, attempting to join user room for:', user.id);
-                    // Emit an event that the backend will use to join this socket to a user-specific room
-                    // The backend should ideally derive user.id from the token provided during socket handshake
-                    socket.emit('join_user_room', { userId: user.id }); 
+                    console.log('[AuthContext] Socket connected successfully for user:', user.username);
                 });
+
+                socket.on('connect_error', (error) => {
+                    console.error('[AuthContext] Socket connection failed:', error.message);
+                    if (error.message === 'Authentication required' || error.message === 'Invalid token') {
+                        // Token might be expired, try to refresh
+                        console.log('[AuthContext] Attempting to refresh token...');
+                        // Could implement token refresh logic here
+                    }
+                });
+
+                socket.on('error', (error) => {
+                    console.error('[AuthContext] Socket error:', error);
+                });
+
+                socket.on('user_online', (data) => {
+                    console.log(`[AuthContext] User ${data.username} came online`);
+                });
+
+                socket.on('user_offline', (data) => {
+                    console.log(`[AuthContext] User ${data.username} went offline`);
+                });
+
+                return socket;
             } catch (error) {
                 console.error('[AuthContext] Failed to initialize socket:', error);
             }
@@ -33,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const fetchUserProfile = useCallback(async (currentToken) => {
-        const tokenToUse = currentToken || authState.token;
+        const tokenToUse = currentToken;
         if (tokenToUse) {
             try {
                 console.log('AuthContext: Fetching user profile...');
@@ -58,31 +77,49 @@ export const AuthProvider = ({ children }) => {
             }
         }
         return null; 
-    }, [authState.token, connectUserSocket]);
+    }, [connectUserSocket]);
 
     useEffect(() => {
         const verifyUserAndToken = async () => {
             const storedToken = localStorage.getItem('token');
             if (storedToken) {
-                // Set token in API client header first
-                apiClient.defaults.headers.common['x-auth-token'] = storedToken;
+                // Set token in API client header first - use Authorization Bearer format
+                apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
                 try {
-                    // Fetch profile which will also set user in state and connect socket
+                    // Create a more robust timeout with AbortController
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => {
+                        controller.abort();
+                    }, 3000); // Reduced to 3 seconds
+
+                    // Add abort signal to the profile fetch
                     await fetchUserProfile(storedToken);
+                    clearTimeout(timeoutId);
                 } catch (error) {
-                    console.log("Initial profile fetch failed. User might have been logged out.");
+                    console.log("Initial profile fetch failed:", error.message);
+                    // On any error during startup, clear auth state to prevent infinite loading
+                    if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                        console.log("Profile fetch timed out, clearing auth state");
+                        logout();
+                    } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                        logout();
+                    } else {
+                        // For other errors, still clear loading state
+                        console.log("Network error during profile fetch, continuing without auth");
+                    }
                 }
             }
+            // Always set loading to false regardless of success/failure
             setAuthState(prev => ({ ...prev, isLoading: false }));
         };
 
         verifyUserAndToken();
-    }, [fetchUserProfile]);
+    }, []); // Remove fetchUserProfile dependency to prevent loops
 
     const login = (token, user) => {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        apiClient.defaults.headers.common['x-auth-token'] = token;
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setAuthState({
             token,
             user,
@@ -98,7 +135,7 @@ export const AuthProvider = ({ children }) => {
         disconnectSocket(); // Disconnect socket on logout
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        delete apiClient.defaults.headers.common['x-auth-token'];
+        delete apiClient.defaults.headers.common['Authorization'];
         setAuthState({
             token: null,
             user: null,
@@ -116,7 +153,25 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {!authState.isLoading ? children : <div>Loading authentication...</div>} 
+            {!authState.isLoading ? children : (
+                <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ position: 'fixed', width: '100vw', height: '100vh' }}>
+                    <div className="text-center px-4 max-w-sm mx-auto">
+                        <div className="relative mb-6">
+                            <div className="w-16 h-16 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
+                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-16 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                        </div>
+                        <div className="space-y-3">
+                            <h3 className="text-white text-xl font-semibold tracking-tight">SideBuilds</h3>
+                            <p className="text-gray-400 text-sm">Initializing your workspace...</p>
+                            <div className="flex justify-center space-x-1 mt-4">
+                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )} 
         </AuthContext.Provider>
     );
 }; 

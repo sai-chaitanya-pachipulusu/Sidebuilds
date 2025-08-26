@@ -28,7 +28,7 @@ router.post('/:notificationId/mark-read', authMiddleware, async (req, res) => {
     try {
         const query = `
             UPDATE notifications 
-            SET is_read = TRUE, updated_at = NOW()
+            SET is_read = 1
             WHERE notification_id = $1 AND user_id = $2
             RETURNING *;
         `;
@@ -49,8 +49,8 @@ router.post('/mark-all-read', authMiddleware, async (req, res) => {
     try {
         const query = `
             UPDATE notifications 
-            SET is_read = TRUE, updated_at = NOW()
-            WHERE user_id = $1 AND is_read = FALSE
+            SET is_read = 1
+            WHERE user_id = $1 AND is_read = 0
             RETURNING *; 
         `; // Only update those that are unread
         const { rows } = await db.query(query, [userId]);

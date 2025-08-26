@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
-import SellerCertificate from '../components/SellerCertificate';
-import './VerifyPage.css';
 
 const VerifyPage = () => {
   const { verificationCode } = useParams();
@@ -100,8 +98,6 @@ const VerifyPage = () => {
               <h3>Certificate Verified</h3>
               <p>This certificate is authentic and was issued by SideBuilds.</p>
             </div>
-            
-            <SellerCertificate certificate={certificate} isPrintable={true} />
           </div>
         )}
       </div>

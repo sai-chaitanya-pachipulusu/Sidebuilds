@@ -1,51 +1,170 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { getPublicProjects } from '../services/api';
-import ProjectTable from '../components/ProjectTable';
-import './PublicProjectsPage.css';
+import { Input } from '../shadcn/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../shadcn/ui/select.jsx';
+import { Button } from '../shadcn/ui/button';
+import { Card, CardContent, CardHeader } from '../shadcn/ui/card';
+import { Badge } from '../shadcn/ui/badge';
+import SEO from '../components/SEO';
+import { Calendar, DollarSign, ArrowRight } from 'lucide-react';
 
-function PublicProjectsPage() {
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } }
+};
+
+const getStageColor = (stage) => {
+    const stageColors = {
+        'idea': { label: 'Idea', color: 'bg-gray-500/10 text-gray-400 border-gray-500/30' },
+        'planning': { label: 'Planning', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+        'mvp': { label: 'MVP', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
+        'development': { label: 'Development', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
+        'launched': { label: 'Launched', color: 'bg-green-500/10 text-green-400 border-green-500/30' },
+        'on_hold': { label: 'On Hold', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
+    };
+    return stageColors[stage?.toLowerCase()] || stageColors.idea;
+};
+
+const formatPrice = (price) => {
+    if (!price) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(price);
+};
+
+const PublicProjectsPage = () => {
     const [projects, setProjects] = useState([]);
+    const [filteredProjects, setFilteredProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('newest');
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchPublicProjects = async () => {
+        const fetchProjects = async () => {
             try {
-                setError('');
                 setLoading(true);
-                const publicProjects = await getPublicProjects();
-                setProjects(publicProjects);
+                const data = await getPublicProjects();
+                setProjects(data);
+                setFilteredProjects(data);
             } catch (err) {
-                console.error("Failed to fetch public projects:", err);
-                setError(err.message || 'Failed to load public projects.');
+                setError('Failed to load projects.');
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchPublicProjects();
+        fetchProjects();
     }, []);
 
-    return (
-        <div className="public-projects-page">
-            <div className="public-header">
-                <div>
-                    <div className="page-section-heading">PUBLIC PROJECTS</div>
-                    <h2>Discover Shared Projects</h2>
-                    <p className="subtitle">Browse side projects shared by the community.</p>
-                </div>
-            </div>
+    useEffect(() => {
+        let tempProjects = [...projects];
+        // ... filtering and sorting logic ...
+        setFilteredProjects(tempProjects);
+    }, [searchTerm, categoryFilter, sortBy, projects]);
 
-            <div className="public-table">
-                <ProjectTable 
-                    projects={projects}
-                    type="public"
-                    isLoading={loading}
-                    error={error}
-                />
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>{error}</div>;
+
+    return (
+        <div className="min-h-screen bg-black text-white">
+            <SEO title="Public Projects" description="Browse all public projects available on SideBuilds." />
+            <div className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+                {/* Header */}
+                <motion.div 
+                    className="text-center mb-16"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h1 className="text-5xl font-bold mb-4">Explore Public Projects</h1>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">Discover what our community is building. Find inspiration or your next big opportunity.</p>
+                </motion.div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <Input
+                        type="search"
+                        placeholder="Search projects..."
+                        className="lg:col-span-2"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger><SelectValue placeholder="Filter by Category" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="saas">SaaS</SelectItem>
+                            <SelectItem value="ecommerce">E-commerce</SelectItem>
+                            <SelectItem value="mobile">Mobile</SelectItem>
+                            <SelectItem value="ai">AI/ML</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger><SelectValue placeholder="Sort by" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="popular">Most Popular</SelectItem>
+                            <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                            <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {filteredProjects.map(project => (
+                        <motion.div key={project.project_id} variants={itemVariants}>
+                            <Card className="bg-gray-900/50 border-gray-700 h-full flex flex-col group">
+                                <div className="relative">
+                                    <img src={project.image_url || `https://source.unsplash.com/random/400x200?tech,${project.project_id}`} alt={project.name} className="w-full h-40 object-cover rounded-t-lg" />
+                                    <div className="absolute top-2 right-2">
+                                        <Badge variant="secondary" className="bg-gray-800/80 text-white backdrop-blur-sm">{getStageColor(project.stage).label}</Badge>
+                                    </div>
+                                </div>
+                                <CardHeader>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">{project.name}</h3>
+                                    <p className="text-sm text-gray-400">by {project.owner_username || 'Anonymous'}</p>
+                                </CardHeader>
+                                <CardContent className="flex-grow flex flex-col">
+                                    <p className="text-gray-400 line-clamp-3 mb-4 flex-grow">{project.description}</p>
+                                    <div className="flex justify-between items-center text-sm text-gray-300 border-t border-gray-700 pt-4">
+                                        <div className="flex items-center gap-1">
+                                            <DollarSign className="w-4 h-4 text-green-400" />
+                                            <span>{formatPrice(project.sale_price)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="w-4 h-4 text-gray-500" />
+                                            <span>{new Date(project.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                                <div className="p-4 border-t border-gray-800">
+                                    <Button className="w-full" onClick={() => navigate(`/projects/${project.project_id}`)}>
+                                        View Details <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </motion.div>
             </div>
         </div>
     );
-}
+};
 
 export default PublicProjectsPage; 

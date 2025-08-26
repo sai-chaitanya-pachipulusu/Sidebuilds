@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 require('dotenv').config({ path: path.resolve(__dirname, '.env'), override: true }); 
 
 // --- Server Port --- (Moved to top)
-const PORT = process.env.PORT; // Fallback if not in .env
+let PORT = parseInt(process.env.PORT || '5002', 10);
 
 // Import database connection AFTER dotenv has been configured and logged
 const db = require('./db');
@@ -21,12 +21,20 @@ const app = express();
 const server = http.createServer(app); // Create HTTP server for Express app
 
 // Configure CORS based on environment
-const allowedOrigins = [
-    'https://www.sidebuilds.space',
-    'http://localhost:3000', // Local client development
-    'http://localhost:3001',  // Local client development (alternative port)
-    // No need to explicitly list 5001 here if the logic below handles it
-];
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? [
+        'https://www.sidebuilds.space',
+        'https://sidebuilds.space'
+      ]
+    : [
+        'https://www.sidebuilds.space',
+        'http://localhost:3000', // Local client development
+        'http://localhost:3001',  // Local client development (alternative port)
+        'http://localhost:3002',  // Local client development (current port)
+        'http://localhost:3009',
+        'http://localhost:5002'
+        // Removed wildcard '*' for security
+      ];
   
 const corsOptions = {
     origin: function (origin, callback) {
@@ -75,127 +83,225 @@ const io = new Server(server, { // Attach socket.io to the HTTP server
 
 app.set('io', io); // Make io instance available in request handlers if needed via req.app.get('io')
 
-io.on('connection', (socket) => {
-    console.log('[Socket.IO] User connected:', socket.id);
-
-    // Attempt to authenticate and join room on connection if token is present
-    const token = socket.handshake.auth.token;
-    let userId = null;
-
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            userId = decoded.id; // Assuming your JWT payload has an 'id' field for user ID
-            socket.user = decoded; // Attach user info to the socket instance
-            socket.join(userId);
-            console.log(`[Socket.IO] User ${userId} (socket ${socket.id}) authenticated via handshake and joined room ${userId}`);
-        } catch (err) {
-            console.log(`[Socket.IO] Handshake token verification failed for socket ${socket.id}:`, err.message);
-            // Optionally disconnect if auth is strictly required for any connection
-            // socket.disconnect(true);
-            // return;
-        }
-    } else {
-        console.log(`[Socket.IO] No token in handshake for socket ${socket.id}. Waiting for 'join_user_room' or will remain unauthenticated.`);
+// Enhanced Socket.IO Authentication Middleware
+const authenticateSocket = (socket, next) => {
+    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+        console.log(`[Socket.IO] No token provided for socket ${socket.id}`);
+        return next(new Error('Authentication required'));
     }
 
-    // Handle explicit room joining event, primarily as a fallback or re-join mechanism
-    socket.on('join_user_room', (data) => {
-        if (data && data.userId) {
-            // If already joined via handshake token, this is redundant but harmless
-            if (socket.rooms.has(data.userId)) {
-                console.log(`[Socket.IO] User ${data.userId} (socket ${socket.id}) already in room ${data.userId}.`);
-                return;
-            }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded.user || !decoded.user.id) {
+            throw new Error('Invalid token payload');
+        }
+        
+        socket.userId = decoded.user.id;
+        socket.user = decoded.user;
+        socket.isAuthenticated = true;
+        
+        console.log(`[Socket.IO] User ${decoded.user.id} authenticated successfully`);
+        next();
+    } catch (err) {
+        console.log(`[Socket.IO] Authentication failed for socket ${socket.id}:`, err.message);
+        next(new Error('Invalid token'));
+    }
+};
 
-            // If not authenticated via handshake, try to use this event's context.
-            // BEST PRACTICE: The token from handshake (socket.user) is more secure.
-            // This event might be for a scenario where client wants to ensure it's in the room.
-            if (socket.user && socket.user.id === data.userId) {
-                socket.join(data.userId);
-                console.log(`[Socket.IO] User ${data.userId} (socket ${socket.id}) joined room ${data.userId} via 'join_user_room' event (already authenticated).`);
-            } else if (!socket.user && token) { // If handshake auth failed but client sent data.userId
-                 // This path is less secure if we trust data.userId without re-validating the token for THIS userId.
-                 // It's better if 'join_user_room' also requires re-authentication or token presence if not already authed.
-                 // For now, we allow joining if a handshake token was present (even if failed) and client provides a userId.
-                 // Ideally, re-verify token against this data.userId if they differ or if socket.user is not set.
-                console.warn(`[Socket.IO] Socket ${socket.id} trying to join room ${data.userId} via event, but initial auth was for ${socket.user?.id || 'none'}. Use with caution.`);
-                socket.join(data.userId); // Join, but log a warning
-                // Potentially, we might want to store data.userId on socket for this case: socket.explicitUserId = data.userId;
-            } else if (!socket.user && !token){
-                 console.log(`[Socket.IO] User (socket ${socket.id}) attempting to join room ${data.userId} via event without prior authentication. This should be secured.`);
-                 // Depending on security policy, you might reject this or require a token with the event.
-                 // socket.join(data.userId); // Example: Allow for now but needs review for security.
-            } else {
-                 console.log(`[Socket.IO] User ${data.userId} (socket ${socket.id}) successfully joined room via 'join_user_room'.`);
-                 socket.join(data.userId);
+// Apply authentication middleware
+io.use(authenticateSocket);
+
+// Initialize WebSocket event handling
+const WebSocketEvents = require('./websocket/events');
+const wsEvents = new WebSocketEvents(io);
+
+// Make WebSocket events available to routes
+app.set('wsEvents', wsEvents);
+
+io.on('connection', (socket) => {
+    console.log(`[Socket.IO] Authenticated user ${socket.user.username} (${socket.userId}) connected: ${socket.id}`);
+
+    // Auto-join user to their personal room
+    socket.join(`user_${socket.userId}`);
+    console.log(`[Socket.IO] User ${socket.userId} joined personal room: user_${socket.userId}`);
+
+    // Broadcast online status
+    socket.broadcast.emit('user_online', {
+        userId: socket.userId,
+        username: socket.user.username
+    });
+
+    // Enhanced room management with validation
+    socket.on('join_user_room', (data) => {
+        if (!socket.isAuthenticated) {
+            socket.emit('error', { message: 'Authentication required' });
+            return;
+        }
+
+        if (data && data.userId && data.userId === socket.userId) {
+            const roomName = `user_${data.userId}`;
+            if (!socket.rooms.has(roomName)) {
+                socket.join(roomName);
+                console.log(`[Socket.IO] User ${data.userId} joined room ${roomName}`);
             }
+            socket.emit('room_joined', { room: roomName });
         } else {
-            console.log(`[Socket.IO] 'join_user_room' event from ${socket.id} missing userId.`);
+            socket.emit('error', { message: 'Invalid room join request' });
         }
     });
 
-    socket.on('disconnect', () => {
-        console.log(`[Socket.IO] User disconnected: ${socket.id}${userId ? ' (User: ' + userId + ')' : ''}`);
-        // Socket.IO automatically handles leaving rooms on disconnect.
+    socket.on('disconnect', (reason) => {
+        console.log(`[Socket.IO] User ${socket.user?.username} (${socket.userId}) disconnected: ${reason}`);
+        
+        // Broadcast offline status
+        socket.broadcast.emit('user_offline', {
+            userId: socket.userId,
+            username: socket.user?.username
+        });
 
-        // Broadcast that this user stopped typing if they were, to all relevant rooms
+        // Clean up typing indicators
         if (socket.typingInRooms) {
             socket.typingInRooms.forEach(roomId => {
-                socket.to(roomId).emit('opponent_typing_stopped', { userId: socket.user?.id, username: socket.user?.username });
+                socket.to(roomId).emit('opponent_typing_stopped', { 
+                    userId: socket.userId, 
+                    username: socket.user?.username 
+                });
             });
+            socket.typingInRooms.clear();
         }
     });
 
-    // Typing indicators
+    // Enhanced typing indicators with validation
     socket.on('typing_started', ({ purchase_request_id }) => {
-        if (socket.user && purchase_request_id) {
-            // The room for a purchase request should be named after the purchase_request_id
-            // Ensure the sender isn't notified that they themselves are typing.
-            socket.to(purchase_request_id).emit('opponent_typing_started', { userId: socket.user.id, username: socket.user.username, purchase_request_id });
-            
-            // Keep track of rooms where the user is marked as typing
-            if (!socket.typingInRooms) {
-                socket.typingInRooms = new Set();
-            }
-            socket.typingInRooms.add(purchase_request_id);
-            console.log(`[Socket.IO] User ${socket.user.username} started typing in room ${purchase_request_id}`);
+        if (!socket.isAuthenticated || !purchase_request_id) {
+            return;
         }
+
+        const roomName = `purchase_${purchase_request_id}`;
+        socket.to(roomName).emit('opponent_typing_started', { 
+            userId: socket.userId, 
+            username: socket.user.username, 
+            purchase_request_id 
+        });
+        
+        if (!socket.typingInRooms) {
+            socket.typingInRooms = new Set();
+        }
+        socket.typingInRooms.add(roomName);
+        
+        // Auto-stop typing after 10 seconds
+        setTimeout(() => {
+            if (socket.typingInRooms?.has(roomName)) {
+                socket.to(roomName).emit('opponent_typing_stopped', { 
+                    userId: socket.userId, 
+                    username: socket.user.username, 
+                    purchase_request_id 
+                });
+                socket.typingInRooms.delete(roomName);
+            }
+        }, 10000);
+        
+        console.log(`[Socket.IO] User ${socket.user.username} started typing in ${roomName}`);
     });
 
     socket.on('typing_stopped', ({ purchase_request_id }) => {
-        if (socket.user && purchase_request_id) {
-            socket.to(purchase_request_id).emit('opponent_typing_stopped', { userId: socket.user.id, username: socket.user.username, purchase_request_id });
-            
-            if (socket.typingInRooms) {
-                socket.typingInRooms.delete(purchase_request_id);
-            }
-            console.log(`[Socket.IO] User ${socket.user.username} stopped typing in room ${purchase_request_id}`);
+        if (!socket.isAuthenticated || !purchase_request_id) {
+            return;
         }
+
+        const roomName = `purchase_${purchase_request_id}`;
+        socket.to(roomName).emit('opponent_typing_stopped', { 
+            userId: socket.userId, 
+            username: socket.user.username, 
+            purchase_request_id 
+        });
+        
+        if (socket.typingInRooms) {
+            socket.typingInRooms.delete(roomName);
+        }
+        console.log(`[Socket.IO] User ${socket.user.username} stopped typing in ${roomName}`);
     });
 
-    // Handle joining/leaving specific purchase request rooms for targeted messaging (like typing indicators)
+    // Enhanced purchase request room management
     socket.on('join_purchase_request_room', ({ purchase_request_id }) => {
-        if (purchase_request_id && socket.user) {
-            socket.join(purchase_request_id);
-            console.log(`[Socket.IO] User ${socket.user.username} (socket ${socket.id}) joined room for purchase request: ${purchase_request_id}`);
-        } else {
-            console.log(`[Socket.IO] Failed to join purchase request room: missing purchase_request_id or user not authenticated. Socket ID: ${socket.id}`);
+        if (!socket.isAuthenticated || !purchase_request_id) {
+            socket.emit('error', { message: 'Authentication required or invalid request' });
+            return;
         }
+
+        const roomName = `purchase_${purchase_request_id}`;
+        socket.join(roomName);
+        socket.emit('room_joined', { room: roomName, purchase_request_id });
+        
+        // Notify others in the room
+        socket.to(roomName).emit('user_joined_room', {
+            userId: socket.userId,
+            username: socket.user.username,
+            purchase_request_id
+        });
+        
+        console.log(`[Socket.IO] User ${socket.user.username} joined ${roomName}`);
     });
 
     socket.on('leave_purchase_request_room', ({ purchase_request_id }) => {
-        if (purchase_request_id && socket.user) {
-            socket.leave(purchase_request_id);
-            console.log(`[Socket.IO] User ${socket.user.username} (socket ${socket.id}) left room for purchase request: ${purchase_request_id}`);
-            // If the user was typing in this room, also emit a stopped typing event as they are leaving
-            if (socket.typingInRooms && socket.typingInRooms.has(purchase_request_id)) {
-                socket.to(purchase_request_id).emit('opponent_typing_stopped', { userId: socket.user.id, username: socket.user.username, purchase_request_id });
-                socket.typingInRooms.delete(purchase_request_id);
-                console.log(`[Socket.IO] User ${socket.user.username} auto-stopped typing in room ${purchase_request_id} due to leaving.`);
-            }
-        } else {
-            console.log(`[Socket.IO] Failed to leave purchase request room: missing purchase_request_id or user not authenticated. Socket ID: ${socket.id}`);
+        if (!socket.isAuthenticated || !purchase_request_id) {
+            return;
+        }
+
+        const roomName = `purchase_${purchase_request_id}`;
+        
+        // Clean up typing if user was typing
+        if (socket.typingInRooms?.has(roomName)) {
+            socket.to(roomName).emit('opponent_typing_stopped', { 
+                userId: socket.userId, 
+                username: socket.user.username, 
+                purchase_request_id 
+            });
+            socket.typingInRooms.delete(roomName);
+        }
+        
+        socket.leave(roomName);
+        socket.to(roomName).emit('user_left_room', {
+            userId: socket.userId,
+            username: socket.user.username,
+            purchase_request_id
+        });
+        
+        console.log(`[Socket.IO] User ${socket.user.username} left ${roomName}`);
+    });
+
+    // Enhanced message handling
+    socket.on('send_message', async ({ purchase_request_id, message, message_type = 'text' }) => {
+        if (!socket.isAuthenticated || !purchase_request_id || !message) {
+            socket.emit('error', { message: 'Invalid message data' });
+            return;
+        }
+
+        try {
+            // Store message in database
+            const messageData = {
+                purchase_request_id,
+                sender_id: socket.userId,
+                message: message.trim(),
+                message_type,
+                created_at: new Date().toISOString()
+            };
+
+            const roomName = `purchase_${purchase_request_id}`;
+            
+            // Broadcast to room participants
+            io.to(roomName).emit('message_received', {
+                ...messageData,
+                sender_name: socket.user.username,
+                sender_role: socket.user.role || 'user'
+            });
+
+            console.log(`[Socket.IO] Message sent in ${roomName} by ${socket.user.username}`);
+        } catch (error) {
+            console.error('[Socket.IO] Message send error:', error);
+            socket.emit('error', { message: 'Failed to send message' });
         }
     });
 });
@@ -210,7 +316,7 @@ app.use((req, res, next) => {
     "script-src 'self' https://js.stripe.com https://m.stripe.network 'unsafe-inline' https://*.stripe.com; " + // Allow unsafe-inline for scripts if necessary, but be cautious
     "style-src 'self' https://js.stripe.com 'unsafe-inline' https://*.stripe.com; " +      // Allow unsafe-inline for styles
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://*.stripe.com; " +
-    "connect-src 'self' https://api.stripe.com https://m.stripe.network https://*.stripe.com http://localhost:5001 ws://localhost:5001; " + // Added localhost:5001 and ws://localhost:5001 for Socket.IO
+    "connect-src 'self' https://api.stripe.com https://m.stripe.network https://*.stripe.com http://localhost:5002 ws://localhost:5002; " + // Added localhost:5002 and ws://localhost:5002 for Socket.IO
     "img-src 'self' data: https://*.stripe.com; " + // Allow images from Stripe and data URIs
     "font-src 'self' https://js.stripe.com https://*.stripe.com;" // Allow fonts from Stripe
   );
@@ -304,6 +410,16 @@ purchaseRequestRoutes.use('/:requestId/messages', purchaseRequestMessageRoutes);
 const notificationRoutes = require('./routes/notifications');
 app.use('/api/notifications', notificationRoutes);
 
+// Mount Dashboard routes
+const dashboardRoutes = require('./routes/dashboard');
+app.use('/api/dashboard', dashboardRoutes);
+
+// AI and Analytics routes
+const aiRoutes = require('./routes/ai');
+const analyticsRoutes = require('./routes/analytics');
+app.use('/api/ai', aiRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
 // --- Server Initialization ---
 
 // Uncaught exception handling
@@ -340,25 +456,51 @@ process.on('exit', (code) => {
     clearInterval(heartbeatInterval);
 });
 
-// Start the server (using the http.Server instance)
-server.listen(PORT, () => { // Changed app.listen to server.listen
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Socket.IO server initialized and listening.`);
-    console.log(`CORS enabled. Allowed origins include: ${allowedOrigins.join(', ')} and server self-origin (http://localhost:${PORT})`); 
-    if (process.env.STRIPE_WEBHOOK_SECRET) {
+function startServer(onPort) {
+  return new Promise((resolve, reject) => {
+    server.listen(onPort, () => {
+      console.log(`Server listening on port ${onPort}`);
+      console.log(`Socket.IO server initialized and listening.`);
+      console.log(`CORS enabled. Allowed origins include: ${allowedOrigins.join(', ')} and server self-origin (http://localhost:${onPort})`);
+      if (process.env.STRIPE_WEBHOOK_SECRET) {
         console.log('Stripe webhook secret is configured');
-    } else {
+      } else {
         console.warn('WARNING: Stripe webhook secret is missing. Webhooks will not work properly.');
-    }
-});
+      }
+      resolve(onPort);
+    }).on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${onPort} is already in use.`);
+        reject(error);
+      } else {
+        console.error('Server error:', error);
+        reject(error);
+      }
+    });
+  });
+}
 
-// Handle server errors separately (attaching to the http.Server instance)
-server.on('error', (error) => { // Changed from app.on to server.on for listen errors
-    console.error('Server error:', error);
-    if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please use a different port.`);
+(async () => {
+  try {
+    await startServer(PORT);
+  } catch (e) {
+    if (e.code === 'EADDRINUSE') {
+      // Try fallback ports 5002 -> 5003 -> 5004
+      const candidates = [5002, 5003, 5004].filter(p => p !== PORT);
+      for (const candidate of candidates) {
+        try {
+          await startServer(candidate);
+          PORT = candidate;
+          break;
+        } catch (err) {
+          if (candidate === candidates[candidates.length - 1]) {
+            console.error('Failed to bind to fallback ports');
+          }
+        }
+      }
     }
-});
+  }
+})();
 
 // Optional: Graceful shutdown
 process.on('SIGINT', async () => {

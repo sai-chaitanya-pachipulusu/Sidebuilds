@@ -1,93 +1,169 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-// import { ChakraProvider } from '@chakra-ui/react'; // Import ChakraProvider
-import { AnimatePresence } from 'framer-motion'; // Import AnimatePresence
-// import theme from './theme'; // Import your custom theme
-import './App.css'; // Import the CSS file
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import CommandPalette from './components/CommandPalette';
 import NavBar from './components/NavBar';
-import HomePage from './pages/HomePage';
-import NotFoundPage from './pages/NotFoundPage';
+import Footer from './components/Footer';
+import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-import PageTransition from './components/PageTransition'; // Import PageTransition
+import AnimatedBackground from './components/AnimatedBackground';
+import { Toaster } from 'react-hot-toast';
+import './index.css';
 
-// Import actual page components
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import ProjectFormPage from './pages/ProjectFormPage'; // Import the new form page
-import ProjectDetailPage from './pages/ProjectDetailPage'; // Import the detail page
-import PublicProjectsPage from './pages/PublicProjectsPage'; // Import public page
-import MarketplacePage from './pages/MarketplacePage'; // Import Marketplace page
-import PurchaseSuccessPage from './pages/PurchaseSuccessPage'; // Import purchase success page
-import ProjectTransferPage from './pages/ProjectTransferPage'; // Import transfer status page
-import ProfileSettingsPage from './pages/ProfileSettingsPage'; // Import profile settings page
-import StripeConnectCompletePage from './pages/StripeConnectCompletePage'; // Import the new page
-import NotificationsPage from './pages/NotificationsPage'; // Import NotificationsPage
+// Lazy load pages
+const HomePage = lazy(() => import('./pages/HomePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePageSimple'));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
+const MyProjectsPage = lazy(() => import('./pages/MyProjectsPage'));
+const ProjectFormPage = lazy(() => import('./pages/ProjectFormPage'));
+const ProfileSettingsPage = lazy(() => import('./pages/ProfileSettingsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const PurchaseSuccessPage = lazy(() => import('./pages/PurchaseSuccessPage'));
+const StripeConnectCompletePage = lazy(() => import('./pages/StripeConnectCompletePage'));
+const ProjectTransferPage = lazy(() => import('./pages/ProjectTransferPage'));
+const PublicProjectsPage = lazy(() => import('./pages/PublicProjectsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const FAQPage = lazy(() => import('./pages/FAQPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const TrendingPage = lazy(() => import('./pages/TrendingPage'));
+const VerifyPage = lazy(() => import('./pages/VerifyPage'));
+const VibeCodePage = lazy(() => import('./pages/VibeCodePage'));
 
-// Import new certificate components
-import CertificatePage from './pages/CertificatePage';
-import VerifyPage from './pages/VerifyPage';
-import FAQPage from './pages/FAQPage'; // Import FAQPage
-import TermsPage from './pages/TermsPage'; // Import TermsPage
+// Main App Wrapper Component  
+const AppContent = () => {
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-// Placeholder components for pages not yet created
-// const HomePage = () => <div>Home Page - Publicly Accessible</div>;
-// const DashboardPage = () => <div>Dashboard Page - Protected</div>;
-// const ProjectPage = () => <div>Single Project Page - Protected</div>;
-// const NotFoundPage = () => <div>404 Not Found</div>;
+  // Add keyboard shortcuts and global event listeners
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Command Palette: Cmd/Ctrl + K
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
 
-// --- Create actual placeholder components for now --- 
-// const PlaceholderHomePage = () => <div>Home Page - Publicly Accessible</div>;
-// Keep other placeholders for now
-// const PlaceholderProjectPage = () => <div>Single Project Page - Protected</div>;
+    window.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
 
+  return (
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      <AnimatedBackground variant="constellation" />
+      <NavBar />
+      
+      {/* Enhanced Command Palette with state management */}
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+      />
+      
+      <main className="relative z-10">
+        <Suspense fallback={<ElegantLoadingScreen />}>
+          <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
+                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                    <Route path="/project/:id" element={<ProjectDetailPage />} />
+                    <Route path="/public-projects" element={<PublicProjectsPage />} />
+                    <Route path="/about" element={<AboutUsPage />} />
+                    <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/faq" element={<FAQPage />} />
+                    <Route path="/help" element={<FAQPage />} />
+                    <Route path="/how-it-works" element={<HowItWorksPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/trending" element={<TrendingPage />} />
+                    <Route path="/verify" element={<VerifyPage />} />
+                    <Route path="/verify/:verificationCode" element={<VerifyPage />} />
+                    <Route path="/vibe-code" element={<VibeCodePage />} />
+                    <Route path="/profile/:userId" element={<ProfilePage />} />
+                    <Route path="/create" element={<ProjectFormPage editMode={false} />} />
+
+                    {/* Protected Routes */}
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/my-projects" element={<MyProjectsPage />} />
+                      <Route path="/projects/new" element={<ProjectFormPage editMode={false} />} />
+                      <Route path="/projects/edit/:id" element={<ProjectFormPage editMode={true} />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+                      <Route path="/settings" element={<ProfileSettingsPage />} />
+                      <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
+                      <Route path="/stripe/connect/complete" element={<StripeConnectCompletePage />} />
+                      <Route path="/project-transfer" element={<ProjectTransferPage />} />
+                    </Route>
+
+                    {/* Catch-all Not Found Route */}
+                    <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+        </Suspense>
+      </main>
+      <Footer />
+      
+      {/* Enhanced Toast Notifications */}
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(10px)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </div>
+  )
+}
+
+// Main App Component
 function App() {
-    const location = useLocation(); // Get location for AnimatePresence key
-
-    useEffect(() => {
-        // Theme handling is now managed by ChakraProvider and index.css
-    }, []);
-
-    return (
-        // <ChakraProvider theme={theme}> {/* Wrap application with ChakraProvider and theme */}
-            <div className="app-container"> {/* Removed dark-theme class here as Chakra/index.css should handle */}
-                <NavBar />
-                <main>
-                    <AnimatePresence mode='wait'> {/* Use mode='wait' for smoother transitions */}
-                        <Routes location={location} key={location.pathname}> {/* Pass location and key to Routes */}
-                            {/* Public Routes - Home, Login, Register */}
-                            <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-                            <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
-                            <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
-                            <Route path="/verify" element={<PageTransition><VerifyPage /></PageTransition>} />
-                            <Route path="/verify/:verificationCode" element={<PageTransition><VerifyPage /></PageTransition>} />
-                            <Route path="/faq" element={<PageTransition><FAQPage /></PageTransition>} /> {/* Add FAQ route */}
-                            <Route path="/terms" element={<PageTransition><TermsPage /></PageTransition>} /> {/* Add Terms route */}
-                            
-                            {/* Protected Routes - Everything else requires login */}
-                            <Route element={<ProtectedRoute />}>
-                                <Route path="/public-projects" element={<PageTransition><PublicProjectsPage /></PageTransition>} />
-                                <Route path="/marketplace" element={<PageTransition><MarketplacePage /></PageTransition>} />
-                                <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
-                                <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} /> {/* Added Notifications Route */}
-                                <Route path="/profile-settings" element={<PageTransition><ProfileSettingsPage /></PageTransition>} />
-                                <Route path="/projects/new" element={<PageTransition><ProjectFormPage /></PageTransition>} />
-                                <Route path="/projects/:id" element={<PageTransition><ProjectDetailPage /></PageTransition>} />
-                                <Route path="/projects/:id/edit" element={<PageTransition><ProjectFormPage editMode={true} /></PageTransition>} />
-                                <Route path="/projects/:projectId/transfer" element={<PageTransition><ProjectTransferPage /></PageTransition>} />
-                                <Route path="/purchase/success" element={<PageTransition><PurchaseSuccessPage /></PageTransition>} />
-                                <Route path="/certificates/:certificateId" element={<PageTransition><CertificatePage /></PageTransition>} />
-                                <Route path="/dashboard/connect/complete" element={<PageTransition><StripeConnectCompletePage /></PageTransition>} />
-                            </Route>
-                            
-                            {/* Catch-all route for 404 Not Found */}
-                            <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
-                        </Routes>
-                    </AnimatePresence>
-                </main>
-            </div>
-        // </ChakraProvider>
-    );
+  return (
+    <HelmetProvider>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </HelmetProvider>
+  );
 }
 
 export default App;

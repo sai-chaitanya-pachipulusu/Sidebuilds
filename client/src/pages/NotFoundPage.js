@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './NotFoundPage.css';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Home, ArrowLeft } from 'lucide-react';
+import SEO from '../components/SEO';
 
 function NotFoundPage() {
   return (

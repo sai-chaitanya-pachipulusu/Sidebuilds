@@ -1,9 +1,10 @@
 import axios from 'axios';
+// (Removed unused imports)
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use environment variable for base URL
-    baseURL: process.env.REACT_APP_API_URL || '/api', // Fall back to relative path if env var not set
+    // Use consistent backend port (align with dev proxy 5004)
+    baseURL: 'http://localhost:5004/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -11,23 +12,81 @@ const apiClient = axios.create({
     timeout: 15000, // 15 seconds timeout for production
 });
 
+console.log('🌐 API Client configured with baseURL:', apiClient.defaults.baseURL);
+
+// Debug function to check localStorage token
+const debugToken = () => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    console.log('🔍 DEBUG TOKEN INFO:');
+    console.log('- Token exists:', !!token);
+    console.log('- Token length:', token?.length);
+    console.log('- Token starts with:', token?.substring(0, 50));
+    console.log('- User data:', user);
+    
+    if (token) {
+        try {
+            // Try to decode JWT payload
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                console.log('- Token payload:', payload);
+                console.log('- Token expires:', new Date(payload.exp * 1000));
+                console.log('- Token is expired:', Date.now() > payload.exp * 1000);
+            } else {
+                console.log('- Token format invalid: should have 3 parts, has', parts.length);
+                console.log('- This appears to be invalid credentials, clearing token');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        } catch (e) {
+            console.log('- Token decode error:', e.message);
+            console.log('- Clearing invalid token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+        }
+    }
+};
+
+// Run debug on startup
+debugToken();
+
+// Export function to clear auth state (can be called from console)
+window.clearAuthState = () => {
+    console.log('🧹 Clearing authentication state...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.reload();
+};
+
+// Export debug function for console access
+window.debugToken = debugToken;
+
 // --- Interceptor to add JWT token to requests --- 
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token'); // Get token from local storage
-        if (token) {
-            // Ensure token format is correct - x-auth-token or Authorization Bearer
-            config.headers['Authorization'] = `Bearer ${token}`;
-            config.headers['x-auth-token'] = token;
+        const token = localStorage.getItem('token');
+        if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
+            // Basic validation: check if token has proper JWT format
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+                console.log('🔑 Adding token to request:', config.url);
+            } else {
+                console.log('⚠️ Invalid token format detected, clearing token');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                // Optionally redirect to login or show notification
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+                    window.location.href = '/login';
+                }
+            }
+        } else {
+            console.log('⚠️ No token found for request:', config.url);
         }
-        
-        // Log requests for debugging
-        console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
-        
         return config;
     },
     (error) => {
-        console.error('Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -36,7 +95,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Handle database connection errors (useful for CockroachDB)
+        // Handle database connection errors
         if (error.code === 'ECONNABORTED') {
             console.error('Request timeout - database may be under load');
             return Promise.reject(new Error('Request timed out. Please try again later.'));
@@ -56,21 +115,22 @@ apiClient.interceptors.response.use(
 
         // Handle unauthorized errors (401)
         if (error.response.status === 401) {
-            // If token is expired, dispatch a custom event instead of immediate redirect
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            
-            // Dispatch a custom event that components can listen for
-            const tokenExpiredEvent = new CustomEvent('tokenExpired', {
-                detail: { 
-                    path: window.location.pathname,
-                    message: 'Your session has expired. Please log in again.'
-                }
-            });
-            window.dispatchEvent(tokenExpiredEvent);
-            
-            // Don't redirect immediately - let the component handle it
-            // This gives components a chance to save state
+            console.log('401 Unauthorized response:', error.response.data);
+            // Don't automatically clear tokens - let components handle this
+            // Only clear if we get a specific "token expired" message
+            if (error.response.data?.message?.includes('expired') || 
+                error.response.data?.message?.includes('Token expired')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                
+                const tokenExpiredEvent = new CustomEvent('tokenExpired', {
+                    detail: { 
+                        path: window.location.pathname,
+                        message: 'Your session has expired. Please log in again.'
+                    }
+                });
+                window.dispatchEvent(tokenExpiredEvent);
+            }
         }
 
         return Promise.reject(error);
@@ -121,6 +181,24 @@ export const updateUserProfile = async (profileData) => {
     }
 };
 
+// Get user profile by ID
+export const getUserProfileById = async (userId) => {
+    const { data } = await apiClient.get(`/users/${userId}/profile`);
+    return data;
+};
+
+// Get user projects
+export const getUserProjects = async (userId) => {
+    const { data } = await apiClient.get(`/users/${userId}/projects`);
+    return data;
+};
+
+// Get transaction details
+export const getTransaction = async (transactionId) => {
+    const { data } = await apiClient.get(`/transactions/${transactionId}`);
+    return data;
+};
+
 // --- Project API Calls (Placeholder - Add more as needed) ---
 
 export const getProjects = async () => {
@@ -152,11 +230,32 @@ export const createProject = async (projectData) => {
 
 export const getProjectById = async (projectId) => {
     try {
-        const response = await apiClient.get(`/projects/${projectId}`);
-        return response.data;
+        console.log(`Attempting to fetch project ID: ${projectId}`);
+        
+        // For marketplace projects, try public endpoint first
+        try {
+            const publicResponse = await apiClient.get(`/public/projects/${projectId}`);
+            console.log('Successfully fetched public project:', publicResponse.data);
+            return publicResponse.data;
+        } catch (publicError) {
+            console.log('Public project fetch failed, trying private:', publicError.response?.status);
+            
+            // If public fails, try private project (for owners)
+            if (publicError.response?.status === 404) {
+                try {
+                    const privateResponse = await apiClient.get(`/projects/${projectId}`);
+                    console.log('Successfully fetched private project:', privateResponse.data);
+                    return privateResponse.data;
+                } catch (privateError) {
+                    console.error('Both public and private project fetch failed');
+                    throw new Error('Project not found or access denied');
+                }
+            }
+            throw publicError;
+        }
     } catch (error) {
-        console.error('Get Project By ID API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to fetch project details');
+        console.error('Get Project By ID API error:', error);
+        throw new Error(error.message || 'Failed to fetch project details');
     }
 };
 
@@ -167,6 +266,17 @@ export const updateProject = async (projectId, projectData) => {
     } catch (error) {
         console.error('Update Project API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to update project');
+    }
+};
+
+// --- AI API Calls ---
+export const aiIdeaAssist = async ({ stage, category, prompt }) => {
+    try {
+        const response = await apiClient.post('/ai/idea-assist', { stage, category, prompt });
+        return response.data; // { stage, template }
+    } catch (error) {
+        console.error('AI Idea Assist API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to generate stage template');
     }
 };
 
@@ -198,6 +308,39 @@ export const getPublicProjects = async () => {
         // Return empty array to prevent UI from breaking
         return [];
     }
+};
+
+// Fetch marketplace statistics
+export const getMarketplaceStats = async () => {
+  try {
+    const response = await apiClient.get('/public/stats/marketplace');
+    const data = response.data;
+    return {
+      totalProjects: data.totalProjects || 0,
+      activeListings: data.activeListings || 0,
+      totalValue: data.totalValue || 0,
+      successfulSales: data.successfulSales || 0,
+      projectsCount: data.totalProjects || 0,
+      activeUsers: data.activeUsers || 0,
+      developerCount: data.activeUsers || 0,
+      completedSales: data.successfulSales || 0,
+      avgValue: data.totalValue && data.successfulSales ? Math.floor(data.totalValue / data.successfulSales) : 0
+    };
+  } catch (error) {
+    console.error('Error fetching marketplace stats:', error);
+    // Return default stats to prevent UI from breaking
+    return {
+      projectsCount: 0,
+      developerCount: 0,
+      completedSales: 0,
+      avgValue: 0,
+      totalProjects: 0,
+      activeListings: 0,
+      totalValue: 0,
+      successfulSales: 0,
+      activeUsers: 0
+    };
+  }
 };
 
 export const getMarketplaceProjects = async () => {
@@ -280,57 +423,31 @@ export const getStripeAccountStatus = async () => {
     }
 };
 
-export const createStripeAccountLink = async (/* type = 'account_onboarding' */) => { // type is handled by backend or defaults
+export const checkStripeOnboardingStatus = async () => {
     try {
-        // console.log(`API: Creating Stripe Account Link, type: ${type}`); // Type no longer sent
-        console.log('API: Initiating Stripe Connect account link creation/retrieval.');
-        // Corrected endpoint and removed 'type' from body as backend /connect/create-account handles it
-        const response = await apiClient.post('/payments/connect/create-account', {}); 
-        console.log('API: Stripe Account Link call successful', response.data);
-        // Backend route /connect/create-account returns { success: true, url: accountLink.url } 
-        // or { success: true, onboarding_complete: true, message: '...' }
+        // Corrected the endpoint to the single source of truth for Stripe status.
+        const response = await apiClient.get('/users/stripe-status');
+        return response.data; // { isOnboardingComplete: boolean, needsAttention: boolean, accountId: string | null, arePayoutsEnabled: boolean }
+    } catch (error) {
+        console.error('Check Stripe Onboarding Status API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to check Stripe onboarding status.');
+    }
+};
+
+export const createStripeAccountLink = async () => {
+    try {
+        // Try the new Stripe route first
+        const response = await apiClient.post('/stripe/create-account-link', {});
         if (!response.data.url && !response.data.onboarding_complete) {
             throw new Error('Stripe account link URL not provided and onboarding not marked complete.');
         }
-        return response.data; // Expects { url: '...' } or info about completion
+        return response.data;
     } catch (error) {
         console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
-        if (error.response && error.response.data && error.response.data.error_code === 'stripe_account_not_found') {
-            throw new Error('Stripe account not found. Please ensure your account is set up.');
-        }
-        // Provide a more generic error, or let the component handle specific messages from response
         const defaultMessage = 'Failed to create or retrieve Stripe account link. Please try again.';
         throw new Error(error.response?.data?.error || error.message || defaultMessage);
     }
 };
-
-export const checkStripeOnboardingStatus = async () => {
-    try {
-        console.log("Calling Stripe onboarding status endpoint...");
-        const response = await apiClient.get('/stripe/check-onboarding-status');
-        console.log("Stripe onboarding status response:", response.data);
-        return response.data; // { isOnboardingComplete: boolean, needsAttention: boolean, accountId: string | null }
-    } catch (error) {
-        console.error('Check Stripe Onboarding Status API error:');
-        if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
-            console.error('Response headers:', error.response.headers);
-            throw error.response.data;
-        } else if (error.request) {
-            // The request was made but no response was received
-            console.error('No response received:', error.request);
-            throw new Error('No response received from server when checking Stripe status. Please try again later.');
-        } else {
-            // Something happened in setting up the request that triggered an Error
-            console.error('Error setting up request:', error.message);
-            throw new Error('Failed to check Stripe onboarding status: ' + error.message);
-        }
-    }
-};
-
 
 // Debug API calls (development only)
 export const debugTransferProject = async (projectId, sellerId) => {
@@ -428,14 +545,20 @@ export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId)
 // Called by buyer to initiate interest with initial commitments
 export const expressInterestInProject = async (projectId, buyerInitialCommitments, buyerIntroMessage) => {
     try {
+        console.log('Sending interest request with data:', {
+            projectId,
+            buyerCommitments: buyerInitialCommitments,
+            buyerIntroMessage
+        });
+        
         const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { 
-            buyer_initial_commitments: buyerInitialCommitments, 
-            buyer_intro_message: buyerIntroMessage 
+            buyerCommitments: buyerInitialCommitments,
+            buyerIntroMessage: buyerIntroMessage
         });
         return response.data;
     } catch (error) {
         console.error('Error expressing interest in project:', error.response?.data || error.message);
-        throw error.response?.data || error;
+        throw new Error(error.response?.data?.message || 'Failed to send interest');
     }
 };
 

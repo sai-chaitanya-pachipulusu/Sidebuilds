@@ -9,7 +9,7 @@ console.log('Starting client on port 3001...');
 
 // Set environment variables
 process.env.PORT = '3001';
-process.env.REACT_APP_API_URL = 'http://localhost:5001/api';
+process.env.REACT_APP_API_URL = 'http://localhost:5004/api';
 
 // Start the React development server
 const clientProcess = spawn('npm', ['run', 'start'], {

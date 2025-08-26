@@ -1,80 +1,94 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // Corrected path to db.js
-const authMiddleware = require('../middleware/authMiddleware'); // Assuming auth middleware
+const db = require('../db'); // DB wrapper (SQLite in dev)
+const authMiddleware = require('../middleware/authMiddleware');
 const { createNotification } = require('../services/notificationService');
-// const PurchaseRequest = require('../models/PurchaseRequest'); // Your PurchaseRequest model
+const emailService = require('../services/emailService');
 
 // --- Create a new Purchase Request (Buyer Action) ---
 // POST /api/purchase-requests/projects/:projectId/request
 router.post('/projects/:projectId/request', authMiddleware, async (req, res) => {
     const { projectId } = req.params;
+    const { buyerCommitments, buyerIntroMessage } = req.body;
     const buyerId = req.user.id;
-    const buyerUsername = req.user.username; // Assuming username is available in req.user
-    const { buyer_initial_commitments, buyer_intro_message } = req.body;
 
-    if (!buyer_initial_commitments || typeof buyer_initial_commitments !== 'object') {
-        return res.status(400).json({ error: 'Buyer\'s initial commitments are required and must be an object.' });
-    }
+    console.log(`[PURCHASE REQUESTS] Expressing interest for project ${projectId} by buyer ${buyerId}`);
 
     try {
-        // Fetch project details to get seller_id and current price
+        // Check if project exists and is for sale
         const projectResult = await db.query(
-            'SELECT owner_id, sale_price, name FROM projects WHERE project_id = $1 AND is_for_sale = TRUE',
+            'SELECT project_id, owner_id, name, is_for_sale FROM projects WHERE project_id = ?',
             [projectId]
         );
 
         if (projectResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Project not found or not for sale.' });
+            return res.status(404).json({ error: 'Project not found.' });
         }
-        const project = projectResult.rows[0];
-        const sellerId = project.owner_id;
 
-        if (sellerId === buyerId) {
+        const project = projectResult.rows[0];
+
+        if (project.owner_id === buyerId) {
             return res.status(400).json({ error: 'You cannot express interest in your own project.' });
         }
 
-        // Check for existing non-terminal requests for the same project by the same buyer
-        const existingRequest = await db.query(
-            "SELECT purchase_request_id FROM project_purchase_requests WHERE project_id = $1 AND buyer_id = $2 AND status NOT IN ('transfer_completed_buyer_confirmed', 'seller_rejected', 'buyer_withdrew_interest', 'payment_failed', 'aborted_project_unavailable', 'seller_declined_interest')",
+        if (!project.is_for_sale) {
+            return res.status(400).json({ error: 'This project is not for sale.' });
+        }
+
+        // Check for existing active requests
+        const existingRequestResult = await db.query(
+            `SELECT id FROM purchase_requests 
+             WHERE project_id = ? AND buyer_id = ? 
+             AND status NOT IN ('seller_rejected', 'buyer_withdrew_interest', 'transfer_completed_buyer_confirmed', 'payment_failed', 'aborted_project_unavailable')`,
             [projectId, buyerId]
         );
 
-        if (existingRequest.rows.length > 0) {
-            return res.status(400).json({ error: 'You already have an active interest or purchase process for this project.' });
+        if (existingRequestResult.rows.length > 0) {
+            return res.status(400).json({ error: 'You already have an active request for this project.' });
         }
 
-        const result = await db.query(
-            `INSERT INTO project_purchase_requests 
-                (project_id, buyer_id, seller_id, status, offer_amount, 
-                 buyer_initial_commitments, buyer_intro_message, 
-                 created_at, updated_at) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
-             RETURNING *`,
-            [projectId, buyerId, sellerId, 'buyer_interest_expressed', project.sale_price, 
-             buyer_initial_commitments, buyer_intro_message]
+        // Create new purchase request
+        const insertResult = await db.query(
+            `INSERT INTO purchase_requests 
+                (project_id, buyer_id, seller_id, status, message, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [projectId, buyerId, project.owner_id, 'interest_expressed', buyerIntroMessage || null]
         );
 
-        const newRequest = result.rows[0];
-        // console.log(`Notification: New interest expressed by buyer ${buyerId} for project ${projectId} (seller: ${sellerId}). Request ID: ${newRequest.purchase_request_id}`);
+        const requestId = insertResult.insertId;
+        console.log(`[PURCHASE REQUESTS] Created new interest request ${requestId} for project ${projectId}`);
+
+        // Store buyer commitments if provided (store as message for now)
+        const commitmentMessage = buyerCommitments ? `${buyerIntroMessage}\n\nCommitments: ${buyerCommitments}` : buyerIntroMessage;
+        
+        // Get the created request
+        const createdRequest = await db.query(
+            'SELECT * FROM purchase_requests WHERE id = ?',
+            [requestId]
+        );
+        const newPurchaseRequest = createdRequest.rows[0];
+
+        // Create notification for seller
         try {
             await createNotification(
-                sellerId, // Notify the seller
-                'NEW_INTEREST',
-                `Buyer ${buyerUsername || buyerId} expressed interest in your project "${project.name}".`,
-                `/dashboard?tab=sellerRequests&requestId=${newRequest.purchase_request_id}`
+                project.owner_id,
+                'new_interest',
+                `You have received a new purchase request for your project "${project.name}".`,
+                `/dashboard?tab=sellerRequests&requestId=${newPurchaseRequest.id}`
             );
         } catch (notificationError) {
-            console.error('Failed to create notification for new interest:', notificationError);
+            console.error('Error creating notification:', notificationError);
+            // Continue without failing the request
         }
 
-        res.status(201).json(newRequest);
+        res.status(201).json({
+            ...newPurchaseRequest,
+            message: 'Interest expressed successfully!'
+        });
+
     } catch (error) {
-        console.error('Error creating purchase interest request:', error);
-        if (error.code === '22P02' && error.message.includes('invalid input syntax for type json')) {
-            return res.status(400).json({ error: 'Invalid format for buyer commitments data.' });
-        }
-        res.status(500).json({ error: 'Failed to express interest in project.' });
+        console.error('Error expressing interest:', error);
+        res.status(500).json({ error: 'Server error while processing your request.' });
     }
 });
 
@@ -90,7 +104,7 @@ router.post('/projects/:projectId/initiate-checkout', authMiddleware, async (req
 
     try {
         const projectResult = await db.query(
-            'SELECT owner_id, sale_price, name FROM projects WHERE project_id = $1 AND is_for_sale = TRUE',
+            'SELECT user_id as seller_id, sale_price, name FROM projects WHERE id = ? AND is_for_sale = 1',
             [projectId]
         );
 
@@ -99,7 +113,7 @@ router.post('/projects/:projectId/initiate-checkout', authMiddleware, async (req
             return res.status(404).json({ error: 'Project not found or is not currently for sale.' });
         }
         const project = projectResult.rows[0];
-        const sellerId = project.owner_id;
+        const sellerId = project.seller_id;
 
         if (sellerId === buyerId) {
             console.warn(`[PURCHASE REQUESTS] Buyer ${buyerId} attempted to buy their own project ${projectId}.`);
@@ -107,29 +121,28 @@ router.post('/projects/:projectId/initiate-checkout', authMiddleware, async (req
         }
 
         const existingRequestQuery = await db.query(
-            "SELECT purchase_request_id, status FROM project_purchase_requests WHERE project_id = $1 AND buyer_id = $2 AND status NOT IN ($3, $4, $5, $6, $7)",
-            [projectId, buyerId, 'transfer_completed_buyer_confirmed', 'seller_rejected', 'buyer_withdrew', 'payment_failed', 'aborted_project_unavailable']
+            `SELECT id as request_id, status FROM purchase_requests WHERE project_id = ? AND buyer_id = ? AND status NOT IN ('transfer_completed_buyer_confirmed','seller_rejected','buyer_withdrew_interest','payment_failed','aborted_project_unavailable')`,
+            [projectId, buyerId]
         );
 
         if (existingRequestQuery.rows.length > 0) {
             const existingRequest = existingRequestQuery.rows[0];
             if (['seller_accepted_pending_payment', 'payment_processing', 'agreement_reached_pending_payment'].includes(existingRequest.status)) {
-                 console.log(`[PURCHASE REQUESTS] Found existing request ${existingRequest.purchase_request_id} for project ${projectId} by buyer ${buyerId} with status ${existingRequest.status}. Reusing.`);
-                 return res.status(200).json(existingRequest); 
+                console.log(`[PURCHASE REQUESTS] Found existing request ${existingRequest.request_id} for project ${projectId} by buyer ${buyerId} with status ${existingRequest.status}. Reusing.`);
+                return res.status(200).json(existingRequest);
             }
-            console.warn(`[PURCHASE REQUESTS] Buyer ${buyerId} already has an active request ${existingRequest.purchase_request_id} (status: ${existingRequest.status}) for project ${projectId}.`);
-            return res.status(409).json({ error: 'You already have an active purchase process for this project. Please check your dashboard.', purchase_request_id: existingRequest.purchase_request_id });
+            console.warn(`[PURCHASE REQUESTS] Buyer ${buyerId} already has an active request ${existingRequest.request_id} (status: ${existingRequest.status}) for project ${projectId}.`);
+            return res.status(409).json({ error: 'You already have an active purchase process for this project. Please check your dashboard.', purchase_request_id: existingRequest.request_id });
         }
 
-        const result = await db.query(
-            `INSERT INTO project_purchase_requests 
-                (project_id, buyer_id, seller_id, status, buyer_agreed_terms_version, seller_agreed_terms_version, offer_amount, created_at, updated_at) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
-             RETURNING purchase_request_id, project_id, buyer_id, seller_id, status, offer_amount, created_at, updated_at`,
-            [projectId, buyerId, sellerId, 'seller_accepted_pending_payment', terms_agreed_version, terms_agreed_version, project.sale_price]
+        const insert = await db.query(
+            `INSERT INTO purchase_requests (project_id, buyer_id, seller_id, status, message, price, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [projectId, buyerId, sellerId, 'seller_accepted_pending_payment', null, project.sale_price]
         );
-        
-        const newPurchaseRequest = result.rows[0];
+        const newId = insert.insertId;
+        const fetched = await db.query('SELECT id as purchase_request_id, project_id, buyer_id, seller_id, status, price as offer_amount, created_at, updated_at FROM purchase_requests WHERE id = ?', [newId]);
+        const newPurchaseRequest = fetched.rows[0];
         console.log(`[PURCHASE REQUESTS] Created new purchase request ${newPurchaseRequest.purchase_request_id} for project ${projectId} (Buyer: ${buyerId}, Seller: ${sellerId}, Status: 'seller_accepted_pending_payment')`);
 
         // For a direct buy, notify both buyer and seller that it's ready for payment.
@@ -160,7 +173,7 @@ router.post('/projects/:projectId/initiate-checkout', authMiddleware, async (req
     }
 });
 
-// --- Get Purchase Requests for Seller (Seller Action) ---
+// --- Get Purchase Requests for Seller (SQLite-compatible minimal fields) ---
 // GET /api/purchase-requests/seller - Get purchase requests where the logged-in user is the seller
 router.get('/seller', authMiddleware, async (req, res) => {
     try {
@@ -169,23 +182,20 @@ router.get('/seller', authMiddleware, async (req, res) => {
         
         const query = `
             SELECT 
-                ppr.purchase_request_id AS request_id, 
-                ppr.project_id, 
-                p.name AS project_name, 
-                ppr.buyer_id, 
-                u_buyer.username AS buyer_username, 
-                ppr.status, 
-                ppr.offer_amount AS accepted_price, -- Using offer_amount as accepted_price for display
-                ppr.created_at AS request_date, 
-                ppr.updated_at,
-                ppr.buyer_intro_message, -- For seller to see initial message
-                ppr.seller_proposal_message -- For seller to review their own proposal message
-            FROM project_purchase_requests ppr
-            JOIN projects p ON ppr.project_id = p.project_id
-            JOIN users u_buyer ON ppr.buyer_id = u_buyer.user_id
-            WHERE ppr.seller_id = $1
-            ORDER BY ppr.created_at DESC;
-        `;
+                pr.id AS request_id,
+                pr.project_id,
+                p.name AS project_name,
+                pr.buyer_id,
+                u_buyer.username AS buyer_username,
+                pr.status,
+                pr.price AS accepted_price,
+                pr.created_at AS request_date,
+                pr.updated_at
+            FROM purchase_requests pr
+            JOIN projects p ON pr.project_id = p.project_id
+            JOIN users u_buyer ON pr.buyer_id = u_buyer.user_id
+            WHERE pr.seller_id = ?
+            ORDER BY pr.created_at DESC`;
         const { rows } = await db.query(query, [userId]);
         res.json(rows);
     } catch (error) {
@@ -194,48 +204,56 @@ router.get('/seller', authMiddleware, async (req, res) => {
     }
 });
 
-// --- Get Purchase Requests for Buyer (Buyer Action) ---
+// --- Get Purchase Requests for Buyer (SQLite-compatible minimal fields) ---
 // GET /api/purchase-requests/buyer - Get purchase requests where the logged-in user is the buyer
 router.get('/buyer', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        // console.log(`Fetching buyer purchase requests for user ${userId}`);
+        console.log(`[PURCHASE REQUESTS] Fetching buyer purchase requests for user ${userId}`);
         
         const query = `
             SELECT 
-                ppr.purchase_request_id, 
-                ppr.project_id, 
-                p.name AS project_name, 
-                ppr.seller_id, 
-                u_seller.username AS seller_username, 
-                ppr.status, 
-                ppr.offer_amount, 
-                ppr.created_at AS request_date, 
-                ppr.updated_at,
-                ppr.agreed_transferable_assets, -- For buyer to review
-                ppr.seller_proposal_message, -- For buyer to review
-                ppr.buyer_intro_message -- For buyer to review their own initial message
-            FROM project_purchase_requests ppr
-            JOIN projects p ON ppr.project_id = p.project_id
-            JOIN users u_seller ON ppr.seller_id = u_seller.user_id
-            WHERE ppr.buyer_id = $1
-            ORDER BY ppr.created_at DESC;
-        `;
+                pr.id AS purchase_request_id,
+                pr.project_id,
+                p.name AS project_name,
+                pr.seller_id,
+                u_seller.username AS seller_username,
+                pr.status,
+                pr.price AS offer_amount,
+                pr.created_at AS request_date,
+                pr.updated_at
+            FROM purchase_requests pr
+            JOIN projects p ON pr.project_id = p.project_id
+            JOIN users u_seller ON pr.seller_id = u_seller.user_id
+            WHERE pr.buyer_id = ?
+            ORDER BY pr.created_at DESC`;
+
+        console.log("[PURCHASE REQUESTS] Executing buyer purchase requests query");
         const { rows } = await db.query(query, [userId]);
+        console.log(`[PURCHASE REQUESTS] Found ${rows.length} purchase requests for buyer ${userId}`);
+        
         const mappedRows = rows.map(row => ({
             ...row,
             request_id: row.purchase_request_id, 
             accepted_price: row.offer_amount     
         }));
+        
         res.json(mappedRows);
     } catch (error) {
-        console.error('Error fetching buyer purchase requests:', error);
-        res.status(500).json({ message: 'Failed to fetch buyer purchase requests', details: error.message });
+        console.error('[PURCHASE REQUESTS] Error fetching buyer purchase requests:', error);
+        console.error('[PURCHASE REQUESTS] Error details:', error.stack);
+        
+        // Return a more informative error
+        res.status(500).json({ 
+            message: 'Failed to fetch buyer purchase requests', 
+            details: error.message,
+            error_code: error.code || 'unknown'
+        });
     }
 });
 
 
-// --- Get Specific Purchase Request Details ---
+// --- Get Specific Purchase Request Details (SQLite-compatible minimal fields) ---
 // GET /api/purchase-requests/:requestId - NOTE: frontend uses requestId, so param is :requestId
 router.get('/:requestId', authMiddleware, async (req, res) => {
     const { requestId } = req.params; 
@@ -244,16 +262,16 @@ router.get('/:requestId', authMiddleware, async (req, res) => {
     try {
         const result = await db.query(
             `SELECT 
-                ppr.*, 
+                pr.*, 
                 p.name AS project_name, 
-                p.owner_id AS project_owner_id, 
+                p.user_id AS project_owner_id, 
                 u_seller.username AS seller_username, 
                 u_buyer.username AS buyer_username
-            FROM project_purchase_requests ppr
-            JOIN projects p ON ppr.project_id = p.project_id
-            JOIN users u_seller ON ppr.seller_id = u_seller.user_id
-            JOIN users u_buyer ON ppr.buyer_id = u_buyer.user_id
-            WHERE ppr.purchase_request_id = $1 AND (ppr.buyer_id = $2 OR ppr.seller_id = $3)`,
+            FROM purchase_requests pr
+            JOIN projects p ON pr.project_id = p.project_id
+            JOIN users u_seller ON pr.seller_id = u_seller.user_id
+            JOIN users u_buyer ON pr.buyer_id = u_buyer.user_id
+            WHERE pr.id = ? AND (pr.buyer_id = ? OR pr.seller_id = ?)`,
             [requestId, userId, userId]
         );
 
@@ -264,8 +282,8 @@ router.get('/:requestId', authMiddleware, async (req, res) => {
         const purchaseRequest = result.rows[0];
         const responseData = {
             ...purchaseRequest,
-            request_id: purchaseRequest.purchase_request_id,
-            accepted_price: purchaseRequest.offer_amount,
+            request_id: purchaseRequest.id,
+            accepted_price: purchaseRequest.price,
             request_date: purchaseRequest.created_at
         };
         res.json(responseData);
@@ -289,7 +307,7 @@ router.post('/:requestId/accept', authMiddleware, async (req, res) => {
 
     try {
         const requestResult = await db.query(
-            'SELECT ppr.*, p.name as project_name FROM project_purchase_requests ppr JOIN projects p ON ppr.project_id = p.project_id WHERE ppr.purchase_request_id = $1 AND ppr.seller_id = $2',
+            'SELECT pr.*, p.name as project_name FROM purchase_requests pr JOIN projects p ON pr.project_id = p.id WHERE pr.id = ? AND pr.seller_id = ?',
             [requestId, sellerId]
         );
 
@@ -298,27 +316,27 @@ router.post('/:requestId/accept', authMiddleware, async (req, res) => {
         }
 
         const request = requestResult.rows[0];
-        if (request.status !== 'pending_seller_approval') { // This status might be from an older flow
+        if (request.status !== 'interest_expressed') {
             return res.status(400).json({ error: `Request cannot be accepted. Current status: ${request.status}` });
         }
 
-        const updateResult = await db.query(
-            "UPDATE project_purchase_requests SET status = 'seller_accepted_pending_payment', seller_agreed_terms_version = $1, updated_at = current_timestamp WHERE purchase_request_id = $2 RETURNING *", 
-            [terms_agreed_version, requestId]
+        await db.query(
+            "UPDATE purchase_requests SET status = 'seller_accepted_pending_payment', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            [requestId]
         );
-        
-        const updatedRequest = updateResult.rows[0];
+        const updated = await db.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = ?', [requestId]);
+        const updatedRequest = updated.rows[0];
         const responseData = {
             ...updatedRequest,
-            request_id: updatedRequest.purchase_request_id,
-            accepted_price: updatedRequest.offer_amount 
+            request_id: updatedRequest.request_id,
+            accepted_price: updatedRequest.accepted_price
         };
 
         // console.log(`Notification: Purchase request ${responseData.request_id} accepted by seller ${sellerId}. Buyer ${request.buyer_id} can now proceed to payment.`);
         try {
             await createNotification(
                 request.buyer_id,
-                'SELLER_ACCEPTED_REQUEST', // Generic acceptance, might be part of old flow
+                'SELLER_ACCEPTED_REQUEST',
                 `Seller ${sellerUsername || sellerId} accepted your request for "${request.project_name}". You can now proceed to payment.`,
                 `/dashboard?tab=buyerRequests&requestId=${responseData.request_id}`
             );
@@ -342,7 +360,7 @@ router.post('/:requestId/reject', authMiddleware, async (req, res) => {
 
     try {
         const requestResult = await db.query(
-            'SELECT ppr.buyer_id, ppr.status, p.name as project_name FROM project_purchase_requests ppr JOIN projects p ON ppr.project_id = p.project_id WHERE ppr.purchase_request_id = $1 AND ppr.seller_id = $2',
+            'SELECT pr.buyer_id, pr.status, p.name as project_name FROM purchase_requests pr JOIN projects p ON pr.project_id = p.id WHERE pr.id = ? AND pr.seller_id = ?',
             [requestId, sellerId]
         );
 
@@ -351,20 +369,20 @@ router.post('/:requestId/reject', authMiddleware, async (req, res) => {
         }
         const request = requestResult.rows[0];
 
-        if (request.status !== 'pending_seller_approval') { 
+        if (request.status !== 'interest_expressed') { 
             return res.status(400).json({ error: `Request cannot be rejected. Current status: ${request.status}` });
         }
 
-        const updateResult = await db.query(
-            "UPDATE project_purchase_requests SET status = 'seller_rejected', seller_rejection_reason = $1, updated_at = current_timestamp WHERE purchase_request_id = $2 RETURNING *", 
-            [rejection_reason, requestId]
+        await db.query(
+            "UPDATE purchase_requests SET status = 'seller_rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            [requestId]
         );
-
-        const updatedRequest = updateResult.rows[0];
+        const updated = await db.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = ?', [requestId]);
+        const updatedRequest = updated.rows[0];
         const responseData = {
             ...updatedRequest,
-            request_id: updatedRequest.purchase_request_id,
-            accepted_price: updatedRequest.offer_amount
+            request_id: updatedRequest.request_id,
+            accepted_price: updatedRequest.accepted_price
         };
         
         // console.log(`Notification: Purchase request ${responseData.request_id} rejected by seller ${sellerId}. Buyer ${request.buyer_id} notified.`);
@@ -392,79 +410,75 @@ router.post('/:requestId/confirm-transfer', authMiddleware, async (req, res) => 
     const { requestId } = req.params; 
     const buyerId = req.user.id;
     const buyerUsername = req.user.username;
-    const client = await db.getClient(); 
-
     try {
-        await client.query('BEGIN');
+        await db.query('BEGIN TRANSACTION');
         console.log(`[CONFIRM TRANSFER] BEGIN transaction for request: ${requestId}, buyer: ${buyerId}`);
 
-        const requestResult = await client.query(
-            'SELECT ppr.*, p.name as project_name, u_seller.username as seller_username, u_buyer.username as current_buyer_username \n' +
-            'FROM project_purchase_requests ppr \n' +
-            'JOIN projects p ON ppr.project_id = p.project_id \n' +
-            'JOIN users u_seller ON ppr.seller_id = u_seller.user_id \n' + 
-            'JOIN users u_buyer ON ppr.buyer_id = u_buyer.user_id \n' +
-            'WHERE ppr.purchase_request_id = $1 AND ppr.buyer_id = $2',
+        const requestResult = await db.query(
+            'SELECT pr.*, p.name as project_name, u_seller.username as seller_username, u_buyer.username as current_buyer_username ' +
+            'FROM purchase_requests pr ' +
+            'JOIN projects p ON pr.project_id = p.project_id ' +
+            'JOIN users u_seller ON pr.seller_id = u_seller.user_id ' + 
+            'JOIN users u_buyer ON pr.buyer_id = u_buyer.user_id ' +
+            'WHERE pr.id = ? AND pr.buyer_id = ?',
             [requestId, buyerId]
         );
 
         if (requestResult.rows.length === 0) {
-            await client.query('ROLLBACK');
+            await db.query('ROLLBACK');
             console.warn(`[CONFIRM TRANSFER] Purchase request ${requestId} not found for buyer ${buyerId} or buyer is not authorized.`);
             return res.status(404).json({ error: 'Purchase request not found or you are not the buyer.' });
         }
 
         const request = requestResult.rows[0];
         const projectId = request.project_id;
-        // const newOwnerUsername = request.current_buyer_username; // Already have buyerUsername from req.user
 
-        const allowedPreviousStatuses = ['assets_transferred_pending_buyer_confirmation', 'payment_completed_pending_transfer'];
+        const allowedPreviousStatuses = ['assets_transferred_pending_buyer_confirmation', 'payment_completed_pending_transfer', 'seller_accepted_pending_payment'];
         if (!allowedPreviousStatuses.includes(request.status)) {
-            await client.query('ROLLBACK');
+            await db.query('ROLLBACK');
             console.warn(`[CONFIRM TRANSFER] Request ${requestId} status is ${request.status}. Cannot confirm transfer at this stage.`);
             return res.status(400).json({ error: `Cannot confirm transfer at this stage. Current status: ${request.status}` });
         }
 
-        const projectUpdateResult = await client.query(
+        // Update project ownership
+        const projectUpdateResult = await db.query(
             `UPDATE projects 
-             SET owner_id = $1, 
-                 owner_username = $2, 
-                 is_for_sale = FALSE, 
-                 purchased_at = CURRENT_TIMESTAMP, 
-                 source = 'purchased', 
+             SET user_id = ?, 
+                 is_for_sale = 0, 
                  updated_at = CURRENT_TIMESTAMP 
-             WHERE project_id = $3 RETURNING *`,
-            [buyerId, buyerUsername, projectId]
+             WHERE id = ?`,
+            [buyerId, projectId]
         );
 
-        if (projectUpdateResult.rowCount === 0) {
-            await client.query('ROLLBACK');
+        if (projectUpdateResult.changes === 0) {
+            await db.query('ROLLBACK');
             console.error(`[CONFIRM TRANSFER] CRITICAL: Failed to update project ${projectId} ownership during confirm transfer for request ${requestId}.`);
             throw new Error('Failed to update project ownership.');
         }
         console.log(`[CONFIRM TRANSFER] Project ${projectId} ownership transferred to user ${buyerId} (${buyerUsername}). Marked as not for sale.`);
 
-        const updatePrStatusResult = await client.query(
-            "UPDATE project_purchase_requests SET status = 'transfer_completed_buyer_confirmed', updated_at = current_timestamp WHERE purchase_request_id = $1 RETURNING *",
+        // Update purchase request status
+        const updatePrStatusResult = await db.query(
+            "UPDATE purchase_requests SET status = 'transfer_completed_buyer_confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             [requestId]
         );
 
-        if (updatePrStatusResult.rowCount === 0) {
-            await client.query('ROLLBACK');
+        if (updatePrStatusResult.changes === 0) {
+            await db.query('ROLLBACK');
             console.error(`[CONFIRM TRANSFER] CRITICAL: Failed to update purchase request ${requestId} status after project ownership transfer.`);
             throw new Error('Failed to update purchase request status post-transfer.');
         }
         console.log(`[CONFIRM TRANSFER] Purchase request ${requestId} status updated to transfer_completed_buyer_confirmed.`);
 
-        const updatedRequest = updatePrStatusResult.rows[0];
+        const updatedSel = await db.query('SELECT * FROM purchase_requests WHERE id = ?', [requestId]);
+        const updatedRequest = updatedSel.rows[0];
         const responseData = {
             ...updatedRequest,
-            request_id: updatedRequest.purchase_request_id,
-            accepted_price: updatedRequest.offer_amount,
-            project_details: projectUpdateResult.rows[0] 
+            request_id: updatedRequest.id,
+            accepted_price: updatedRequest.price
         };
 
-        // console.log(`[CONFIRM TRANSFER] Notification: Buyer ${buyerId} (${buyerUsername}) confirmed asset transfer for request ${requestId}. Project ${request.project_name} successfully transferred.`);
+        // Send notifications
         try {
             await createNotification(
                 request.seller_id,
@@ -482,17 +496,14 @@ router.post('/:requestId/confirm-transfer', authMiddleware, async (req, res) => 
             console.error('Failed to create notification for transfer confirmation:', notificationError);
         }
 
-        await client.query('COMMIT');
+        await db.query('COMMIT');
         console.log(`[CONFIRM TRANSFER] COMMIT transaction for request: ${requestId}`);
         res.json(responseData);
 
     } catch (error) {
-        await client.query('ROLLBACK');
+        await db.query('ROLLBACK');
         console.error(`[CONFIRM TRANSFER] ROLLBACK transaction for request ${requestId} due to error:`, error.message, error.stack);
         res.status(500).json({ error: 'Failed to confirm asset transfer and update project ownership.', details: error.message });
-    } finally {
-        client.release();
-        console.log(`[CONFIRM TRANSFER] DB client released for request: ${requestId}`);
     }
 });
 
@@ -519,7 +530,7 @@ router.put('/:requestId/transfer-status', authMiddleware, async (req, res) => {
 
     try {
         const requestCheck = await db.query(
-            'SELECT ppr.project_id, ppr.buyer_id, ppr.status, p.name as project_name, u_buyer.username as buyer_username FROM project_purchase_requests ppr JOIN projects p ON ppr.project_id = p.project_id JOIN users u_buyer ON ppr.buyer_id = u_buyer.user_id WHERE ppr.purchase_request_id = $1 AND ppr.seller_id = $2', 
+            'SELECT pr.project_id, pr.buyer_id, pr.status, p.name as project_name, u_buyer.username as buyer_username FROM purchase_requests pr JOIN projects p ON pr.project_id = p.id JOIN users u_buyer ON pr.buyer_id = u_buyer.user_id WHERE pr.id = ? AND pr.seller_id = ?', 
             [requestId, sellerId]
         );
 
@@ -529,13 +540,13 @@ router.put('/:requestId/transfer-status', authMiddleware, async (req, res) => {
         
         const currentRequest = requestCheck.rows[0];
 
-        const result = await db.query(
-            `UPDATE project_purchase_requests 
-             SET status = $1, transfer_notes = $2, status_last_updated = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
-             WHERE purchase_request_id = $3 AND seller_id = $4
-             RETURNING *`, 
-            [status, message, requestId, sellerId]
+        await db.query(
+            `UPDATE purchase_requests 
+             SET status = ?, updated_at = CURRENT_TIMESTAMP 
+             WHERE id = ? AND seller_id = ?`, 
+            [status, requestId, sellerId]
         );
+        const result = await db.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = ?', [requestId]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Failed to update transfer status. Request not found or not authorized.' });
@@ -544,8 +555,8 @@ router.put('/:requestId/transfer-status', authMiddleware, async (req, res) => {
         const updatedRequest = result.rows[0];
         const responseData = {
             ...updatedRequest,
-            request_id: updatedRequest.purchase_request_id,
-            accepted_price: updatedRequest.offer_amount
+            request_id: updatedRequest.request_id,
+            accepted_price: updatedRequest.accepted_price
         };
 
         try {
@@ -570,8 +581,9 @@ router.put('/:requestId/transfer-status', authMiddleware, async (req, res) => {
     }
 });
 
-// --- Seller Proposes Terms (Seller Action) ---
+// --- Seller Proposes Terms (Seller Action) --- DISABLED (uses PostgreSQL schema)
 // PUT /api/purchase-requests/:requestId/seller-propose-terms
+/*
 router.put('/:requestId/seller-propose-terms', authMiddleware, async (req, res) => {
     const { requestId } = req.params;
     const sellerId = req.user.id;
@@ -637,9 +649,11 @@ router.put('/:requestId/seller-propose-terms', authMiddleware, async (req, res) 
         res.status(500).json({ error: 'Failed to propose terms.' });
     }
 });
+*/
 
-// --- Buyer Accepts Seller's Proposed Terms (Buyer Action) ---
+// --- Buyer Accepts Seller's Proposed Terms (Buyer Action) --- DISABLED (uses PostgreSQL schema)
 // PUT /api/purchase-requests/:requestId/buyer-accepts-terms
+/*
 router.put('/:requestId/buyer-accepts-terms', authMiddleware, async (req, res) => {
     const { requestId } = req.params;
     const buyerId = req.user.id;
@@ -710,9 +724,11 @@ router.put('/:requestId/buyer-accepts-terms', authMiddleware, async (req, res) =
         res.status(500).json({ error: 'Failed to accept terms.' });
     }
 });
+*/
 
-// --- Buyer Withdraws Interest (Buyer Action) ---
+// --- Buyer Withdraws Interest (Buyer Action) --- DISABLED (uses PostgreSQL schema)
 // PUT /api/purchase-requests/:requestId/withdraw-interest
+/*
 router.put('/:requestId/withdraw-interest', authMiddleware, async (req, res) => {
     const { requestId } = req.params;
     const buyerId = req.user.id;
@@ -772,9 +788,11 @@ router.put('/:requestId/withdraw-interest', authMiddleware, async (req, res) => 
         res.status(500).json({ error: 'Failed to withdraw interest.' });
     }
 });
+*/
 
-// --- Seller Declines Interest (Seller Action) ---
+// --- Seller Declines Interest (Seller Action) --- DISABLED (uses PostgreSQL schema)
 // PUT /api/purchase-requests/:requestId/decline-interest
+/*
 router.put('/:requestId/decline-interest', authMiddleware, async (req, res) => {
     const { requestId } = req.params;
     const sellerId = req.user.id;
@@ -833,5 +851,6 @@ router.put('/:requestId/decline-interest', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Failed to decline interest.' });
     }
 });
+*/
 
 module.exports = router; 

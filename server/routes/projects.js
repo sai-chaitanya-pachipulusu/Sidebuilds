@@ -9,16 +9,17 @@ router.use(authMiddleware);
 
 // Helper function to check if user has a Stripe account
 async function checkUserStripeAccount(userId) {
-    const userResult = await db.query(
-        'SELECT stripe_account_id, onboarding_complete FROM users WHERE user_id = $1',
-        [userId]
-    );
+    const userResult = await db.query(`
+        SELECT stripe_account_id, onboarding_complete 
+        FROM users 
+        WHERE user_id = ?
+    `, [userId]);
     
     const user = userResult.rows[0];
     return {
-        hasStripeAccount: !!user.stripe_account_id,
-        isOnboardingComplete: !!user.onboarding_complete,
-        stripeAccountId: user.stripe_account_id
+        hasStripeAccount: !!user?.stripe_account_id,
+        isOnboardingComplete: user?.onboarding_complete === 1 || user?.onboarding_complete === true,
+        stripeAccountId: user?.stripe_account_id
     };
 }
 
@@ -28,7 +29,9 @@ router.post('/', async (req, res) => {
     // Extract project data from request body
     // Basic validation - ensure required fields are present
     const { 
-        name, description, stage, domain, 
+        name, description, stage, domain,
+        demo_url, github_url, tech_stack, stage_details,
+        monthly_revenue,
         is_public, is_for_sale, sale_price,
         contact_email, contact_phone, payment_method 
     } = req.body;
@@ -46,15 +49,30 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // Get the user's username to store with the project
-        console.log('Fetching username for user ID:', userId);
-        const userResult = await db.query(
-            'SELECT username FROM users WHERE user_id = $1',
-            [userId]
-        );
-        
-        console.log('User query result:', JSON.stringify(userResult.rows, null, 2));
-        const username = userResult.rows[0]?.username || null;
+        // Stage-specific validation
+        const normalizedStage = (stage || '').toLowerCase();
+        if (!normalizedStage) {
+            return res.status(400).json({ message: 'Project stage is required.' });
+        }
+
+        // Validation matrix by stage
+        const stageRequirements = {
+            idea: { prohibited: ['github_url', 'monthly_revenue'], optional: ['domain', 'demo_url'] },
+            planning: { optional: ['github_url', 'domain', 'demo_url'] },
+            mvp: { recommended: ['github_url', 'demo_url'] },
+            development: { recommended: ['github_url'], optional: ['demo_url'] },
+            launched: { recommended: ['github_url', 'demo_url', 'monthly_revenue'] },
+            on_hold: {}
+        };
+        const reqs = stageRequirements[normalizedStage] || {};
+        if (reqs.prohibited) {
+            const violations = [];
+            if (reqs.prohibited.includes('github_url') && github_url) violations.push('github_url');
+            if (reqs.prohibited.includes('monthly_revenue') && monthly_revenue) violations.push('monthly_revenue');
+            if (violations.length) {
+                return res.status(400).json({ message: `Fields not allowed in stage '${normalizedStage}': ${violations.join(', ')}` });
+            }
+        }
 
         // Handle projects for sale validation
         if (is_for_sale) {
@@ -80,50 +98,73 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // Build SQL query dynamically based on provided fields
-        let fields = ['owner_id', 'name', 'description', 'stage', 'domain', 'is_public', 'is_for_sale', 'owner_username'];
-        let values = [userId, name, description, stage, domain, is_public || false, is_for_sale || false, username];
-        let placeholders = ['$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8'];
-        let paramIndex = 9;
+        // Build SQL query dynamically based on provided fields (using correct SQLite column names)
+        let fields = ['owner_id', 'owner_username', 'name', 'description', 'stage', 'domain', 'demo_url', 'github_url', 'tech_stack', 'monthly_revenue', 'is_public', 'is_for_sale'];
+        
+        // Get username for owner_username field
+        const userResult = await db.query('SELECT username FROM users WHERE user_id = ?', [userId]);
+        const username = userResult.rows[0]?.username || 'unknown';
+        
+        let values = [
+            userId, 
+            username,
+            name, 
+            description, 
+            normalizedStage, 
+            domain, 
+            demo_url, 
+            github_url, 
+            Array.isArray(tech_stack) ? JSON.stringify(tech_stack) : (tech_stack || null), 
+            monthly_revenue || 0, 
+            is_public ? 1 : 0, 
+            is_for_sale ? 1 : 0
+        ];
+        let placeholders = Array(fields.length).fill('?');
         
         // Add sale-related fields if project is for sale
         if (is_for_sale) {
             fields.push('sale_price');
             values.push(sale_price);
-            placeholders.push(`$${paramIndex++}`);
+            placeholders.push('?');
             
             if (contact_email) {
                 fields.push('contact_email');
                 values.push(contact_email);
-                placeholders.push(`$${paramIndex++}`);
+                placeholders.push('?');
             }
             
             if (contact_phone) {
                 fields.push('contact_phone');
                 values.push(contact_phone);
-                placeholders.push(`$${paramIndex++}`);
+                placeholders.push('?');
             }
             
             if (payment_method) {
                 fields.push('payment_method');
                 values.push(payment_method);
-                placeholders.push(`$${paramIndex++}`);
+                placeholders.push('?');
             }
         }
 
-        // Create the SQL query
+        // Create the SQL query (SQLite doesn't support RETURNING)
         const query = `
             INSERT INTO projects (${fields.join(', ')})
             VALUES (${placeholders.join(', ')})
-            RETURNING *
         `;
         
         console.log('Executing SQL query:', query);
         console.log('Query parameters:', JSON.stringify(values, null, 2));
 
-        const newProject = await db.query(query, values);
-        console.log('Project created successfully:', JSON.stringify(newProject.rows[0], null, 2));
-        res.status(201).json(newProject.rows[0]);
+        await db.query(query, values);
+        
+        // Get the created project (SQLite doesn't support RETURNING)
+        const createdProject = await db.query(
+            'SELECT * FROM projects WHERE owner_id = ? ORDER BY created_at DESC LIMIT 1',
+            [userId]
+        );
+        
+        console.log('Project created successfully:', JSON.stringify(createdProject.rows[0], null, 2));
+        res.status(201).json(createdProject.rows[0]);
     } catch (err) {
         console.error("Create project error:", err.message);
         console.error("Error details:", err);
@@ -156,19 +197,33 @@ router.get('/', async (req, res) => {
                 project_id, 
                 name, 
                 COALESCE(description, '') as description, 
+                COALESCE(detailed_description, '') as detailed_description,
                 COALESCE(stage, '') as stage, 
+                COALESCE(status, '') as status,
+                COALESCE(category, '') as category,
+                COALESCE(subcategory, '') as subcategory,
                 COALESCE(domain, '') as domain, 
+                COALESCE(demo_url, '') as demo_url,
+                COALESCE(github_url, '') as github_url,
+                COALESCE(tech_stack, '[]') as tech_stack,
+                COALESCE(tags, '[]') as tags,
+                COALESCE(monthly_revenue, 0) as monthly_revenue,
+                COALESCE(monthly_users, 0) as monthly_users,
+                COALESCE(growth_rate, 0) as growth_rate,
                 is_public, 
                 is_for_sale, 
                 sale_price, 
+                price_negotiable,
                 COALESCE(contact_email, '') as contact_email, 
                 COALESCE(contact_phone, '') as contact_phone, 
+                thumbnail_url,
+                launch_date,
                 created_at, 
                 updated_at,
-                COALESCE(source, 'created') as source,
-                purchased_at
+                COALESCE(view_count, 0) as view_count,
+                COALESCE(interest_count, 0) as interest_count
             FROM projects 
-            WHERE owner_id = $1 
+            WHERE owner_id = ? 
             ORDER BY created_at DESC`,
             [userId]
         );
@@ -187,16 +242,19 @@ router.get('/:id', async (req, res) => {
     const projectId = req.params.id;
 
     try {
-        const project = await db.query(
-            'SELECT * FROM projects WHERE project_id = $1 AND owner_id = $2',
+        // Updated query to allow access if the project is public OR the user is the owner
+        const projectResult = await db.query(
+            `SELECT * FROM projects 
+             WHERE project_id = ? AND (owner_id = ? OR is_public = 1)`,
             [projectId, userId]
         );
 
-        if (project.rows.length === 0) {
-            return res.status(404).json({ message: 'Project not found or you do not have permission.' });
+        if (projectResult.rows.length === 0) {
+            // If no project is found, it's either non-existent or private and not owned by the user
+            return res.status(404).json({ message: 'Project not found or it is private.' });
         }
 
-        res.json(project.rows[0]);
+        res.json(projectResult.rows[0]);
     } catch (err) {
         console.error("Get single project error:", err.message);
          // Check for invalid input format (e.g., non-integer ID)
@@ -215,7 +273,8 @@ router.put('/:id', async (req, res) => {
     
     // Extract fields allowed to be updated, including new transfer flags
     const { 
-        name, description, stage, domain, 
+        name, description, stage, domain,
+        demo_url, github_url, tech_stack, monthly_revenue,
         is_public, is_for_sale, sale_price,
         contact_email, contact_phone, payment_method,
         code_transferred, domain_transferred, assets_transferred // Added transfer flags
@@ -251,7 +310,7 @@ router.put('/:id', async (req, res) => {
         // Helper to add field to update query
         const addUpdateField = (field, value) => {
             if (value !== undefined) {
-                setParts.push(`${field} = $${currentParamIndex++}`);
+                setParts.push(`${field} = ?`);
                 queryValues.push(value);
             }
         };
@@ -260,6 +319,10 @@ router.put('/:id', async (req, res) => {
         addUpdateField('description', description);
         addUpdateField('stage', stage);
         addUpdateField('domain', domain);
+        addUpdateField('demo_url', demo_url);
+        addUpdateField('github_url', github_url);
+        addUpdateField('tech_stack', Array.isArray(tech_stack) ? JSON.stringify(tech_stack) : tech_stack);
+        addUpdateField('monthly_revenue', monthly_revenue);
         addUpdateField('is_public', is_public);
         addUpdateField('is_for_sale', is_for_sale);
 
@@ -290,18 +353,23 @@ router.put('/:id', async (req, res) => {
             // However, 'updated_at' will always be set.
         }
         
-        setParts.push('updated_at = NOW()');
+        setParts.push('updated_at = CURRENT_TIMESTAMP');
         
         queryValues.push(projectId, userId); // Add projectId and userId for WHERE clause
         
         const updateQuery = `
             UPDATE projects 
             SET ${setParts.join(', ')} 
-            WHERE project_id = $${currentParamIndex++} AND owner_id = $${currentParamIndex} 
-            RETURNING *
+            WHERE project_id = ? AND owner_id = ? 
         `;
         
-        let updatedProjectResult = await db.query(updateQuery, queryValues);
+        await db.query(updateQuery, queryValues);
+
+        // Get updated project data (SQLite doesn't support RETURNING)
+        const updatedProjectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = ? AND owner_id = ?',
+            [projectId, userId]
+        );
 
         if (updatedProjectResult.rows.length === 0) {
             return res.status(404).json({ message: 'Project not found or you do not have permission to update.' });
@@ -318,11 +386,16 @@ router.put('/:id', async (req, res) => {
             console.log(`Project ${projectData.project_id}: All assets transferred. Updating status to 'completed'.`);
             const statusUpdateQuery = `
                 UPDATE projects 
-                SET status = 'completed', updated_at = NOW() 
-                WHERE project_id = $1 
-                RETURNING *
+                SET status = 'completed', updated_at = CURRENT_TIMESTAMP 
+                WHERE project_id = ? 
             `;
-            const statusUpdatedProjectResult = await db.query(statusUpdateQuery, [projectData.project_id]);
+            await db.query(statusUpdateQuery, [projectData.project_id]);
+            
+            // Get updated project data
+            const statusUpdatedProjectResult = await db.query(
+                'SELECT * FROM projects WHERE project_id = ?',
+                [projectData.project_id]
+            );
             if (statusUpdatedProjectResult.rows.length > 0) {
                 projectData = statusUpdatedProjectResult.rows[0]; // Use the latest project data
             }
@@ -347,16 +420,21 @@ router.delete('/:id', async (req, res) => {
 
     try {
         const deleteResult = await db.query(
-            'DELETE FROM projects WHERE project_id = $1 AND owner_id = $2 RETURNING project_id',
+            'DELETE FROM projects WHERE project_id = ? AND owner_id = ?',
             [projectId, userId]
         );
 
-        if (deleteResult.rowCount === 0) {
-            // No project found with that ID for this user, or it was already deleted.
+        // Check if any rows were affected (SQLite doesn't return rowCount the same way)
+        const checkResult = await db.query(
+            'SELECT project_id FROM projects WHERE project_id = ? AND owner_id = ?',
+            [projectId, userId]
+        );
+        
+        if (checkResult.rows.length === 0) {
             return res.status(404).json({ message: 'Project not found or you do not have permission to delete.' });
         }
 
-        res.json({ message: 'Project deleted successfully.', projectId: deleteResult.rows[0].project_id });
+        res.json({ message: 'Project deleted successfully.', projectId: projectId });
 
     } catch (err) {
         console.error("Delete project error:", err.message);

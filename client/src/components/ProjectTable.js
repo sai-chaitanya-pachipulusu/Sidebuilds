@@ -1,303 +1,144 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import './ProjectTable.css';
+import { Link as RouterLink } from 'react-router-dom';
 
-// Icons
-const EditIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-  </svg>
-);
-
-const DeleteIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-  </svg>
-);
-
-// eslint-disable-next-line no-unused-vars
-const ExternalLinkIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-    <polyline points="15 3 21 3 21 9"></polyline>
-    <line x1="10" y1="14" x2="21" y2="3"></line>
-  </svg>
-);
-
-// eslint-disable-next-line no-unused-vars
-const GithubIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-  </svg>
-);
-
-const EmailIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-    <polyline points="22,6 12,13 2,6"></polyline>
-  </svg>
-);
-
-const PhoneIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-  </svg>
-);
-
-// Source badges
-const SourceBadge = ({ source }) => {
-  if (!source || source === 'created') {
-    return (
-      <span className="source-badge source-created">
-        Created
-      </span>
-    );
-  } else if (source === 'purchased') {
-    return (
-      <span className="source-badge source-purchased">
-        Purchased
-      </span>
-    );
-  }
-  return null;
+// Dynamic helper function to get stage color based on real-time project status
+const getStageColor = (stage, projectMetrics) => {
+  // Dynamic color assignment based on project performance
+  if (projectMetrics?.revenue > 1000) return 'green'; // High revenue = green
+  if (projectMetrics?.views > 500) return 'blue'; // High engagement = blue
+  if (projectMetrics?.growth > 20) return 'purple'; // High growth = purple
+  
+  const stageColors = {
+    'idea': 'gray',
+    'planning': 'blue',
+    'mvp': 'purple',
+    'development': 'orange',
+    'launched': 'green',
+    'on_hold': 'red',
+    'scaling': 'emerald',
+    'profitable': 'green',
+    'viral': 'purple'
+  };
+  return stageColors[stage?.toLowerCase()] || 'gray';
 };
 
-/**
- * A reusable table component for displaying projects
- * 
- * @param {Object} props
- * @param {Array} props.projects - Array of project objects
- * @param {string} props.type - Type of table: 'dashboard', 'marketplace', or 'public'
- * @param {Function} props.onDelete - Optional callback for delete action
- * @param {boolean} props.isLoading - Loading state
- * @param {string} props.error - Error message if any
- */
-const ProjectTable = ({ projects, type, onDelete, isLoading, error }) => {
-  // Define columns based on table type
-  const getColumns = () => {
-    const common = [
-      { id: 'name', label: 'Project' },
-      { id: 'stage', label: 'Status' },
-    ];
+// Helper function to format price
+const formatPrice = (price) => {
+  if (!price) return 'Not for sale';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
 
-    if (type === 'dashboard') {
-      return [
-        ...common,
-        { id: 'source', label: 'Source' },
-        { id: 'updated_at', label: 'Last Updated' },
-        { id: 'domain', label: 'Domain' },
-        { id: 'is_public', label: 'Public' },
-        { id: 'is_for_sale', label: 'For Sale' },
-        { id: 'actions', label: 'Actions' },
-      ];
-    } else if (type === 'marketplace') {
-      return [
-        ...common,
-        { id: 'owner_username', label: 'Creator' },
-        { id: 'sale_price', label: 'Price' },
-        { id: 'domain', label: 'Domain' },
-        { id: 'contact', label: 'Contact' },
-        { id: 'buy_action', label: '' },
-      ];
-    } else if (type === 'public') {
-      return [
-        ...common,
-        { id: 'owner_username', label: 'Creator' },
-        { id: 'source', label: 'Source' },
-        { id: 'domain', label: 'Domain' },
-        { id: 'github', label: 'GitHub' },
-        { id: 'live', label: 'Live Demo' },
-      ];
-    }
-    return common;
-  };
-
-  const columns = getColumns();
-
-  // Handle empty state
-  if (!isLoading && !error && (!projects || projects.length === 0)) {
+const ProjectTable = ({ projects, loading, error }) => {
+  if (loading) {
     return (
-      <div className="empty-table">
-        {type === 'dashboard' && 'You haven\'t added any projects yet.'}
-        {type === 'marketplace' && 'No projects currently listed for sale.'}
-        {type === 'public' && 'No public projects found yet.'}
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <span className="ml-2 text-gray-300">Loading projects...</span>
       </div>
     );
   }
 
-  // Render cell content based on column ID
-  const renderCell = (project, columnId) => {
-    // Helper function to wrap content with column class
-    const wrapWithColumnClass = (content) => {
-      return <span className={`column-${columnId}`}>{content}</span>;
-    };
-    
-    switch (columnId) {
-      case 'name':
-        return (
-          <span className={type === 'marketplace' 
-            ? "marketplace-project-name" 
-            : type === 'public' 
-              ? "public-project-name" 
-              : "project-table project-name"}>
-            {type === 'dashboard' ? (
-              <>
-                <Link to={`/projects/${project.project_id}`} className="project-link">
-                  {project.name}
-                </Link>
-                {project.source === 'purchased' && (
-                  <span className="purchased-badge">PURCHASED</span>
-                )}
-              </>
-            ) : (
-              project.name
-            )}
-          </span>
-        );
-      case 'source':
-        return wrapWithColumnClass(<SourceBadge source={project.source} />);
-      case 'stage':
-        return wrapWithColumnClass(
-          <span className={`status-chip status-${project.stage || 'idea'}`}>
-            {project.stage || 'Idea'}
-          </span>
-        );
-      case 'updated_at':
-      case 'created_at':
-        return new Date(project[columnId]).toLocaleDateString();
-      case 'domain':
-        return wrapWithColumnClass(project.domain ? (
-          <a 
-            href={`http://${project.domain}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="project-link"
-          >
-            {project.domain}
-          </a>
-        ) : (
-          'N/A'
-        ));
-      case 'is_public':
-        return project.is_public ? 'Yes' : 'No';
-      case 'is_for_sale':
-        return project.is_for_sale ? 'Yes' : 'No';
-      case 'owner_username':
-        return wrapWithColumnClass(project.owner_username || 'Anonymous');
-      case 'sale_price':
-        return wrapWithColumnClass(`$${parseFloat(project.sale_price).toFixed(2)}`);
-      case 'contact':
-        return (
-          <div className="contact-info">
-            {project.contact_email && (
-              <a 
-                href={`mailto:${project.contact_email}`} 
-                className="contact-link"
-                title={`Email: ${project.contact_email}`}
-              >
-                <EmailIcon />
-              </a>
-            )}
-            {project.contact_phone && (
-              <a 
-                href={`tel:${project.contact_phone}`} 
-                className="contact-link"
-                title={`Phone: ${project.contact_phone}`}
-              >
-                <PhoneIcon />
-              </a>
-            )}
-            {!project.contact_email && !project.contact_phone && 'N/A'}
-          </div>
-        );
-      case 'github':
-        return wrapWithColumnClass(project.github_url ? (
-          <a 
-            href={project.github_url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="project-link"
-          >
-            <GithubIcon />
-          </a>
-        ) : (
-          'N/A'
-        ));
-      case 'live':
-        return project.domain ? (
-          <a 
-            href={`http://${project.domain}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="project-link"
-          >
-            <ExternalLinkIcon />
-          </a>
-        ) : (
-          'N/A'
-        );
-      case 'buy_action':
-        return project.buy_action || null;
-      case 'actions':
-        return (
-          <div className="project-actions">
-            <Link to={`/projects/${project.project_id}/edit`} className="table-icon edit-icon" title="Edit Project">
-              <EditIcon />
-            </Link>
-            {/* Delete button - ensure onDelete is passed from DashboardPage */}
-            {onDelete && (
-              <button onClick={() => onDelete(project.project_id)} className="table-icon delete-icon" title="Delete Project">
-                <DeleteIcon />
-              </button>
-            )}
-            {/* Add View Transfer button for purchased projects */}
-            {project.source === 'purchased' && (
-              <Link to={`/projects/${project.project_id}/transfer`} className="table-icon transfer-icon" title="View Transfer Status">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </Link>
-            )}
-          </div>
-        );
-      default:
-        return project[columnId] || 'N/A';
-    }
-  };
+  if (error) {
+    return (
+      <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+        <div className="flex items-center">
+          <svg className="w-5 h-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <span className="text-red-200">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-400 mb-2">No projects found</div>
+        <div className="text-sm text-gray-500">Start by creating your first project!</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="table-container">
-      {isLoading && <p>Loading projects...</p>}
-      {error && <p className="error-message">Error: {error}</p>}
-      
-      {!isLoading && !error && projects && projects.length > 0 && (
-        <table className="project-table">
-          <thead>
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-800/50">
             <tr>
-              {columns.map((column) => (
-                <th key={column.id}>{column.label}</th>
-              ))}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Project
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Stage
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Price
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Revenue
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Created
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-700">
             {projects.map((project) => (
-              <tr 
-                key={project.project_id}
-                className={project.source === 'purchased' ? 'purchased-project' : ''}
-              >
-                {columns.map((column) => (
-                  <td key={`${project.project_id}-${column.id}`}>
-                    {renderCell(project, column.id)}
-                  </td>
-                ))}
+              <tr key={project.project_id} className="hover:bg-gray-800/30 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      {project.name}
+                    </div>
+                    <div className="text-sm text-gray-400 truncate max-w-xs">
+                      {project.description}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    project.stage === 'launched' 
+                      ? 'bg-green-900/50 text-green-200 border border-green-500/30'
+                      : project.stage === 'development'
+                      ? 'bg-orange-900/50 text-orange-200 border border-orange-500/30'
+                      : project.stage === 'mvp'
+                      ? 'bg-purple-900/50 text-purple-200 border border-purple-500/30'
+                      : 'bg-gray-900/50 text-gray-200 border border-gray-500/30'
+                  }`}>
+                    {project.stage || 'Unknown'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                  {project.sale_price ? formatPrice(project.sale_price) : 'Not set'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                  {project.monthly_revenue ? formatPrice(project.monthly_revenue) : 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  {new Date(project.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <RouterLink
+                    to={`/projects/${project.project_id}`}
+                    className="text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    View Details
+                  </RouterLink>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
 };

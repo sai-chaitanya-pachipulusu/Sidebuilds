@@ -21,9 +21,9 @@ Always check the `database` directory for the complete and current list of migra
 ## Migration Instructions
 
 ### Prerequisites
-*   CockroachDB (or a compatible PostgreSQL version) installed and running.
-*   Database connection string/parameters.
-*   The CockroachDB CLI (`cockroach`) accessible in your PATH if running SQL files manually.
+*   PostgreSQL-compatible database (like Supabase)
+*   Database connection string/parameters
+*   The `psql` command-line tool if running SQL files manually
 
 ### Running the Migrations
 
@@ -45,16 +45,6 @@ The script will execute all necessary `.sql` migration files from the `database`
 **Manual Execution (General - All Platforms):**
 
 If you cannot use the PowerShell script, you must run each `.sql` file in the `database` directory in **strict numerical order**.
-
-Example for CockroachDB CLI:
-```powershell
-# Ensure you are in the 'database' directory or provide full paths
-cockroach sql --url="your_connection_string" -f 00_drop_all_tables.sql # If doing a clean install
-cockroach sql --url="your_connection_string" -f 01_base_schema.sql
-cockroach sql --url="your_connection_string" -f 02_payment_integration.sql
-# ... continue for ALL .sql files in numerical order ...
-cockroach sql --url="your_connection_string" -f XX_your_latest_script.sql
-```
 
 Example for `psql` (PostgreSQL):
 ```bash
@@ -110,7 +100,7 @@ This procedure is designed to be called explicitly by the application's backend 
 3.  The stored procedure then reads the current state of the boolean flags for the given transfer and updates the `status` field to 'pending', 'in_progress', or 'completed', and sets the `transfer_completed_at` timestamp accordingly.
 
 **Reasoning for this approach:**
-Direct `BEFORE UPDATE` triggers on the `project_transfers` table for this logic encountered persistent errors (`ERROR: no data source matches prefix: new in this context` or `column "found" does not exist`) with the CockroachDB version used during development. Moving this logic into an application-invoked stored procedure bypasses these specific trigger/function issues while still allowing the core status update rules to be defined within the database.
+Direct `BEFORE UPDATE` triggers on the `project_transfers` table for this logic may encounter errors depending on the PostgreSQL implementation. Moving this logic into an application-invoked stored procedure bypasses these trigger/function issues while still allowing the core status update rules to be defined within the database.
 
 **Failure by the application to call this procedure after updating transfer flags will result in incorrect transfer statuses in the `project_transfers` table.**
 
@@ -121,7 +111,7 @@ The `projects` table includes boolean flags (`code_transferred`, `domain_transfe
 The logic to update `projects.status` based on these flags (e.g., setting to 'assets_transferred' when all flags are true) is **handled by the server-side application code.**
 
 *   **Location of Logic:** Application backend (e.g., in services that manage project updates).
-*   **Database Component:** The `05_asset_transfer_completion.sql` migration file adds the necessary columns (`status`, `code_transferred`, etc.) to the `projects` table. A database trigger for this logic was attempted (and is currently commented out in `05_asset_transfer_completion.sql`) but was removed due to persistent compatibility issues with CockroachDB triggers in this specific scenario.
+*   **Database Component:** The `05_asset_transfer_completion.sql` migration file adds the necessary columns (`status`, `code_transferred`, etc.) to the `projects` table.
 
 **How it Should Work (Application Backend):**
 1.  When the application backend updates any of the `code_transferred`, `domain_transferred`, or `assets_transferred` boolean flags on a `projects` record:
@@ -129,12 +119,9 @@ The logic to update `projects.status` based on these flags (e.g., setting to 'as
 3.  If all three are `TRUE`, the backend should update `projects.status` to `'assets_transferred'`.
 4.  If not all are `TRUE` (e.g., some are true, some are false, or all are false), the backend should set `projects.status` to an appropriate state like `'listed'` or `'transfer_in_progress'` based on business rules.
 
-**Reasoning for this approach:**
-Attempts to implement this as an automatic database trigger on the `projects` table encountered persistent and difficult-to-diagnose errors with CockroachDB's trigger execution context (often `ERROR: no data source matches prefix: new in this context`). Moving this logic to the application layer provides more control and avoids these database-specific trigger complexities for this case.
-
 **Failure by the application to implement this logic will result in the `projects.status` field not automatically reflecting the state of its asset transfer flags.**
 
-Other triggers, such as the one on the `projects` table for `updated_at` timestamp (`update_projects_timestamp` from `01_base_schema.sql`), operate as standard database triggers because they did not exhibit the same issues.
+Other triggers, such as the one on the `projects` table for `updated_at` timestamp (`update_projects_timestamp` from `01_base_schema.sql`), operate as standard database triggers.
 
 ## Payment Feature Capabilities
 
@@ -151,24 +138,24 @@ The completed payment system now offers:
 
 ## Troubleshooting
 
-### Trigger Function Error
+### Common Issues
 
-If you encounter this error:
-```
-ERROR: unimplemented: cannot replace a trigger function with an active trigger
-SQLSTATE: 0A000
-HINT: You have attempted to use a feature that is not yet implemented.
-```
-
-This is a limitation in CockroachDB where you cannot replace a trigger function while it has active triggers. The `01_base_schema.sql` script (and others like `07_add_purchase_requests.sql` for `project_purchase_requests`) have been updated to first drop the existing triggers and function before recreating them, which should resolve this issue.
-
-### Other Common Issues
-
-If you encounter other errors during migration, check the following:
+If you encounter errors during migration, check the following:
 
 1. Ensure the database user has sufficient privileges
 2. Verify that the scripts are run in the correct order
 3. Check for any type mismatches in existing data
-4. For UUID errors, ensure you're using a compatible version of CockroachDB/PostgreSQL
+4. For UUID errors, ensure you're using a compatible version of PostgreSQL
 
 For assistance, refer to the error messages which typically provide clear information about the issue. 
+
+### Connection Issues
+
+If you have trouble connecting to Supabase:
+1. Verify your connection string is correct
+2. Ensure SSL is enabled for Supabase connections
+3. Check that your IP address is allowed in Supabase's security settings
+
+### Connection Limits
+
+Remember that Supabase's free tier has a limit of 10 concurrent connections. Configure your connection pool size accordingly (8 or fewer recommended). 

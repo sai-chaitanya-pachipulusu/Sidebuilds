@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { checkStripeOnboardingStatus } from '../services/api'; // To refresh status
-import './StripeConnectCompletePage.css'; // We'll create this for styling
+
 
 function StripeConnectCompletePage() {
     const navigate = useNavigate();
