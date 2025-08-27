@@ -1,0 +1,161 @@
+{
+  "summary": {
+    "totalWorkflows": 16,
+    "passedWorkflows": 5,
+    "failedWorkflows": 11,
+    "criticalIssues": 2,
+    "startTime": "2025-08-27T04:50:14.037Z",
+    "endTime": "2025-08-27T04:50:19.638Z",
+    "duration": "5.60 seconds",
+    "successRate": "31.3%",
+    "systemHealth": "CRITICAL"
+  },
+  "workflows": {
+    "Database Connectivity": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 401",
+      "issues": [
+        "Check database server status",
+        "Verify connection string",
+        "Check database permissions"
+      ],
+      "timestamp": "2025-08-27T04:50:19.126Z"
+    },
+    "Frontend - Home Page": {
+      "status": "PASS",
+      "details": "Page loads successfully",
+      "issues": [],
+      "timestamp": "2025-08-27T04:50:19.148Z"
+    },
+    "Frontend - Login Page": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 404",
+      "issues": [
+        "Check frontend server status",
+        "Verify routing configuration",
+        "Check for JavaScript errors"
+      ],
+      "timestamp": "2025-08-27T04:50:19.162Z"
+    },
+    "Frontend - Registration Page": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 404",
+      "issues": [
+        "Check frontend server status",
+        "Verify routing configuration",
+        "Check for JavaScript errors"
+      ],
+      "timestamp": "2025-08-27T04:50:19.175Z"
+    },
+    "Frontend - Marketplace Page": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 404",
+      "issues": [
+        "Check frontend server status",
+        "Verify routing configuration",
+        "Check for JavaScript errors"
+      ],
+      "timestamp": "2025-08-27T04:50:19.188Z"
+    },
+    "Frontend - Dashboard Page": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 404",
+      "issues": [
+        "Check frontend server status",
+        "Verify routing configuration",
+        "Check for JavaScript errors"
+      ],
+      "timestamp": "2025-08-27T04:50:19.200Z"
+    },
+    "User Registration": {
+      "status": "FAIL",
+      "details": "Registration failed: Request failed with status code 404",
+      "issues": [
+        "Check database connectivity",
+        "Verify API endpoint implementation",
+        "Check request validation"
+      ],
+      "timestamp": "2025-08-27T04:50:19.378Z"
+    },
+    "User Login": {
+      "status": "FAIL",
+      "details": "Login failed: Request failed with status code 404",
+      "issues": [
+        "Check password hashing/comparison",
+        "Verify login endpoint implementation"
+      ],
+      "timestamp": "2025-08-27T04:50:19.613Z"
+    },
+    "Invalid Login Prevention": {
+      "status": "PASS",
+      "details": "Invalid login properly rejected",
+      "issues": [],
+      "timestamp": "2025-08-27T04:50:19.608Z"
+    },
+    "Project Creation": {
+      "status": "FAIL",
+      "details": "Status: 400, Error: Project name is required.",
+      "issues": [
+        "Check authentication middleware",
+        "Verify project creation endpoint",
+        "Check database schema for projects table"
+      ],
+      "timestamp": "2025-08-27T04:50:19.620Z"
+    },
+    "Project Listing": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 401",
+      "issues": [
+        "Check projects endpoint implementation",
+        "Verify database query for projects"
+      ],
+      "timestamp": "2025-08-27T04:50:19.624Z"
+    },
+    "Purchase Request Workflow": {
+      "status": "FAIL",
+      "details": "Status: 404, Error: Request failed with status code 404",
+      "issues": [
+        "Check purchase request endpoints",
+        "Verify authentication middleware",
+        "Check database schema for purchase_requests table"
+      ],
+      "timestamp": "2025-08-27T04:50:19.628Z"
+    },
+    "Stripe Integration": {
+      "status": "FAIL",
+      "details": "Error: Request failed with status code 404",
+      "issues": [
+        "Check Stripe configuration",
+        "Verify API keys are properly set",
+        "Check Stripe endpoints implementation"
+      ],
+      "timestamp": "2025-08-27T04:50:19.631Z"
+    },
+    "Notification Retrieval": {
+      "status": "PASS",
+      "details": "Notifications endpoint accessible",
+      "issues": [],
+      "timestamp": "2025-08-27T04:50:19.637Z"
+    }
+  },
+  "detailedFindings": [
+    {
+      "title": "Database Connectivity Failure",
+      "severity": "CRITICAL",
+      "description": "Cannot connect to database for basic operations",
+      "impact": "All data-dependent features will fail",
+      "recommendation": "Verify database server and connection configuration",
+      "timestamp": "2025-08-27T04:50:19.127Z"
+    },
+    {
+      "title": "User Registration Broken",
+      "severity": "CRITICAL",
+      "description": "Users cannot register for accounts",
+      "impact": "Complete business breakdown - no new users can join",
+      "recommendation": "Fix registration endpoint immediately",
+      "timestamp": "2025-08-27T04:50:19.378Z"
+    }
+  ],
+  "performanceMetrics": {},
+  "securityFindings": []
+}

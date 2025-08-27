@@ -30,7 +30,8 @@
       "Bash(set PORT=3001)",
       "Bash(PORT=5004 npm start)",
       "Bash(npm run build:*)",
-      "Bash(/bashes)"
+      "Bash(/bashes)",
+      "Bash(set PORT=3003)"
     ],
     "deny": []
   }

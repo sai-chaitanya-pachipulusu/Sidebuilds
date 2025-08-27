@@ -119,8 +119,10 @@ export class VirtualScroller {
     const visibleItems = this.items.slice(startIndex, endIndex + 1);
     const offsetY = startIndex * this.itemHeight;
     
-    // Clear container
-    this.container.innerHTML = '';
+    // Clear container - SECURITY FIX: Use safe DOM manipulation instead of innerHTML
+    while (this.container.firstChild) {
+      this.container.removeChild(this.container.firstChild);
+    }
     
     // Create wrapper with proper height
     const wrapper = document.createElement('div');

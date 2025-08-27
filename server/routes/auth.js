@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
     try {
         // Check if user already exists (by email or username)
         const userExists = await db.query(
-            'SELECT * FROM users WHERE email = $1 OR username = $2',
+            'SELECT * FROM users WHERE email = ? OR username = ?',
             [email, finalUsername]
         );
 

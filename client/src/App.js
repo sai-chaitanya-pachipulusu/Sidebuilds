@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
 import AnimatedBackground from './components/AnimatedBackground';
+import ProductionErrorBoundary, { ComponentErrorBoundary } from './components/ProductionErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 
@@ -73,50 +74,52 @@ const AppContent = () => {
       />
       
       <main className="relative z-10">
-        <Suspense fallback={<ElegantLoadingScreen />}>
-          <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/marketplace" element={<MarketplacePage />} />
-                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
-                    <Route path="/project/:id" element={<ProjectDetailPage />} />
-                    <Route path="/public-projects" element={<PublicProjectsPage />} />
-                    <Route path="/about" element={<AboutUsPage />} />
-                    <Route path="/blog" element={<BlogPage />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/faq" element={<FAQPage />} />
-                    <Route path="/help" element={<FAQPage />} />
-                    <Route path="/how-it-works" element={<HowItWorksPage />} />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/trending" element={<TrendingPage />} />
-                    <Route path="/verify" element={<VerifyPage />} />
-                    <Route path="/verify/:verificationCode" element={<VerifyPage />} />
-                    <Route path="/vibe-code" element={<VibeCodePage />} />
-                    <Route path="/profile/:userId" element={<ProfilePage />} />
-                    <Route path="/create" element={<ProjectFormPage editMode={false} />} />
+        <ComponentErrorBoundary fallback={<ElegantLoadingScreen />}>
+          <Suspense fallback={<ElegantLoadingScreen />}>
+            <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<ComponentErrorBoundary><HomePage /></ComponentErrorBoundary>} />
+                      <Route path="/login" element={<ComponentErrorBoundary><LoginPage /></ComponentErrorBoundary>} />
+                      <Route path="/register" element={<ComponentErrorBoundary><RegisterPage /></ComponentErrorBoundary>} />
+                      <Route path="/marketplace" element={<ComponentErrorBoundary><MarketplacePage /></ComponentErrorBoundary>} />
+                      <Route path="/projects/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
+                      <Route path="/project/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
+                      <Route path="/public-projects" element={<ComponentErrorBoundary><PublicProjectsPage /></ComponentErrorBoundary>} />
+                      <Route path="/about" element={<ComponentErrorBoundary><AboutUsPage /></ComponentErrorBoundary>} />
+                      <Route path="/blog" element={<ComponentErrorBoundary><BlogPage /></ComponentErrorBoundary>} />
+                      <Route path="/contact" element={<ComponentErrorBoundary><ContactPage /></ComponentErrorBoundary>} />
+                      <Route path="/faq" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
+                      <Route path="/help" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
+                      <Route path="/how-it-works" element={<ComponentErrorBoundary><HowItWorksPage /></ComponentErrorBoundary>} />
+                      <Route path="/pricing" element={<ComponentErrorBoundary><PricingPage /></ComponentErrorBoundary>} />
+                      <Route path="/terms" element={<ComponentErrorBoundary><TermsPage /></ComponentErrorBoundary>} />
+                      <Route path="/trending" element={<ComponentErrorBoundary><TrendingPage /></ComponentErrorBoundary>} />
+                      <Route path="/verify" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
+                      <Route path="/verify/:verificationCode" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
+                      <Route path="/vibe-code" element={<ComponentErrorBoundary><VibeCodePage /></ComponentErrorBoundary>} />
+                      <Route path="/profile/:userId" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
+                      <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
 
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/my-projects" element={<MyProjectsPage />} />
-                      <Route path="/projects/new" element={<ProjectFormPage editMode={false} />} />
-                      <Route path="/projects/edit/:id" element={<ProjectFormPage editMode={true} />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/profile-settings" element={<ProfileSettingsPage />} />
-                      <Route path="/settings" element={<ProfileSettingsPage />} />
-                      <Route path="/notifications" element={<NotificationsPage />} />
-                      <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
-                      <Route path="/stripe/connect/complete" element={<StripeConnectCompletePage />} />
-                      <Route path="/project-transfer" element={<ProjectTransferPage />} />
-                    </Route>
+                      {/* Protected Routes */}
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/dashboard" element={<ComponentErrorBoundary><DashboardPage /></ComponentErrorBoundary>} />
+                        <Route path="/my-projects" element={<ComponentErrorBoundary><MyProjectsPage /></ComponentErrorBoundary>} />
+                        <Route path="/projects/new" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
+                        <Route path="/projects/edit/:id" element={<ComponentErrorBoundary><ProjectFormPage editMode={true} /></ComponentErrorBoundary>} />
+                        <Route path="/profile" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
+                        <Route path="/profile-settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
+                        <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
+                        <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
+                        <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
+                        <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />
+                        <Route path="/project-transfer" element={<ComponentErrorBoundary><ProjectTransferPage /></ComponentErrorBoundary>} />
+                      </Route>
 
-                    {/* Catch-all Not Found Route */}
-                    <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-        </Suspense>
+                      {/* Catch-all Not Found Route */}
+                      <Route path="*" element={<ComponentErrorBoundary><NotFoundPage /></ComponentErrorBoundary>} />
+              </Routes>
+          </Suspense>
+        </ComponentErrorBoundary>
       </main>
       <Footer />
       
@@ -155,13 +158,15 @@ const AppContent = () => {
 function App() {
   return (
     <HelmetProvider>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
+      <ProductionErrorBoundary>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </ProductionErrorBoundary>
     </HelmetProvider>
   );
 }

@@ -50,10 +50,9 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
 
         // Get user's Stripe account ID from DB
         const userResult = await db.query(`
-            SELECT u.email, sa.stripe_account_id 
+            SELECT u.email, u.stripe_account_id 
             FROM users u 
-            LEFT JOIN stripe_accounts sa ON u.user_id = sa.user_id 
-            WHERE u.user_id = $1
+            WHERE u.user_id = ?
         `, [userId]);
         
         if (userResult.rows.length === 0) {
@@ -90,11 +89,11 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
                     console.log('User record updated with new Stripe account ID');
                 }
                 
-                // Save the new Stripe account ID to the stripe_accounts table
+                // Save the new Stripe account ID to the users table
                 await db.query(`
-                    INSERT OR REPLACE INTO stripe_accounts (user_id, stripe_account_id, account_status, created_at, updated_at) 
-                    VALUES ($1, $2, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                `, [userId, stripeAccountId]);
+                    UPDATE users SET stripe_account_id = ?, updated_at = CURRENT_TIMESTAMP 
+                    WHERE user_id = ?
+                `, [stripeAccountId, userId]);
             } catch (accountError) {
                 console.error('Error creating Stripe account:', accountError);
                 return res.status(500).json({
@@ -210,10 +209,9 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
         console.log('Step 2: Querying database for user Stripe info');
         try {
             const userResult = await db.query(`
-                SELECT u.email, sa.stripe_account_id 
+                SELECT u.email, u.stripe_account_id 
                 FROM users u 
-                LEFT JOIN stripe_accounts sa ON u.user_id = sa.user_id 
-                WHERE u.user_id = $1
+                WHERE u.user_id = ?
             `, [userId]);
             console.log('Query complete, rows returned:', userResult.rows.length);
 
@@ -241,11 +239,11 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                     stripeAccountId = account.id;
                     console.log('New Stripe account created with ID (masked)');
                     
-                    console.log('Updating stripe_accounts table with new Stripe account ID');
+                    console.log('Updating users table with new Stripe account ID');
                     await db.query(`
-                        INSERT OR REPLACE INTO stripe_accounts (user_id, stripe_account_id, account_status, created_at, updated_at) 
-                        VALUES ($1, $2, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    `, [userId, stripeAccountId]);
+                        UPDATE users SET stripe_account_id = ?, updated_at = CURRENT_TIMESTAMP 
+                        WHERE user_id = ?
+                    `, [stripeAccountId, userId]);
                     console.log('Stripe accounts table updated');
                     
                     return res.json({ 
@@ -350,7 +348,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             // If account doesn't exist on Stripe's side, clear it from our DB
             try {
               console.log('Clearing invalid Stripe account ID from DB');
-              await db.query('DELETE FROM stripe_accounts WHERE user_id = $1', [req.user.id]);
+              await db.query('UPDATE users SET stripe_account_id = NULL WHERE user_id = ?', [req.user.id]);
               return res.status(404).json({ 
                 message: 'Your Stripe account was not found. We have reset your account. Please try connecting with Stripe again.',
                 accountId: null,
