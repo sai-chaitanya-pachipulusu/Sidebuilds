@@ -3,17 +3,6 @@
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
   "installCommand": "npm install && cd client && npm install",
-  // Legacy builds config (replaced with modern commands above)
-  // "builds": [
-  //   { 
-  //     "src": "client/package.json", 
-  //     "use": "@vercel/static-build",
-  //     "config": { 
-  //       "distDir": "build",
-  //       "framework": "create-react-app"
-  //     }
-  //   }
-  // ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -104,11 +93,5 @@
       "destination": "https://sidebuilds-api.onrender.com/api/$1"
     }
   ],
-  // "functions": {
-  //   "client/build/static/js/*.js": {
-  //     "maxDuration": 10
-  //   }
-  // },
-  // "regions": ["iad1"], // Commented out - may not be supported on all plans
   "framework": "create-react-app"
 } 
