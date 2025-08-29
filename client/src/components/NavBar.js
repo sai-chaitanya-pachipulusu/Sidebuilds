@@ -123,7 +123,7 @@ const NavBar = () => {
       {/* Enhanced floating navbar inspired by framer.com and liveblocks.io */}
       <motion.nav
         ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 px-4 pt-4 ${
+        className={`fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 pt-3 sm:pt-4 ${
           isScrolled 
             ? 'bg-black/80 backdrop-blur-xl border-b border-gray-800/50' 
             : 'bg-transparent'
@@ -147,7 +147,7 @@ const NavBar = () => {
             transition: { duration: 0.3 }
           }}
         >
-          <div className="flex items-center justify-between h-16 px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
             
             {/* Enhanced Logo with framer.com style scaling */}
             <motion.div
@@ -550,9 +550,9 @@ const NavBar = () => {
                 stiffness: 200,
                 duration: 0.6 
               }}
-              className="absolute right-4 top-4 bottom-4 w-80 bg-gray-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl"
+              className="absolute right-2 sm:right-4 top-2 sm:top-4 bottom-2 sm:bottom-4 w-full max-w-xs sm:w-80 bg-gray-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl"
             >
-              <div className="flex flex-col h-full pt-16 pb-6 px-6">
+              <div className="flex flex-col h-full pt-12 sm:pt-16 pb-4 sm:pb-6 px-4 sm:px-6 safe-area-bottom">
                 
                 {/* Mobile Navigation Items */}
                 <div className="space-y-2">
@@ -576,7 +576,7 @@ const NavBar = () => {
                         <Link
                           to={item.path}
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 ${
+                          className={`flex items-center space-x-3 px-3 sm:px-4 py-3 sm:py-4 rounded-xl transition-all duration-300 min-h-[48px] ${
                             isActive
                               ? 'bg-white/[0.08] text-white border border-white/10'
                               : 'text-gray-300 hover:text-white hover:bg-white/[0.05]'
@@ -602,7 +602,7 @@ const NavBar = () => {
                         <Link
                           to="/projects/new"
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center justify-center space-x-2 px-4 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg"
+                          className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg min-h-[48px]"
                         >
                           <PlusCircle className="w-5 h-5" />
                           <span>Create Project</span>
@@ -615,7 +615,7 @@ const NavBar = () => {
                       >
                         <button
                           onClick={handleLogout}
-                          className="w-full flex items-center justify-center space-x-2 px-4 py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300"
+                          className="w-full flex items-center justify-center space-x-2 px-3 sm:px-4 py-3 sm:py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300 min-h-[48px]"
                         >
                           <LogOut className="w-5 h-5" />
                           <span>Logout</span>
@@ -632,7 +632,7 @@ const NavBar = () => {
                         <Link
                           to="/login"
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className="block w-full text-center px-4 py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300"
+                          className="block w-full text-center px-3 sm:px-4 py-3 sm:py-4 rounded-xl border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.05] transition-all duration-300 min-h-[48px] flex items-center justify-center"
                         >
                           Sign In
                         </Link>
@@ -645,7 +645,7 @@ const NavBar = () => {
                         <Link
                           to="/register"
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className="block w-full text-center px-4 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg"
+                          className="block w-full text-center px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium shadow-lg min-h-[48px] flex items-center justify-center"
                         >
                           Get Started
                         </Link>

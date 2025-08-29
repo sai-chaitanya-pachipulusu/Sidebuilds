@@ -1,5 +1,61 @@
 /* Mobile-First Responsive Styles for SideBuilds */
 
+/* Global responsive utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area handling for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Enhanced touch targets */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  touch-action: manipulation;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Base mobile styles (320px+) */
 @media (max-width: 640px) {
   /* Navigation improvements */
@@ -212,6 +268,53 @@
   .container-large {
     max-width: 1400px;
     margin: 0 auto;
+  }
+}
+
+/* Extra small mobile (320px - 374px) */
+@media (max-width: 374px) {
+  .hero-xs h1 {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+  
+  .search-xs {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.875rem;
+  }
+  
+  .card-xs {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .button-xs {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+}
+
+/* Small mobile (375px - 413px) */
+@media (min-width: 375px) and (max-width: 413px) {
+  .hero-sm h1 {
+    font-size: 2.25rem;
+  }
+  
+  .project-card-sm {
+    padding: 1rem;
+  }
+}
+
+/* Large mobile (414px - 767px) */
+@media (min-width: 414px) and (max-width: 767px) {
+  .project-grid-mobile-lg {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .hero-mobile-lg h1 {
+    font-size: 2.75rem;
   }
 }
 

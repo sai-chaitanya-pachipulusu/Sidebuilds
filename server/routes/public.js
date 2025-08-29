@@ -396,6 +396,539 @@ router.get('/projects/trending', async (req, res) => {
     }
 });
 
+// --- ADVANCED SEARCH Projects ---
+// POST /api/public/marketplace/search
+router.post('/marketplace/search', async (req, res) => {
+    try {
+        const {
+            query = '',
+            filters = {},
+            sort = 'relevance',
+            limit = 50,
+            offset = 0,
+            fuzzyMatch = true
+        } = req.body;
+
+        console.log('Advanced search request:', { query, filters, sort, limit, offset });
+
+        let searchQuery = `
+            SELECT 
+                p.project_id, 
+                p.name, 
+                COALESCE(p.description, '') as description, 
+                COALESCE(p.detailed_description, '') as detailed_description,
+                COALESCE(p.stage, '') as stage, 
+                COALESCE(p.category, '') as category,
+                COALESCE(p.subcategory, '') as subcategory,
+                COALESCE(p.domain, '') as domain, 
+                COALESCE(p.demo_url, '') as demo_url,
+                COALESCE(p.github_url, '') as github_url,
+                COALESCE(p.tech_stack, '[]') as tech_stack,
+                COALESCE(p.tags, '[]') as tags,
+                COALESCE(p.monthly_revenue, 0) as monthly_revenue,
+                COALESCE(p.monthly_users, 0) as monthly_users,
+                COALESCE(p.growth_rate, 0) as growth_rate,
+                COALESCE(p.view_count, 0) as view_count,
+                p.sale_price, 
+                p.price_negotiable,
+                COALESCE(p.contact_email, '') as contact_email, 
+                COALESCE(p.contact_phone, '') as contact_phone, 
+                COALESCE(p.payment_method, '') as payment_method,
+                p.thumbnail_url,
+                p.launch_date,
+                p.updated_at,
+                p.created_at,
+                p.owner_id as owner_id,
+                p.featured,
+                p.verified,
+                COALESCE(u.username, 'Anonymous') AS owner_username,
+                COALESCE(u.username, 'Anonymous') AS username,
+                u.is_verified,
+                u.verification_level,
+                u.first_name,
+                u.last_name,
+                u.avatar_url,
+                -- AI analysis data
+                ai.overall_score,
+                ai.estimated_value as ai_estimated_value,
+                ai.confidence_score as ai_confidence`;
+
+        // Add search ranking if query exists
+        if (query && query.trim()) {
+            if (fuzzyMatch) {
+                // Use fuzzy text search with ranking
+                searchQuery += `,
+                -- Search relevance scoring
+                CASE
+                    WHEN LOWER(p.name) LIKE LOWER($1) THEN 100
+                    WHEN LOWER(p.name) LIKE LOWER($2) THEN 80
+                    WHEN LOWER(p.description) LIKE LOWER($2) THEN 60
+                    WHEN LOWER(p.tech_stack) LIKE LOWER($2) THEN 40
+                    WHEN LOWER(p.category) LIKE LOWER($2) THEN 30
+                    WHEN LOWER(p.tags) LIKE LOWER($2) THEN 20
+                    WHEN LOWER(u.username) LIKE LOWER($2) THEN 10
+                    ELSE 0
+                END as search_rank`;
+            } else {
+                // Exact match search
+                searchQuery += `,
+                CASE
+                    WHEN LOWER(p.name) = LOWER($1) THEN 100
+                    WHEN LOWER(p.name) LIKE LOWER($2) THEN 90
+                    WHEN LOWER(p.description) LIKE LOWER($2) THEN 70
+                    ELSE 0
+                END as search_rank`;
+            }
+        }
+
+        searchQuery += `
+            FROM projects p 
+            JOIN users u ON p.owner_id = u.user_id 
+            LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id AND ai.is_current = 1
+            WHERE p.is_for_sale = 1 AND p.is_public = 1`;
+
+        const queryParams = [];
+        let paramIndex = 1;
+
+        // Add text search conditions
+        if (query && query.trim()) {
+            const exactMatch = query.trim();
+            const fuzzyPattern = `%${query.trim().toLowerCase()}%`;
+            
+            queryParams.push(exactMatch, fuzzyPattern);
+            
+            if (fuzzyMatch) {
+                searchQuery += ` AND (
+                    LOWER(p.name) LIKE LOWER($2) OR
+                    LOWER(p.description) LIKE LOWER($2) OR
+                    LOWER(p.tech_stack) LIKE LOWER($2) OR
+                    LOWER(p.category) LIKE LOWER($2) OR
+                    LOWER(p.tags) LIKE LOWER($2) OR
+                    LOWER(u.username) LIKE LOWER($2)
+                )`;
+            } else {
+                searchQuery += ` AND (
+                    LOWER(p.name) LIKE LOWER($2) OR
+                    LOWER(p.description) LIKE LOWER($2)
+                )`;
+            }
+            paramIndex = 3;
+        }
+
+        // Apply filters
+        if (filters.category && filters.category !== 'all') {
+            queryParams.push(filters.category);
+            searchQuery += ` AND LOWER(p.category) = LOWER($${paramIndex})`;
+            paramIndex++;
+        }
+
+        if (filters.stage && filters.stage !== 'all') {
+            queryParams.push(filters.stage);
+            searchQuery += ` AND LOWER(p.stage) = LOWER($${paramIndex})`;
+            paramIndex++;
+        }
+
+        if (filters.verified) {
+            searchQuery += ` AND (p.verified = true OR u.is_verified = true)`;
+        }
+
+        if (filters.featured) {
+            searchQuery += ` AND p.featured = true`;
+        }
+
+        if (filters.hasDemo) {
+            searchQuery += ` AND (p.demo_url IS NOT NULL AND p.demo_url != '')`;
+        }
+
+        // Price range filter
+        if (filters.priceRange && Array.isArray(filters.priceRange)) {
+            queryParams.push(filters.priceRange[0], filters.priceRange[1]);
+            searchQuery += ` AND p.sale_price BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+            paramIndex += 2;
+        }
+
+        // Revenue range filter
+        if (filters.revenueRange && Array.isArray(filters.revenueRange)) {
+            queryParams.push(filters.revenueRange[0], filters.revenueRange[1]);
+            searchQuery += ` AND COALESCE(p.monthly_revenue, 0) BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+            paramIndex += 2;
+        }
+
+        // Tech stack filter
+        if (filters.techStack && Array.isArray(filters.techStack) && filters.techStack.length > 0) {
+            const techConditions = filters.techStack.map(() => {
+                queryParams.push(`%${filters.techStack[queryParams.length - (paramIndex - 1)]}%`);
+                return `LOWER(p.tech_stack) LIKE LOWER($${paramIndex++})`;
+            });
+            searchQuery += ` AND (${techConditions.join(' OR ')})`;
+        }
+
+        // Date range filter
+        if (filters.dateRange && filters.dateRange !== 'all') {
+            let dateFilter = '';
+            const now = new Date();
+            
+            switch (filters.dateRange) {
+                case 'week':
+                    dateFilter = `AND p.created_at >= $${paramIndex}`;
+                    queryParams.push(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+                    paramIndex++;
+                    break;
+                case 'month':
+                    dateFilter = `AND p.created_at >= $${paramIndex}`;
+                    queryParams.push(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+                    paramIndex++;
+                    break;
+                case 'year':
+                    dateFilter = `AND p.created_at >= $${paramIndex}`;
+                    queryParams.push(new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000));
+                    paramIndex++;
+                    break;
+            }
+            searchQuery += ' ' + dateFilter;
+        }
+
+        // Add sorting
+        let orderByClause = '';
+        switch (sort) {
+            case 'relevance':
+                if (query && query.trim()) {
+                    orderByClause = 'ORDER BY search_rank DESC, p.featured DESC, p.view_count DESC';
+                } else {
+                    orderByClause = 'ORDER BY p.featured DESC, p.view_count DESC, p.created_at DESC';
+                }
+                break;
+            case 'newest':
+                orderByClause = 'ORDER BY p.created_at DESC';
+                break;
+            case 'oldest':
+                orderByClause = 'ORDER BY p.created_at ASC';
+                break;
+            case 'price_high':
+                orderByClause = 'ORDER BY p.sale_price DESC NULLS LAST';
+                break;
+            case 'price_low':
+                orderByClause = 'ORDER BY p.sale_price ASC NULLS LAST';
+                break;
+            case 'revenue_high':
+                orderByClause = 'ORDER BY p.monthly_revenue DESC NULLS LAST';
+                break;
+            case 'most_viewed':
+                orderByClause = 'ORDER BY p.view_count DESC';
+                break;
+            case 'trending':
+                // Custom trending algorithm
+                orderByClause = `ORDER BY (
+                    COALESCE(p.view_count, 0) * 0.1 + 
+                    COALESCE(p.monthly_revenue, 0) * 0.001 +
+                    EXTRACT(EPOCH FROM (NOW() - p.created_at)) / -86400 * 0.5
+                ) DESC`;
+                break;
+            case 'featured':
+                orderByClause = 'ORDER BY p.featured DESC, p.view_count DESC';
+                break;
+            default:
+                orderByClause = 'ORDER BY p.created_at DESC';
+        }
+
+        searchQuery += ' ' + orderByClause;
+
+        // Add pagination
+        if (limit) {
+            queryParams.push(limit, offset || 0);
+            searchQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        }
+
+        console.log('Executing search query with params:', queryParams.length);
+        
+        const startTime = Date.now();
+        const searchResults = await db.query(searchQuery, queryParams);
+        const searchTime = Date.now() - startTime;
+
+        // Get total count for pagination (without limit/offset)
+        let countQuery = `
+            SELECT COUNT(*) as total_count
+            FROM projects p 
+            JOIN users u ON p.owner_id = u.user_id 
+            WHERE p.is_for_sale = 1 AND p.is_public = 1`;
+
+        const countParams = [];
+        let countParamIndex = 1;
+
+        // Add the same filters to count query
+        if (query && query.trim()) {
+            const fuzzyPattern = `%${query.trim().toLowerCase()}%`;
+            countParams.push(query.trim(), fuzzyPattern);
+            
+            if (fuzzyMatch) {
+                countQuery += ` AND (
+                    LOWER(p.name) LIKE LOWER($2) OR
+                    LOWER(p.description) LIKE LOWER($2) OR
+                    LOWER(p.tech_stack) LIKE LOWER($2) OR
+                    LOWER(p.category) LIKE LOWER($2) OR
+                    LOWER(p.tags) LIKE LOWER($2) OR
+                    LOWER(u.username) LIKE LOWER($2)
+                )`;
+            } else {
+                countQuery += ` AND (
+                    LOWER(p.name) LIKE LOWER($2) OR
+                    LOWER(p.description) LIKE LOWER($2)
+                )`;
+            }
+            countParamIndex = 3;
+        }
+
+        // Apply same filters for count
+        if (filters.category && filters.category !== 'all') {
+            countParams.push(filters.category);
+            countQuery += ` AND LOWER(p.category) = LOWER($${countParamIndex})`;
+            countParamIndex++;
+        }
+
+        if (filters.stage && filters.stage !== 'all') {
+            countParams.push(filters.stage);
+            countQuery += ` AND LOWER(p.stage) = LOWER($${countParamIndex})`;
+            countParamIndex++;
+        }
+
+        if (filters.verified) {
+            countQuery += ` AND (p.verified = true OR u.is_verified = true)`;
+        }
+
+        if (filters.featured) {
+            countQuery += ` AND p.featured = true`;
+        }
+
+        if (filters.hasDemo) {
+            countQuery += ` AND (p.demo_url IS NOT NULL AND p.demo_url != '')`;
+        }
+
+        if (filters.priceRange && Array.isArray(filters.priceRange)) {
+            countParams.push(filters.priceRange[0], filters.priceRange[1]);
+            countQuery += ` AND p.sale_price BETWEEN $${countParamIndex} AND $${countParamIndex + 1}`;
+            countParamIndex += 2;
+        }
+
+        if (filters.revenueRange && Array.isArray(filters.revenueRange)) {
+            countParams.push(filters.revenueRange[0], filters.revenueRange[1]);
+            countQuery += ` AND COALESCE(p.monthly_revenue, 0) BETWEEN $${countParamIndex} AND $${countParamIndex + 1}`;
+            countParamIndex += 2;
+        }
+
+        if (filters.techStack && Array.isArray(filters.techStack) && filters.techStack.length > 0) {
+            const techConditions = filters.techStack.map(() => {
+                countParams.push(`%${filters.techStack[countParams.length - (countParamIndex - 1)]}%`);
+                return `LOWER(p.tech_stack) LIKE LOWER($${countParamIndex++})`;
+            });
+            countQuery += ` AND (${techConditions.join(' OR ')})`;
+        }
+
+        if (filters.dateRange && filters.dateRange !== 'all') {
+            const now = new Date();
+            switch (filters.dateRange) {
+                case 'week':
+                    countQuery += ` AND p.created_at >= $${countParamIndex}`;
+                    countParams.push(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+                    break;
+                case 'month':
+                    countQuery += ` AND p.created_at >= $${countParamIndex}`;
+                    countParams.push(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+                    break;
+                case 'year':
+                    countQuery += ` AND p.created_at >= $${countParamIndex}`;
+                    countParams.push(new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000));
+                    break;
+            }
+        }
+
+        const countResult = await db.query(countQuery, countParams);
+        const totalCount = parseInt(countResult.rows[0]?.total_count || 0);
+
+        // Log search analytics
+        console.log(`Search completed: ${searchResults.rows.length} results in ${searchTime}ms`);
+        
+        // Return enhanced results
+        res.json({
+            results: searchResults.rows,
+            pagination: {
+                total: totalCount,
+                limit: limit || 50,
+                offset: offset || 0,
+                hasMore: (offset || 0) + (limit || 50) < totalCount
+            },
+            metadata: {
+                searchTime,
+                query: query || null,
+                filtersApplied: Object.keys(filters).length,
+                fuzzyMatch,
+                sort
+            }
+        });
+
+    } catch (err) {
+        console.error("Advanced search error:", err.message, err.stack);
+        res.status(500).json({ 
+            error: 'Server error during search',
+            message: err.message 
+        });
+    }
+});
+
+// --- GET Search Suggestions ---
+// GET /api/public/marketplace/suggestions?q=searchterm
+router.get('/marketplace/suggestions', async (req, res) => {
+    try {
+        const { q: query, limit = 10 } = req.query;
+        
+        if (!query || query.length < 2) {
+            return res.json({ suggestions: [] });
+        }
+
+        const suggestions = [];
+        const queryLower = query.toLowerCase();
+        const fuzzyPattern = `%${queryLower}%`;
+
+        // Get project name suggestions
+        const projectSuggestions = await db.query(`
+            SELECT DISTINCT p.name, p.category, COUNT(*) as frequency
+            FROM projects p
+            WHERE p.is_for_sale = 1 AND p.is_public = 1
+                AND LOWER(p.name) LIKE $1
+            GROUP BY p.name, p.category
+            ORDER BY frequency DESC, p.name ASC
+            LIMIT $2
+        `, [fuzzyPattern, Math.ceil(limit / 2)]);
+
+        projectSuggestions.rows.forEach(row => {
+            suggestions.push({
+                type: 'project',
+                value: row.name,
+                category: row.category,
+                frequency: row.frequency
+            });
+        });
+
+        // Get technology suggestions
+        const techSuggestions = await db.query(`
+            SELECT DISTINCT 
+                regexp_split_to_table(LOWER(p.tech_stack), '[,\\s]+') as tech,
+                COUNT(*) as frequency
+            FROM projects p
+            WHERE p.is_for_sale = 1 AND p.is_public = 1
+                AND LOWER(p.tech_stack) LIKE $1
+                AND p.tech_stack IS NOT NULL
+                AND p.tech_stack != ''
+            GROUP BY tech
+            HAVING tech LIKE $1 AND LENGTH(tech) > 2
+            ORDER BY frequency DESC
+            LIMIT $2
+        `, [fuzzyPattern, Math.floor(limit / 2)]);
+
+        techSuggestions.rows.forEach(row => {
+            if (row.tech && row.tech.trim().length > 2) {
+                suggestions.push({
+                    type: 'technology',
+                    value: row.tech.trim(),
+                    frequency: row.frequency
+                });
+            }
+        });
+
+        res.json({
+            suggestions: suggestions.slice(0, limit)
+        });
+
+    } catch (err) {
+        console.error("Search suggestions error:", err);
+        res.status(500).json({ error: 'Server error getting suggestions' });
+    }
+});
+
+// --- GET Search Analytics ---
+// GET /api/public/marketplace/analytics
+router.get('/marketplace/analytics', async (req, res) => {
+    try {
+        // Get popular search terms (would need search logging)
+        const analytics = {
+            totalProjects: 0,
+            categories: {},
+            technologies: {},
+            priceRanges: {
+                'under5k': 0,
+                '5k-15k': 0,
+                '15k-50k': 0,
+                'over50k': 0
+            },
+            trends: {
+                newThisWeek: 0,
+                newThisMonth: 0,
+                avgPrice: 0,
+                avgRevenue: 0
+            }
+        };
+
+        // Get basic statistics
+        const statsResult = await db.query(`
+            SELECT 
+                COUNT(*) as total_projects,
+                AVG(COALESCE(p.sale_price, 0)) as avg_price,
+                AVG(COALESCE(p.monthly_revenue, 0)) as avg_revenue,
+                COUNT(CASE WHEN p.created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as new_this_week,
+                COUNT(CASE WHEN p.created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as new_this_month
+            FROM projects p
+            WHERE p.is_for_sale = 1 AND p.is_public = 1
+        `);
+
+        const stats = statsResult.rows[0];
+        analytics.totalProjects = parseInt(stats.total_projects);
+        analytics.trends.avgPrice = Math.round(parseFloat(stats.avg_price || 0));
+        analytics.trends.avgRevenue = Math.round(parseFloat(stats.avg_revenue || 0));
+        analytics.trends.newThisWeek = parseInt(stats.new_this_week);
+        analytics.trends.newThisMonth = parseInt(stats.new_this_month);
+
+        // Get category distribution
+        const categoryResult = await db.query(`
+            SELECT 
+                COALESCE(p.category, 'uncategorized') as category,
+                COUNT(*) as count
+            FROM projects p
+            WHERE p.is_for_sale = 1 AND p.is_public = 1
+            GROUP BY p.category
+            ORDER BY count DESC
+        `);
+
+        categoryResult.rows.forEach(row => {
+            analytics.categories[row.category] = parseInt(row.count);
+        });
+
+        // Get price range distribution
+        const priceResult = await db.query(`
+            SELECT 
+                CASE 
+                    WHEN p.sale_price < 5000 THEN 'under5k'
+                    WHEN p.sale_price < 15000 THEN '5k-15k'
+                    WHEN p.sale_price < 50000 THEN '15k-50k'
+                    ELSE 'over50k'
+                END as price_range,
+                COUNT(*) as count
+            FROM projects p
+            WHERE p.is_for_sale = 1 AND p.is_public = 1
+                AND p.sale_price > 0
+            GROUP BY price_range
+        `);
+
+        priceResult.rows.forEach(row => {
+            analytics.priceRanges[row.price_range] = parseInt(row.count);
+        });
+
+        res.json(analytics);
+
+    } catch (err) {
+        console.error("Analytics error:", err);
+        res.status(500).json({ error: 'Server error getting analytics' });
+    }
+});
+
 // Add other public routes here if needed (e.g., view single public project?)
 
 module.exports = router; 

@@ -1,19 +1,33 @@
 {
   "version": 2,
+  "buildCommand": "cd client && npm run build",
+  "outputDirectory": "client/build",
+  "installCommand": "cd client && npm install",
+  "framework": "create-react-app",
   "builds": [
     {
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "buildCommand": "npm run build"
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://sidebuilds-api.onrender.com/api/$1"
-    },
+      "source": "/api/(.*)",
+      "destination": "https://sidebuilds-api.onrender.com/api/$1"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "https://sidebuilds-api.onrender.com/socket.io/$1",
+      "permanent": false
+    }
+  ],
+  "routes": [
     { 
       "src": "/static/(.*)", 
       "dest": "/static/$1",
@@ -92,5 +106,11 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "REACT_APP_API_URL": "https://sidebuilds-api.onrender.com/api",
+    "REACT_APP_SOCKET_URL": "https://sidebuilds-api.onrender.com",
+    "GENERATE_SOURCEMAP": "false",
+    "CI": "false"
+  }
 } 

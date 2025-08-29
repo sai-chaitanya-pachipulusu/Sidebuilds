@@ -333,7 +333,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[20vh] z-50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-4 sm:pt-[10vh] md:pt-[20vh] z-50 p-4"
         onClick={onClose}
       >
         <motion.div
@@ -341,44 +341,45 @@ const CommandPalette = ({ isOpen, onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="w-full max-w-2xl bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl max-h-[90vh] bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-4 border-b border-white/[0.08]">
+          <div className="p-3 sm:p-4 border-b border-white/[0.08]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type a command or search..."
-                className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                className="w-full pl-10 pr-4 py-3 min-h-[48px] bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200 text-sm sm:text-base"
               />
             </div>
 
             {/* Categories */}
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-1 sm:gap-2 mt-3 sm:mt-4 overflow-x-auto scrollbar-hide">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap min-h-[44px] ${
                     category === cat.id
                       ? 'bg-purple-600 text-white'
                       : 'text-gray-400 hover:text-white hover:bg-gray-800'
                   }`}
                 >
                   <cat.icon className="w-3 h-3" />
-                  {cat.name}
+                  <span className="hidden sm:inline">{cat.name}</span>
+                  <span className="sm:hidden">{cat.name.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Results */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-80 sm:max-h-96 overflow-y-auto">
             {filteredCommands.length > 0 ? (
               <div className="p-2">
                 {filteredCommands.map((command, index) => {
@@ -387,7 +388,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                     <motion.button
                       key={command.id}
                       onClick={() => executeCommand(command)}
-                      className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 flex items-center gap-3 ${
+                      className={`w-full px-3 sm:px-4 py-3 rounded-xl text-left transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[48px] ${
                         index === selectedIndex
                           ? 'bg-purple-600 text-white'
                           : 'text-gray-200 hover:bg-gray-800'
@@ -411,8 +412,8 @@ const CommandPalette = ({ isOpen, onClose }) => {
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{command.title}</p>
-                        <p className={`text-sm truncate ${
+                        <p className="font-medium truncate text-sm sm:text-base">{command.title}</p>
+                        <p className={`text-xs sm:text-sm truncate ${
                           index === selectedIndex
                             ? 'text-purple-100'
                             : 'text-gray-400'
@@ -437,9 +438,9 @@ const CommandPalette = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/[0.08] bg-gray-800/30">
+          <div className="p-3 sm:p-4 border-t border-white/[0.08] bg-gray-800/30">
             <div className="flex items-center justify-between text-xs text-gray-400">
-              <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-xs">↑↓</kbd>
                   Navigate
@@ -453,7 +454,10 @@ const CommandPalette = ({ isOpen, onClose }) => {
                   Close
                 </span>
               </div>
-              <span>{filteredCommands.length} commands</span>
+              <div className="sm:hidden text-center w-full">
+                <span className="text-gray-500">Tap to select • {filteredCommands.length} commands</span>
+              </div>
+              <span className="hidden sm:inline">{filteredCommands.length} commands</span>
             </div>
           </div>
         </motion.div>

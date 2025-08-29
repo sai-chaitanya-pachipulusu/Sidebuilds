@@ -370,256 +370,117 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
     }
 });
 
-// --- Stripe Webhook Handler ---
+// --- Enhanced Stripe Webhook Handler ---
 // POST /api/payments/webhook
-const webhookHandler = async (req, res) => {
-    // Require webhook secret in production
-    if (process.env.NODE_ENV === 'production' && !STRIPE_WEBHOOK_SECRET) {
-        console.error('[STRIPE WEBHOOK] ERROR: STRIPE_WEBHOOK_SECRET is required for production');
-        return res.status(500).json({ error: 'Webhook secret configuration error' });
-    }
+const webhookService = require('../services/webhookService');
+const crypto = require('crypto');
 
-    // Always require webhook secret for security
+// Load balancing: Decide whether to use queue based on system metrics
+async function shouldUseQueue() {
+    try {
+        // Simple load check based on memory usage and active connections
+        const memUsage = process.memoryUsage();
+        const memThreshold = 0.8; // 80% memory usage
+        const memUsagePercent = memUsage.heapUsed / memUsage.heapTotal;
+        
+        // Check database connection pool if available
+        let dbLoad = false;
+        if (db.pool && db.pool.totalCount && db.pool.idleCount) {
+            const activeConnections = db.pool.totalCount - db.pool.idleCount;
+            const connectionThreshold = 0.7; // 70% of max connections
+            const connectionUsagePercent = activeConnections / (db.pool.options?.max || 20);
+            dbLoad = connectionUsagePercent > connectionThreshold;
+        }
+        
+        // Use queue if system is under high load
+        const highLoad = memUsagePercent > memThreshold || dbLoad;
+        
+        if (highLoad) {
+            console.log('[WEBHOOK] High system load detected, using queue processing');
+        }
+        
+        return highLoad;
+        
+    } catch (error) {
+        console.error('[WEBHOOK] Error checking system load:', error);
+        return false; // Default to direct processing
+    }
+}
+
+const webhookHandler = async (req, res) => {
+    const startTime = Date.now();
+    const requestId = crypto.randomUUID();
+    
+    // Log webhook request
+    console.log(`[STRIPE WEBHOOK] ${requestId} - Incoming webhook request`);
+    
+    // Require webhook secret for security
     if (!STRIPE_WEBHOOK_SECRET) {
-        console.error('[STRIPE WEBHOOK] ERROR: STRIPE_WEBHOOK_SECRET is required for all environments');
-        return res.status(500).json({ error: 'Webhook secret configuration error' });
+        console.error(`[STRIPE WEBHOOK] ${requestId} - ERROR: STRIPE_WEBHOOK_SECRET is required`);
+        return res.status(500).json({ 
+            error: 'Webhook secret configuration error',
+            requestId 
+        });
     }
 
     const sig = req.headers['stripe-signature'];
     if (!sig) {
-        console.error('[STRIPE WEBHOOK] ERROR: No Stripe signature in request headers');
-        return res.status(400).send('No Stripe signature provided');
+        console.error(`[STRIPE WEBHOOK] ${requestId} - ERROR: No Stripe signature in request headers`);
+        return res.status(400).json({ 
+            error: 'No Stripe signature provided',
+            requestId 
+        });
     }
 
     let event;
     try {
-        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET); // Corrected variable name
-        console.log(`[STRIPE WEBHOOK] ✅ Successfully verified webhook. Event ID: ${event.id}, Type: ${event.type}`);
+        // Verify webhook signature
+        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+        console.log(`[STRIPE WEBHOOK] ${requestId} - ✅ Verified webhook. Event ID: ${event.id}, Type: ${event.type}`);
     } catch (err) {
-        console.error(`[STRIPE WEBHOOK] ❌ Webhook signature verification failed: ${err.message}`);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        console.error(`[STRIPE WEBHOOK] ${requestId} - ❌ Webhook signature verification failed: ${err.message}`);
+        return res.status(400).json({ 
+            error: `Webhook signature verification failed: ${err.message}`,
+            requestId 
+        });
     }
 
-    // Handle different event types
-    switch (event.type) {
-        case 'checkout.session.completed':
-            const session = event.data.object;
-            console.log(`[STRIPE WEBHOOK] Processing checkout.session.completed for session ID: ${session.id}`);
-            try {
-                await processCheckoutCompleted(session);
-                console.log(`[STRIPE WEBHOOK] Successfully processed checkout.session.completed for session ID: ${session.id}`);
-            } catch (error) {
-                console.error(`[STRIPE WEBHOOK] Error processing checkout.session.completed for session ID: ${session.id}:`, error);
-                // Return 500 to signal Stripe to retry if appropriate, or handle specific errors
-                return res.status(500).json({ error: 'Webhook processing error for checkout.session.completed.' });
-            }
-            break;
-        case 'account.updated':
-            const account = event.data.object;
-            console.log(`[STRIPE WEBHOOK] Processing account.updated for account ID: ${account.id}`);
-            try {
-                await processAccountUpdated(account);
-                console.log(`[STRIPE WEBHOOK] Successfully processed account.updated for account ID: ${account.id}`);
-            } catch (error) {
-                console.error(`[STRIPE WEBHOOK] Error processing account.updated for account ID: ${account.id}:`, error);
-                return res.status(500).json({ error: 'Webhook processing error for account.updated.' });
-            }
-            break;
-        // TODO: Handle other event types as needed (e.g., payment_failed, disputes, etc.)
-        default:
-            console.log(`[STRIPE WEBHOOK] Unhandled event type: ${event.type}`);
-    }
-
-    res.json({ received: true });
-};
-
-async function processCheckoutCompleted(session) {
-    // SQLite doesn't have pool connections like PostgreSQL
     try {
-        await db.query('BEGIN TRANSACTION');
-        console.log('[STRIPE WEBHOOK] processCheckoutCompleted: BEGIN transaction');
-
-        const purchaseRequestId = session.metadata.purchase_request_id || session.client_reference_id;
-        const paymentIntentId = session.payment_intent;
-
-        if (!purchaseRequestId) {
-            console.error('[STRIPE WEBHOOK] ERROR: purchase_request_id missing from session metadata or client_reference_id. Session:', JSON.stringify(session, null, 2));
-            // If we can't identify the purchase request, we can't proceed. 
-            // This might require manual investigation if it happens.
-            await db.query('ROLLBACK');
-            throw new Error('Critical: Purchase Request ID missing in webhook session data.');
-        }
-
-        console.log(`[STRIPE WEBHOOK] processCheckoutCompleted: Processing for Purchase Request ID: ${purchaseRequestId}, Payment Intent ID: ${paymentIntentId}`);
-
-        // 1. Fetch the payment intent to get detailed charge information and precise amounts
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-            expand: ['latest_charge'] // Expand to get charge details including application_fee_amount
+        // Check system load and decide whether to use queue
+        const useQueue = await shouldUseQueue();
+        
+        // Process webhook with comprehensive error handling and retry logic
+        const result = await webhookService.processWebhook(event, requestId, useQueue);
+        
+        const processingTime = Date.now() - startTime;
+        console.log(`[STRIPE WEBHOOK] ${requestId} - Successfully processed in ${processingTime}ms`);
+        
+        return res.json({ 
+            received: true, 
+            eventId: event.id,
+            requestId,
+            processingTime,
+            result 
         });
         
-        if (!paymentIntent || !paymentIntent.latest_charge) {
-            console.error(`[STRIPE WEBHOOK] ERROR: Could not retrieve paymentIntent or latest_charge for PI ID: ${paymentIntentId}. Purchase Request ID: ${purchaseRequestId}`);
-            await db.query('ROLLBACK');
-            throw new Error('Failed to retrieve payment intent details from Stripe.');
-        }
-
-        const charge = paymentIntent.latest_charge;
-        const totalAmountGross = charge.amount / 100; // Amount in dollars
-        const applicationFeeAmount = (charge.application_fee_amount || 0) / 100; // Fee in dollars
-        const netAmountToSeller = (charge.amount - (charge.application_fee_amount || 0)) / 100;       
-        const currency = charge.currency;
-
-        // 2. Fetch current purchase request details to get buyer_id, seller_id, project_id
-        const prQuery = await db.query(
-            'SELECT * FROM purchase_requests WHERE id = ?',
-            [purchaseRequestId]
-        );
-        if (prQuery.rows.length === 0) {
-            console.error(`[STRIPE WEBHOOK] ERROR: Purchase request ${purchaseRequestId} not found in database.`);
-            await db.query('ROLLBACK');
-            throw new Error(`Purchase request ${purchaseRequestId} not found.`);
-        }
-        const purchaseRequest = prQuery.rows[0];
-
-        // Idempotency check: If already processed, skip.
-        if (purchaseRequest.status === 'payment_completed_pending_transfer' || purchaseRequest.status === 'completed') {
-            console.log(`[STRIPE WEBHOOK] Purchase request ${purchaseRequestId} already processed (status: ${purchaseRequest.status}). Skipping.`);
-            await db.query('COMMIT');
-            return;
-        }
-
-        // 3. Update purchase_requests status
-        const updatePrStatusQuery = await db.query(
-            `UPDATE purchase_requests 
-             SET status = 'payment_completed_pending_transfer', 
-                 updated_at = CURRENT_TIMESTAMP 
-             WHERE id = ? AND status != 'payment_completed_pending_transfer'`,
-            [purchaseRequestId]
-        );
-        if (updatePrStatusQuery.changes === 0) {
-             console.warn(`[STRIPE WEBHOOK] Purchase request ${purchaseRequestId} status was not updated, possibly already processed or race condition.`);
-             // Decide if to rollback or commit if no rows updated but not an error - for now, assume it might have been processed by a concurrent webhook.
-        }
-        console.log(`[STRIPE WEBHOOK] Updated purchase_request ${purchaseRequestId} status to payment_completed_pending_transfer.`);
-
-        // 4. Log the transaction in the transactions table
-        const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const transactionInsertQuery = await db.query(
-            `INSERT INTO project_transactions (transaction_id, project_id, buyer_id, seller_id, amount, 
-                                    commission_amount, seller_amount, status, payment_method, 
-                                    payment_id, stripe_payment_intent_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-            [
-                transactionId,
-                purchaseRequest.project_id,
-                purchaseRequest.buyer_id,
-                purchaseRequest.seller_id,
-                totalAmountGross, 
-                applicationFeeAmount, 
-                netAmountToSeller,
-                'completed', // Transaction status
-                charge.payment_method_details?.type || 'card', // e.g., 'card'
-                charge.id, // Stripe Charge ID from paymentIntent.latest_charge
-                paymentIntentId
-            ]
-        );
-        console.log(`[STRIPE WEBHOOK] Logged transaction ${transactionId} for purchase request ${purchaseRequestId}.`);
-
-        // 5. Create seller certificate (skip for now since table may not exist in SQLite)
-        console.log(`[STRIPE WEBHOOK] Skipping seller certificate creation for transaction ${transactionId}, purchase request ${purchaseRequestId}.`);
-
-        // IMPORTANT: No project ownership transfer here. That's a separate platform-managed step.
-
-        // Send email notifications to buyer and seller about successful payment.
-        try {
-            // Get buyer and seller details
-            const userDetailsQuery = await db.query(
-                `SELECT 
-                    b.email AS buyer_email, b.username AS buyer_username,
-                    s.email AS seller_email, s.username AS seller_username,
-                    p.name AS project_name
-                FROM purchase_requests pr
-                JOIN users b ON pr.buyer_id = b.user_id
-                JOIN users s ON pr.seller_id = s.user_id
-                JOIN projects p ON pr.project_id = p.project_id
-                WHERE pr.id = ?`,
-                [purchaseRequestId]
-            );
-            
-            if (userDetailsQuery.rows.length > 0) {
-                const details = userDetailsQuery.rows[0];
-                
-                // Notify seller about payment received
-                if (details.seller_email) {
-                    await emailService.notifyPaymentSuccess(details.seller_email, {
-                        sellerName: details.seller_username || 'Seller',
-                        projectName: details.project_name,
-                        amount: `$${totalAmountGross.toFixed(2)}`,
-                        buyerName: details.buyer_username || 'Buyer'
-                    });
-                }
-                
-                // Notify buyer about payment confirmation
-                if (details.buyer_email) {
-                    await emailService.sendCustomEmail(
-                        details.buyer_email,
-                        `Payment Confirmed for ${details.project_name}`,
-                        `Hi ${details.buyer_username || 'Buyer'},\n\nYour payment of $${totalAmountGross.toFixed(2)} for "${details.project_name}" has been successfully processed.\n\nThe seller will now transfer the project assets to you.\n\nBest regards,\nSideBuilds Team`,
-                        `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: #10b981;">Payment Confirmed!</h2>
-                            <p>Hi ${details.buyer_username || 'Buyer'},</p>
-                            <p>Your payment of <strong>$${totalAmountGross.toFixed(2)}</strong> for <strong>"${details.project_name}"</strong> has been successfully processed.</p>
-                            <p>The seller will now transfer the project assets to you. You'll receive another notification once the transfer is complete.</p>
-                            <p><a href="${process.env.CLIENT_URL}/dashboard?tab=purchases" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View in Dashboard</a></p>
-                            <p style="color: #6b7280; font-size: 14px;">Best regards,<br>SideBuilds Team</p>
-                        </div>`
-                    );
-                }
-            }
-        } catch (emailError) {
-            console.error('[STRIPE WEBHOOK] Error sending payment notification emails:', emailError);
-            // Don't fail the transaction for email errors
-        }
-
-        await db.query('COMMIT');
-        console.log('[STRIPE WEBHOOK] processCheckoutCompleted: COMMIT transaction');
     } catch (error) {
-        await db.query('ROLLBACK');
-        console.error('[STRIPE WEBHOOK] processCheckoutCompleted: ROLLBACK transaction due to error:', error);
-        // Re-throw the error so the webhookHandler can return a 500 to Stripe, prompting a retry if applicable.
-        throw error; 
+        const processingTime = Date.now() - startTime;
+        console.error(`[STRIPE WEBHOOK] ${requestId} - Processing failed after ${processingTime}ms:`, error);
+        
+        // Return appropriate error status
+        const status = error.message.includes('timeout') ? 408 : 500;
+        return res.status(status).json({ 
+            error: 'Webhook processing failed',
+            message: error.message,
+            eventId: event.id,
+            requestId,
+            processingTime
+        });
     }
-}
+};
 
-async function processAccountUpdated(account) {
-    console.log(`[STRIPE WEBHOOK] account.updated event for account: ${account.id}`);
-    console.log(`[STRIPE WEBHOOK] Details: charges_enabled: ${account.charges_enabled}, payouts_enabled: ${account.payouts_enabled}, details_submitted: ${account.details_submitted}`);
-
-    // Find user by stripe_account_id
-    try {
-        const userQuery = await db.query('SELECT user_id, username, email FROM users WHERE stripe_account_id = ?', [account.id]);
-        if (userQuery.rows.length > 0) {
-            const user = userQuery.rows[0];
-            console.log(`[STRIPE WEBHOOK] Found user ${user.username} (ID: ${user.user_id}) for Stripe account ${account.id}.`);
-
-            // Update user's Stripe onboarding status in your database if needed
-            // This is useful for enabling/disabling features based on Stripe Connect status
-            const onboardingComplete = account.charges_enabled && account.payouts_enabled && account.details_submitted;
-            await db.query(
-                'UPDATE users SET onboarding_complete = ? WHERE user_id = ?',
-                [onboardingComplete ? 1 : 0, user.user_id]
-            );
-            console.log(`[STRIPE WEBHOOK] Updated Stripe onboarding status for user ${user.username}. Onboarding complete: ${onboardingComplete}`);
-            
-            // TODO: Send notification to user about their account status change if relevant.
-        } else {
-            console.warn(`[STRIPE WEBHOOK] No user found with Stripe account ID ${account.id}. This might be an old or unlinked account.`);
-        }
-    } catch (error) {
-        console.error(`[STRIPE WEBHOOK] Error processing account.updated for account ${account.id}:`, error);
-        // Do not re-throw here, as this is an info update, not critical to payment flow usually.
-    }
-}
+// Legacy webhook processing functions removed - now handled by webhookService
+// This keeps the codebase clean and maintainable
 
 // --- Get Transaction Status ---
 // GET /api/payments/status/:sessionId

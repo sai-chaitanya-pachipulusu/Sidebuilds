@@ -117,6 +117,13 @@ io.use(authenticateSocket);
 const WebSocketEvents = require('./websocket/events');
 const wsEvents = new WebSocketEvents(io);
 
+// Set up periodic token expiry monitoring
+setInterval(() => {
+  if (wsEvents && wsEvents.checkForExpiringTokens) {
+    wsEvents.checkForExpiringTokens();
+  }
+}, 60000); // Check every minute
+
 // Make WebSocket events available to routes
 app.set('wsEvents', wsEvents);
 
@@ -419,6 +426,10 @@ const aiRoutes = require('./routes/ai');
 const analyticsRoutes = require('./routes/analytics');
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Webhook monitoring routes
+const webhookRoutes = require('./routes/webhooks');
+app.use('/api/webhooks', webhookRoutes);
 
 // --- Server Initialization ---
 

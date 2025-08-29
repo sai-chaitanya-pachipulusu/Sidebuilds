@@ -15,7 +15,7 @@ class WebSocketEvents {
     this.io.on('connection', this.handleConnection.bind(this));
   }
 
-  // Authenticate WebSocket connections
+  // Enhanced authenticate WebSocket connections with JWT refresh handling
   async authenticateSocket(socket, next) {
     try {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
@@ -24,56 +24,102 @@ class WebSocketEvents {
         return next(new Error('Authentication token required'));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Enhanced token validation with detailed error handling
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (jwtError) {
+        if (jwtError.name === 'TokenExpiredError') {
+          // Token expired - emit refresh required event and allow graceful handling
+          console.log(`[WebSocket Auth] Token expired for socket ${socket.id}`);
+          socket.emit('token_refresh_required', { 
+            reason: 'expired', 
+            timestamp: new Date().toISOString() 
+          });
+          return next(new Error('Token expired'));
+        } else if (jwtError.name === 'JsonWebTokenError') {
+          console.error(`[WebSocket Auth] Invalid token format for socket ${socket.id}:`, jwtError.message);
+          return next(new Error('Invalid token format'));
+        } else {
+          console.error(`[WebSocket Auth] JWT verification failed for socket ${socket.id}:`, jwtError.message);
+          return next(new Error('Token verification failed'));
+        }
+      }
       
-      // Get user data from database
+      // Get user data from database with enhanced error handling
       const userId = decoded.user ? decoded.user.id : decoded.userId;
+      if (!userId) {
+        console.error('[WebSocket Auth] No user ID in token payload:', decoded);
+        return next(new Error('Invalid token payload'));
+      }
+
       const result = await db.query(
         'SELECT user_id, username, email FROM users WHERE user_id = $1',
         [userId]
       );
 
       if (result.rows.length === 0) {
+        console.error(`[WebSocket Auth] User not found in database: ${userId}`);
         return next(new Error('User not found'));
       }
 
-      socket.user = result.rows[0];
+      // Store user info and token metadata on socket
+      socket.user = {
+        ...result.rows[0],
+        id: result.rows[0].user_id // Ensure consistent ID field
+      };
+      socket.tokenInfo = {
+        issuedAt: decoded.iat,
+        expiresAt: decoded.exp,
+        userId: userId
+      };
+      
+      console.log(`[WebSocket Auth] User authenticated: ${socket.user.username} (${socket.user.id})`);
       next();
     } catch (error) {
-      next(new Error('Invalid authentication token'));
+      console.error('[WebSocket Auth] Authentication error:', error);
+      next(new Error(`Authentication failed: ${error.message}`));
     }
   }
 
-  // Handle new WebSocket connections
+  // Enhanced WebSocket connection handler with token refresh management
   handleConnection(socket) {
     const userId = socket.user.id;
     const username = socket.user.username;
 
     console.log(`[WebSocket] User ${username} (${userId}) connected: ${socket.id}`);
 
-    // Store user connection
+    // Store user connection with enhanced metadata
     this.connectedUsers.set(userId, {
       socketId: socket.id,
       socket: socket,
       username: username,
-      connectedAt: new Date()
+      connectedAt: new Date(),
+      tokenInfo: socket.tokenInfo,
+      reconnectCount: this.connectedUsers.get(userId)?.reconnectCount || 0
     });
 
     // Join user's personal room for notifications
     socket.join(`user_${userId}`);
 
-    // Send connection confirmation
+    // Send enhanced connection confirmation with token info
     socket.emit('connection_confirmed', {
       userId: userId,
       username: username,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      tokenExpiresAt: socket.tokenInfo.expiresAt ? new Date(socket.tokenInfo.expiresAt * 1000).toISOString() : null,
+      socketId: socket.id
     });
 
-    // Set up event listeners
+    // Set up enhanced event listeners including token refresh handling
     this.setupSocketEventListeners(socket);
+    this.setupTokenRefreshHandling(socket);
 
     // Handle disconnect
-    socket.on('disconnect', () => this.handleDisconnect(socket));
+    socket.on('disconnect', (reason) => this.handleDisconnect(socket, reason));
+    
+    // Handle manual token refresh from client
+    socket.on('refresh_token', (data) => this.handleTokenRefresh(socket, data));
   }
 
   // Set up event listeners for a socket
@@ -106,6 +152,10 @@ class WebSocketEvents {
     // AI and recommendation events
     socket.on('request_recommendations', (data) => this.handleRequestRecommendations(socket, data));
     socket.on('feedback_recommendation', (data) => this.handleRecommendationFeedback(socket, data));
+    
+    // Enhanced connection monitoring
+    socket.on('ping', (data) => this.handlePing(socket, data));
+    socket.on('client_heartbeat', (data) => this.handleClientHeartbeat(socket, data));
   }
 
   // Handle data subscriptions
@@ -443,16 +493,37 @@ class WebSocketEvents {
     }
   }
 
-  // Handle disconnection
-  handleDisconnect(socket) {
+  // Enhanced disconnect handler with reconnection tracking
+  handleDisconnect(socket, reason) {
     const userId = socket.user?.id;
     const username = socket.user?.username;
 
     if (userId) {
-      console.log(`[WebSocket] User ${username} (${userId}) disconnected: ${socket.id}`);
+      console.log(`[WebSocket] User ${username} (${userId}) disconnected: ${socket.id}, reason: ${reason}`);
       
-      // Remove from connected users
-      this.connectedUsers.delete(userId);
+      // Track disconnect reason for analytics
+      const disconnectInfo = {
+        reason,
+        timestamp: new Date(),
+        socketId: socket.id,
+        wasTokenExpired: reason?.includes('token') || reason?.includes('auth')
+      };
+      
+      // Update connection info instead of immediately deleting
+      const userConnection = this.connectedUsers.get(userId);
+      if (userConnection) {
+        userConnection.disconnectedAt = new Date();
+        userConnection.lastDisconnectReason = reason;
+        userConnection.reconnectCount = (userConnection.reconnectCount || 0) + 1;
+        
+        // Only delete after a delay to allow for quick reconnections
+        setTimeout(() => {
+          const currentConnection = this.connectedUsers.get(userId);
+          if (currentConnection && currentConnection.socketId === socket.id) {
+            this.connectedUsers.delete(userId);
+          }
+        }, 30000); // 30-second grace period for reconnection
+      }
       
       // Clean up room subscriptions
       this.roomSubscriptions.forEach((subscribers, roomName) => {
@@ -462,16 +533,22 @@ class WebSocketEvents {
         }
       });
 
-      // Notify collaboration rooms
+      // Notify collaboration rooms with disconnect reason
       socket.rooms.forEach(roomName => {
         if (roomName.startsWith('collaboration_')) {
           socket.to(roomName).emit('user_left_collaboration', {
             userId,
             username,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            reason: reason,
+            isTemporary: reason !== 'client namespace disconnect'
           });
         }
       });
+      
+      // Log disconnection for monitoring
+      this.logActivity(userId, 'socket_disconnect', 'connection', socket.id, 
+        `WebSocket disconnected: ${reason}`, disconnectInfo).catch(console.error);
     }
   }
 
@@ -657,12 +734,128 @@ class WebSocketEvents {
     };
   }
 
-  // Public methods for external use
+  // Enhanced token refresh handling methods
+  setupTokenRefreshHandling(socket) {
+    const userId = socket.user.id;
+    const tokenExpiry = socket.tokenInfo.expiresAt;
+    
+    if (tokenExpiry) {
+      const expiryTime = tokenExpiry * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiryTime - currentTime;
+      
+      // Set up pre-emptive token refresh warning (5 minutes before expiry)
+      const warningTime = timeUntilExpiry - (5 * 60 * 1000);
+      
+      if (warningTime > 0) {
+        setTimeout(() => {
+          if (socket.connected) {
+            socket.emit('token_refresh_warning', {
+              expiresAt: new Date(expiryTime).toISOString(),
+              timeRemaining: Math.max(0, expiryTime - Date.now())
+            });
+            console.log(`[WebSocket] Token refresh warning sent to user ${userId}`);
+          }
+        }, warningTime);
+      }
+    }
+  }
+
+  // Handle token refresh request from client
+  async handleTokenRefresh(socket, data) {
+    try {
+      const { newToken } = data;
+      const userId = socket.user.id;
+      
+      if (!newToken) {
+        socket.emit('token_refresh_error', { error: 'No token provided' });
+        return;
+      }
+
+      // Verify new token
+      const decoded = jwt.verify(newToken, process.env.JWT_SECRET);
+      const newUserId = decoded.user ? decoded.user.id : decoded.userId;
+      
+      if (newUserId !== userId) {
+        socket.emit('token_refresh_error', { error: 'Token user mismatch' });
+        return;
+      }
+
+      // Update socket token info
+      socket.tokenInfo = {
+        issuedAt: decoded.iat,
+        expiresAt: decoded.exp,
+        userId: newUserId
+      };
+      
+      // Update stored connection info
+      const userConnection = this.connectedUsers.get(userId);
+      if (userConnection) {
+        userConnection.tokenInfo = socket.tokenInfo;
+        userConnection.tokenRefreshedAt = new Date();
+      }
+      
+      // Set up new token refresh handling
+      this.setupTokenRefreshHandling(socket);
+      
+      socket.emit('token_refresh_success', {
+        expiresAt: new Date(decoded.exp * 1000).toISOString(),
+        refreshedAt: new Date().toISOString()
+      });
+      
+      console.log(`[WebSocket] Token successfully refreshed for user ${userId}`);
+    } catch (error) {
+      console.error('[WebSocket] Token refresh failed:', error);
+      socket.emit('token_refresh_error', { 
+        error: 'Token refresh failed',
+        details: error.message 
+      });
+    }
+  }
+
+  // Handle ping from client for connection monitoring
+  handlePing(socket, data) {
+    const timestamp = data?.timestamp || Date.now();
+    socket.emit('pong', {
+      timestamp: timestamp,
+      serverTime: Date.now()
+    });
+  }
+
+  // Handle client heartbeat for enhanced monitoring
+  handleClientHeartbeat(socket, data) {
+    const userId = socket.user.id;
+    const userConnection = this.connectedUsers.get(userId);
+    
+    if (userConnection) {
+      userConnection.lastHeartbeat = new Date();
+      userConnection.clientInfo = {
+        ...userConnection.clientInfo,
+        ...data
+      };
+    }
+    
+    // Respond with server status
+    socket.emit('server_heartbeat', {
+      timestamp: Date.now(),
+      status: 'healthy',
+      connectedUsers: this.connectedUsers.size
+    });
+  }
+
+  // Enhanced public methods for external use
   broadcastToUser(userId, event, data) {
     const userConnection = this.connectedUsers.get(userId);
-    if (userConnection) {
-      userConnection.socket.emit(event, data);
+    if (userConnection && userConnection.socket.connected) {
+      try {
+        userConnection.socket.emit(event, data);
+        return true;
+      } catch (error) {
+        console.error(`[WebSocket] Failed to broadcast to user ${userId}:`, error);
+        return false;
+      }
     }
+    return false;
   }
 
   broadcastToRoom(roomName, event, data) {
@@ -674,8 +867,57 @@ class WebSocketEvents {
   }
 
   isUserConnected(userId) {
-    return this.connectedUsers.has(userId);
+    const connection = this.connectedUsers.get(userId);
+    return connection && connection.socket && connection.socket.connected;
+  }
+
+  // Get detailed connection info for monitoring
+  getUserConnectionInfo(userId) {
+    const connection = this.connectedUsers.get(userId);
+    if (!connection) return null;
+    
+    return {
+      isConnected: connection.socket && connection.socket.connected,
+      socketId: connection.socketId,
+      username: connection.username,
+      connectedAt: connection.connectedAt,
+      disconnectedAt: connection.disconnectedAt,
+      reconnectCount: connection.reconnectCount,
+      lastHeartbeat: connection.lastHeartbeat,
+      tokenInfo: {
+        expiresAt: connection.tokenInfo?.expiresAt ? new Date(connection.tokenInfo.expiresAt * 1000) : null,
+        isExpiringSoon: connection.tokenInfo?.expiresAt ? (connection.tokenInfo.expiresAt * 1000 - Date.now()) < 300000 : false // 5 minutes
+      }
+    };
+  }
+
+  // Check for users with expiring tokens and notify them
+  checkForExpiringTokens() {
+    const now = Date.now();
+    const fiveMinutesFromNow = now + (5 * 60 * 1000);
+    
+    this.connectedUsers.forEach((connection, userId) => {
+      if (connection.tokenInfo?.expiresAt) {
+        const tokenExpiryMs = connection.tokenInfo.expiresAt * 1000;
+        
+        // If token expires in the next 5 minutes, send warning
+        if (tokenExpiryMs > now && tokenExpiryMs <= fiveMinutesFromNow) {
+          if (connection.socket && connection.socket.connected) {
+            connection.socket.emit('token_refresh_warning', {
+              expiresAt: new Date(tokenExpiryMs).toISOString(),
+              timeRemaining: tokenExpiryMs - now
+            });
+          }
+        }
+      }
+    });
   }
 }
 
 module.exports = WebSocketEvents;
+
+// Set up periodic token expiry check (every minute)
+setInterval(() => {
+  // This will be called on the instance, so we need to store a reference
+  // This is handled in the main server file where the instance is created
+}, 60000);

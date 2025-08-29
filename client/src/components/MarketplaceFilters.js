@@ -103,10 +103,10 @@ const MarketplaceFilters = ({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search projects, technologies, categories..."
+            placeholder={isMobile ? "Search projects..." : "Search projects, technologies, categories..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+            className="w-full pl-12 pr-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200 text-sm sm:text-base"
           />
           {searchTerm && (
             <button
@@ -460,7 +460,7 @@ const MobileFilterModal = ({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] bg-gray-900/95 backdrop-blur-xl border-t border-white/10 rounded-t-2xl"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] bg-gray-900/95 backdrop-blur-xl border-t border-white/10 rounded-t-2xl safe-area-bottom"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
@@ -483,7 +483,7 @@ const MobileFilterModal = ({
               {/* Categories */}
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Category</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   {categories.map((category) => {
                     const Icon = category.icon
                     return (

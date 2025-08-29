@@ -57,6 +57,17 @@ const getStageColor = (stage) => {
 
 const ProjectCard = ({ project, variant = 'default', showPrice = true, className = '' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Enhanced status mappings with modern styling
   const statusConfig = {
@@ -111,12 +122,12 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
         <div className="relative h-full bg-gray-900/90 backdrop-blur-sm border border-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:border-gray-700">
           
           {/* Mobile-optimized header */}
-          <div className="p-4 md:p-6 border-b border-gray-800/50">
+          <div className="p-3 sm:p-4 md:p-6 border-b border-gray-800/50">
             <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-4">
               <div className="flex-1 w-full sm:w-auto">
                 {/* Title and verification badges */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                  <h3 className="text-lg md:text-xl font-semibold text-white group-hover:text-purple-300 transition-colors">
+                  <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white group-hover:text-purple-300 transition-colors line-clamp-2">
                     {project.name}
                   </h3>
                   
@@ -175,21 +186,21 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
             </div>
             
             {/* Description with better mobile spacing */}
-            <p className="text-gray-300 text-sm leading-relaxed line-clamp-2">
+            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3">
               {project.description}
             </p>
           </div>
 
           {/* Content section with mobile optimization */}
-          <div className="p-4 md:p-6 space-y-4">
+          <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
             
             {/* Tech stack - mobile-friendly pills */}
             {techStack.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {techStack.slice(0, 3).map((tech, index) => (
+              <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                {techStack.slice(0, isMobile ? 2 : 3).map((tech, index) => (
                   <motion.span
                     key={tech}
-                    className="px-2 py-1 bg-gray-800/60 text-gray-300 text-xs rounded-lg border border-gray-700/50"
+                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-800/60 text-gray-300 text-xs rounded-md sm:rounded-lg border border-gray-700/50"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
@@ -197,9 +208,9 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     {tech}
                   </motion.span>
                 ))}
-                {techStack.length > 3 && (
-                  <span className="px-2 py-1 bg-gray-800/60 text-gray-400 text-xs rounded-lg border border-gray-700/50">
-                    +{techStack.length - 3}
+                {techStack.length > (isMobile ? 2 : 3) && (
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-800/60 text-gray-400 text-xs rounded-md sm:rounded-lg border border-gray-700/50">
+                    +{techStack.length - (isMobile ? 2 : 3)}
                   </span>
                 )}
               </div>
@@ -223,14 +234,14 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
             </div>
 
             {/* Mobile-optimized action buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-2">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {project.github_url && (
                   <motion.a
                     href={project.github_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1 px-3 py-2 min-h-[48px] text-gray-400 hover:text-white text-sm transition-colors border border-gray-700 rounded-lg hover:border-gray-600"
+                    className="flex items-center justify-center gap-1 px-2 sm:px-3 py-2 min-h-[44px] text-gray-400 hover:text-white text-xs sm:text-sm transition-colors border border-gray-700 rounded-lg hover:border-gray-600"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -244,7 +255,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     href={`https://${project.domain}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1 px-3 py-2 min-h-[48px] text-gray-400 hover:text-white text-sm transition-colors border border-gray-700 rounded-lg hover:border-gray-600"
+                    className="flex items-center justify-center gap-1 px-2 sm:px-3 py-2 min-h-[44px] text-gray-400 hover:text-white text-xs sm:text-sm transition-colors border border-gray-700 rounded-lg hover:border-gray-600"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -257,7 +268,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
               {/* Mobile-friendly view details button */}
               <Link to={`/projects/${project.project_id}`} className="flex-1 sm:flex-initial">
                 <motion.button
-                  className="w-full sm:w-auto px-4 py-2 min-h-[48px] bg-purple-600/20 text-purple-300 rounded-lg text-sm font-medium border border-purple-600/30 hover:bg-purple-600/30 transition-all duration-200"
+                  className="w-full sm:w-auto px-3 sm:px-4 py-2 min-h-[44px] bg-purple-600/20 text-purple-300 rounded-lg text-xs sm:text-sm font-medium border border-purple-600/30 hover:bg-purple-600/30 transition-all duration-200"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

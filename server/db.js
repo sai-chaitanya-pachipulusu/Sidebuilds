@@ -110,9 +110,23 @@ if (useSQLite) {
     });
   };
   
+  // Add transaction support for SQLite
+  const withTransaction = async (callback) => {
+    await query('BEGIN TRANSACTION');
+    try {
+      const result = await callback({ query });
+      await query('COMMIT');
+      return result;
+    } catch (error) {
+      await query('ROLLBACK');
+      throw error;
+    }
+  };
+
   module.exports = {
     query,
     db,
+    withTransaction,
     checkConnection: async () => ({
       ok: true,
       message: 'SQLite database is healthy'
@@ -272,10 +286,27 @@ const checkConnection = async () => {
     }
 };
 
+// Transaction wrapper for PostgreSQL
+const withTransaction = async (callback) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await callback(client);
+        await client.query('COMMIT');
+        return result;
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     query,
     getClient: () => pool.connect(),
     retry,
+    withTransaction,
     pool, // Export the pool itself if needed
     isConnectionHealthy,
     checkConnection

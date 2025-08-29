@@ -56,8 +56,8 @@ const getEnvironmentConfig = () => {
     },
     
     production: {
-      API_URL: process.env.REACT_APP_API_URL || 'https://api.sidebuilds.space',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api.sidebuilds.space',
+      API_URL: process.env.REACT_APP_API_URL || 'https://sidebuilds-api.onrender.com/api',
+      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://sidebuilds-api.onrender.com',
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: false,
       ENABLE_ANALYTICS: true,

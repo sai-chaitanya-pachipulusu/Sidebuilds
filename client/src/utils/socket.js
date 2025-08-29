@@ -164,7 +164,15 @@ const setupSocketEventHandlers = () => {
   
   // Custom events for production monitoring
   socket.on('pong', handlePong);
+  socket.on('server_heartbeat', handleServerHeartbeat);
+  
+  // Enhanced token refresh handling
   socket.on('token_refresh_required', handleTokenRefreshRequired);
+  socket.on('token_refresh_warning', handleTokenRefreshWarning);
+  socket.on('token_refresh_success', handleTokenRefreshSuccess);
+  socket.on('token_refresh_error', handleTokenRefreshError);
+  
+  // Server events
   socket.on('server_maintenance', handleServerMaintenance);
   socket.on('rate_limit_warning', handleRateLimitWarning);
   
@@ -368,13 +376,18 @@ const cleanupSocket = () => {
   stopHeartbeat();
 };
 
-// Heartbeat functionality for connection monitoring
+// Enhanced heartbeat functionality for connection monitoring
 const startHeartbeat = (interval = 15000) => {
   stopHeartbeat(); // Clear any existing heartbeat
   
   heartbeatInterval = setInterval(() => {
     if (socket && socket.connected) {
       sendPing();
+      
+      // Send heartbeat every 3rd ping
+      if (Math.random() < 0.33) {
+        sendHeartbeat();
+      }
     }
   }, interval);
 };
@@ -389,7 +402,32 @@ const stopHeartbeat = () => {
 const sendPing = () => {
   if (socket && socket.connected) {
     lastPingTime = Date.now();
-    socket.emit('ping', { timestamp: lastPingTime });
+    socket.emit('ping', { 
+      timestamp: lastPingTime,
+      clientInfo: {
+        url: window.location.href,
+        userAgent: navigator.userAgent.substring(0, 100),
+        connectionQuality,
+        bufferSize: messageBuffer.length
+      }
+    });
+  }
+};
+
+// Send periodic heartbeat with client status
+const sendHeartbeat = () => {
+  if (socket && socket.connected) {
+    socket.emit('client_heartbeat', {
+      timestamp: Date.now(),
+      status: 'active',
+      page: window.location.pathname,
+      connectionMetrics: {
+        quality: connectionQuality,
+        latency: averageLatency,
+        bufferSize: messageBuffer.length,
+        uptime: connectionMetrics.totalUptime
+      }
+    });
   }
 };
 
@@ -409,6 +447,48 @@ const handlePong = (data) => {
     
     console.log(`[Socket.IO] Ping: ${latency}ms (avg: ${Math.round(averageLatency)}ms)`);
   }
+};
+
+// Handle server heartbeat response
+const handleServerHeartbeat = (data) => {
+  console.log('[Socket.IO] Server heartbeat:', data);
+  
+  // Update server status information
+  if (data.connectedUsers !== undefined) {
+    // Emit event for UI components that might want to show this
+    window.dispatchEvent(new CustomEvent('socket-server-status', {
+      detail: {
+        connectedUsers: data.connectedUsers,
+        serverStatus: data.status,
+        timestamp: data.timestamp
+      }
+    }));
+  }
+};
+
+// Enhanced token refresh success handler
+const handleTokenRefreshSuccess = (data) => {
+  console.log('[Socket.IO] Token refresh successful:', data);
+  updateStatus('connected', 'Authentication refreshed');
+  
+  // Emit success event for UI components
+  window.dispatchEvent(new CustomEvent('socket-token-refreshed', {
+    detail: {
+      expiresAt: data.expiresAt,
+      refreshedAt: data.refreshedAt
+    }
+  }));
+};
+
+// Enhanced token refresh error handler
+const handleTokenRefreshError = (data) => {
+  console.error('[Socket.IO] Token refresh error:', data);
+  updateStatus('error', `Token refresh failed: ${data.error}`);
+  
+  // Try to get a new token one more time
+  setTimeout(() => {
+    refreshTokenAndReconnect();
+  }, 2000);
 };
 
 // Determine connection quality from latency
@@ -511,50 +591,176 @@ export const emitWithRetry = (event, data, options = {}) => {
   });
 };
 
-// Token refresh functionality
+// Enhanced token refresh functionality with multiple strategies
 const handleTokenRefreshRequired = async () => {
-  console.log('[Socket.IO] Token refresh required');
+  console.log('[Socket.IO] Token refresh required by server');
   await refreshTokenAndReconnect();
+};
+
+const handleTokenRefreshWarning = (data) => {
+  console.log('[Socket.IO] Token refresh warning:', data);
+  
+  // Emit custom event for UI components to show warning
+  window.dispatchEvent(new CustomEvent('socket-token-expiring', {
+    detail: {
+      expiresAt: data.expiresAt,
+      timeRemaining: data.timeRemaining
+    }
+  }));
+  
+  // Proactively refresh token if less than 2 minutes remaining
+  if (data.timeRemaining < 120000) { // 2 minutes
+    refreshTokenAndReconnect();
+  }
 };
 
 const refreshTokenAndReconnect = async () => {
   try {
-    // Attempt to refresh token using auth context or API
-    const refreshResponse = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${currentToken}`
-      }
-    });
+    console.log('[Socket.IO] Attempting token refresh...');
+    updateStatus('reconnecting', 'Refreshing authentication...');
     
-    if (refreshResponse.ok) {
-      const { token: newToken } = await refreshResponse.json();
+    // Strategy 1: Try refresh endpoint
+    let newToken = await tryRefreshEndpoint();
+    
+    // Strategy 2: Try to get fresh token from auth context/localStorage
+    if (!newToken) {
+      newToken = await tryGetFreshToken();
+    }
+    
+    // Strategy 3: Try to refresh using stored refresh token
+    if (!newToken) {
+      newToken = await tryRefreshWithRefreshToken();
+    }
+    
+    if (newToken) {
+      console.log('[Socket.IO] Token refreshed successfully');
       
-      if (newToken) {
-        console.log('[Socket.IO] Token refreshed, reconnecting...');
+      // Update token in localStorage
+      localStorage.setItem('token', newToken);
+      currentToken = newToken;
+      
+      // If socket exists and is connected, send new token
+      if (socket && socket.connected) {
+        socket.emit('refresh_token', { newToken });
         
-        // Update token in localStorage
-        localStorage.setItem('token', newToken);
+        // Wait for confirmation or reconnect
+        const refreshPromise = new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Token refresh timeout'));
+          }, 5000);
+          
+          const successHandler = () => {
+            clearTimeout(timeout);
+            socket.off('token_refresh_error', errorHandler);
+            resolve();
+          };
+          
+          const errorHandler = (error) => {
+            clearTimeout(timeout);
+            socket.off('token_refresh_success', successHandler);
+            reject(new Error(error.error || 'Token refresh failed'));
+          };
+          
+          socket.once('token_refresh_success', successHandler);
+          socket.once('token_refresh_error', errorHandler);
+        });
         
-        // Reconnect with new token
-        initializeSocket(newToken);
+        await refreshPromise;
+        updateStatus('connected', 'Token refreshed successfully');
       } else {
-        throw new Error('No token in refresh response');
+        // Reconnect with new token
+        await initializeSocket(newToken);
       }
     } else {
-      throw new Error('Token refresh failed');
+      throw new Error('Unable to obtain new token');
     }
   } catch (error) {
     console.error('[Socket.IO] Token refresh failed:', error);
     
     // Redirect to login if refresh fails
-    updateStatus('error', 'Authentication expired');
+    updateStatus('error', 'Authentication expired - please log in again');
     notifyAuthenticationFailure();
   }
 };
 
-// Re-establish connection after reconnect
+// Strategy 1: Try dedicated refresh endpoint
+const tryRefreshEndpoint = async () => {
+  try {
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentToken}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.token || data.accessToken;
+    }
+  } catch (error) {
+    console.log('[Socket.IO] Refresh endpoint failed:', error.message);
+  }
+  return null;
+};
+
+// Strategy 2: Get fresh token from current auth state
+const tryGetFreshToken = async () => {
+  try {
+    // Try to get token from React context or global state
+    const authEvent = new CustomEvent('get-auth-token');
+    let freshToken = null;
+    
+    const handleAuthToken = (event) => {
+      freshToken = event.detail?.token;
+    };
+    
+    window.addEventListener('provide-auth-token', handleAuthToken);
+    window.dispatchEvent(authEvent);
+    
+    // Give a brief moment for the auth context to respond
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    window.removeEventListener('provide-auth-token', handleAuthToken);
+    
+    return freshToken;
+  } catch (error) {
+    console.log('[Socket.IO] Fresh token retrieval failed:', error.message);
+  }
+  return null;
+};
+
+// Strategy 3: Use refresh token if available
+const tryRefreshWithRefreshToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return null;
+    
+    const response = await fetch('/api/auth/token', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Also update refresh token if provided
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
+      return data.token || data.accessToken;
+    }
+  } catch (error) {
+    console.log('[Socket.IO] Refresh token strategy failed:', error.message);
+  }
+  return null;
+};
+
+// Enhanced connection re-establishment with better state management
 const reestablishConnection = () => {
   try {
     // Re-join user room if we have user info
@@ -566,7 +772,16 @@ const reestablishConnection = () => {
     // Flush any buffered messages
     flushMessageBuffer();
     
-    console.log('[Socket.IO] Connection re-established');
+    // Emit reconnection event for UI components
+    window.dispatchEvent(new CustomEvent('socket-reconnected', {
+      detail: {
+        socketId: socket.id,
+        timestamp: Date.now(),
+        reconnectCount: connectionMetrics.reconnectCount
+      }
+    }));
+    
+    console.log('[Socket.IO] Connection re-established successfully');
   } catch (error) {
     console.error('[Socket.IO] Failed to re-establish connection:', error);
   }
@@ -585,12 +800,24 @@ const notifyConnectionFailure = () => {
 };
 
 const notifyAuthenticationFailure = () => {
+  // Clear stored tokens
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  currentToken = null;
+  
   // Emit custom event for auth handling
   window.dispatchEvent(new CustomEvent('socket-auth-failed', {
     detail: {
-      message: 'Authentication expired, please log in again'
+      message: 'Authentication expired, please log in again',
+      shouldRedirectToLogin: true,
+      timestamp: Date.now()
     }
   }));
+  
+  // Disconnect socket to prevent further attempts
+  if (socket) {
+    socket.disconnect();
+  }
 };
 
 // Enhanced subscription methods
@@ -635,4 +862,56 @@ export const isSocketHealthy = () => {
          status === 'connected' && 
          connectionQuality !== 'poor' &&
          averageLatency < 1000;
+};
+
+// Enhanced token management utilities
+export const getTokenStatus = () => {
+  if (!socket || !socket.connected) {
+    return { status: 'disconnected' };
+  }
+  
+  // Try to decode current token to get expiry
+  try {
+    if (currentToken) {
+      const tokenParts = currentToken.split('.');
+      if (tokenParts.length === 3) {
+        const payload = JSON.parse(atob(tokenParts[1]));
+        const expiresAt = payload.exp * 1000;
+        const now = Date.now();
+        const timeUntilExpiry = expiresAt - now;
+        
+        return {
+          status: 'connected',
+          expiresAt: new Date(expiresAt).toISOString(),
+          timeUntilExpiry,
+          isExpiringSoon: timeUntilExpiry < 300000, // 5 minutes
+          isExpired: timeUntilExpiry <= 0
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('[Socket.IO] Could not decode token:', error);
+  }
+  
+  return { status: 'connected', tokenInfo: 'unavailable' };
+};
+
+// Manual token refresh trigger
+export const refreshAuthToken = async () => {
+  if (!socket || !socket.connected) {
+    throw new Error('Socket not connected');
+  }
+  
+  return await refreshTokenAndReconnect();
+};
+
+// Enhanced connection info with token status
+export const getDetailedConnectionInfo = () => {
+  return {
+    ...getCurrentSocketStatus(),
+    tokenStatus: getTokenStatus(),
+    lastPingTime,
+    messageBufferSize: messageBuffer.length,
+    heartbeatActive: heartbeatInterval !== null
+  };
 }; 

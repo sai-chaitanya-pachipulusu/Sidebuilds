@@ -21,7 +21,11 @@
     "test-server": "node test-server-startup.js",
     "start": "concurrently \"cd server && npm start\" \"cd client && npm start\"",
     "start-clean": "node kill-ports.js && npm start",
-    "install-all": "npm install && cd server && npm install && cd client && npm install"
+    "install-all": "npm install && cd server && npm install && cd client && npm install",
+    "validate-build": "node scripts/validate-build.js",
+    "build:client": "cd client && npm run build:vercel",
+    "deploy:validate": "npm run validate-build && npm run build:client",
+    "deploy:vercel": "cd client && vercel --prod"
   },
   "dependencies": {
     "@mantine/core": "^8.0.2",
