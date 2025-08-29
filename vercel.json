@@ -6,7 +6,8 @@
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "buildCommand": "npm run build:unix"
       }
     }
   ],
@@ -21,11 +22,25 @@
     },
     {
       "src": "/static/(.*)",
-      "dest": "/static/$1"
+      "dest": "/static/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/(.*\\.(png|jpg|ico|css|js))",
+      "dest": "/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000"
+      }
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "REACT_APP_API_URL": "https://sidebuilds-api.onrender.com/api",
+    "REACT_APP_SOCKET_URL": "https://sidebuilds-api.onrender.com"
+  }
 }
