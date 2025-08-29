@@ -46,6 +46,8 @@
     "build": "react-scripts build",
     "build:vercel": "set CI=false && set GENERATE_SOURCEMAP=false && react-scripts build",
     "build:unix": "CI=false GENERATE_SOURCEMAP=false react-scripts build",
+    "build:production": "DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false react-scripts build",
+    "build:production:win": "set DISABLE_ESLINT_PLUGIN=true && set CI=false && set GENERATE_SOURCEMAP=false && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
