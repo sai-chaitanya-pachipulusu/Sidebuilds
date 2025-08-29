@@ -1,16 +1,9 @@
 {
   "version": 2,
   "name": "sidebuilds-frontend",
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build",
-        "buildCommand": "npm run build:unix"
-      }
-    }
-  ],
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/build",
+  "installCommand": "cd client && npm install",
   "routes": [
     {
       "src": "/api/(.*)",
@@ -28,7 +21,7 @@
       }
     },
     {
-      "src": "/(.*\\.(png|jpg|ico|css|js))",
+      "src": "/(.*\\.(png|jpg|ico|css|js|map|woff|woff2|ttf|eot|svg))",
       "dest": "/$1",
       "headers": {
         "cache-control": "public, max-age=31536000"
@@ -40,7 +33,13 @@
     }
   ],
   "env": {
+    "CI": "false",
+    "GENERATE_SOURCEMAP": "false",
+    "DISABLE_ESLINT_PLUGIN": "true",
+    "TSC_COMPILE_ON_ERROR": "true",
+    "SKIP_PREFLIGHT_CHECK": "true",
     "REACT_APP_API_URL": "https://sidebuilds-api.onrender.com/api",
-    "REACT_APP_SOCKET_URL": "https://sidebuilds-api.onrender.com"
+    "REACT_APP_SOCKET_URL": "https://sidebuilds-api.onrender.com",
+    "REACT_APP_ENV": "production"
   }
 }
