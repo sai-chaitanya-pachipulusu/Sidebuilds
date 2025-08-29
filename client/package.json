@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "http-proxy-middleware": "^3.0.5",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
@@ -48,6 +49,8 @@
     "build:unix": "CI=false GENERATE_SOURCEMAP=false react-scripts build",
     "build:production": "DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false react-scripts build",
     "build:production:win": "set DISABLE_ESLINT_PLUGIN=true && set CI=false && set GENERATE_SOURCEMAP=false && react-scripts build",
+    "build:no-lint": "cross-env DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false react-scripts build",
+    "build:vercel-deploy": "cp .eslintrc.production.js .eslintrc.js && cross-env CI=false GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
