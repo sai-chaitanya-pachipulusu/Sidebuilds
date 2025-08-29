@@ -1,0 +1,13 @@
+# Ignore server files for frontend deployment
+server/
+database/
+scripts/
+docs/
+cypress/
+node_modules/
+.env.local
+.env.development.local
+.env.test.local
+
+# Keep only client files for deployment
+!client/**

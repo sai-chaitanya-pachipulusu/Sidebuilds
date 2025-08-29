@@ -373,7 +373,6 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
 // --- Enhanced Stripe Webhook Handler ---
 // POST /api/payments/webhook
 const webhookService = require('../services/webhookService');
-const crypto = require('crypto');
 
 // Load balancing: Decide whether to use queue based on system metrics
 async function shouldUseQueue() {

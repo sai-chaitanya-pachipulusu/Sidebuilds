@@ -25,7 +25,10 @@
     "validate-build": "node scripts/validate-build.js",
     "build:client": "cd client && npm run build:vercel",
     "deploy:validate": "npm run validate-build && npm run build:client",
-    "deploy:vercel": "cd client && vercel --prod"
+    "deploy:vercel": "cd client && vercel --prod",
+    "build": "cd client && npm run build:vercel",
+    "install": "cd client && npm install",
+    "vercel-build": "cd client && npm install && npm run build:vercel"
   },
   "dependencies": {
     "@mantine/core": "^8.0.2",
