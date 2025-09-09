@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use consistent backend port (align with dev proxy 5004)
-    baseURL: 'http://localhost:5004/api',
+    // Use consistent backend port (server runs on 5001)
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -373,8 +373,9 @@ export const checkApiHealth = async () => {
     }
 };
 
-// Payment API calls
+// Payment API calls - DEPRECATED: Use createCheckoutSessionForPurchaseRequest instead
 export const createCheckoutSession = async (projectId) => {
+    console.warn('createCheckoutSession is deprecated. Use createCheckoutSessionForPurchaseRequest with purchase_request_id instead.');
     const response = await apiClient.post('/payments/create-checkout-session', { projectId });
     return response.data;
 };

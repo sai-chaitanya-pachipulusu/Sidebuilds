@@ -1,12 +1,35 @@
 import axios from 'axios';
 
 // API URL
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5004/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Stripe service functions
 const StripeService = {
-  // Create checkout session
-  createCheckoutSession: async (projectId) => {
+  // Create checkout session using purchase request ID
+  createCheckoutSession: async (purchase_request_id) => {
+    try {
+      console.log(`Creating checkout session for purchase request ${purchase_request_id}`);
+      
+      const response = await axios.post(`${API_URL}/payments/create-checkout-session`, { 
+        purchase_request_id
+      });
+      
+      console.log('Checkout session created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create checkout session:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+      }
+      
+      throw error.response?.data || { error: 'Failed to create checkout session' };
+    }
+  },
+
+  // Legacy method for direct project checkout (deprecated - use purchase requests)
+  createDirectCheckout: async (projectId) => {
+    console.warn('createDirectCheckout is deprecated. Use purchase request flow instead.');
+    
     // Check if this is a seeded project
     const isSeededProject = projectId.includes('aaaaaaaa') || 
                           projectId.includes('bbbbbbbb') || 
@@ -27,13 +50,20 @@ const StripeService = {
         config.headers = {
           'X-Seeded-Project': 'true'
         };
-        // Use longer timeout for seeded projects
         config.timeout = 15000;
       }
       
+      // First create a purchase request, then checkout
+      const purchaseResponse = await axios.post(`${API_URL}/purchase-requests`, {
+        project_id: projectId,
+        message: 'Direct purchase request'
+      });
+      
+      const purchase_request_id = purchaseResponse.data.id;
+      
+      // Now create checkout session
       const response = await axios.post(`${API_URL}/payments/create-checkout-session`, { 
-        projectId,
-        isSeeded: isSeededProject
+        purchase_request_id
       }, config);
       
       console.log('Checkout session created:', response.data);
@@ -42,16 +72,6 @@ const StripeService = {
       console.error('Failed to create checkout session:', error);
       if (error.response) {
         console.error('Error response:', error.response.data);
-      }
-      
-      // For seeded projects, provide a more detailed error
-      if (isSeededProject) {
-        console.error('Seeded project checkout failed with details:', {
-          projectId,
-          error: error.message,
-          status: error.response?.status,
-          data: error.response?.data
-        });
       }
       
       throw error.response?.data || { error: 'Failed to create checkout session' };
