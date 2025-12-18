@@ -117,7 +117,7 @@ router.get('/projects/:id', async (req, res) => {
             `SELECT 
                 p.project_id, p.name, p.description, p.stage,
                 p.domain, p.demo_url, p.github_url, p.tech_stack, p.tags, p.monthly_revenue,
-                p.view_count,
+                p.view_count, p.is_on_hold,
                 p.is_for_sale, p.sale_price, 
                 CASE WHEN ${DB.checkBool('p.is_for_sale')} THEN p.contact_email ELSE NULL END AS contact_email,
                 CASE WHEN ${DB.checkBool('p.is_for_sale')} THEN p.contact_phone ELSE NULL END AS contact_phone,
