@@ -279,7 +279,7 @@ router.get('/:id', async (req, res) => {
         // Updated query to allow access if the project is public OR the user is the owner
         const projectResult = await db.query(
             `SELECT * FROM projects 
-             WHERE project_id = ? AND (owner_id = ? OR is_public = 1)`,
+             WHERE project_id = ? AND (owner_id = ? OR CAST(is_public AS BOOLEAN) IS TRUE)`,
             [projectId, userId]
         );
 

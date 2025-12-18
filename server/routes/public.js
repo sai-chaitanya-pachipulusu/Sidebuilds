@@ -9,7 +9,9 @@ const isPostgres = process.env.USE_SQLITE !== 'true';
 // Field references based on DB type
 const DB = {
     techStack: isPostgres ? "CAST(p.tech_stack AS TEXT)" : "p.tech_stack",
-    tags: isPostgres ? "CAST(p.tags AS TEXT)" : "p.tags"
+    tags: isPostgres ? "CAST(p.tags AS TEXT)" : "p.tags",
+    // Helper for boolean checks (safely handles INT or BOOL columns in Postgres)
+    checkBool: (col) => isPostgres ? `CAST(${col} AS BOOLEAN) IS TRUE` : `${col} = 1`
 };
 
 // --- READ Publicly Shared Projects ---
@@ -91,8 +93,8 @@ router.get('/marketplace', async (req, res) => {
                 ai.confidence_score as ai_confidence
             FROM projects p 
             JOIN users u ON p.owner_id = u.user_id 
-            LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id AND ai.is_current = 1
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
+            LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id AND ${DB.checkBool('ai.is_current')}
+            WHERE ${DB.checkBool('p.is_for_sale')} AND ${DB.checkBool('p.is_public')}
             ORDER BY p.created_at DESC`
         );
         
@@ -114,16 +116,16 @@ router.get('/projects/:id', async (req, res) => {
         const projectDetails = await db.query(
             `SELECT 
                 p.project_id, p.name, p.description, p.stage,
-                p.domain, p.demo_url, p.github_url, p.tech_stack, p.monthly_revenue,
+                p.domain, p.demo_url, p.github_url, p.tech_stack, p.tags, p.monthly_revenue,
                 p.view_count, p.is_on_hold,
                 p.is_for_sale, p.sale_price, 
-                CASE WHEN p.is_for_sale = 1 THEN p.contact_email ELSE NULL END AS contact_email,
-                CASE WHEN p.is_for_sale = 1 THEN p.contact_phone ELSE NULL END AS contact_phone,
-                CASE WHEN p.is_for_sale = 1 THEN p.payment_method ELSE NULL END AS payment_method,
+                CASE WHEN ${DB.checkBool('p.is_for_sale')} THEN p.contact_email ELSE NULL END AS contact_email,
+                CASE WHEN ${DB.checkBool('p.is_for_sale')} THEN p.contact_phone ELSE NULL END AS contact_phone,
+                CASE WHEN ${DB.checkBool('p.is_for_sale')} THEN p.payment_method ELSE NULL END AS payment_method,
                 p.updated_at, p.created_at, u.username AS owner_username, p.owner_id
              FROM projects p
              JOIN users u ON p.owner_id = u.user_id
-             WHERE p.project_id = ? AND (p.is_public = 1 OR p.is_for_sale = 1)`,
+             WHERE p.project_id = ? AND (${DB.checkBool('p.is_public')} OR ${DB.checkBool('p.is_for_sale')})`,
             [projectId]
         );
 
@@ -131,7 +133,24 @@ router.get('/projects/:id', async (req, res) => {
             return res.status(404).json({ message: 'Project not found or not publicly accessible.' });
         }
 
-        res.json(projectDetails.rows[0]);
+        let project = projectDetails.rows[0];
+
+        // Normalize array fields for consistency across DBs
+        const normalizeArray = (val) => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string') {
+                let clean = val.replace(/^\{|\}$/g, ''); // Remove Postgres array braces if stringified
+                if (!clean) return [];
+                return clean.split(',').map(s => s.trim());
+            }
+            return [];
+        };
+
+        project.tech_stack = normalizeArray(project.tech_stack);
+        project.tags = normalizeArray(project.tags);
+
+        res.json(project);
     } catch (err) {
         console.error("Get public project details error:", err.message);
         if (err.code === '22P02') {
@@ -803,7 +822,7 @@ router.get('/marketplace/suggestions', async (req, res) => {
         const projectSuggestions = await db.query(`
             SELECT DISTINCT p.name, p.category, COUNT(*) as frequency
             FROM projects p
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
+            WHERE ${DB.checkBool('p.is_for_sale')} AND ${DB.checkBool('p.is_public')}
                 AND LOWER(p.name) LIKE $1
             GROUP BY p.name, p.category
             ORDER BY frequency DESC, p.name ASC
@@ -825,7 +844,7 @@ router.get('/marketplace/suggestions', async (req, res) => {
                 ${isPostgres ? "regexp_split_to_table(LOWER(CAST(p.tech_stack AS TEXT)), '[,\\s]+')" : "LOWER(p.tech_stack)"} as tech,
                 COUNT(*) as frequency
             FROM projects p
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
+            WHERE ${DB.checkBool('p.is_for_sale')} AND ${DB.checkBool('p.is_public')}
                 AND LOWER(${DB.techStack}) LIKE $1
                 AND p.tech_stack IS NOT NULL
                 AND ${isPostgres ? "CAST(p.tech_stack AS TEXT)" : "p.tech_stack"} != ''
@@ -888,11 +907,11 @@ router.get('/marketplace/analytics', async (req, res) => {
             const statsResult = await db.query(`
                 SELECT 
                     COUNT(*) as total_projects,
-                    COUNT(CASE WHEN is_for_sale = 1 OR is_for_sale = true THEN 1 END) as projects_for_sale,
+                    COUNT(CASE WHEN ${DB.checkBool('is_for_sale')} THEN 1 END) as projects_for_sale,
                     AVG(COALESCE(sale_price, 0)) as avg_price,
                     AVG(COALESCE(monthly_revenue, 0)) as avg_revenue
                 FROM projects
-                WHERE is_public = 1 OR is_public = true
+                WHERE ${DB.checkBool('is_public')}
             `);
             const stats = statsResult.rows[0];
             analytics.totalProjects = parseInt(stats.total_projects) || 0;
@@ -934,7 +953,7 @@ router.get('/marketplace/analytics', async (req, res) => {
                     COALESCE(category, 'uncategorized') as category,
                     COUNT(*) as count
                 FROM projects
-                WHERE (is_for_sale = 1 OR is_for_sale = true) AND (is_public = 1 OR is_public = true)
+                WHERE ${DB.checkBool('is_for_sale')} AND ${DB.checkBool('is_public')}
                 GROUP BY category
                 ORDER BY count DESC
             `);
@@ -957,7 +976,7 @@ router.get('/marketplace/analytics', async (req, res) => {
                     END as price_range,
                     COUNT(*) as count
                 FROM projects
-                WHERE (is_for_sale = 1 OR is_for_sale = true) AND (is_public = 1 OR is_public = true)
+                WHERE ${DB.checkBool('is_for_sale')} AND ${DB.checkBool('is_public')}
                     AND sale_price > 0
                 GROUP BY price_range
             `);
