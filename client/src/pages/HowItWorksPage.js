@@ -347,7 +347,7 @@ const HowItWorksPage = () => {
                 </p>
               </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
                 {features.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
@@ -371,6 +371,91 @@ const HowItWorksPage = () => {
                   );
                 })}
               </div>
+
+              {/* Detailed Asset Transfer Section */}
+              <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="bg-gray-900 rounded-3xl border border-white/10 p-12 overflow-hidden relative"
+              >
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full filter blur-3xl pointer-events-none" />
+                  
+                  <div className="grid md:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-sm font-medium mb-6">
+                            <Shield className="w-4 h-4" />
+                            Secure Escrow System
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-6">The Asset Transfer Process</h2>
+                        <div className="space-y-6 text-gray-400">
+                            <p>
+                                We've engineered a transfer process that protects both the creator's IP and the buyer's investment. Here is exactly how "Vibe Engineered" projects change hands:
+                            </p>
+                            
+                            <ol className="space-y-4">
+                                <li className="flex gap-4">
+                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">1</div>
+                                    <div>
+                                        <h4 className="text-white font-semibold">Funds Secured</h4>
+                                        <p className="text-sm">Buyer deposits funds into our secure escrow vault. Seller sees proof of funds but cannot access them yet.</p>
+                                    </div>
+                                </li>
+                                <li className="flex gap-4">
+                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">2</div>
+                                    <div>
+                                        <h4 className="text-white font-semibold">Asset Handover</h4>
+                                        <p className="text-sm">Seller transfers domains, GitHub repositories, and API keys via our dedicated secure transfer dashboard.</p>
+                                    </div>
+                                </li>
+                                <li className="flex gap-4">
+                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">3</div>
+                                    <div>
+                                        <h4 className="text-white font-semibold">Verification & Release</h4>
+                                        <p className="text-sm">Buyer reviews the assets. Once confirmed, funds are instantly released to the seller's Stripe account.</p>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div className="relative">
+                        {/* Abstract visual representation of transfer */}
+                        <div className="relative z-10 bg-black/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                        <UserCheck className="w-5 h-5 text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <div className="h-2 w-20 bg-gray-700 rounded mb-1" />
+                                        <div className="h-2 w-12 bg-gray-800 rounded" />
+                                    </div>
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-purple-500/50 to-blue-500/50 mx-4 relative">
+                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black border border-green-500 rounded-full flex items-center justify-center z-10">
+                                        <Shield className="w-4 h-4 text-green-500" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                        <Users className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                     <div>
+                                        <div className="h-2 w-20 bg-gray-700 rounded mb-1" />
+                                        <div className="h-2 w-12 bg-gray-800 rounded" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-4 flex items-center gap-3">
+                                <CheckCircle className="w-5 h-5 text-green-400" />
+                                <span className="text-green-400 font-medium">Escrow Secured: $5,000.00</span>
+                            </div>
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 filter blur-2xl transform scale-110 -z-10" />
+                    </div>
+                  </div>
+              </motion.div>
+
             </div>
 
             {/* CTA Section */}

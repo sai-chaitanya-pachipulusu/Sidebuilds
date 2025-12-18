@@ -9,7 +9,7 @@ const router = express.Router();
 // GET /api/payments/methods
 router.get('/methods', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get saved payment methods from database
         const methodsResult = await db.query(
@@ -28,7 +28,7 @@ router.get('/methods', authMiddleware, async (req, res) => {
 // POST /api/payments/methods
 router.post('/methods', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { paymentMethodId } = req.body;
         
         if (!paymentMethodId) {
@@ -79,7 +79,7 @@ router.post('/methods', authMiddleware, async (req, res) => {
 // DELETE /api/payments/methods/:methodId
 router.delete('/methods/:methodId', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { methodId } = req.params;
         
         // Get the payment method
@@ -136,7 +136,7 @@ router.delete('/methods/:methodId', authMiddleware, async (req, res) => {
 // GET /api/payments/payout-preferences
 router.get('/payout-preferences', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get payout preferences from database
         const preferencesResult = await db.query(
@@ -155,7 +155,7 @@ router.get('/payout-preferences', authMiddleware, async (req, res) => {
 // PUT /api/payments/payout-preferences
 router.put('/payout-preferences', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { payoutMethod, bankName, bankLastFour } = req.body;
         
         if (!payoutMethod) {
@@ -201,7 +201,7 @@ router.put('/payout-preferences', authMiddleware, async (req, res) => {
 // GET /api/payments/analytics
 router.get('/analytics', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get analytics from view
         const analyticsResult = await db.query(
@@ -235,7 +235,7 @@ router.get('/analytics', authMiddleware, async (req, res) => {
 // POST /api/payments/disputes
 router.post('/disputes', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { transactionId, disputeReason } = req.body;
         
         if (!transactionId || !disputeReason) {
@@ -282,7 +282,7 @@ router.post('/disputes', authMiddleware, async (req, res) => {
 // GET /api/payments/disputes
 router.get('/disputes', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get disputes where user is buyer, seller, or initiator
         const disputesResult = await db.query(

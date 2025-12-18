@@ -70,12 +70,17 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call the actual registration API
+      const { registerUser } = await import('../services/api');
+      const response = await registerUser({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.name.split(' ')[0],
+        last_name: formData.name.split(' ').slice(1).join(' ')
+      });
       
-      // Your actual registration logic here
-      
-      toast.success('Account created successfully!', {
+      toast.success('Account created successfully! Please log in.', {
         icon: '🎉',
         style: {
           borderRadius: '10px',
@@ -86,7 +91,9 @@ const RegisterPage = () => {
       
       navigate('/login');
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      toast.error(errorMessage);
         } finally {
       setIsLoading(false);
     }

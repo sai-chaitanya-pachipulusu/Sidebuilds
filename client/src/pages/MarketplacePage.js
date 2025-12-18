@@ -57,6 +57,7 @@ import {
   Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const MarketplacePage = () => {
   // Core data state
@@ -78,6 +79,13 @@ const MarketplacePage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  // Close modal with ESC key
+  useEscapeKey(() => {
+    if (showQuickPurchaseModal) {
+      setShowQuickPurchaseModal(false);
+    }
+  }, showQuickPurchaseModal);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -363,6 +371,16 @@ const MarketplacePage = () => {
           </div>
         )}
 
+        {/* On Hold / Under Negotiation Badge */}
+        {project.is_on_hold === 1 && (
+          <div className="absolute top-4 left-4 z-20">
+            <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-wider shadow-lg border border-red-400/30 flex items-center gap-1.5 animate-pulse">
+              <Clock4 className="w-3 h-3" />
+              On Hold
+            </div>
+          </div>
+        )}
+
         {/* Wishlist Button */}
         <div className="absolute top-4 right-4 z-20">
           <motion.button
@@ -474,13 +492,18 @@ const MarketplacePage = () => {
           <div className="space-y-2 pt-4 border-t border-white/[0.08]">
             {!isOwnProject && (
               <motion.button
+                disabled={project.is_on_hold === 1}
                 onClick={() => handleQuickPurchase(project)}
-                className="w-full px-4 py-2 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className={`w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                  project.is_on_hold === 1
+                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+                }`}
+                whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
+                whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
               >
                 <DollarSign className="w-4 h-4" />
-                Quick Buy • {formatPrice(project.sale_price)}
+                {project.is_on_hold === 1 ? 'Currently on Hold' : `Quick Buy • ${formatPrice(project.sale_price)}`}
               </motion.button>
             )}
             
@@ -497,13 +520,18 @@ const MarketplacePage = () => {
               
               {!isOwnProject && (
                 <motion.button
+                  disabled={project.is_on_hold === 1}
                   onClick={() => handleShowInterest(project.project_id)}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                    project.is_on_hold === 1
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                      : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
+                  }`}
+                  whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
+                  whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
                 >
                   <Heart className="w-4 h-4" />
-                  Make Offer
+                  {project.is_on_hold === 1 ? 'On Hold' : 'Make Offer'}
                 </motion.button>
               )}
             </div>

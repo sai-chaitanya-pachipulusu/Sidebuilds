@@ -23,7 +23,7 @@ router.get('/', auth, async (req, res) => {
         }
 
         const request = requestCheck.rows[0];
-        if (request.buyer_id !== req.user.id && request.seller_id !== req.user.id) {
+        if (request.buyer_id !== req.user.user_id && request.seller_id !== req.user.user_id) {
             return res.status(403).json({ msg: 'User not authorized to view these messages' });
         }
 
@@ -145,12 +145,12 @@ router.post('/', auth, async (req, res) => {
         }
 
         const request = requestCheck.rows[0];
-        if (request.buyer_id !== req.user.id && request.seller_id !== req.user.id) {
+        if (request.buyer_id !== req.user.user_id && request.seller_id !== req.user.user_id) {
             return res.status(403).json({ msg: 'User not authorized to send messages here' });
         }
 
         // Determine recipient
-        const recipientId = request.buyer_id === req.user.id ? request.seller_id : request.buyer_id;
+        const recipientId = request.buyer_id === req.user.user_id ? request.seller_id : request.buyer_id;
         
         // For now, we'll create a simple messages table if it doesn't exist
         // First check if messages table exists
@@ -183,7 +183,7 @@ router.post('/', auth, async (req, res) => {
                 (purchase_request_id, sender_id, recipient_id, content, message_type, created_at)
              VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
              RETURNING message_id, purchase_request_id, sender_id, recipient_id, content, message_type, created_at`,
-            [requestId, req.user.id, recipientId, content.trim(), message_type]
+            [requestId, req.user.user_id, recipientId, content.trim(), message_type]
         );
 
         const savedMessage = newMessage.rows[0];
@@ -191,7 +191,7 @@ router.post('/', auth, async (req, res) => {
         // Get sender username for response
         const senderInfo = await db.query(
             `SELECT username FROM users WHERE user_id = $1`,
-            [req.user.id]
+            [req.user.user_id]
         );
 
         // Update the purchase request's updated_at timestamp
@@ -264,7 +264,7 @@ router.get('/unread', auth, async (req, res) => {
              WHERE purchase_request_id = $1 
              AND recipient_id = $2 
              AND is_read = false`,
-            [requestId, req.user.id]
+            [requestId, req.user.user_id]
         );
 
         res.json({ unread_count: parseInt(unreadCount.rows[0].unread_count) });
@@ -299,7 +299,7 @@ router.put('/mark-read', auth, async (req, res) => {
              WHERE purchase_request_id = $1 
              AND recipient_id = $2 
              AND is_read = false`,
-            [requestId, req.user.id]
+            [requestId, req.user.user_id]
         );
 
         res.json({ marked_read: result.rowCount });

@@ -91,10 +91,10 @@ apiClient.interceptors.request.use(
     }
 );
 
-// --- Response interceptor for error handling --- 
+// --- Response interceptor for error handling ---
 apiClient.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         // Handle database connection errors
         if (error.code === 'ECONNABORTED') {
             console.error('Request timeout - database may be under load');
@@ -116,20 +116,65 @@ apiClient.interceptors.response.use(
         // Handle unauthorized errors (401)
         if (error.response.status === 401) {
             console.log('401 Unauthorized response:', error.response.data);
-            // Don't automatically clear tokens - let components handle this
-            // Only clear if we get a specific "token expired" message
-            if (error.response.data?.message?.includes('expired') || 
+
+            // Check if token is expired and try to refresh
+            if (error.response.data?.message?.includes('expired') ||
                 error.response.data?.message?.includes('Token expired')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                
-                const tokenExpiredEvent = new CustomEvent('tokenExpired', {
-                    detail: { 
-                        path: window.location.pathname,
-                        message: 'Your session has expired. Please log in again.'
+
+                const currentToken = localStorage.getItem('token');
+                if (currentToken && !error.config._retry) {
+                    console.log('Attempting token refresh...');
+
+                    try {
+                        // Try to refresh the token
+                        const refreshResponse = await apiClient.post('/auth/refresh', {}, {
+                            headers: {
+                                'Authorization': `Bearer ${currentToken}`
+                            }
+                        });
+
+                        // Update stored token
+                        localStorage.setItem('token', refreshResponse.data.token);
+                        localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
+
+                        // Update API client header
+                        apiClient.defaults.headers.common['Authorization'] = `Bearer ${refreshResponse.data.token}`;
+
+                        // Retry the original request with new token
+                        error.config._retry = true;
+                        error.config.headers['Authorization'] = `Bearer ${refreshResponse.data.token}`;
+
+                        console.log('Token refreshed successfully, retrying request...');
+                        return apiClient(error.config);
+
+                    } catch (refreshError) {
+                        console.log('Token refresh failed:', refreshError.response?.data?.message || refreshError.message);
+
+                        // Clear auth state if refresh fails
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+
+                        const tokenExpiredEvent = new CustomEvent('tokenExpired', {
+                            detail: {
+                                path: window.location.pathname,
+                                message: 'Your session has expired. Please log in again.'
+                            }
+                        });
+                        window.dispatchEvent(tokenExpiredEvent);
                     }
-                });
-                window.dispatchEvent(tokenExpiredEvent);
+                } else {
+                    // Clear auth state if no token or refresh already attempted
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+
+                    const tokenExpiredEvent = new CustomEvent('tokenExpired', {
+                        detail: {
+                            path: window.location.pathname,
+                            message: 'Your session has expired. Please log in again.'
+                        }
+                    });
+                    window.dispatchEvent(tokenExpiredEvent);
+                }
             }
         }
 
@@ -157,6 +202,26 @@ export const loginUser = async (credentials) => {
     } catch (error) {
         console.error('Login API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Login failed');
+    }
+};
+
+export const refreshToken = async () => {
+    try {
+        const response = await apiClient.post('/auth/refresh');
+        return response.data; // Should contain { token, user }
+    } catch (error) {
+        console.error('Token refresh API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Token refresh failed');
+    }
+};
+
+export const verifyToken = async () => {
+    try {
+        const response = await apiClient.post('/auth/verify');
+        return response.data; // Should contain { valid: true/false, user }
+    } catch (error) {
+        console.error('Token verification API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Token verification failed');
     }
 };
 
@@ -287,6 +352,16 @@ export const deleteProject = async (projectId) => {
     } catch (error) {
         console.error('Delete Project API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to delete project');
+    }
+};
+
+export const toggleHoldProject = async (projectId) => {
+    try {
+        const response = await apiClient.patch(`/projects/${projectId}/toggle-hold`);
+        return response.data;
+    } catch (error) {
+        console.error('Toggle Hold Project API error:', error.response ? error.response.data : error.message);
+        throw error.response ? error.response.data : new Error('Failed to toggle hold status');
     }
 };
 
@@ -559,7 +634,11 @@ export const expressInterestInProject = async (projectId, buyerInitialCommitment
         return response.data;
     } catch (error) {
         console.error('Error expressing interest in project:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Failed to send interest');
+        // Throw the original error object so we can access status codes and error details
+        if (error.response) {
+            throw error; // Axios error with response
+        }
+        throw new Error(error.message || 'Failed to send interest');
     }
 };
 

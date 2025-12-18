@@ -21,7 +21,7 @@ try {
 router.post('/score-project', authMiddleware, async (req, res) => {
   try {
     const { projectId, projectData } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     if (!projectData) {
       return res.status(400).json({ error: 'Project data is required' });
@@ -93,7 +93,7 @@ router.post('/score-project', authMiddleware, async (req, res) => {
 router.post('/recommendations', authMiddleware, async (req, res) => {
   try {
     const { userId, userProjects, preferences, marketplaceData } = req.body;
-    const currentUserId = req.user.id;
+    const currentUserId = req.user.user_id;
 
     // Generate dynamic recommendations
     const personalized = await generatePersonalizedRecommendations(currentUserId, userProjects, preferences);
@@ -238,11 +238,16 @@ function calculateRevenueScore(monthlyRevenue) {
 async function calculateGrowthScore(projectData, userId) {
   try {
     // Get historical data for growth calculation
-    const result = await db.query(
-      `SELECT view_count, monthly_revenue FROM projects 
-       WHERE user_id = $1 AND created_at < NOW() - INTERVAL '30 days'`,
-      [userId]
-    );
+    let query;
+    if (db.isSQLite) {
+      query = `SELECT view_count, monthly_revenue FROM projects 
+               WHERE user_id = $1 AND created_at < datetime('now', '-30 days')`;
+    } else {
+      query = `SELECT view_count, monthly_revenue FROM projects 
+               WHERE user_id = $1 AND created_at < NOW() - INTERVAL '30 days'`;
+    }
+
+    const result = await db.query(query, [userId]);
 
     const historicalData = result.rows;
     if (historicalData.length === 0) return 50; // Default for new users

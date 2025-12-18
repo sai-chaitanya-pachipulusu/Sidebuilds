@@ -3,19 +3,13 @@ import { getMarketplaceProjects } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  DollarSign,
-  Star,
-  Eye,
-  Heart,
-  Calendar,
-  Shield,
-  Bookmark,
-  BookmarkCheck,
-  Trophy
-} from 'lucide-react';
+import { Search } from 'lucide-react';
+import { Button } from '../shadcn/ui/button';
+import { Label } from '../shadcn/ui/label';
 import toast from 'react-hot-toast';
+
+// Use the enhanced ProjectCard component
+import ProjectCard from '../components/ProjectCard';
 
 const MarketplacePageSimple = () => {
   const [projects, setProjects] = useState([]);
@@ -23,6 +17,14 @@ const MarketplacePageSimple = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [filters, setFilters] = useState({
+    stage: '',
+    minPrice: '',
+    maxPrice: '',
+    techStack: '',
+    category: ''
+  });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -69,13 +71,26 @@ const MarketplacePageSimple = () => {
   };
 
   const filteredProjects = projects.filter(project => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      project.name.toLowerCase().includes(searchLower) ||
-      project.description.toLowerCase().includes(searchLower) ||
-      (project.tech_stack && project.tech_stack.toLowerCase().includes(searchLower))
-    );
+    // Text search
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        project.name?.toLowerCase().includes(searchLower) ||
+        project.description?.toLowerCase().includes(searchLower) ||
+        project.tech_stack?.toLowerCase().includes(searchLower) ||
+        project.category?.toLowerCase().includes(searchLower);
+
+      if (!matchesSearch) return false;
+    }
+
+    // Advanced filters
+    if (filters.stage && project.stage !== filters.stage) return false;
+    if (filters.minPrice && (project.sale_price || 0) < parseInt(filters.minPrice)) return false;
+    if (filters.maxPrice && (project.sale_price || 0) > parseInt(filters.maxPrice)) return false;
+    if (filters.techStack && !project.tech_stack?.toLowerCase().includes(filters.techStack.toLowerCase())) return false;
+    if (filters.category && project.category !== filters.category) return false;
+
+    return true;
   });
 
   const sortedProjects = [...filteredProjects].sort((a, b) => {
@@ -86,6 +101,10 @@ const MarketplacePageSimple = () => {
         return (b.sale_price || 0) - (a.sale_price || 0);
       case 'revenue':
         return (b.monthly_revenue || 0) - (a.monthly_revenue || 0);
+      case 'views':
+        return (b.view_count || 0) - (a.view_count || 0);
+      case 'score':
+        return (b.overall_score || 0) - (a.overall_score || 0);
       case 'newest':
       default:
         return new Date(b.created_at) - new Date(a.created_at);
@@ -101,119 +120,7 @@ const MarketplacePageSimple = () => {
     navigate(`/projects/${projectId}?showInterest=true`);
   };
 
-  const ProjectCard = ({ project }) => {
-    const isOwnProject = user && project.owner_id === user.id;
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
-      >
-        <div className="relative z-10 space-y-4">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white group-hover:text-purple-300 transition-colors duration-200">
-                {project.name}
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 mt-2">
-                {project.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Metrics Row */}
-          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-lg">
-            <div className="text-center">
-              <div className="text-lg font-bold text-white">
-                {project.monthly_revenue ? formatPrice(project.monthly_revenue) : '$0'}
-              </div>
-              <div className="text-xs text-gray-500">Monthly Revenue</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-white">
-                {project.view_count || 0}
-              </div>
-              <div className="text-xs text-gray-500">Views</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-white flex items-center justify-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400" />
-                {project.overall_score || 'N/A'}
-              </div>
-              <div className="text-xs text-gray-500">AI Score</div>
-            </div>
-          </div>
-
-          {/* Stage and Status */}
-          <div className="flex items-center justify-between">
-            <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
-              {project.stage}
-            </div>
-            <div className="flex items-center space-x-1 text-xs text-gray-500">
-              <Calendar className="w-3 h-3" />
-              <span>{new Date(project.created_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-
-          {/* Tech Stack */}
-          {project.tech_stack && typeof project.tech_stack === 'string' && project.tech_stack.trim() && (
-            <div className="flex flex-wrap gap-2">
-              {JSON.parse(project.tech_stack || '[]').slice(0, 4).map((tech, index) => (
-                <span key={index} className="px-2 py-1 bg-gray-800/50 text-gray-300 text-xs rounded-lg border border-gray-700">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Financial Metrics */}
-          <div className="bg-gray-800/20 rounded-lg p-3 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400 text-sm">Sale Price</span>
-              <span className="text-white font-bold">{formatPrice(project.sale_price)}</span>
-            </div>
-            {project.monthly_revenue && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Breakeven</span>
-                <span className="text-purple-400 text-sm">
-                  {(project.sale_price / project.monthly_revenue).toFixed(1)} months
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-2 pt-4 border-t border-white/[0.08]">
-            <div className="flex items-center gap-2">
-              <motion.button
-                onClick={() => navigate(`/projects/${project.project_id}`)}
-                className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Eye className="w-4 h-4" />
-                View Details
-              </motion.button>
-              
-              {!isOwnProject && (
-                <motion.button
-                  onClick={() => handleShowInterest(project.project_id)}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Heart className="w-4 h-4" />
-                  Show Interest
-                </motion.button>
-              )}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+  // Removed inline ProjectCard - using enhanced component from ../components/ProjectCard
 
   if (loading) {
     return (
@@ -246,7 +153,7 @@ const MarketplacePageSimple = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search projects, technologies, categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
@@ -261,8 +168,100 @@ const MarketplacePageSimple = () => {
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
               <option value="revenue">Highest Revenue</option>
+              <option value="views">Most Viewed</option>
+              <option value="score">Highest AI Score</option>
             </select>
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="px-4 py-2"
+            >
+              {showAdvancedFilters ? 'Hide Filters' : 'Advanced'}
+            </Button>
           </div>
+
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-gray-900/30 backdrop-blur-sm border border-gray-700 rounded-lg p-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-gray-300 text-sm mb-2 block">Stage</Label>
+                  <select
+                    value={filters.stage}
+                    onChange={(e) => setFilters({...filters, stage: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  >
+                    <option value="">All Stages</option>
+                    <option value="idea">Idea</option>
+                    <option value="planning">Planning</option>
+                    <option value="mvp">MVP</option>
+                    <option value="development">Development</option>
+                    <option value="launched">Launched</option>
+                    <option value="on_hold">On Hold</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-2 block">Min Price</Label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-2 block">Max Price</Label>
+                  <input
+                    type="number"
+                    placeholder="100000"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-gray-300 text-sm mb-2 block">Technology</Label>
+                  <input
+                    type="text"
+                    placeholder="React, Node.js..."
+                    value={filters.techStack}
+                    onChange={(e) => setFilters({...filters, techStack: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+                <div className="text-sm text-gray-400">
+                  {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''} found
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFilters({
+                      stage: '',
+                      minPrice: '',
+                      maxPrice: '',
+                      techStack: '',
+                      category: ''
+                    })}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Error State */}

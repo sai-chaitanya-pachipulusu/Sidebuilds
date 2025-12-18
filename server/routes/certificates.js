@@ -8,7 +8,7 @@ const authMiddleware = require('../middleware/auth');
 router.get('/:certificateId', authMiddleware, async (req, res) => {
   try {
     const { certificateId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
     
     // Query certificate data with related project and transaction details
     const result = await db.query(
@@ -82,7 +82,7 @@ router.get('/verify/:verificationCode', async (req, res) => {
 router.get('/seller/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-    const requesterId = req.user.id;
+    const requesterId = req.user.user_id;
     
     // Only allow sellers to view their own certificates
     if (userId !== requesterId) {

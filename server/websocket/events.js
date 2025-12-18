@@ -47,7 +47,7 @@ class WebSocketEvents {
       }
       
       // Get user data from database with enhanced error handling
-      const userId = decoded.user ? decoded.user.id : decoded.userId;
+      const userId = decoded.user ? decoded.user.user_id : decoded.userId;
       if (!userId) {
         console.error('[WebSocket Auth] No user ID in token payload:', decoded);
         return next(new Error('Invalid token payload'));

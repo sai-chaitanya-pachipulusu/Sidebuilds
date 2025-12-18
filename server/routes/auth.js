@@ -3,11 +3,42 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db'); // Adjust path as needed
+const { authLimiter } = require('../middleware/rateLimiting');
 
 console.log('AUTH_ROUTES: File loaded and router being configured.');
 
 const router = express.Router();
 const SALT_ROUNDS = 10; // Cost factor for bcrypt hashing
+
+// Helper function to generate JWT token
+const generateToken = (user) => {
+    return jwt.sign(
+        {
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email
+            }
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' } // Token expires in 24 hours
+    );
+};
+
+// Helper function to verify JWT token
+const verifyToken = (token) => {
+    try {
+        return jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            throw new Error('Token expired');
+        } else if (error.name === 'JsonWebTokenError') {
+            throw new Error('Invalid token');
+        } else {
+            throw new Error('Token verification failed');
+        }
+    }
+};
 
 // --- Registration Route --- 
 // POST /api/auth/register
@@ -67,11 +98,7 @@ router.post('/register', async (req, res) => {
             }
         };
 
-        const token = jwt.sign(
-            tokenPayload,
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' } // Token expires in 24 hours
-        );
+        const token = generateToken(userData);
 
         // Respond with the token and user info (excluding password hash)
         res.status(201).json({ token, user: userData });
@@ -85,17 +112,15 @@ router.post('/register', async (req, res) => {
 
 // --- Login Route --- 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
-    console.log('AUTH_ROUTES: Reached /login handler');
-    console.log('AUTH_ROUTES: Request body:', req.body);
-    console.log('AUTH_ROUTES: Request headers:', req.headers);
+router.post('/login', authLimiter, async (req, res) => {
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('[AUTH] Login attempt');
+    }
     
     const { email, password } = req.body;
-    console.log('AUTH_ROUTES: Extracted email:', email, 'password length:', password?.length);
 
     // Basic validation
     if (!email || !password) {
-        console.log('AUTH_ROUTES: Missing email or password');
         return res.status(400).json({ message: 'Email and password are required.' });
     }
 
@@ -106,8 +131,11 @@ router.post('/login', async (req, res) => {
             [email]
         );
 
-        if (userResult.rows.length === 0) {
-            return res.status(401).json({ message: 'Invalid credentials.' }); // User not found
+        if (!userResult.rows || userResult.rows.length === 0) {
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('[AUTH] Login failed - user not found');
+            }
+            return res.status(401).json({ message: 'Invalid credentials.' });
         }
 
         const user = userResult.rows[0];
@@ -116,7 +144,10 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials.' }); // Password doesn't match
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('[AUTH] Login failed - invalid password');
+            }
+            return res.status(401).json({ message: 'Invalid credentials.' });
         }
 
         // Generate JWT token
@@ -128,11 +159,7 @@ router.post('/login', async (req, res) => {
             }
         };
 
-        const token = jwt.sign(
-            tokenPayload,
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' } // Token expires in 24 hours
-        );
+        const token = generateToken(user);
 
         // Respond with the token and user info (excluding password hash)
         // Important: Do not send the password_hash back to the client
@@ -141,7 +168,146 @@ router.post('/login', async (req, res) => {
 
     } catch (err) {
         console.error("Login error:", err.message);
-        res.status(500).send('Server error during login.');
+        console.error("Login error stack:", err.stack);
+        console.error("Login error details:", {
+            name: err.name,
+            code: err.code,
+            detail: err.detail,
+            hint: err.hint
+        });
+        res.status(500).json({ message: 'Server error during login.', error: err.message });
+    }
+});
+
+// --- Token Refresh Route ---
+// POST /api/auth/refresh
+router.post('/refresh', authLimiter, async (req, res) => {
+    console.log('AUTH_ROUTES: Reached /refresh handler');
+
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ message: 'No token provided.' });
+        }
+
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided.' });
+        }
+
+        // Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Get the user from database to ensure they still exist
+        const userResult = await db.query(
+            'SELECT user_id, username, email FROM users WHERE user_id = ?',
+            [decoded.user.user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ message: 'User not found.' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Generate a new token
+        const newToken = generateToken(user);
+
+        // Respond with the new token and updated user info
+        res.json({
+            token: newToken,
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired. Please log in again.' });
+        } else if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token. Please log in again.' });
+        } else {
+            console.error('Token refresh error:', error.message);
+            return res.status(500).json({ message: 'Server error during token refresh.' });
+        }
+    }
+});
+
+// --- Token Verification Route ---
+// POST /api/auth/verify
+router.post('/verify', async (req, res) => {
+    console.log('AUTH_ROUTES: Reached /verify handler');
+
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ message: 'No token provided.' });
+        }
+
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided.' });
+        }
+
+        // Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Get the user from database to ensure they still exist
+        const userResult = await db.query(
+            'SELECT user_id, username, email FROM users WHERE user_id = ?',
+            [decoded.user.user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ message: 'User not found.' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Respond with user info (token is still valid)
+        res.json({
+            valid: true,
+            user: {
+                user_id: user.user_id,
+                username: user.username,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ valid: false, message: 'Token expired. Please log in again.' });
+        } else if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ valid: false, message: 'Invalid token. Please log in again.' });
+        } else {
+            console.error('Token verification error:', error.message);
+            return res.status(500).json({ valid: false, message: 'Server error during token verification.' });
+        }
+    }
+});
+
+// --- Get Current User Route ---
+// GET /api/auth/me
+const authMiddleware = require('../middleware/authMiddleware');
+router.get('/me', authMiddleware, async (req, res) => {
+    try {
+        // The user is already attached to req by authMiddleware
+        const user = req.user;
+        
+        res.json({
+            user_id: user.user_id,
+            username: user.username,
+            email: user.email
+        });
+    } catch (error) {
+        console.error('Error getting current user:', error.message);
+        res.status(500).json({ message: 'Server error.' });
     }
 });
 

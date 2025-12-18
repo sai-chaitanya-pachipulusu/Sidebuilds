@@ -3,6 +3,15 @@ const db = require('../db');
 
 const router = express.Router();
 
+// Helper to handle Database differences (SQLite vs Postgres)
+const isPostgres = process.env.USE_SQLITE !== 'true';
+
+// Field references based on DB type
+const DB = {
+    techStack: isPostgres ? "CAST(p.tech_stack AS TEXT)" : "p.tech_stack",
+    tags: isPostgres ? "CAST(p.tags AS TEXT)" : "p.tags"
+};
+
 // --- READ Publicly Shared Projects ---
 // GET /api/public/projects
 router.get('/projects', async (req, res) => {
@@ -15,7 +24,7 @@ router.get('/projects', async (req, res) => {
             `SELECT 
                 p.project_id, p.name, p.description, p.stage,
                 p.domain, p.demo_url, p.github_url, p.tech_stack, p.monthly_revenue,
-                p.view_count,
+                p.view_count, p.is_on_hold,
                 p.updated_at, u.username AS owner_username 
              FROM projects p 
              JOIN users u ON p.owner_id = u.user_id 
@@ -41,7 +50,7 @@ router.get('/marketplace', async (req, res) => {
         console.log("Fetching marketplace projects");
         // Query directly instead of using the view that has errors
         const marketplaceProjects = await db.query(
-            `SELECT 
+            `SELECT
                 p.project_id, 
                 p.name, 
                 COALESCE(p.description, '') as description, 
@@ -58,6 +67,7 @@ router.get('/marketplace', async (req, res) => {
                 COALESCE(p.monthly_users, 0) as monthly_users,
                 COALESCE(p.growth_rate, 0) as growth_rate,
                 COALESCE(p.view_count, 0) as view_count,
+                COALESCE(p.is_on_hold, 0) as is_on_hold,
                 p.sale_price, 
                 p.price_negotiable,
                 COALESCE(p.contact_email, '') as contact_email, 
@@ -105,12 +115,12 @@ router.get('/projects/:id', async (req, res) => {
             `SELECT 
                 p.project_id, p.name, p.description, p.stage,
                 p.domain, p.demo_url, p.github_url, p.tech_stack, p.monthly_revenue,
-                p.view_count,
+                p.view_count, p.is_on_hold,
                 p.is_for_sale, p.sale_price, 
                 CASE WHEN p.is_for_sale = 1 THEN p.contact_email ELSE NULL END AS contact_email,
                 CASE WHEN p.is_for_sale = 1 THEN p.contact_phone ELSE NULL END AS contact_phone,
                 CASE WHEN p.is_for_sale = 1 THEN p.payment_method ELSE NULL END AS payment_method,
-                p.updated_at, p.created_at, u.username AS owner_username
+                p.updated_at, p.created_at, u.username AS owner_username, p.owner_id
              FROM projects p
              JOIN users u ON p.owner_id = u.user_id
              WHERE p.project_id = ? AND (p.is_public = 1 OR p.is_for_sale = 1)`,
@@ -279,18 +289,18 @@ router.get('/stats/marketplace', async (req, res) => {
         
         // Format the response
         const stats = {
-            totalProjects: parseInt(projectsCountResult.rows[0].count),
-            activeListings: parseInt(activeListingsResult.rows[0].count),
-            activeUsers: parseInt(activeUsersResult.rows[0].count),
-            successfulSales: parseInt(completedSalesResult.rows[0].count),
-            totalValue: Math.round(parseFloat(totalValueResult.rows[0].total_value)),
+            totalProjects: parseInt(projectsCountResult.rows[0]?.count || 0),
+            activeListings: parseInt(activeListingsResult.rows[0]?.count || 0),
+            activeUsers: parseInt(activeUsersResult.rows[0]?.count || 0),
+            successfulSales: parseInt(completedSalesResult.rows[0]?.count || 0),
+            totalValue: Math.round(parseFloat(totalValueResult.rows[0]?.total_value || 0)),
             
             // For backward compatibility
-            projectsCount: parseInt(projectsCountResult.rows[0].count),
-            developerCount: parseInt(activeUsersResult.rows[0].count),
-            completedSales: parseInt(completedSalesResult.rows[0].count),
-            avgValue: parseInt(completedSalesResult.rows[0].count) > 0 
-                ? Math.round(parseFloat(totalValueResult.rows[0].total_value) / parseInt(completedSalesResult.rows[0].count)) 
+            projectsCount: parseInt(projectsCountResult.rows[0]?.count || 0),
+            developerCount: parseInt(activeUsersResult.rows[0]?.count || 0),
+            completedSales: parseInt(completedSalesResult.rows[0]?.count || 0),
+            avgValue: parseInt(completedSalesResult.rows[0]?.count || 0) > 0 
+                ? Math.round(parseFloat(totalValueResult.rows[0]?.total_value || 0) / parseInt(completedSalesResult.rows[0]?.count || 1)) 
                 : 0
         };
         
@@ -429,6 +439,7 @@ router.post('/marketplace/search', async (req, res) => {
                 COALESCE(p.monthly_users, 0) as monthly_users,
                 COALESCE(p.growth_rate, 0) as growth_rate,
                 COALESCE(p.view_count, 0) as view_count,
+                COALESCE(p.is_on_hold, 0) as is_on_hold,
                 p.sale_price, 
                 p.price_negotiable,
                 COALESCE(p.contact_email, '') as contact_email, 
@@ -463,9 +474,9 @@ router.post('/marketplace/search', async (req, res) => {
                     WHEN LOWER(p.name) LIKE LOWER($1) THEN 100
                     WHEN LOWER(p.name) LIKE LOWER($2) THEN 80
                     WHEN LOWER(p.description) LIKE LOWER($2) THEN 60
-                    WHEN LOWER(p.tech_stack) LIKE LOWER($2) THEN 40
+                    WHEN LOWER(${DB.techStack}) LIKE LOWER($2) THEN 40
                     WHEN LOWER(p.category) LIKE LOWER($2) THEN 30
-                    WHEN LOWER(p.tags) LIKE LOWER($2) THEN 20
+                    WHEN LOWER(${DB.tags}) LIKE LOWER($2) THEN 20
                     WHEN LOWER(u.username) LIKE LOWER($2) THEN 10
                     ELSE 0
                 END as search_rank`;
@@ -501,9 +512,9 @@ router.post('/marketplace/search', async (req, res) => {
                 searchQuery += ` AND (
                     LOWER(p.name) LIKE LOWER($2) OR
                     LOWER(p.description) LIKE LOWER($2) OR
-                    LOWER(p.tech_stack) LIKE LOWER($2) OR
+                    LOWER(${DB.techStack}) LIKE LOWER($2) OR
                     LOWER(p.category) LIKE LOWER($2) OR
-                    LOWER(p.tags) LIKE LOWER($2) OR
+                    LOWER(${DB.tags}) LIKE LOWER($2) OR
                     LOWER(u.username) LIKE LOWER($2)
                 )`;
             } else {
@@ -558,7 +569,7 @@ router.post('/marketplace/search', async (req, res) => {
         if (filters.techStack && Array.isArray(filters.techStack) && filters.techStack.length > 0) {
             const techConditions = filters.techStack.map(() => {
                 queryParams.push(`%${filters.techStack[queryParams.length - (paramIndex - 1)]}%`);
-                return `LOWER(p.tech_stack) LIKE LOWER($${paramIndex++})`;
+                return `LOWER(${DB.techStack}) LIKE LOWER($${paramIndex++})`;
             });
             searchQuery += ` AND (${techConditions.join(' OR ')})`;
         }
@@ -664,9 +675,9 @@ router.post('/marketplace/search', async (req, res) => {
                 countQuery += ` AND (
                     LOWER(p.name) LIKE LOWER($2) OR
                     LOWER(p.description) LIKE LOWER($2) OR
-                    LOWER(p.tech_stack) LIKE LOWER($2) OR
+                    LOWER(${DB.techStack}) LIKE LOWER($2) OR
                     LOWER(p.category) LIKE LOWER($2) OR
-                    LOWER(p.tags) LIKE LOWER($2) OR
+                    LOWER(${DB.tags}) LIKE LOWER($2) OR
                     LOWER(u.username) LIKE LOWER($2)
                 )`;
             } else {
@@ -718,7 +729,7 @@ router.post('/marketplace/search', async (req, res) => {
         if (filters.techStack && Array.isArray(filters.techStack) && filters.techStack.length > 0) {
             const techConditions = filters.techStack.map(() => {
                 countParams.push(`%${filters.techStack[countParams.length - (countParamIndex - 1)]}%`);
-                return `LOWER(p.tech_stack) LIKE LOWER($${countParamIndex++})`;
+                return `LOWER(${DB.techStack}) LIKE LOWER($${countParamIndex++})`;
             });
             countQuery += ` AND (${techConditions.join(' OR ')})`;
         }
@@ -811,13 +822,13 @@ router.get('/marketplace/suggestions', async (req, res) => {
         // Get technology suggestions
         const techSuggestions = await db.query(`
             SELECT DISTINCT 
-                regexp_split_to_table(LOWER(p.tech_stack), '[,\\s]+') as tech,
+                ${isPostgres ? "regexp_split_to_table(LOWER(CAST(p.tech_stack AS TEXT)), '[,\\s]+')" : "LOWER(p.tech_stack)"} as tech,
                 COUNT(*) as frequency
             FROM projects p
             WHERE p.is_for_sale = 1 AND p.is_public = 1
-                AND LOWER(p.tech_stack) LIKE $1
+                AND LOWER(${DB.techStack}) LIKE $1
                 AND p.tech_stack IS NOT NULL
-                AND p.tech_stack != ''
+                AND ${isPostgres ? "CAST(p.tech_stack AS TEXT)" : "p.tech_stack"} != ''
             GROUP BY tech
             HAVING tech LIKE $1 AND LENGTH(tech) > 2
             ORDER BY frequency DESC
@@ -851,6 +862,10 @@ router.get('/marketplace/analytics', async (req, res) => {
         // Get popular search terms (would need search logging)
         const analytics = {
             totalProjects: 0,
+            projectsForSale: 0,
+            totalUsers: 0,
+            successfulSales: 0,
+            totalVolume: 0,
             categories: {},
             technologies: {},
             priceRanges: {
@@ -867,59 +882,91 @@ router.get('/marketplace/analytics', async (req, res) => {
             }
         };
 
-        // Get basic statistics
-        const statsResult = await db.query(`
-            SELECT 
-                COUNT(*) as total_projects,
-                AVG(COALESCE(p.sale_price, 0)) as avg_price,
-                AVG(COALESCE(p.monthly_revenue, 0)) as avg_revenue,
-                COUNT(CASE WHEN p.created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as new_this_week,
-                COUNT(CASE WHEN p.created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as new_this_month
-            FROM projects p
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
-        `);
+        // Get basic project statistics - count ALL public projects
+        try {
+            // Use simple boolean comparison that works for both PostgreSQL and SQLite
+            const statsResult = await db.query(`
+                SELECT 
+                    COUNT(*) as total_projects,
+                    COUNT(CASE WHEN is_for_sale = 1 OR is_for_sale = true THEN 1 END) as projects_for_sale,
+                    AVG(COALESCE(sale_price, 0)) as avg_price,
+                    AVG(COALESCE(monthly_revenue, 0)) as avg_revenue
+                FROM projects
+                WHERE is_public = 1 OR is_public = true
+            `);
+            const stats = statsResult.rows[0];
+            analytics.totalProjects = parseInt(stats.total_projects) || 0;
+            analytics.projectsForSale = parseInt(stats.projects_for_sale) || 0;
+            analytics.trends.avgPrice = Math.round(parseFloat(stats.avg_price || 0));
+            analytics.trends.avgRevenue = Math.round(parseFloat(stats.avg_revenue || 0));
+        } catch (e) {
+            console.log('Stats query error:', e.message);
+        }
 
-        const stats = statsResult.rows[0];
-        analytics.totalProjects = parseInt(stats.total_projects);
-        analytics.trends.avgPrice = Math.round(parseFloat(stats.avg_price || 0));
-        analytics.trends.avgRevenue = Math.round(parseFloat(stats.avg_revenue || 0));
-        analytics.trends.newThisWeek = parseInt(stats.new_this_week);
-        analytics.trends.newThisMonth = parseInt(stats.new_this_month);
+        // Get total users
+        try {
+            const usersResult = await db.query(`SELECT COUNT(*) as total_users FROM users`);
+            analytics.totalUsers = parseInt(usersResult.rows[0]?.total_users) || 0;
+        } catch (e) {
+            console.log('Users query error:', e.message);
+        }
+        
+        // Get successful sales and total volume from transactions
+        try {
+            const salesResult = await db.query(`
+                SELECT 
+                    COUNT(*) as successful_sales,
+                    COALESCE(SUM(amount), 0) as total_volume
+                FROM project_transactions
+                WHERE status = 'completed'
+            `);
+            analytics.successfulSales = parseInt(salesResult.rows[0]?.successful_sales) || 0;
+            analytics.totalVolume = parseFloat(salesResult.rows[0]?.total_volume) || 0;
+        } catch (e) {
+            // Transactions table might not exist - that's okay
+            console.log('Sales query error (transactions table may not exist):', e.message);
+        }
 
         // Get category distribution
-        const categoryResult = await db.query(`
-            SELECT 
-                COALESCE(p.category, 'uncategorized') as category,
-                COUNT(*) as count
-            FROM projects p
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
-            GROUP BY p.category
-            ORDER BY count DESC
-        `);
-
-        categoryResult.rows.forEach(row => {
-            analytics.categories[row.category] = parseInt(row.count);
-        });
+        try {
+            const categoryResult = await db.query(`
+                SELECT 
+                    COALESCE(category, 'uncategorized') as category,
+                    COUNT(*) as count
+                FROM projects
+                WHERE (is_for_sale = 1 OR is_for_sale = true) AND (is_public = 1 OR is_public = true)
+                GROUP BY category
+                ORDER BY count DESC
+            `);
+            categoryResult.rows.forEach(row => {
+                analytics.categories[row.category] = parseInt(row.count);
+            });
+        } catch (e) {
+            console.log('Category query error:', e.message);
+        }
 
         // Get price range distribution
-        const priceResult = await db.query(`
-            SELECT 
-                CASE 
-                    WHEN p.sale_price < 5000 THEN 'under5k'
-                    WHEN p.sale_price < 15000 THEN '5k-15k'
-                    WHEN p.sale_price < 50000 THEN '15k-50k'
-                    ELSE 'over50k'
-                END as price_range,
-                COUNT(*) as count
-            FROM projects p
-            WHERE p.is_for_sale = 1 AND p.is_public = 1
-                AND p.sale_price > 0
-            GROUP BY price_range
-        `);
-
-        priceResult.rows.forEach(row => {
-            analytics.priceRanges[row.price_range] = parseInt(row.count);
-        });
+        try {
+            const priceResult = await db.query(`
+                SELECT 
+                    CASE 
+                        WHEN sale_price < 5000 THEN 'under5k'
+                        WHEN sale_price < 15000 THEN '5k-15k'
+                        WHEN sale_price < 50000 THEN '15k-50k'
+                        ELSE 'over50k'
+                    END as price_range,
+                    COUNT(*) as count
+                FROM projects
+                WHERE (is_for_sale = 1 OR is_for_sale = true) AND (is_public = 1 OR is_public = true)
+                    AND sale_price > 0
+                GROUP BY price_range
+            `);
+            priceResult.rows.forEach(row => {
+                analytics.priceRanges[row.price_range] = parseInt(row.count);
+            });
+        } catch (e) {
+            console.log('Price query error:', e.message);
+        }
 
         res.json(analytics);
 

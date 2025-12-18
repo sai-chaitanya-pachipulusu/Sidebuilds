@@ -6,102 +6,109 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </div>
 
-**A premium marketplace for buying and selling side projects** - combining the discovery power of Product Hunt, transaction security of Flippa, and modern UX of Linear/Chronicle.
+**The Operating System for Modern Makers** — A premium marketplace for buying and selling side projects, combining the discovery power of Product Hunt, transaction security of Flippa, and modern UX of Linear/Chronicle.
 
-## ✨ What Makes SideBuilds Special
+---
 
-- 🎨 **Modern UI/UX** - Chronicle/Linear/Antimetal-inspired design
-- ⚡ **Command Palette** - Navigate with ⌘+K like a pro
-- 🔒 **Secure Escrow** - Stripe-powered payment protection  
-- 📱 **Mobile-First** - Responsive across all devices
-- 🚀 **Lightning Fast** - Vite build system, optimized performance
-- 🤖 **AI-Powered** - Smart recommendations and quality scoring
+## ✨ Features
+
+| Feature                | Description                           |
+| ---------------------- | ------------------------------------- |
+| 🏪 **Marketplace**     | Buy/sell projects with secure escrow  |
+| ⌘ **Command Palette**  | Keyboard-first navigation (⌘K)        |
+| 🎨 **Modern UI**       | Linear/Chronicle-inspired design      |
+| 🔒 **Secure Payments** | Stripe Connect with escrow protection |
+| 🤖 **AI Scoring**      | Smart project quality scoring         |
+| 📱 **Mobile-First**    | Responsive across all devices         |
+
+---
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Clone & Install
+# Install
 git clone <repo> && cd SideProject-Tracker
 cd server && npm install
 cd ../client && npm install
 
-# 2. Configure Environment
+# Configure
 cp .env.example .env  # Add your keys
 
-# 3. Start Development
-npm run dev  # Starts both frontend & backend
+# Run
+npm run dev
 ```
 
-**Access**: Frontend at http://localhost:3001 | Backend at http://localhost:5001
+**Access:**
 
-## 🎯 Core Features
+- Frontend: http://localhost:3002
+- Backend: http://localhost:5001
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| 🏪 **Marketplace** | Buy/sell projects with escrow | ✅ Live |
-| 💬 **Real-time Chat** | Buyer-seller communication | ✅ Live |
-| 📊 **Analytics** | Project performance tracking | ✅ Live |
-| 🔐 **Verification** | Revenue & ownership verification | ✅ Live |
-| ⌘ **Command Palette** | Keyboard-first navigation | ✅ Live |
-| 🎨 **Modern UI** | Chronicle/Linear-inspired design | ✅ Live |
-| 🤖 **AI Features** | Smart recommendations & scoring | ✅ Live |
+**Test Accounts:**
 
-## 🧪 Testing
-
-Run comprehensive workflow testing:
-```bash
-node test-workflows.js
-```
-
-Test accounts available:
-- **Seller**: seller1@test.com / password123
-- **Buyer**: buyer1@test.com / password123
-
-## 📚 Complete Documentation
-
-**📖 [MASTER DOCUMENTATION](MASTER_DOCUMENTATION.md)** - Complete platform guide with:
-- ⚡ Quick Start & Setup
-- 🏗 Architecture Overview  
-- 🎯 Feature Documentation
-- 🚀 Deployment Instructions
-- 🧪 Testing & Browser Guides
-- 💡 Feature Innovations & Roadmap
-- 🎯 Competitive Strategy
-- 📡 API Documentation
-- 🔧 Database Schema
-- 🛡 Security & Trust
-- 📞 Support & Troubleshooting
-
-## 🛠 Tech Stack
-
-**Frontend**: React 18, Vite, Tailwind CSS, Framer Motion, GSAP  
-**Backend**: Node.js, Express, PostgreSQL, Stripe Connect  
-**Database**: Supabase (PostgreSQL)  
-**Payments**: Stripe Connect + Webhooks  
-**Hosting**: Vercel + Render  
-**Deployment**: Docker-ready
-
-## 🚀 Key Innovations
-
-- **⌘+K Command Palette** - Power user navigation
-- **AI-Powered Features** - Smart recommendations and quality scoring
-- **Real-time Notifications** - Instant buyer-seller communication
-- **Modern Developer UX** - GitHub/Linear-style interface
-- **Mobile-First Design** - Superior mobile experience vs competitors
-- **Advanced Search** - Fuzzy matching and intelligent filtering
-
-## 🎯 Production Ready
-
-- ✅ All critical bugs fixed
-- ✅ Authentication & security hardened  
-- ✅ Performance optimized (60% faster)
-- ✅ UI/UX polished and responsive
-- ✅ Payment system fully integrated
-- ✅ AI features and competitive differentiators
-- ✅ 94.6% test success rate
+- Seller: `seller1@test.com` / `password123`
+- Buyer: `buyer1@test.com` / `password123`
 
 ---
 
-**🎊 Ready for production deployment and real users! 🎊**
+## 🛠 Tech Stack
 
-For detailed setup, deployment, and feature documentation, see [MASTER_DOCUMENTATION.md](MASTER_DOCUMENTATION.md) 
+| Layer        | Technologies                                |
+| ------------ | ------------------------------------------- |
+| **Frontend** | React 18, Vite, Tailwind CSS, Framer Motion |
+| **Backend**  | Node.js, Express, PostgreSQL/SQLite         |
+| **Payments** | Stripe Connect + Escrow                     |
+| **Hosting**  | Vercel (frontend) + Render (backend)        |
+
+---
+
+## 📚 Documentation
+
+All documentation has been consolidated into:
+
+- **[DOCS.md](DOCS.md)** — Complete technical documentation
+  - Architecture overview
+  - API reference
+  - Database schema
+  - Deployment guide
+  - Security & troubleshooting
+
+---
+
+## 📁 Project Structure
+
+```
+├── client/          # React frontend
+├── server/          # Express backend
+├── database/        # Database migrations
+├── DOCS.md          # Complete documentation
+└── README.md        # This file
+```
+
+---
+
+## 🎯 Key Innovations
+
+- **⌘K Command Palette** — Power user navigation
+- **AI Quality Scoring** — Smart project recommendations
+- **Premium UI/UX** — Bento Grid, Magnetic Buttons, Animated sections
+- **Secure Escrow** — Protected buyer-seller transactions
+- **Mobile-First** — Superior mobile experience
+
+---
+
+## 🧪 Testing
+
+```bash
+node deep-workflow-test.js  # Full workflow tests
+npm test                     # Unit tests
+```
+
+---
+
+## 📫 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+**Built with ❤️ for makers.**

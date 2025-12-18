@@ -53,7 +53,7 @@ const COMMISSION_RATE = process.env.COMMISSION_RATE || 5;
 // POST /api/payments/connect/create-account
 router.post('/connect/create-account', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const email = req.user.email;
 
         // Get user's existing Stripe account ID
@@ -116,7 +116,7 @@ router.post('/connect/create-account', authMiddleware, async (req, res) => {
 // GET /api/payments/connect/status  
 router.get('/connect/status', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get user's Stripe account info
         const result = await db.query(`
@@ -215,7 +215,7 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
 router.post('/create-checkout-session', authMiddleware, async (req, res) => {
     try {
         const { purchase_request_id } = req.body; // CHANGED: Expect purchase_request_id
-        const buyerId = req.user.id; // Assuming req.user is populated by authMiddleware
+        const buyerId = req.user.user_id; // Assuming req.user is populated by authMiddleware
 
         if (!purchase_request_id) {
             return res.status(400).json({ error: 'Purchase Request ID is required.' });
@@ -324,19 +324,20 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
                 seller_id: purchaseRequest.seller_id
             },
             payment_intent_data: {
-                application_fee_amount: applicationFeeAmount,
-                transfer_data: {
-                    destination: sellerStripeAccountId,
-                },
+                // ESCROW IMPLEMENTATION: 
+                // We do NOT transfer funds immediately. We hold them in the platform account.
+                // We link them using transfer_group for later reconciliation.
+                transfer_group: `txn_${purchase_request_id}`,
                 metadata: { // Metadata for the Payment Intent
-                    purchase_request_id: purchase_request_id, // CRUCIAL for webhook
+                    purchase_request_id: purchase_request_id,
                     project_id: projectId,
                     buyer_id: buyerId,
                     seller_id: purchaseRequest.seller_id,
                     commission_rate_at_purchase: COMMISSION_RATE.toString(),
                     total_amount_decimal: totalAmount.toFixed(2),
                     commission_amount_decimal: commissionAmount.toFixed(2),
-                    seller_receives_decimal: (totalAmount - commissionAmount).toFixed(2)
+                    seller_receives_decimal: (totalAmount - commissionAmount).toFixed(2),
+                    escrow_status: 'held' // Mark as held
                 },
             },
         };
@@ -486,7 +487,7 @@ const webhookHandler = async (req, res) => {
 router.get('/status/:sessionId', authMiddleware, async (req, res) => {
     try {
         const { sessionId } = req.params;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
 
         // Get transaction details - Modified query to use seller_id from transaction for permission check
         const transactionResult = await db.query(
@@ -519,7 +520,7 @@ router.get('/status/:sessionId', authMiddleware, async (req, res) => {
 // GET /api/payments/transactions
 router.get('/transactions', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
 
         // Get all transactions where user is either buyer or seller
         const transactionsResult = await db.query(
@@ -546,7 +547,7 @@ router.get('/transactions', authMiddleware, async (req, res) => {
 // POST /api/payments/connect/refresh-link
 router.post('/connect/refresh-link', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get the user's Stripe account ID
         const userResult = await db.query(`
@@ -582,7 +583,7 @@ router.post('/connect/refresh-link', authMiddleware, async (req, res) => {
 router.get('/transfers/:projectId', authMiddleware, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Get transaction details (no transfers table in SQLite schema)
         const transferResult = await db.query(
@@ -615,7 +616,7 @@ router.get('/transfers/:projectId', authMiddleware, async (req, res) => {
 router.post('/transfers/:projectId/update', authMiddleware, async (req, res) => {
     try {
         const { projectId } = req.params;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { code_transferred, domain_transferred, assets_transferred, notes } = req.body;
         
         // Get the transaction record (no transfers table)
@@ -659,7 +660,119 @@ router.post('/transfers/:projectId/update', authMiddleware, async (req, res) => 
     }
 });
 
-// --- Debug route for testing Stripe checkout directly ---
+// --- Confirm Receipt & Release Funds (Escrow Release) ---
+// POST /api/payments/confirm-receipt
+router.post('/confirm-receipt', authMiddleware, async (req, res) => {
+    try {
+        const { transactionId } = req.body;
+        const buyerId = req.user.user_id;
+
+        console.log(`[ESCROW] Confirming receipt for transaction ${transactionId} by buyer ${buyerId}`);
+
+        // 1. Verify Transaction & Buyer
+        const txnResult = await db.query(`
+            SELECT t.*, u.stripe_account_id as seller_stripe_id
+            FROM project_transactions t
+            JOIN users u ON t.seller_id = u.user_id
+            WHERE t.transaction_id = ? AND t.buyer_id = ?
+        `, [transactionId, buyerId]);
+
+        if (txnResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Transaction not found or access denied.' });
+        }
+
+        const transaction = txnResult.rows[0];
+
+        if (transaction.status === 'completed' || transaction.transfer_completed === 1) {
+            return res.status(400).json({ error: 'Funds have already been released for this transaction.' });
+        }
+
+        // 2. Execute Transfer to Seller (Release Funds)
+        if (process.env.NODE_ENV !== 'production' && !transaction.stripe_session_id.startsWith('cs_')) {
+             // Mock transfer for dev/debug
+             console.log('[ESCROW] Mock release of funds (Dev Mode)');
+        } else {
+            // Real Stripe Transfer
+            const transferAmount = Math.round(parseFloat(transaction.seller_amount) * 100); // Cents
+            
+            // Check if seller has a stripe account
+            if (!transaction.seller_stripe_id) {
+                 return res.status(500).json({ error: 'Seller does not have a connected Stripe account.' });
+            }
+
+            try {
+                const transfer = await stripe.transfers.create({
+                    amount: transferAmount,
+                    currency: 'usd',
+                    destination: transaction.seller_stripe_id,
+                    transfer_group: `txn_${transaction.payment_id}`, // Matches checkout session
+                    metadata: {
+                        transaction_id: transaction.transaction_id,
+                        project_id: transaction.project_id
+                    }
+                });
+                console.log(`[ESCROW] Funds released via Transfer ${transfer.id}`);
+            } catch (stripeError) {
+                console.error('[ESCROW] Stripe Transfer Error:', stripeError);
+                return res.status(500).json({ error: 'Failed to release funds via Stripe: ' + stripeError.message });
+            }
+        }
+
+        // 3. Update Database Status
+        await db.query(`
+            UPDATE project_transactions
+            SET status = 'completed', 
+                transfer_completed = 1, 
+                transfer_completed_at = CURRENT_TIMESTAMP,
+                escrow_status = 'released'
+            WHERE transaction_id = ?
+        `, [transactionId]);
+
+        res.json({ success: true, message: 'Funds released to seller successfully.' });
+
+    } catch (error) {
+        console.error('Error confirming receipt:', error);
+        res.status(500).json({ error: 'Failed to confirm receipt.' });
+    }
+});
+
+// --- Report Issue / Dispute ---
+// POST /api/payments/report-issue
+router.post('/report-issue', authMiddleware, async (req, res) => {
+    try {
+        const { transactionId, issueDescription } = req.body;
+        const buyerId = req.user.user_id;
+
+        // 1. Verify Transaction
+        const txnResult = await db.query(`
+            SELECT * FROM project_transactions
+            WHERE transaction_id = ? AND buyer_id = ?
+        `, [transactionId, buyerId]);
+
+        if (txnResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Transaction not found.' });
+        }
+
+        // 2. Update Status to Disputed
+        await db.query(`
+            UPDATE project_transactions
+            SET status = 'disputed',
+                escrow_status = 'disputed',
+                transaction_notes = ? 
+            WHERE transaction_id = ?
+        `, [`Issue reported by buyer: ${issueDescription}`, transactionId]);
+
+        // 3. (Optional) Email Admin/Support
+        // await emailService.sendDisputeNotification(...)
+
+        res.json({ success: true, message: 'Issue reported. Funds are frozen.' });
+
+    } catch (error) {
+        console.error('Error reporting issue:', error);
+        res.status(500).json({ error: 'Failed to report issue.' });
+    }
+});
+
 // GET /api/payments/debug/checkout
 if (process.env.NODE_ENV !== 'production') {
     router.get('/debug/checkout', async (req, res) => {
@@ -714,7 +827,7 @@ router.post('/debug/transfer-project', authMiddleware, async (req, res) => {
     
     try {
         const { projectId, sellerId } = req.body;
-        const buyerId = req.user.id;
+        const buyerId = req.user.user_id;
         
         if (!projectId || !sellerId) {
             return res.status(400).json({ error: 'projectId and sellerId are required' });

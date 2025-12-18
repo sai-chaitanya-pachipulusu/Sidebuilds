@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -18,8 +18,48 @@ import {
   Clock
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import { getMarketplaceStats } from '../services/api';
 
 const AboutUsPage = () => {
+  const [stats, setStats] = useState({
+    projectsListed: '0',
+    happyUsers: '0',
+    successRate: '0%',
+    avgResponseTime: '< 2h'
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const marketplaceStats = await getMarketplaceStats();
+        
+        // Calculate success rate (completed sales / total purchase requests)
+        // For now, we'll use a simplified calculation
+        const successRate = marketplaceStats.successfulSales > 0 
+          ? Math.min(98, Math.round((marketplaceStats.successfulSales / Math.max(marketplaceStats.totalProjects, 1)) * 100))
+          : 0;
+
+        setStats({
+          projectsListed: marketplaceStats.totalProjects > 0 
+            ? `${marketplaceStats.totalProjects.toLocaleString()}+` 
+            : '0',
+          happyUsers: marketplaceStats.activeUsers > 0 
+            ? `${marketplaceStats.activeUsers.toLocaleString()}+` 
+            : '0',
+          successRate: `${successRate}%`,
+          avgResponseTime: '< 2h' // This could be calculated from actual response times if tracked
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Keep default values on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   const values = [
     {
       icon: Heart,
@@ -72,28 +112,28 @@ const AboutUsPage = () => {
     },
   ];
 
-  const stats = [
+  const statsData = [
     { 
       label: 'Projects Listed', 
-      value: '2,500+',
+      value: stats.projectsListed,
       icon: TrendingUp,
       color: 'text-blue-400'
     },
     { 
       label: 'Happy Users', 
-      value: '15,000+',
+      value: stats.happyUsers,
       icon: Users,
       color: 'text-green-400'
     },
     { 
       label: 'Success Rate', 
-      value: '98%',
+      value: stats.successRate,
       icon: Award,
       color: 'text-purple-400'
     },
     { 
       label: 'Avg Response Time', 
-      value: '< 2h',
+      value: stats.avgResponseTime,
       icon: Clock,
       color: 'text-orange-400'
     },
@@ -110,7 +150,7 @@ const AboutUsPage = () => {
     <>
       <SEO 
         title="About Us | SideBuilds" 
-        description="Learn about SideBuilds' mission to democratize buying and selling of side projects with trust, security, and transparency." 
+        description="SideBuilds is the premier marketplace for Vibe Engineered Apps and unfinished ideas. We empower Vibe Engineers to buy, sell, and transfer project assets securely." 
       />
       
       <div className="min-h-screen bg-black">
@@ -126,19 +166,20 @@ const AboutUsPage = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
                 <Heart className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">About Us</span>
+                <span className="text-sm text-purple-300">The Vibe Engineering Revolution</span>
               </div>
               
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                Building the Future of{' '}
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                Home for{' '}
                 <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  Side Project Ownership
+                  Vibe Engineered Apps
                 </span>
+                {' '}& Finished Ideas
               </h1>
               <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
-                We're on a mission to make buying and selling side projects as simple, 
-                secure, and transparent as possible. Every maker deserves a trusted 
-                marketplace for their creations.
+                SideBuilds is the dedicated marketplace for Vibe Engineers. Whether you're selling a 
+                finished project or a high-potential unfinished idea, we provide the secure 
+                infrastructure to turn your "vibes" into valuable assets.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -182,9 +223,16 @@ const AboutUsPage = () => {
                 >
                   <h2 className="text-3xl font-bold text-white mb-4">Our Story</h2>
                   <p className="text-lg text-gray-400 max-w-3xl mx-auto">
-                    SideBuilds was born from a simple observation: talented developers build 
-                    amazing side projects, but lack a trusted platform to sell them. We experienced 
-                    this firsthand when trying to sell our own projects.
+                    SideBuilds was born from a simple observation: the rise of 
+                    <span className="inline-flex items-center gap-1 mx-1 align-baseline">
+                      <strong className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Vibe</strong>
+                      <span className="relative inline-block">
+                        <span className="line-through decoration-white/50 decoration-2 text-white/40">Coding</span>
+                        <span className="absolute -top-[60%] left-0 font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Engineering</span>
+                      </span>
+                    </span>
+                    has unleashed a wave of creativity, but makers lacked a trusted platform to trade these 
+                    AI-native assets. We're here to bridge that gap.
                   </p>
                 </motion.div>
               </div>
@@ -196,10 +244,10 @@ const AboutUsPage = () => {
                   transition={{ delay: 0.2 }}
                   className="space-y-6"
                 >
-                  <h3 className="text-2xl font-bold text-white">Why We Started</h3>
+                  <h3 className="text-2xl font-bold text-white">The Vibe Era</h3>
                   <p className="text-gray-400">
-                    After building and selling multiple side projects ourselves, we realized 
-                    the market needed a dedicated platform that prioritizes:
+                    In the era of AI-assisted development, the value lies in the "Vibe"—the architecture, 
+                    the prompts, and the vision. We realized the market needed a dedicated platform that:
                   </p>
                   <div className="space-y-3">
                     {reasons.map((item, i) => (
@@ -355,7 +403,7 @@ const AboutUsPage = () => {
               className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-12"
             >
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                {stats.map((stat, index) => {
+                {statsData.map((stat, index) => {
                   const Icon = stat.icon;
                   return (
                     <motion.div

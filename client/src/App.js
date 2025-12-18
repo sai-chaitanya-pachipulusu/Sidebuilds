@@ -29,6 +29,7 @@ const PurchaseSuccessPage = lazy(() => import('./pages/PurchaseSuccessPage'));
 const StripeConnectCompletePage = lazy(() => import('./pages/StripeConnectCompletePage'));
 const ProjectTransferPage = lazy(() => import('./pages/ProjectTransferPage'));
 const PublicProjectsPage = lazy(() => import('./pages/PublicProjectsPage'));
+const PurchasesPage = lazy(() => import('./pages/PurchasesPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
@@ -55,16 +56,22 @@ const AppContent = () => {
       }
     };
 
+    const handleOpenCommandPalette = () => {
+      setIsCommandPaletteOpen(true);
+    };
+
     window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('openCommandPalette', handleOpenCommandPalette);
     
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('openCommandPalette', handleOpenCommandPalette);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      <AnimatedBackground variant="constellation" />
+    <div className="min-h-screen bg-[#000000] text-white overflow-x-hidden">
+      {/* Remove AnimatedBackground - using cleaner approach */}
       <NavBar />
       
       {/* Enhanced Command Palette with state management */}
@@ -110,6 +117,7 @@ const AppContent = () => {
                         <Route path="/profile-settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
+                        <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
                         <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
                         <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />
                         <Route path="/project-transfer" element={<ComponentErrorBoundary><ProjectTransferPage /></ComponentErrorBoundary>} />

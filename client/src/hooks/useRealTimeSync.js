@@ -282,7 +282,7 @@ function getEndpointForDataType(dataType) {
     'analytics': '/api/analytics/dashboard',
     'marketplace': '/api/public/projects',
     'insights': '/api/analytics/market-insights',
-    'activity': '/api/analytics/activity-feed',
+    'activity': '/api/analytics/activity',
     'revenue': '/api/analytics/revenue'
   };
 

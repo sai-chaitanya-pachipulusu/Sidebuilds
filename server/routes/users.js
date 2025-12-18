@@ -9,22 +9,25 @@ const router = express.Router();
 router.get('/profile', authMiddleware, async (req, res) => {
     console.log('GET /profile - req.user:', JSON.stringify(req.user, null, 2));
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         console.log('🔍 Fetching profile for user ID:', userId);
 
         const userProfile = await db.query(
-            `SELECT 
-                user_id, username, email, first_name, last_name, 
-                bio, location, website_url as portfolio_link,
-                linkedin_url as linkedin_profile_url,
-                github_username as github_profile_url,
-                twitter_handle as twitter_profile_url,
-                avatar_url, is_verified, verification_level,
-                total_projects_sold, total_projects_bought, total_revenue,
-                reputation_score, created_at, updated_at,
-                '' as phone_number
-             FROM users 
-             WHERE user_id = ?`,
+            `SELECT
+                u.user_id, u.username, u.email, u.first_name, u.last_name,
+                COALESCE(u.bio, up.bio) as bio,
+                COALESCE(u.location, up.location) as location,
+                COALESCE(u.website_url, up.website) as portfolio_link,
+                COALESCE(u.linkedin_url, up.linkedin) as linkedin_profile_url,
+                COALESCE(u.github_username, up.github) as github_profile_url,
+                COALESCE(u.twitter_handle, up.twitter) as twitter_profile_url,
+                u.avatar_url, u.is_verified, u.verification_level,
+                u.total_projects_sold, u.total_projects_bought, u.total_revenue,
+                u.reputation_score, u.created_at, u.updated_at,
+                up.phone_number
+             FROM users u
+             LEFT JOIN user_profiles up ON u.user_id = up.user_id
+             WHERE u.user_id = ?`,
             [userId]
         );
 
@@ -53,19 +56,20 @@ router.put('/profile', authMiddleware, async (req, res) => {
     console.log('PUT /profile - req.user:', JSON.stringify(req.user, null, 2));
     console.log('PUT /profile - req.body:', JSON.stringify(req.body, null, 2));
     try {
-        const userId = req.user.id;
-        const { 
-            username, 
-            first_name, 
-            last_name, 
-            bio, 
-            location, 
-            portfolio_link, 
-            linkedin_profile_url, 
-            github_profile_url, 
+        const userId = req.user.user_id;
+        const {
+            username,
+            first_name,
+            last_name,
+            bio,
+            location,
+            portfolio_link,
+            linkedin_profile_url,
+            github_profile_url,
             twitter_profile_url,
             website_url,
-            avatar_url
+            avatar_url,
+            phone_number
         } = req.body;
 
         // Basic validation
@@ -135,20 +139,43 @@ router.put('/profile', authMiddleware, async (req, res) => {
 
         await db.query(updateQuery, updateValues);
 
+        // Update user_profiles table if phone_number is provided
+        if (phone_number !== undefined) {
+            // Check if user profile exists
+            const existingProfile = await db.query('SELECT user_id FROM user_profiles WHERE user_id = ?', [userId]);
+
+            if (existingProfile.rows.length > 0) {
+                // Update existing profile
+                await db.query(
+                    'UPDATE user_profiles SET phone_number = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+                    [phone_number, userId]
+                );
+            } else {
+                // Insert new profile
+                await db.query(
+                    'INSERT INTO user_profiles (user_id, phone_number, created_at, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                    [userId, phone_number]
+                );
+            }
+        }
+
         // Return updated profile
         const result = await db.query(
-            `SELECT 
-                user_id, username, email, first_name, last_name, 
-                bio, location, website_url as portfolio_link,
-                linkedin_url as linkedin_profile_url,
-                github_username as github_profile_url,
-                twitter_handle as twitter_profile_url,
-                avatar_url, is_verified, verification_level,
-                total_projects_sold, total_projects_bought, total_revenue,
-                reputation_score, created_at, updated_at,
-                '' as phone_number
-             FROM users 
-             WHERE user_id = ?`,
+            `SELECT
+                u.user_id, u.username, u.email, u.first_name, u.last_name,
+                COALESCE(u.bio, up.bio) as bio,
+                COALESCE(u.location, up.location) as location,
+                COALESCE(u.website_url, up.website) as portfolio_link,
+                COALESCE(u.linkedin_url, up.linkedin) as linkedin_profile_url,
+                COALESCE(u.github_username, up.github) as github_profile_url,
+                COALESCE(u.twitter_handle, up.twitter) as twitter_profile_url,
+                u.avatar_url, u.is_verified, u.verification_level,
+                u.total_projects_sold, u.total_projects_bought, u.total_revenue,
+                u.reputation_score, u.created_at, u.updated_at,
+                up.phone_number
+             FROM users u
+             LEFT JOIN user_profiles up ON u.user_id = up.user_id
+             WHERE u.user_id = ?`,
             [userId]
         );
 
@@ -191,7 +218,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
 // GET /api/users/stripe-status
 router.get('/stripe-status', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Check user's Stripe account info from users table
         const result = await db.query(
@@ -235,7 +262,7 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
 // GET /api/users/projects
 router.get('/projects', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         console.log('🔍 Fetching projects for user ID:', userId);
 
         const projects = await db.query(
@@ -248,7 +275,7 @@ router.get('/projects', authMiddleware, async (req, res) => {
                 view_count, interest_count, launch_date,
                 created_at, updated_at
              FROM projects 
-             WHERE owner_id = ?
+             WHERE user_id = ?
              ORDER BY created_at DESC`,
             [userId]
         );
@@ -265,7 +292,7 @@ router.get('/projects', authMiddleware, async (req, res) => {
 // GET /api/users/dashboard-stats
 router.get('/dashboard-stats', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         console.log('🔍 Fetching dashboard stats for user ID:', userId);
 
         // Get project counts
@@ -278,7 +305,7 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
                 SUM(view_count) as total_views,
                 SUM(interest_count) as total_interest
              FROM projects 
-             WHERE owner_id = ?`,
+             WHERE user_id = ?`,
             [userId]
         );
 

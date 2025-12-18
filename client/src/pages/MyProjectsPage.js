@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
-import { getProjects } from '../services/api';
+import { getProjects, toggleHoldProject } from '../services/api';
 import {
   Plus,
   Eye,
@@ -22,7 +22,9 @@ import {
   Star,
   BarChart3,
   ArrowUpRight,
-  Target
+  Target,
+  Pause,
+  Play
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '../shadcn/ui/button';
@@ -74,6 +76,18 @@ const MyProjectsPage = () => {
     
     return matchesSearch && matchesStage;
   });
+
+  const handleToggleHold = async (projectId) => {
+    try {
+      const result = await toggleHoldProject(projectId);
+      setProjects(projects.map(p => 
+        p.project_id === projectId ? { ...p, is_on_hold: result.is_on_hold } : p
+      ));
+      toast.success(result.message);
+    } catch (error) {
+      toast.error('Failed to update project status');
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
@@ -143,6 +157,13 @@ const MyProjectsPage = () => {
             </div>
           </div>
 
+          {/* On Hold Status */}
+          {project.is_on_hold === 1 && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
+              <span className="text-red-400 text-xs font-bold uppercase tracking-wider">On Hold / Under Negotiation</span>
+            </div>
+          )}
+
           {/* Creation Date */}
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Calendar className="w-4 h-4" />
@@ -162,13 +183,27 @@ const MyProjectsPage = () => {
             </motion.button>
             
             <motion.button
+              onClick={() => handleToggleHold(project.project_id)}
+              className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                project.is_on_hold 
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' 
+                  : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              title={project.is_on_hold ? 'Resume Listing' : 'Put on Hold'}
+            >
+              {project.is_on_hold ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              {project.is_on_hold ? 'Resume' : 'Hold'}
+            </motion.button>
+
+            <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <Edit3 className="w-4 h-4" />
-              Edit
             </motion.button>
           </div>
         </div>
@@ -201,8 +236,15 @@ const MyProjectsPage = () => {
               <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors duration-200 truncate">
                 {project.name}
               </h3>
-              <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 ml-3 flex-shrink-0`}>
-                {project.stage}
+              <div className="flex items-center gap-2">
+                <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 flex-shrink-0`}>
+                  {project.stage}
+                </div>
+                {project.is_on_hold === 1 && (
+                  <div className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                    On Hold
+                  </div>
+                )}
               </div>
             </div>
             
@@ -238,6 +280,20 @@ const MyProjectsPage = () => {
               View
             </motion.button>
             
+            <motion.button
+              onClick={() => handleToggleHold(project.project_id)}
+              className={`p-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                project.is_on_hold 
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' 
+                  : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              title={project.is_on_hold ? 'Resume Listing' : 'Put on Hold'}
+            >
+              {project.is_on_hold ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            </motion.button>
+
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
               className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center gap-2"

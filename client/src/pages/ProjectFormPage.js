@@ -47,6 +47,9 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         demo_url: '',
         github_url: '',
         tech_stack: [],
+        category: '',
+        subcategory: '',
+        tags: '',
         is_public: true,
         is_for_sale: false,
         sale_price: '',
@@ -136,7 +139,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         try {
             console.log('Submitting project data:', formData);
             if (editMode && projectId) {
-                const updatedProject = await updateProject(projectId, formData);
+                await updateProject(projectId, formData);
                 toast.success("Project Updated!");
                 navigate(`/projects/${projectId}`);
             } else {
@@ -236,18 +239,64 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
 
                             <motion.div variants={itemVariants}>
                                 <Label htmlFor="description">Description</Label>
-                                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={5} />
-                                <p className="text-sm text-gray-500 mt-1">A brief, compelling description of what your project does.</p>
+                                <Textarea
+                                    id="description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows={5}
+                                    placeholder="Describe your project in 2-3 sentences. What problem does it solve? Who is your target audience?"
+                                />
+                                <p className="text-sm text-gray-500 mt-1">
+                                    A brief, compelling description of what your project does. Focus on the value proposition.
+                                    <span className="text-purple-400 ml-1">{formData.description.length}/500 characters</span>
+                                </p>
                             </motion.div>
 
                             <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <Label htmlFor="domain">Domain (Optional)</Label>
                                     <Input id="domain" name="domain" value={formData.domain} onChange={handleChange} placeholder="e.g., myproject.com" />
+                                    <p className="text-xs text-gray-500 mt-1">Your project's website domain if it has one</p>
                                 </div>
                                 <div>
                                     <Label htmlFor="github_url">GitHub URL (Optional)</Label>
                                     <Input id="github_url" name="github_url" type="url" value={formData.github_url} onChange={handleChange} placeholder="https://github.com/user/repo" />
+                                    <p className="text-xs text-gray-500 mt-1">Repository URL for code review and verification</p>
+                                </div>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <Label htmlFor="category">Category</Label>
+                                    <Select onValueChange={(value) => handleSelectChange('category', value)} value={formData.category}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="productivity">Productivity</SelectItem>
+                                            <SelectItem value="ecommerce">E-commerce</SelectItem>
+                                            <SelectItem value="analytics">Analytics</SelectItem>
+                                            <SelectItem value="social">Social Media</SelectItem>
+                                            <SelectItem value="education">Education</SelectItem>
+                                            <SelectItem value="healthcare">Healthcare</SelectItem>
+                                            <SelectItem value="finance">Finance</SelectItem>
+                                            <SelectItem value="entertainment">Entertainment</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-sm text-gray-500 mt-1">Primary category for your project</p>
+                                </div>
+                                <div>
+                                    <Label htmlFor="tags">Tags (Optional)</Label>
+                                    <Input
+                                        id="tags"
+                                        name="tags"
+                                        value={formData.tags}
+                                        onChange={handleChange}
+                                        placeholder="react, nodejs, ai, saas (comma-separated)"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Keywords to help buyers find your project</p>
                                 </div>
                             </motion.div>
 

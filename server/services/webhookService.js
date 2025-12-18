@@ -192,9 +192,9 @@ class WebhookService {
             await client.query(
                 `INSERT INTO project_transactions (
                     transaction_id, project_id, buyer_id, seller_id, amount, 
-                    commission_amount, seller_amount, status, payment_method, 
+                    commission_amount, seller_amount, status, escrow_status, payment_method, 
                     payment_id, stripe_payment_intent_id, stripe_session_id, created_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
                 [
                     transactionId,
                     purchaseRequest.project_id,
@@ -204,6 +204,7 @@ class WebhookService {
                     applicationFeeAmount,
                     netAmountToSeller,
                     'completed',
+                    session.metadata?.escrow_status || 'held', // Capture escrow status
                     charge.payment_method_details?.type || 'card',
                     charge.id,
                     paymentIntentId,

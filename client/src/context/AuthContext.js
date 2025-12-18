@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import apiClient, { getUserProfile } from '../services/api'; // Import getUserProfile
 import { initializeSocket, disconnectSocket } from '../utils/socket'; // Import socket utils
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
@@ -58,63 +59,85 @@ export const AuthProvider = ({ children }) => {
                 console.log('AuthContext: Fetching user profile...');
                 const profileData = await getUserProfile();
                 localStorage.setItem('user', JSON.stringify(profileData));
-                setAuthState(prev => ({ 
-                    ...prev, 
-                    user: profileData, 
+                setAuthState(prev => ({
+                    ...prev,
+                    user: profileData,
                     isAuthenticated: true,
                 }));
                 console.log('AuthContext: User profile updated', profileData);
                 // Connect socket after profile is successfully fetched and user ID is available
-                connectUserSocket(tokenToUse, profileData);
+                if (profileData && profileData.user_id) {
+                    connectUserSocket(tokenToUse, profileData);
+                }
                 return profileData;
             } catch (error) {
                 console.error("AuthContext: Failed to fetch user profile:", error);
                 if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                     console.log("AuthContext: Auth error during profile fetch, logging out.");
-                    logout(); 
+                    logout();
                 }
-                throw error; 
+                throw error;
             }
         }
-        return null; 
-    }, [connectUserSocket]);
+        return null;
+    }, []); // Remove connectUserSocket dependency to prevent circular dependency
 
-    useEffect(() => {
-        const verifyUserAndToken = async () => {
-            const storedToken = localStorage.getItem('token');
-            if (storedToken) {
-                // Set token in API client header first - use Authorization Bearer format
-                apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-                try {
-                    // Create a more robust timeout with AbortController
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => {
-                        controller.abort();
-                    }, 3000); // Reduced to 3 seconds
+    const verifyUserAndToken = useCallback(async () => {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken) {
+            // Set token in API client header first - use Authorization Bearer format
+            apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            try {
+                // Create a more robust timeout with AbortController
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                }, 3000); // Reduced to 3 seconds
 
-                    // Add abort signal to the profile fetch
-                    await fetchUserProfile(storedToken);
-                    clearTimeout(timeoutId);
-                } catch (error) {
-                    console.log("Initial profile fetch failed:", error.message);
-                    // On any error during startup, clear auth state to prevent infinite loading
-                    if (error.name === 'AbortError' || error.message.includes('timeout')) {
-                        console.log("Profile fetch timed out, clearing auth state");
-                        logout();
-                    } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                        logout();
-                    } else {
-                        // For other errors, still clear loading state
-                        console.log("Network error during profile fetch, continuing without auth");
-                    }
+                // Add abort signal to the profile fetch
+                await fetchUserProfile(storedToken);
+                clearTimeout(timeoutId);
+            } catch (error) {
+                console.log("Initial profile fetch failed:", error.message);
+                // On any error during startup, clear auth state to prevent infinite loading
+                if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                    console.log("Profile fetch timed out, clearing auth state");
+                    logout();
+                } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                    logout();
+                } else {
+                    // For other errors, still clear loading state
+                    console.log("Network error during profile fetch, continuing without auth");
                 }
             }
-            // Always set loading to false regardless of success/failure
-            setAuthState(prev => ({ ...prev, isLoading: false }));
+        }
+        // Always set loading to false regardless of success/failure
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+    }, [fetchUserProfile]);
+
+    useEffect(() => {
+        verifyUserAndToken();
+    }, [verifyUserAndToken]);
+
+    // Listen for token expiration events
+    useEffect(() => {
+        const handleTokenExpired = (event) => {
+            console.log('Token expired event received:', event.detail);
+            // Show user a message and redirect to login
+            toast.error(event.detail.message || 'Your session has expired. Please log in again.');
+            logout();
+            // Optionally redirect to login page
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
         };
 
-        verifyUserAndToken();
-    }, []); // Remove fetchUserProfile dependency to prevent loops
+        window.addEventListener('tokenExpired', handleTokenExpired);
+
+        return () => {
+            window.removeEventListener('tokenExpired', handleTokenExpired);
+        };
+    }, []);
 
     const login = (token, user) => {
         localStorage.setItem('token', token);

@@ -21,8 +21,221 @@ if (useSQLite) {
   
   const dbPath = path.join(__dirname, 'sidebuilds-complete.db');
   const db = new sqlite3.Database(dbPath);
-  
+
   console.log(`[SERVER/DB.JS] Using SQLite database at: ${dbPath}`);
+
+  // Initialize basic tables asynchronously (don't block server startup)
+  process.nextTick(() => {
+    db.serialize(() => {
+      db.run(`CREATE TABLE IF NOT EXISTS users (
+        user_id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        first_name TEXT,
+        last_name TEXT,
+        bio TEXT,
+        location TEXT,
+        website_url TEXT,
+        linkedin_url TEXT,
+        github_username TEXT,
+        twitter_handle TEXT,
+        avatar_url TEXT,
+        is_admin INTEGER DEFAULT 0,
+        is_verified INTEGER DEFAULT 0,
+        verification_level INTEGER DEFAULT 0,
+        total_projects_sold INTEGER DEFAULT 0,
+        total_projects_bought INTEGER DEFAULT 0,
+        total_revenue REAL DEFAULT 0,
+        reputation_score REAL DEFAULT 0,
+        stripe_account_id TEXT,
+        stripe_onboarding_complete INTEGER DEFAULT 0
+      )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS projects (
+      project_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      detailed_description TEXT,
+      stage TEXT DEFAULT 'idea',
+      category TEXT,
+      subcategory TEXT,
+      domain TEXT,
+      demo_url TEXT,
+      github_url TEXT,
+      tech_stack TEXT,
+      tags TEXT,
+      monthly_revenue REAL DEFAULT 0,
+      monthly_users INTEGER DEFAULT 0,
+      growth_rate REAL DEFAULT 0,
+      view_count INTEGER DEFAULT 0,
+      sale_price REAL,
+      price_negotiable INTEGER DEFAULT 1,
+      contact_email TEXT,
+      contact_phone TEXT,
+      payment_method TEXT,
+      thumbnail_url TEXT,
+      launch_date TEXT,
+      is_public INTEGER DEFAULT 1,
+      is_for_sale INTEGER DEFAULT 0,
+      featured INTEGER DEFAULT 0,
+      verified INTEGER DEFAULT 0,
+      code_transferred INTEGER DEFAULT 0,
+      domain_transferred INTEGER DEFAULT 0,
+      assets_transferred INTEGER DEFAULT 0,
+      is_on_hold INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(user_id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS purchase_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id TEXT,
+      buyer_id TEXT,
+      seller_id TEXT,
+      status TEXT DEFAULT 'interest_expressed',
+      message TEXT,
+      price REAL,
+      stripe_session_id TEXT,
+      stripe_payment_intent_id TEXT,
+      stripe_payout_id TEXT,
+      code_transferred INTEGER DEFAULT 0,
+      domain_transferred INTEGER DEFAULT 0,
+      assets_transferred INTEGER DEFAULT 0,
+      transfer_notes TEXT,
+      terms_agreed_version TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(project_id),
+      FOREIGN KEY (buyer_id) REFERENCES users(user_id),
+      FOREIGN KEY (seller_id) REFERENCES users(user_id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT,
+      read INTEGER DEFAULT 0,
+      link TEXT,
+      data TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(user_id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS ai_project_analysis (
+      project_id TEXT PRIMARY KEY,
+      overall_score REAL,
+      estimated_value REAL,
+      confidence_score REAL,
+      confidence_level TEXT,
+      factor_scores TEXT,
+      recommendations TEXT,
+      insights TEXT,
+      risks TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS project_ai_analyses (
+      project_id TEXT PRIMARY KEY,
+      overall_score REAL,
+      confidence_level REAL,
+      estimated_value REAL,
+      factor_scores TEXT,
+      insights TEXT,
+      recommendations TEXT,
+      risks TEXT,
+      analysis_type TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS project_transactions (
+      transaction_id TEXT PRIMARY KEY,
+      project_id TEXT,
+      buyer_id TEXT,
+      seller_id TEXT,
+      amount REAL,
+      commission_amount REAL,
+      seller_amount REAL,
+      status TEXT,
+      escrow_status TEXT, 
+      payment_method TEXT,
+      payment_id TEXT,
+      stripe_payment_intent_id TEXT,
+      stripe_session_id TEXT,
+      transfer_completed INTEGER DEFAULT 0,
+      transfer_completed_at DATETIME,
+      transaction_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(project_id),
+      FOREIGN KEY (buyer_id) REFERENCES users(user_id),
+      FOREIGN KEY (seller_id) REFERENCES users(user_id)
+    )`);
+
+      // Seed basic data
+      db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
+        if (!err && row.count === 0) {
+          console.log('[SERVER/DB.JS] Seeding basic test data...');
+
+          try {
+            // Create test users
+            const bcrypt = require('bcryptjs');
+            const saltRounds = 10;
+
+            // Hash passwords
+            const sellerPassword = bcrypt.hashSync('password123', saltRounds);
+            const buyerPassword = bcrypt.hashSync('password123', saltRounds);
+
+          db.run(`INSERT INTO users (user_id, username, email, password_hash, first_name, last_name, is_verified)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            ['seller1', 'seller1', 'seller1@test.com', sellerPassword, 'John', 'Seller', 1]);
+
+          db.run(`INSERT INTO users (user_id, username, email, password_hash, first_name, last_name, is_verified)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            ['buyer1', 'buyer1', 'buyer1@test.com', buyerPassword, 'Jane', 'Buyer', 1]);
+
+          // Create test projects with UUIDs
+          const project1Id = '550e8400-e29b-41d4-a716-446655440001';
+          const project2Id = '550e8400-e29b-41d4-a716-446655440002';
+
+          db.run(`INSERT INTO projects (project_id, user_id, name, description, stage, is_public, is_for_sale, sale_price)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [project1Id, 'seller1', 'TaskFlow Pro', 'Advanced task management application', 'mvp', 1, 1, 5000]);
+
+          db.run(`INSERT INTO projects (project_id, user_id, name, description, stage, is_public, is_for_sale, sale_price)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [project2Id, 'seller1', 'DevCollab', 'Developer collaboration platform', 'prototype', 1, 1, 3500]);
+
+          console.log('[SERVER/DB.JS] Test data seeded successfully');
+          } catch (hashError) {
+            console.error('[SERVER/DB.JS] Error hashing passwords:', hashError);
+            // Use a simple fallback password for testing
+            const fallbackPassword = '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'; // 'password'
+
+            db.run(`INSERT INTO users (user_id, username, email, password_hash, first_name, last_name, is_verified)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              ['seller1', 'seller1', 'seller1@test.com', fallbackPassword, 'John', 'Seller', 1]);
+
+            db.run(`INSERT INTO users (user_id, username, email, password_hash, first_name, last_name, is_verified)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              ['buyer1', 'buyer1', 'buyer1@test.com', fallbackPassword, 'Jane', 'Buyer', 1]);
+
+            console.log('[SERVER/DB.JS] Used fallback password for test users');
+          }
+        }
+      });
+
+      console.log('[SERVER/DB.JS] Basic tables initialized');
+    });
+  });
   
   // Query wrapper to match PostgreSQL interface
   const query = (text, params = []) => {
@@ -136,6 +349,40 @@ if (useSQLite) {
   return;
 }
 // Configure connection pool with standard PostgreSQL settings
+const convertPlaceholders = (text = '') => {
+    if (!text || typeof text !== 'string') return text;
+    if (!text.includes('?')) return text;
+    
+    // Handle PostgreSQL placeholder conversion (? -> $1, $2, etc.)
+    // This regex matches ? but not inside string literals
+    let index = 0;
+    let result = '';
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const prevChar = i > 0 ? text[i - 1] : '';
+        
+        // Toggle quote states (handle escaped quotes)
+        if (char === "'" && prevChar !== '\\' && !inDoubleQuote) {
+            inSingleQuote = !inSingleQuote;
+            result += char;
+        } else if (char === '"' && prevChar !== '\\' && !inSingleQuote) {
+            inDoubleQuote = !inDoubleQuote;
+            result += char;
+        } else if (char === '?' && !inSingleQuote && !inDoubleQuote) {
+            // Replace ? with PostgreSQL placeholder
+            index++;
+            result += `$${index}`;
+        } else {
+            result += char;
+        }
+    }
+    
+    return result;
+};
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
@@ -224,7 +471,7 @@ async function testConnection() {
 }
 
 // Enhanced query function with automatic retry on connection issues
-const query = async (text, params) => {
+const query = async (text, params = []) => {
     // If we know we're not connected, wait a bit before trying
     if (!isConnected) {
         // Wait for a short time to see if connection is restored
@@ -232,8 +479,20 @@ const query = async (text, params) => {
     }
     
     try {
-        return await pool.query(text, params);
+        const formattedText = convertPlaceholders(text);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('[DB-POSTGRES] Original query:', text.substring(0, 200));
+            console.log('[DB-POSTGRES] Converted query:', formattedText.substring(0, 200));
+            console.log('[DB-POSTGRES] Params:', params);
+        }
+        const result = await pool.query(formattedText, params);
+        return result;
     } catch (err) {
+        console.error('[DB-POSTGRES] Query error:', err.message);
+        console.error('[DB-POSTGRES] Query:', text.substring(0, 200));
+        console.error('[DB-POSTGRES] Error code:', err.code);
+        console.error('[DB-POSTGRES] Error detail:', err.detail);
+        
         // Check for connection-related errors
         if (err.code === 'ECONNREFUSED' || err.code === '57P01' || err.code === '08006' || err.code === '08001') {
             console.error(`Database connection error: ${err.message}. Initiating reconnection...`);
@@ -289,9 +548,17 @@ const checkConnection = async () => {
 // Transaction wrapper for PostgreSQL
 const withTransaction = async (callback) => {
     const client = await pool.connect();
+    const wrappedQuery = (text, params = []) => {
+        const formattedText = convertPlaceholders(text);
+        return client.query(formattedText, params);
+    };
+    const proxyClient = {
+        query: wrappedQuery,
+        raw: client
+    };
     try {
         await client.query('BEGIN');
-        const result = await callback(client);
+        const result = await callback(proxyClient);
         await client.query('COMMIT');
         return result;
     } catch (error) {
@@ -302,12 +569,42 @@ const withTransaction = async (callback) => {
     }
 };
 
-module.exports = {
+if (useSQLite) {
+  // Export SQLite interface
+  module.exports = {
+    query,
+    getClient: () => db, // Return the SQLite db instance
+    retry: () => true, // SQLite doesn't need retry logic like PostgreSQL
+    withTransaction: async (callback) => {
+      return new Promise((resolve, reject) => {
+        db.serialize(async () => {
+          try {
+            await query('BEGIN TRANSACTION');
+            const result = await callback(db);
+            await query('COMMIT');
+            resolve(result);
+          } catch (error) {
+            await query('ROLLBACK');
+            reject(error);
+          }
+        });
+      });
+    },
+    db, // Export SQLite db instance
+    isConnectionHealthy: () => true, // Assume SQLite is always healthy
+    checkConnection: async () => ({ connected: true }),
+    isSQLite: true
+  };
+} else {
+  // Export PostgreSQL interface
+  module.exports = {
     query,
     getClient: () => pool.connect(),
     retry,
     withTransaction,
     pool, // Export the pool itself if needed
     isConnectionHealthy,
-    checkConnection
-};
+    checkConnection,
+    isSQLite: false
+  };
+}

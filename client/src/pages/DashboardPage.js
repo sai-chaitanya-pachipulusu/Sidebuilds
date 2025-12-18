@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, getSellerPurchaseRequests, getBuyerPurchaseRequests, getNotifications } from '../services/api';
 import { useDashboardSync } from '../hooks/useRealTimeSync';
-import { 
-  //BarChart3, 
-  TrendingUp, 
-  Users, 
+import {
+  //BarChart3,
+  TrendingUp,
+  Users,
   DollarSign,
   Package,
   //Clock,
@@ -28,7 +28,18 @@ import {
   ShoppingBag,
   Zap
 } from 'lucide-react';
+import { Button } from '../shadcn/ui/button';
 import StripeConnectBanner from '../components/StripeConnectBanner';
+import PortfolioValueModal from '../components/dashboard/PortfolioValueModal';
+import ProjectInterestsModal from '../components/dashboard/ProjectInterestsModal';
+import ProjectStatsModal from '../components/dashboard/ProjectStatsModal';
+import SalesHistoryModal from '../components/dashboard/SalesHistoryModal';
+
+// Motion animation variants
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -47,43 +58,73 @@ const DashboardPage = () => {
     conversionRate: 0,
     lastUpdated: null
   });
+  const [recentProjects, setRecentProjects] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Modal states
+  const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
+  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [salesModalOpen, setSalesModalOpen] = useState(false);
+
   // Use real-time dashboard sync
-  const { 
-    data: realtimeStats, 
-    loading: realtimeLoading, 
-    refresh: refreshDashboard,
-    connectionStatus 
-  } = useDashboardSync({
+  useDashboardSync({
     refreshInterval: 60000, // 1 minute
     enableRealTime: true
   });
 
+  // Activity click handler
+  const handleActivityClick = (activity) => {
+    console.log('Activity clicked:', activity);
+    if (activity.type === 'interest' || activity.type === 'purchase_request') {
+      console.log('Opening interests modal from activity');
+      setInterestsModalOpen(true);
+    } else if (activity.type === 'sale' || activity.type === 'payment') {
+      console.log('Opening sales modal from activity');
+      setSalesModalOpen(true);
+    } else {
+      console.log('Unknown activity type:', activity.type);
+    }
+  };
+
   useEffect(() => {
+    console.log('Dashboard useEffect triggered, user:', user);
     const fetchDashboardData = async () => {
-      if (!user) return;
+      if (!user) {
+        console.log('No user found, returning early');
+        return;
+      }
       
       try {
-        // Fetch real-time dashboard analytics from API
-        const dashboardResponse = await fetch('/api/analytics/dashboard', {
+        console.log('Starting dashboard data fetch...');
+
+        // Fetch comprehensive dashboard data from our updated API
+        const dashboardResponse = await fetch('/api/dashboard', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
 
-        let dynamicStats = {};
-        if (dashboardResponse.ok) {
-          dynamicStats = await dashboardResponse.json();
+        if (!dashboardResponse.ok) {
+          throw new Error('Failed to fetch dashboard data');
         }
 
+        const dashboardData = await dashboardResponse.json();
+        console.log('Dashboard data received:', dashboardData);
+
+        // Use the dashboard API data
+        setStats(dashboardData.stats);
+        setRecentProjects(dashboardData.recentProjects || []);
+        setRecentActivity(dashboardData.recentActivity || []);
+
+        // Also fetch additional data for notifications and detailed project info
         const [
-          projectsData, 
-          sellerRequestsData, 
-          buyerRequestsData, 
+          projectsData,
+          sellerRequestsData,
+          buyerRequestsData,
           notificationsData
         ] = await Promise.all([
           getProjects(),
@@ -92,55 +133,37 @@ const DashboardPage = () => {
           getNotifications()
         ]);
 
-        const ownedProjects = projectsData.filter(p => p.user_id === user.id && !p.is_purchased);
-        const totalValue = ownedProjects.reduce((sum, p) => sum + (p.sale_price || 0), 0);
-        const totalViews = ownedProjects.reduce((sum, p) => sum + (p.view_count || 0), 0);
-        const activeOffers = sellerRequestsData.filter(r => 
-          !['completed', 'rejected_by_seller', 'withdrawn_by_buyer'].includes(r.status)
-        ).length;
-        const completedSales = sellerRequestsData.filter(r => r.status === 'completed').length;
-        const purchasesMade = buyerRequestsData.filter(r => r.status === 'completed').length;
-        
-        // Calculate dynamic metrics
-        const monthlyRevenue = ownedProjects.reduce((sum, p) => sum + (p.monthly_revenue || 0), 0);
-        const lastMonthViews = ownedProjects.reduce((sum, p) => sum + (p.last_month_views || 0), 0);
-        const growthRate = lastMonthViews > 0 ? ((totalViews - lastMonthViews) / lastMonthViews * 100) : 0;
-        const conversionRate = totalViews > 0 ? (sellerRequestsData.length / totalViews * 100) : 0;
-        
-        setStats({
-          totalProjects: ownedProjects.length,
-          portfolioValue: totalValue,
-          activeOffers,
-          completedSales,
-          totalViews,
-          averageViews: ownedProjects.length > 0 ? Math.round(totalViews / ownedProjects.length) : 0,
-          interestReceived: sellerRequestsData.length,
-          purchasesMade,
-          monthlyRevenue: dynamicStats.monthlyRevenue || monthlyRevenue,
-          growthRate: dynamicStats.growthRate || Math.round(growthRate * 100) / 100,
-          conversionRate: dynamicStats.conversionRate || Math.round(conversionRate * 100) / 100,
-          lastUpdated: new Date().toISOString()
+        console.log('Dashboard data fetched:', {
+          projectsData: projectsData?.length || 0,
+          sellerRequestsData: sellerRequestsData?.length || 0,
+          buyerRequestsData: buyerRequestsData?.length || 0,
+          notificationsData: notificationsData?.length || 0
         });
 
-        setProjects(ownedProjects.slice(0, 3));
-        setNotifications(notificationsData.slice(0, 5));
+        // Keep the additional data for modals and detailed views
+        setProjects(projectsData || []);
+        setNotifications(notificationsData || []);
         
         // Create activity feed
-        const activities = [
-          ...sellerRequestsData.slice(0, 3).map(req => ({
-            type: 'interest',
-            message: `New interest received for "${req.project_name}"`,
-            time: req.created_at,
-            status: req.status
-          })),
-          ...buyerRequestsData.slice(0, 2).map(req => ({
-            type: 'purchase',
-            message: `Purchase request for "${req.project_name}"`,
-            time: req.created_at,
-            status: req.status
-          }))
-        ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
-        
+        const sellerActivities = sellerRequestsData.slice(0, 3).map(req => ({
+          type: 'interest',
+          message: `New interest received for "${req.project_name}"`,
+          time: req.created_at,
+          status: req.status
+        }));
+
+        const buyerActivities = buyerRequestsData.slice(0, 2).map(req => ({
+          type: 'purchase',
+          message: `Purchase request for "${req.project_name}"`,
+          time: req.created_at,
+          status: req.status
+        }));
+
+        const activities = [...sellerActivities, ...buyerActivities]
+          .sort((a, b) => new Date(b.time) - new Date(a.time))
+          .slice(0, 5);
+
+        console.log('Created activities:', activities);
         setRecentActivity(activities);
 
       } catch (error) {
@@ -161,40 +184,193 @@ const DashboardPage = () => {
       maximumFractionDigits: 0,
     }).format(price);
 
-  const StatCard = ({ icon: Icon, title, value, change, changeType, description, color = "purple" }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
-    >
-      {/* Background gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br from-${color}-600/5 to-${color}-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-      
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-${color}-500/10 border border-${color}-500/20`}>
-            <Icon className={`w-6 h-6 text-${color}-400`} />
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    console.log('Notification clicked:', notification);
+
+    // Mark notification as read if it's unread
+    if (!notification.is_read) {
+      markNotificationAsRead(notification.notification_id);
+    }
+
+    // Navigate based on notification type and available fields
+    if (notification.type === 'purchase_request' || notification.type?.includes('interest') || notification.type?.includes('offer')) {
+      console.log('Opening interests modal for notification:', notification.type);
+      // Open interests modal for project interest notifications
+      setInterestsModalOpen(true);
+    } else if (notification.type?.includes('sale') || notification.type?.includes('payment') || notification.type === 'payment') {
+      console.log('Opening sales modal for notification:', notification.type);
+      // Open sales modal for sale-related notifications
+      setSalesModalOpen(true);
+    } else if (notification.action_url) {
+      console.log('Navigating to action_url:', notification.action_url);
+      // Navigate to the specified action URL
+      navigate(notification.action_url);
+    } else if (notification.related_project_id) {
+      console.log('Navigating to project:', notification.related_project_id);
+      // Navigate to project detail page
+      navigate(`/project/${notification.related_project_id}`);
+    } else if (notification.related_transaction_id) {
+      console.log('Navigating to transaction:', notification.related_transaction_id);
+      // Navigate to transaction detail page
+      navigate(`/transaction/${notification.related_transaction_id}`);
+    } else {
+      console.log('Default navigation to notifications page');
+      // Default to notifications page
+      navigate('/notifications');
+    }
+  };
+
+  const StatCard = ({ icon: Icon, title, value, trend, trendUp, description, color = "purple", onClick }) => {
+    const getColorClasses = (color) => {
+      const colors = {
+        purple: {
+          bg: 'from-purple-600/10 to-purple-500/5',
+          border: 'border-purple-500/20',
+          iconBg: 'bg-purple-500/10',
+          iconBorder: 'border-purple-500/20',
+          iconColor: 'text-purple-400',
+          glow: 'shadow-purple-500/25'
+        },
+        green: {
+          bg: 'from-green-600/10 to-green-500/5',
+          border: 'border-green-500/20',
+          iconBg: 'bg-green-500/10',
+          iconBorder: 'border-green-500/20',
+          iconColor: 'text-green-400',
+          glow: 'shadow-green-500/25'
+        },
+        red: {
+          bg: 'from-red-600/10 to-red-500/5',
+          border: 'border-red-500/20',
+          iconBg: 'bg-red-500/10',
+          iconBorder: 'border-red-500/20',
+          iconColor: 'text-red-400',
+          glow: 'shadow-red-500/25'
+        },
+        blue: {
+          bg: 'from-blue-600/10 to-blue-500/5',
+          border: 'border-blue-500/20',
+          iconBg: 'bg-blue-500/10',
+          iconBorder: 'border-blue-500/20',
+          iconColor: 'text-blue-400',
+          glow: 'shadow-blue-500/25'
+        },
+        indigo: {
+          bg: 'from-indigo-600/10 to-indigo-500/5',
+          border: 'border-indigo-500/20',
+          iconBg: 'bg-indigo-500/10',
+          iconBorder: 'border-indigo-500/20',
+          iconColor: 'text-indigo-400',
+          glow: 'shadow-indigo-500/25'
+        },
+        cyan: {
+          bg: 'from-cyan-600/10 to-cyan-500/5',
+          border: 'border-cyan-500/20',
+          iconBg: 'bg-cyan-500/10',
+          iconBorder: 'border-cyan-500/20',
+          iconColor: 'text-cyan-400',
+          glow: 'shadow-cyan-500/25'
+        },
+        pink: {
+          bg: 'from-pink-600/10 to-pink-500/5',
+          border: 'border-pink-500/20',
+          iconBg: 'bg-pink-500/10',
+          iconBorder: 'border-pink-500/20',
+          iconColor: 'text-pink-400',
+          glow: 'shadow-pink-500/25'
+        },
+        orange: {
+          bg: 'from-orange-600/10 to-orange-500/5',
+          border: 'border-orange-500/20',
+          iconBg: 'bg-orange-500/10',
+          iconBorder: 'border-orange-500/20',
+          iconColor: 'text-orange-400',
+          glow: 'shadow-orange-500/25'
+        }
+      };
+      return colors[color] || colors.purple;
+    };
+
+    const colorClasses = getColorClasses(color);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-2xl hover:shadow-purple-500/10' : ''}`}
+        onClick={onClick}
+        whileHover={onClick ? {
+          scale: 1.02,
+          boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)`
+        } : {}}
+        whileTap={onClick ? { scale: 0.98 } : {}}
+      >
+        {/* Animated background gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+
+        {/* Animated border glow */}
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorClasses.bg} opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl`} />
+
+        {/* Floating particles effect */}
+        <div className="absolute top-4 right-4 w-2 h-2 bg-current opacity-0 group-hover:opacity-60 rounded-full animate-pulse" style={{ color: `var(--${color}-400)` }} />
+        <div className="absolute bottom-4 left-4 w-1 h-1 bg-current opacity-0 group-hover:opacity-40 rounded-full animate-pulse delay-75" style={{ color: `var(--${color}-400)` }} />
+
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-4">
+            <motion.div
+              className={`p-3 rounded-xl ${colorClasses.iconBg} ${colorClasses.iconBorder} border`}
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <Icon className={`w-6 h-6 ${colorClasses.iconColor}`} />
+            </motion.div>
+            {trend && (
+              <motion.div
+                className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                  trendUp
+                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                }`}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                {trendUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {trend}
+              </motion.div>
+            )}
           </div>
-          {change && (
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-medium ${
-              changeType === 'increase' 
-                ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                : 'bg-red-500/10 text-red-400 border border-red-500/20'
-            }`}>
-              {changeType === 'increase' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {change}
-            </div>
-          )}
+
+          <div className="space-y-1">
+            <motion.h3
+              className="text-2xl font-bold text-white"
+              initial={{ scale: 1 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              {value}
+            </motion.h3>
+            <p className="text-sm text-gray-400">{title}</p>
+            {description && <p className="text-xs text-gray-500">{description}</p>}
+          </div>
         </div>
-        
-        <div className="space-y-1">
-          <h3 className="text-2xl font-bold text-white">{value}</h3>
-          <p className="text-sm text-gray-400">{title}</p>
-          {description && <p className="text-xs text-gray-500">{description}</p>}
-        </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   const ActivityItem = ({ activity, index }) => {
     const getActivityIcon = (type) => {
@@ -218,14 +394,18 @@ const DashboardPage = () => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.1 }}
-        className="flex items-start space-x-3 p-3 hover:bg-white/[0.03] rounded-xl transition-colors duration-200"
+        className="flex items-start space-x-3 p-3 hover:bg-white/[0.03] rounded-xl transition-colors duration-200 cursor-pointer touch-manipulation"
+        onClick={() => {
+          console.log('Activity item clicked:', activity);
+          handleActivityClick(activity);
+        }}
       >
         <div className="p-2 rounded-lg bg-gray-800/50 border border-white/[0.05]">
           {getActivityIcon(activity.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-200 leading-relaxed">{activity.message}</p>
-          <div className="flex items-center space-x-2 mt-1">
+          <p className="text-sm text-gray-200 leading-relaxed break-words">{activity.message}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mt-1 space-y-1 sm:space-y-0">
             <span className="text-xs text-gray-500">
               {new Date(activity.time).toLocaleDateString()}
             </span>
@@ -295,6 +475,9 @@ const DashboardPage = () => {
             value={stats.totalProjects}
             description="Active projects in your portfolio"
             color="purple"
+            onClick={() => navigate('/my-projects')}
+            trend={stats.totalProjects > 0 ? '+' + stats.totalProjects : '0'}
+            trendUp={true}
           />
           <StatCard
             icon={DollarSign}
@@ -302,6 +485,9 @@ const DashboardPage = () => {
             value={formatPrice(stats.portfolioValue)}
             description="Total value of your projects"
             color="green"
+            onClick={() => setPortfolioModalOpen(true)}
+            trend={stats.portfolioValue > 0 ? '+' + formatPrice(stats.portfolioValue) : '0'}
+            trendUp={true}
           />
           <StatCard
             icon={Heart}
@@ -309,6 +495,9 @@ const DashboardPage = () => {
             value={stats.activeOffers}
             description="Pending purchase requests"
             color="red"
+            onClick={() => setInterestsModalOpen(true)}
+            trend={stats.activeOffers > 0 ? '+' + stats.activeOffers : '0'}
+            trendUp={true}
           />
           <StatCard
             icon={CheckCircle}
@@ -316,40 +505,164 @@ const DashboardPage = () => {
             value={stats.completedSales}
             description="Successfully completed transactions"
             color="blue"
+            onClick={() => setSalesModalOpen(true)}
+            trend={stats.completedSales > 0 ? '+' + stats.completedSales : '0'}
+            trendUp={true}
           />
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            icon={Eye}
-            title="Total Views"
-            value={stats.totalViews.toLocaleString()}
-            description="Across all your projects"
-            color="indigo"
-          />
-          <StatCard
-            icon={TrendingUp}
-            title="Average Views"
-            value={stats.averageViews}
-            description="Per project"
-            color="cyan"
-          />
-          <StatCard
-            icon={Users}
-            title="Interest Received"
-            value={stats.interestReceived}
-            description="Total purchase inquiries"
-            color="pink"
-          />
-          <StatCard
-            icon={ShoppingBag}
-            title="Purchases Made"
-            value={stats.purchasesMade}
-            description="Projects you've bought"
-            color="orange"
-          />
+        {/* Additional Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-white">{stats.totalViews}</div>
+                <div className="text-sm text-gray-400">Total Views</div>
+              </div>
+              <Eye className="w-8 h-8 text-blue-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-white">{stats.averageViews}</div>
+                <div className="text-sm text-gray-400">Avg Views</div>
+              </div>
+              <TrendingUp className="w-8 h-8 text-green-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-white">{stats.interestReceived}</div>
+                <div className="text-sm text-gray-400">Interests Received</div>
+              </div>
+              <Users className="w-8 h-8 text-purple-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-white">{stats.purchasesMade}</div>
+                <div className="text-sm text-gray-400">Purchases Made</div>
+              </div>
+              <ShoppingBag className="w-8 h-8 text-orange-400" />
+            </div>
+          </div>
         </div>
+
+        {/* Recent Projects Section */}
+        <motion.div variants={itemVariants} className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Recent Projects</h2>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/my-projects')}
+              className="text-purple-400 border-purple-400 hover:bg-purple-400 hover:text-white"
+            >
+              View All Projects
+            </Button>
+          </div>
+
+          {recentProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentProjects.map((project, index) => (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-6 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/projects/edit/${project.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-2">{project.name}</h3>
+                      <p className="text-gray-400 text-sm line-clamp-2">{project.description}</p>
+                    </div>
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${
+                      project.status === 'launched' ? 'bg-green-500/10 text-green-400' :
+                      project.status === 'mvp' ? 'bg-purple-500/10 text-purple-400' :
+                      'bg-gray-500/10 text-gray-400'
+                    }`}>
+                      {project.status}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-bold text-white">
+                      {project.price > 0 ? formatPrice(project.price) : 'Not for sale'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg">
+              <Package className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No projects yet</h3>
+              <p className="text-gray-400 mb-4">Create your first project to get started</p>
+              <Button onClick={() => navigate('/create')} className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Project
+              </Button>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Recent Activity Section */}
+        <motion.div variants={itemVariants} className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Recent Activity</h2>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/notifications')}
+              className="text-purple-400 border-purple-400 hover:bg-purple-400 hover:text-white"
+            >
+              View All Notifications
+            </Button>
+          </div>
+
+          {recentActivity.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivity.map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  onClick={() => handleActivityClick(activity)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          activity.status === 'unread' ? 'bg-purple-400' : 'bg-gray-600'
+                        }`} />
+                        <h4 className="font-medium text-white">{activity.title}</h4>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-2">{activity.message}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>{new Date(activity.time).toLocaleDateString()}</span>
+                        <span className="capitalize">{activity.type.replace('_', ' ')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg">
+              <Bell className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No recent activity</h3>
+              <p className="text-gray-400">Activity will appear here when you have notifications</p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -362,7 +675,7 @@ const DashboardPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6"
+              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 sm:p-6"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
@@ -470,7 +783,7 @@ const DashboardPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6"
+              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 sm:p-6"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-white flex items-center space-x-2">
@@ -493,22 +806,27 @@ const DashboardPage = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 * index }}
-                      className={`p-3 rounded-xl transition-colors duration-200 cursor-pointer ${
-                        !notification.is_read 
-                          ? 'bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' 
-                          : 'bg-white/[0.03] hover:bg-white/[0.05]'
+                      className={`p-3 rounded-xl transition-colors duration-200 cursor-pointer border ${
+                        !notification.is_read
+                          ? 'bg-yellow-500/10 border-yellow-500/20 hover:bg-yellow-500/20'
+                          : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.05]'
                       }`}
-                      onClick={() => notification.link && navigate(notification.link)}
+                      onClick={() => {
+                        console.log('Notification clicked in sidebar:', notification);
+                        handleNotificationClick(notification);
+                      }}
                     >
-                      <p className="text-sm text-gray-200 leading-relaxed">
+                      <p className="text-sm text-gray-200 leading-relaxed break-words">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(notification.created_at).toLocaleDateString()}
-                      </p>
-                      {!notification.is_read && (
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
-                      )}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 space-y-1 sm:space-y-0">
+                        <p className="text-xs text-gray-500">
+                          {new Date(notification.created_at).toLocaleDateString()}
+                        </p>
+                        {!notification.is_read && (
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full sm:ml-2"></div>
+                        )}
+                      </div>
                     </motion.div>
                   ))
                 ) : (
@@ -567,6 +885,33 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <PortfolioValueModal
+        isOpen={portfolioModalOpen}
+        onClose={() => setPortfolioModalOpen(false)}
+        stats={stats}
+        projects={projects}
+      />
+
+      <ProjectInterestsModal
+        isOpen={interestsModalOpen}
+        onClose={() => setInterestsModalOpen(false)}
+        userId={user?.id || user?.user_id}
+      />
+
+      <ProjectStatsModal
+        isOpen={statsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        stats={stats}
+        projects={projects}
+      />
+
+      <SalesHistoryModal
+        isOpen={salesModalOpen}
+        onClose={() => setSalesModalOpen(false)}
+        userId={user?.id || user?.user_id}
+      />
     </div>
   );
 };

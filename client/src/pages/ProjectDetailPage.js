@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { getProjectById, expressInterestInProject } from '../services/api';
 import PaymentService from '../services/paymentService';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
-import { DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, Github, Send, X, CheckCircle, BookmarkCheck, Trophy, ExternalLink, Lightbulb } from 'lucide-react';
+import { DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, Github, Send, X, CheckCircle, BookmarkCheck, Trophy, ExternalLink, Lightbulb, Clock4, MousePointerClick, AlertCircle, ShoppingBag, Lock, Unlock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProjectDetailPage = () => {
@@ -62,13 +62,37 @@ const ProjectDetailPage = () => {
     fetchProject();
   }, [projectId]);
   
-  // Handle URL parameters
+  // Handle URL parameters - opens modal once and clears the URL param
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
-    if (queryParams.get('showInterest') === 'true' && !showInterestModal && project) {
+    if (queryParams.get('showInterest') === 'true' && project) {
       setShowInterestModal(true);
+      // Clear the URL parameter to prevent re-opening on state changes
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search, showInterestModal, project]);
+  }, [location.search, project]);
+
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showInterestModal) {
+          console.log('ESC pressed - closing interest modal');
+          setShowInterestModal(false);
+          setInterestMessage('');
+          setCommitments(new Set());
+        }
+        if (showPaymentModal) {
+          console.log('ESC pressed - closing payment modal');
+          setShowPaymentModal(false);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [showInterestModal, showPaymentModal]);
 
   // Enhanced interest submission with better error handling
   const handleInterestSubmit = async () => {
@@ -107,12 +131,20 @@ const ProjectDetailPage = () => {
       const result = await expressInterestInProject(projectId, Array.from(commitments), interestMessage);
       console.log('Interest submission successful:', result);
       
-      toast.success('Interest sent! The seller has been notified.');
-      
-      // Reset form and close modal
-      setShowInterestModal(false);
+      // Reset form first
       setInterestMessage('');
       setCommitments(new Set());
+      
+      // Close modal immediately
+      setShowInterestModal(false);
+      
+      // Show success message after modal closes
+      setTimeout(() => {
+        toast.success('Interest sent! The seller has been notified.', {
+          duration: 4000,
+          position: 'top-center',
+        });
+      }, 100);
       
     } catch (error) {
       console.error('Interest submission error:', error);
@@ -140,7 +172,19 @@ const ProjectDetailPage = () => {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      
+      // If it's a critical error (like session expired), close modal after showing error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setTimeout(() => {
+          setShowInterestModal(false);
+          setInterestMessage('');
+          setCommitments(new Set());
+        }, 2000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -175,10 +219,10 @@ const ProjectDetailPage = () => {
       
       const checkoutData = await paymentService.createCheckout({
         amount: project.sale_price,
-        projectId: project.id,
+        projectId: project.project_id || project.id,
         projectName: project.name,
         sellerId: project.owner_id,
-        buyerId: user.id
+        buyerId: user.user_id || user.id
       }, selectedPaymentMethod);
 
       if (checkoutData.checkout_url) {
@@ -301,7 +345,8 @@ const ProjectDetailPage = () => {
   }
 
   // Safe property access with defaults
-  const isOwner = user && project.owner_id === user.id;
+  // Use user_id from user object (snake_case from DB) and compare with project.owner_id
+  const isOwner = user && project && (user.user_id === project.owner_id || user.id === project.owner_id);
   const projectName = project.name || 'Untitled Project';
   const projectDescription = project.description || 'No description available.';
   const creatorUsername = project.creator_username || project.owner_username || 'Unknown';
@@ -386,6 +431,12 @@ const ProjectDetailPage = () => {
                         <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-400 text-sm font-medium flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
                           Featured
+                        </div>
+                      )}
+                      {project.is_on_hold === 1 && (
+                        <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md border border-red-500/30 rounded-full text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2 animate-pulse">
+                          <Clock4 className="w-4 h-4" />
+                          On Hold / Under Negotiation
                         </div>
                       )}
                     </div>
@@ -705,24 +756,33 @@ const ProjectDetailPage = () => {
                     </motion.button>
                   ) : project.is_for_sale ? (
                     <>
-                      <motion.button
-                        onClick={() => setShowPaymentModal(true)}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <DollarSign className="w-4 h-4" />
-                        Buy Now • {formatPrice(salePrice)}
-                      </motion.button>
-                      <motion.button
-                        onClick={() => setShowInterestModal(true)}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Heart className="w-4 h-4" />
-                        Make Offer
-                      </motion.button>
+                      {project.is_on_hold === 1 ? (
+                        <div className="w-full px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center mb-4">
+                          <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Under Negotiation</p>
+                          <p className="text-gray-400 text-xs text-balance">This project is currently on hold as the owner is in active discussions with a potential buyer.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <motion.button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <DollarSign className="w-4 h-4" />
+                            Buy Now • {formatPrice(salePrice)}
+                          </motion.button>
+                          <motion.button
+                            onClick={() => setShowInterestModal(true)}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Heart className="w-4 h-4" />
+                            Make Offer
+                          </motion.button>
+                        </>
+                      )}
                     </>
                   ) : (
                     <button
@@ -735,7 +795,7 @@ const ProjectDetailPage = () => {
                   
                   {/* External Links */}
                   <div className="flex gap-3">
-                    {project.github_url && (
+                    {isOwner && project.github_url && (
                       <motion.a
                         href={project.github_url}
                         target="_blank"
@@ -770,43 +830,43 @@ const ProjectDetailPage = () => {
         </div>
 
         {/* Interest Modal */}
-        <AnimatePresence>
-          {showInterestModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                  setShowInterestModal(false);
-                }
-              }}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        {showInterestModal && (
+          <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                console.log('Backdrop clicked - closing modal');
+                setShowInterestModal(false);
+                setInterestMessage('');
+                setCommitments(new Set());
+              }
+            }}
+          >
+              <div
                 className="bg-gray-900 border border-white/[0.12] rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white">Make an Offer for {projectName}</h2>
-                  <motion.button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('X button clicked - closing modal');
-                      setShowInterestModal(false);
-                    }}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-white">Make an Offer for {projectName}</h2>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('X button clicked - closing modal');
+                        setShowInterestModal(false);
+                        setInterestMessage('');
+                        setCommitments(new Set());
+                      }}
+                      className="p-2 hover:bg-red-600 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative bg-gray-800"
+                      style={{ pointerEvents: 'auto' }}
+                      title="Close modal (or press ESC)"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Press ESC key or click the X button above to close this modal</p>
                 </div>
 
                 <div className="space-y-6">
@@ -850,22 +910,22 @@ const ProjectDetailPage = () => {
                   </div>
 
                   <div className="flex gap-4 pt-4">
-                    <motion.button
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Cancel button clicked - closing modal');
                         setShowInterestModal(false);
+                        setInterestMessage('');
+                        setCommitments(new Set());
                       }}
                       className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 z-10 relative"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                       style={{ pointerEvents: 'auto' }}
                     >
                       Cancel
-                    </motion.button>
-                    <motion.button
+                    </button>
+                    <button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
@@ -875,8 +935,6 @@ const ProjectDetailPage = () => {
                       }}
                       disabled={commitments.size < 3 || !interestMessage.trim() || isSubmitting}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       {isSubmitting ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -886,13 +944,12 @@ const ProjectDetailPage = () => {
                           Send Offer
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+          </div>
+        )}
 
         {/* Payment Modal */}
         <AnimatePresence>

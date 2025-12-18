@@ -15,35 +15,30 @@ module.exports = function(req, res, next) {
 
     // Check if no token found in either format
     if (!token) {
-        console.log('❌ No token found in request headers');
         return res.status(401).json({ message: 'No token, authorization denied.' });
     }
 
-    // Debug log token info (without exposing the full token) - development only
-    if (process.env.NODE_ENV !== 'production') {
-        console.log('🔍 Token received - length:', token.length, 'starts with:', token.substring(0, 20) + '...');
+    // Debug log token info - development only (NO token content logged)
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+        console.log('[AUTH] Token validation in progress');
     }
 
     // Verify token
     try {
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('🔍 JWT_SECRET available:', !!process.env.JWT_SECRET);
-            console.log('🔍 JWT_SECRET length:', process.env.JWT_SECRET?.length);
-        }
-        
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('✅ Token verified successfully for user:', decoded.user?.id);
-        }
 
         // Add user from payload to the request object
-        req.user = decoded.user; // The payload we set during login/register { user: { id: ..., username: ..., email: ... } }
+        // Support both user_id and id for backwards compatibility
+        const userPayload = decoded.user || {};
+        req.user = {
+            ...userPayload,
+            user_id: userPayload.user_id || userPayload.id, // Ensure user_id is always present
+            id: userPayload.user_id || userPayload.id // Also set id for compatibility
+        };
         next(); // Call the next middleware or route handler
     } catch (err) {
-        if (process.env.NODE_ENV !== 'production') {
-            console.error('❌ Token verification failed:', err.name, err.message);
-            console.error('Token starts with:', token.substring(0, 50) + '...');
+        if (process.env.NODE_ENV === 'development') {
+            console.error('[AUTH] Token verification failed:', err.name);
         }
         
         // Better error handling for different token issues

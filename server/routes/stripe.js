@@ -21,13 +21,13 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
     // Production-safe logging
     if (process.env.NODE_ENV === 'development') {
         console.log('==== CREATE STRIPE ACCOUNT LINK ====');
-        console.log('User:', req.user.id);
+        console.log('User:', req.user.user_id);
         console.log('Environment:', process.env.NODE_ENV);
         console.log('Client URL:', process.env.CLIENT_URL);
     }
     
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         let { type } = req.body;
         type = type || 'account_onboarding'; // Default to onboarding
 
@@ -171,7 +171,7 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
 // Checks the user's Stripe account status and updates the database
 router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
     console.log('==== STRIPE STATUS CHECK START ====');
-    console.log('User:', req.user.id);
+    console.log('User:', req.user.user_id);
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Client URL:', process.env.CLIENT_URL);
     
@@ -198,7 +198,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
     
     try {
         console.log('Step 1: Getting user ID from request');
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         
         // Validate userId format to catch obvious issues early
         if (!userId || typeof userId !== 'string') {
@@ -348,7 +348,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             // If account doesn't exist on Stripe's side, clear it from our DB
             try {
               console.log('Clearing invalid Stripe account ID from DB');
-              await db.query('UPDATE users SET stripe_account_id = NULL WHERE user_id = ?', [req.user.id]);
+              await db.query('UPDATE users SET stripe_account_id = NULL WHERE user_id = ?', [req.user.user_id]);
               return res.status(404).json({ 
                 message: 'Your Stripe account was not found. We have reset your account. Please try connecting with Stripe again.',
                 accountId: null,
