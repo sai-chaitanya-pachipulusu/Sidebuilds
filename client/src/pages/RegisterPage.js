@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { 
@@ -6,16 +6,16 @@ import {
   Lock, 
   User,
   ArrowRight, 
-  Github, 
-  Chrome,
   Eye,
   EyeOff,
-  Sparkles,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import Logo from '../components/Logo';
+import { getMarketplaceStats } from '../services/api';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -29,8 +29,29 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [userCount, setUserCount] = useState(42); // Default fallback
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+
+  // Fetch actual user count
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      try {
+        const stats = await getMarketplaceStats();
+        setUserCount(stats.activeUsers || 42);
+      } catch (error) {
+        console.log('Using default user count');
+      }
+    };
+    fetchUserCount();
+  }, []);
+
+  // Get ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+  const getOrdinalSuffix = (n) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" />;
@@ -176,6 +197,38 @@ const RegisterPage = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* Disclaimer & Fun Facts */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="mt-8 p-5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
+          >
+            <p className="text-sm text-gray-300 mb-2">
+              * These metrics are aspirational and subject to increase as we expand. 
+              They will never be exact figures—just our north star.
+            </p>
+            
+            <p className="text-base text-white font-medium mb-4">
+              You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
+            </p>
+            
+            <div className="space-y-2 text-sm text-gray-300">
+              <div className="flex items-center gap-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                <span>Side effects include: uncontrollable shipping, midnight coding, and aggressive high-fiving</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                <span>Warning: May cause spontaneous "I'll just build it myself" syndrome</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                <span>Not responsible for sudden urges to quit your 9-5 and become a full-time maker</span>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
 
@@ -188,10 +241,8 @@ const RegisterPage = () => {
           className="w-full max-w-md"
         >
           {/* Logo */}
-          <Link to="/" className="inline-flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+          <Link to="/" className="inline-flex items-center gap-2.5 mb-8">
+            <Logo size={40} />
             <span className="text-xl font-bold">SideBuilds</span>
           </Link>
 
@@ -204,36 +255,6 @@ const RegisterPage = () => {
                 Sign in
               </Link>
             </p>
-          </div>
-
-          {/* Social Sign Up */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-3 bg-gray-800 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-700 transition-colors"
-            >
-              <Chrome className="w-5 h-5" />
-              <span className="hidden sm:inline">Google</span>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-3 bg-gray-800 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-700 transition-colors"
-            >
-              <Github className="w-5 h-5" />
-              <span className="hidden sm:inline">GitHub</span>
-            </motion.button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-800"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">Or register with email</span>
-            </div>
           </div>
 
           {/* Registration Form */}
@@ -249,7 +270,7 @@ const RegisterPage = () => {
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                  placeholder="John Doe"
+                  placeholder="John Cena"
                   required
                 />
               </div>
@@ -266,7 +287,7 @@ const RegisterPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                  placeholder="john@example.com"
+                  placeholder="youcant@seeme.com"
                   required
                 />
               </div>
@@ -283,7 +304,7 @@ const RegisterPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                                                placeholder="Create a strong password"
+                                                placeholder="Be it a strong one"
                   required
                 />
                 <button
@@ -322,7 +343,7 @@ const RegisterPage = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                  placeholder="Confirm your password"
+                  placeholder="Confirm it's strong"
                   required
                 />
                 <button

@@ -10,6 +10,7 @@ import {
   FiMapPin
 } from 'react-icons/fi';
 import { BsDiscord } from 'react-icons/bs';
+import Logo from './Logo';
 
 const Footer = () => {
   const footerSections = {
@@ -44,9 +45,7 @@ const Footer = () => {
           {/* Brand section */}
           <div className="lg:col-span-5">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
+              <Logo size={40} />
               <span className="text-white font-bold text-xl tracking-tight">SideBuilds</span>
             </div>
             <p className="text-gray-300 text-lg leading-relaxed mb-8 max-w-md">
@@ -54,7 +53,7 @@ const Footer = () => {
             </p>
             
             {/* Contact info - antfood.com style */}
-            <div className="space-y-3">
+            {/*<div className="space-y-3">
               <div className="flex items-center gap-3 text-gray-400">
                 <FiMail className="w-4 h-4" />
                 <span className="text-sm">hello@sidebuilds.space</span>
@@ -63,7 +62,7 @@ const Footer = () => {
                 <FiMapPin className="w-4 h-4" />
                 <span className="text-sm">San Francisco, CA</span>
               </div>
-            </div>
+            </div>*/}
           </div>
 
           {/* Navigation sections */}

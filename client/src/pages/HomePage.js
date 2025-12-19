@@ -92,7 +92,7 @@ const HeroSection = () => {
   return (
     <section 
       ref={containerRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center"
       onMouseMove={handleMouseMove}
     >
       {/* Pure black background with subtle accent glows - Linear/Resend style */}
@@ -100,9 +100,9 @@ const HeroSection = () => {
       
       {/* Subtle top-center purple glow - like Linear */}
       <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] pointer-events-none"
+        className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1400px] h-[800px] pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center top, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.05) 30%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center top, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.08) 25%, rgba(139,92,246,0.03) 50%, transparent 75%)',
         }}
       />
       
@@ -134,22 +134,9 @@ const HeroSection = () => {
           variants={containerVariants}
           className="space-y-8"  
         >
-          {/* Badge with enhanced animation */}
-          <motion.div  
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}  
-            animate={{ opacity: 1, scale: 1, y: 0 }}  
-            transition={{ type: "spring", damping: 20, stiffness: 100 }}  
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 backdrop-blur-xl"  
-          >  
-            <motion.div 
-              className="w-2 h-2 bg-green-400 rounded-full"
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-            <span className="text-sm font-medium text-purple-200">v2.0 Live Marketplace</span>
-            <Sparkles className="w-3.5 h-3.5 text-purple-300" />
-          </motion.div>
-            
+
+ 
+
           <div className="space-y-6">
             {/* Animated heading with staggered words */}
             <motion.h1 
@@ -317,7 +304,34 @@ const HeroSection = () => {
   );  
 };
 
+/*
+const FeaturedOnSection = () => {
+    const featuredLogos = [
+        { name: 'Product Hunt', logo: () => <svg>...</svg> }, // Replace with actual SVG logos
+        { name: 'Y Combinator', logo: () => <svg>...</svg> },
+        { name: 'Indie Hackers', logo: () => <svg>...</svg> },
+        { name: 'TechCrunch', logo: () => <svg>...</svg> },
+        { name: 'GitHub', logo: () => <svg>...</svg> },
+    ];
 
+    return (
+        <section className="py-12 bg-black">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+                <p className="text-sm text-gray-500 mb-6">TRUSTED BY THE WORLD'S MOST AMBITIOUS MAKERS</p>
+                <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
+                    {featuredLogos.map(item => (
+                        <div key={item.name} className="h-8 text-gray-400 fill-current">
+                            {/* Placeholder for now */
+                          /*}
+                            <span className="font-semibold">{item.name}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+*/
 
 // Simple CTA card linking to the full How It Works page (replaces redundant section)
 const HowItWorksCTA = () => {
@@ -743,10 +757,11 @@ const HomePage = () => {
     return (
         <div className="bg-black text-white min-h-screen">
             <SEO
-                title="SideBuilds - The Operating System for Modern Makers"
+                title="SideBuilds - Marketplace for Vibe Coded Apps"
                 description="Buy, sell, and showcase production-ready side projects. The premium marketplace for verified makers and ambitious builders."
             />
             <HeroSection />
+            {/*<FeaturedOnSection />*/}
             <HowItWorksCTA />
             <VibeCodingSection />
             

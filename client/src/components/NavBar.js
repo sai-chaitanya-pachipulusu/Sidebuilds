@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, useScroll, useSpring } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications } from '../services/api';
+import Logo from './Logo';
 
 import { 
   Menu,
@@ -165,10 +166,10 @@ const NavBar = () => {
       {/* Modern navbar inspired by Linear, Resend, Clerk */}
       <motion.nav
         ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-2 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled 
-            ? 'bg-[#000000]/80 backdrop-blur-2xl shadow-[0_1px_0_0_rgba(255,255,255,0.05)]' 
-            : ''
+            ? 'bg-black/80 backdrop-blur-2xl shadow-[0_1px_0_0_rgba(255,255,255,0.05)]' 
+            : 'bg-transparent'
         }`}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -193,9 +194,7 @@ const NavBar = () => {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
               <Link to="/" className="flex items-center gap-2.5 no-underline">
-                <div className="w-7 h-7 bg-gradient-to-br from-purple-500 via-purple-600 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <span className="text-white font-bold text-xs">S</span>
-                </div>
+                <Logo size={32} />
                 <span className="text-lg font-semibold text-white tracking-tight">SideBuilds</span>
               </Link>
             </motion.div>

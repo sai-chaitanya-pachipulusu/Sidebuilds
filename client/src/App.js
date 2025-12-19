@@ -8,7 +8,7 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-import AnimatedBackground from './components/AnimatedBackground';
+
 import ProductionErrorBoundary, { ComponentErrorBoundary } from './components/ProductionErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
@@ -71,6 +71,14 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-[#000000] text-white overflow-x-hidden">
+      {/* Global top glow - visible behind transparent navbar */}
+      <div 
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[600px] pointer-events-none z-40"
+        style={{
+          background: 'radial-gradient(ellipse at center top, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 30%, transparent 60%)',
+        }}
+      />
+      
       {/* Remove AnimatedBackground - using cleaner approach */}
       <NavBar />
       
