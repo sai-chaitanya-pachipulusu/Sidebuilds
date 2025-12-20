@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus, aiIdeaAssist } from '../services/api';
+import ElegantLoadingScreen from '../components/ElegantLoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import StripeConnectModal from '../components/StripeConnectModal';
@@ -65,8 +66,20 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
 
     const fetchProjectAndStripeStatus = useCallback(async () => {
         try {
-            const status = await checkStripeOnboardingStatus();
-            setStripeStatus(status);
+            // Add timeout to prevent infinite loading
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timeout')), 10000)
+            );
+            
+            // Fetch Stripe status with timeout - don't block if it fails
+            try {
+                const status = await Promise.race([checkStripeOnboardingStatus(), timeoutPromise]);
+                setStripeStatus(status);
+            } catch (stripeErr) {
+                console.log('Stripe status check failed (non-blocking):', stripeErr.message);
+                // Set a default status so the page still works
+                setStripeStatus({ isOnboardingComplete: false, needsAttention: false });
+            }
 
             if (editMode && projectId) {
                 const data = await getProjectById(projectId);
@@ -88,8 +101,8 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                 });
             }
         } catch (error) {
-            toast.error("Failed to load initial data. Please refresh.");
-            console.error(error);
+            console.error('Error loading page data:', error);
+            // Still allow the page to load even if there's an error
         } finally {
             setLoading(false);
         }
@@ -163,11 +176,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     };
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-black">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-            </div>
-        );
+        return <ElegantLoadingScreen />;
     }
     
     return (
