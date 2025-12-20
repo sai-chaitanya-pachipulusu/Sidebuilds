@@ -101,8 +101,14 @@ const RegisterPage = () => {
         last_name: formData.name.split(' ').slice(1).join(' ')
       });
       
-      toast.success('Account created successfully! Please log in.', {
-        icon: '🎉',
+      // Auto-login: Save token and user to localStorage
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      toast.success('Welcome to SideBuilds! 🎉', {
+        icon: '🚀',
         style: {
           borderRadius: '10px',
           background: '#333',
@@ -110,12 +116,15 @@ const RegisterPage = () => {
         },
       });
       
-      navigate('/login');
+      // Redirect to dashboard instead of login
+      navigate('/dashboard');
+      // Force page reload to update auth state
+      window.location.reload();
     } catch (error) {
       console.error('Registration error:', error);
       const errorMessage = error.message || 'Registration failed. Please try again.';
       toast.error(errorMessage);
-        } finally {
+    } finally {
       setIsLoading(false);
     }
   };
