@@ -29,7 +29,8 @@ import {
   Zap
 } from 'lucide-react';
 import { Button } from '../shadcn/ui/button';
-import StripeConnectBanner from '../components/StripeConnectBanner';
+// Stripe banner removed from dashboard - only shown in project listing flow
+import ElegantLoadingScreen from '../components/ElegantLoadingScreen';
 import PortfolioValueModal from '../components/dashboard/PortfolioValueModal';
 import ProjectInterestsModal from '../components/dashboard/ProjectInterestsModal';
 import ProjectStatsModal from '../components/dashboard/ProjectStatsModal';
@@ -421,14 +422,7 @@ const DashboardPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
+    return <ElegantLoadingScreen />;
   }
 
   return (
