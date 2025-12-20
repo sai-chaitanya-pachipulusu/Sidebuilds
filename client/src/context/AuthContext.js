@@ -177,20 +177,13 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={value}>
             {!authState.isLoading ? children : (
-                <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ position: 'fixed', width: '100vw', height: '100vh' }}>
-                    <div className="text-center px-4 max-w-sm mx-auto">
-                        <div className="relative mb-6">
-                            <div className="w-16 h-16 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
-                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-16 border-4 border-transparent border-t-pink-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-                        </div>
-                        <div className="space-y-3">
-                            <h3 className="text-white text-xl font-semibold tracking-tight">SideBuilds</h3>
-                            <p className="text-gray-400 text-sm">Initializing your workspace...</p>
-                            <div className="flex justify-center space-x-1 mt-4">
-                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                            </div>
+                <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="text-2xl font-bold text-white">SideBuilds</div>
+                        <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                     </div>
                 </div>

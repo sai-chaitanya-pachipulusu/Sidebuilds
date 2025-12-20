@@ -11,7 +11,7 @@ import { Badge } from '../shadcn/ui/badge';
 // Premium UI Components
 import BentoGrid from '../components/BentoGrid';
 import AnimatedTestimonials from '../components/AnimatedTestimonials';
-import ProductTour, { useProductTour } from '../components/ProductTour';
+//import ProductTour, { useProductTour } from '../components/ProductTour';
 import MagneticButton from '../components/MagneticButton';
 
 // Enhanced Hero with Chronicle/GSAP-inspired animations
@@ -582,6 +582,7 @@ const CTASection = () => {
 };
 
 const HomePage = () => {
+    /*
     // Product Tour integration
     const { isOpen: isTourOpen, startTour, closeTour, completeTour, hasSeenTour } = useProductTour();
     const tourTriggeredRef = React.useRef(false);
@@ -596,7 +597,8 @@ const HomePage = () => {
             return () => clearTimeout(timer);
         }
     }, [hasSeenTour]); // Removed startTour from deps - it's stable now
-    
+    */
+
     const VibeCodingSection = () => (
       <section className="py-24 bg-gray-900 border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
