@@ -146,7 +146,7 @@ router.post('/', async (req, res) => {
             domain,
             demo_url,
             github_url,
-            Array.isArray(tech_stack) ? JSON.stringify(tech_stack) : (tech_stack || null),
+            Array.isArray(tech_stack) && tech_stack.length > 0 ? JSON.stringify(tech_stack) : null,
             monthly_revenue || 0,
             !!is_public,
             !!is_for_sale,
