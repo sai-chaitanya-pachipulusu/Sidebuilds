@@ -1,161 +1,132 @@
-# Database Migration Guide for SideProject Tracker
+# SideBuilds Database Schema
 
-This directory contains the database migration scripts for the SideProject Tracker application. The scripts are designed to be run in sequence to properly set up the database schema.
+## Quick Start
 
-## File Structure
+### For Fresh Production Setup (Supabase/PostgreSQL)
 
-The migration files are organized in a sequential, numerical order (e.g., `00_drop_all_tables.sql`, `01_base_schema.sql`, `02_payment_integration.sql`, etc.). **It is crucial to run these scripts in their numerical order to ensure the database schema is set up correctly.**
+Run `unified_schema.sql` in Supabase SQL Editor - this creates all tables from scratch.
 
-As of the last update, the key migration scripts include:
-*   `00_drop_all_tables.sql` - (Optional, for clean installs) Drops all known tables, views, and functions.
-*   `01_base_schema.sql` - Basic schema with core tables.
-*   `02_payment_integration.sql` - Adds payment integration and marketplace views.
-*   `03_stripe_connect.sql` - Adds Stripe Connect integration and project transfer management.
-*   `04_seed_data.sql` - Sample data for testing (optional, and its execution is conditional in `run-migrations.ps1`).
-*   `05_asset_transfer_completion.sql` - Enhances asset transfer functionality.
-*   `06_payment_feature_completion.sql` - Completes payment features with saved methods and analytics.
-*   `07_add_purchase_requests.sql` - Adds the `project_purchase_requests` table and related logic.
+### For Existing Production Database (Add Missing Columns)
 
-Always check the `database` directory for the complete and current list of migration files to be run. The `run-migrations.ps1` script is designed to execute them in the correct order.
+Run `migrations/production_schema_sync.sql` - this safely adds missing columns.
 
-## Migration Instructions
+### For Local Development (SQLite)
 
-### Prerequisites
-*   PostgreSQL-compatible database (like Supabase)
-*   Database connection string/parameters
-*   The `psql` command-line tool if running SQL files manually
+The server automatically uses `sqlite_schema.sql` when `USE_SQLITE=true` in `.env`.
 
-### Running the Migrations
+---
 
-The recommended method is to use the provided PowerShell script `run-migrations.ps1`, as it handles the execution order and provides options like clean installs.
+## File Structure (Streamlined)
 
-**Using the PowerShell Script (Recommended for Windows):**
-```powershell
-# Navigate to the database directory
-cd database
-
-# Execute the script with your connection string
-.\run-migrations.ps1 "your_connection_string_here"
-
-# For a clean install (drops all tables first):
-.\run-migrations.ps1 "your_connection_string_here" -CleanInstall
 ```
-The script will execute all necessary `.sql` migration files from the `database` directory in their correct numerical order.
-
-**Manual Execution (General - All Platforms):**
-
-If you cannot use the PowerShell script, you must run each `.sql` file in the `database` directory in **strict numerical order**.
-
-Example for `psql` (PostgreSQL):
-```bash
-# Ensure you are in the 'database' directory or provide full paths
-psql "your_connection_string" -f 00_drop_all_tables.sql # If doing a clean install
-psql "your_connection_string" -f 01_base_schema.sql
-psql "your_connection_string" -f 02_payment_integration.sql
-# ... continue for ALL .sql files in numerical order ...
-psql "your_connection_string" -f XX_your_latest_script.sql
+database/
+├── README.md                          # This file
+├── unified_schema.sql                 # Complete PostgreSQL schema (fresh install)
+├── sqlite_schema.sql                  # SQLite schema for local dev
+└── migrations/
+    └── production_schema_sync.sql     # Safe migration for existing databases
 ```
 
-**Important:** Always ensure all numerically prefixed `.sql` files are executed in ascending order. The `04_seed_data.sql` is generally optional for development/testing and its execution is handled conditionally by the `run-migrations.ps1` script.
+---
 
 ## Schema Overview
 
 ### Core Tables
 
-- **users** - User accounts and authentication
-- **projects** - Project details, including marketplace information
-- **project_transactions** - Records of project sales and payments
+| Table                  | Purpose                                     |
+| ---------------------- | ------------------------------------------- |
+| `users`                | User accounts, profiles, Stripe integration |
+| `projects`             | Project listings with marketplace info      |
+| `purchase_requests`    | Buyer interest and negotiation workflow     |
+| `project_transactions` | Payment records                             |
+| `project_transfers`    | Asset transfer tracking                     |
+| `notifications`        | In-app notifications                        |
+| `ai_project_analysis`  | AI scoring and valuation                    |
 
-### Additional Tables
+### Users Table - Key Columns
 
-- **project_transfers** - Tracks the transfer of project assets from seller to buyer
-- **payment_methods** - Stores saved payment methods for users
-- **payout_preferences** - Configures how sellers receive funds
-- **payment_schedules** - Manages automatic payout schedules
-- **payment_disputes** - Handles disputes and refund requests
+- `user_id` (UUID) - Primary key
+- `username`, `email`, `password_hash` - Auth
+- `first_name`, `last_name`, `bio`, `avatar_url` - Profile
+- `stripe_account_id`, `onboarding_complete` - Stripe Connect
+- `reputation_score`, `total_projects_sold` - Metrics
 
-### Views
+### Projects Table - Key Columns
 
-- **marketplace_projects** - A view showing projects that are for sale
-- **payment_transfers_view** - An admin view for monitoring payments and transfers
-- **buyer_pending_transfers** - Shows pending transfers for buyers
-- **seller_payment_analytics** - Provides sales and payment stats for sellers
+- `project_id` (UUID) - Primary key
+- `name`, `description`, `detailed_description` - Info
+- `stage` - idea, planning, mvp, development, launched
+- `is_public`, `is_for_sale`, `sale_price` - Marketplace
+- `tech_stack`, `category`, `tags` - Discoverability
+- `monthly_revenue`, `monthly_users` - Metrics
+- `code_transferred`, `domain_transferred` - Transfer status
 
-## Key Database Logic and Procedures
+### Purchase Requests - Workflow Statuses
 
-### Project Transfer Status Updates (`project_transfers` table)
+1. `interest_expressed` - Buyer sends interest
+2. `seller_reviewing` - Seller is reviewing
+3. `terms_proposed` - Seller proposes terms
+4. `terms_accepted` - Buyer accepts terms
+5. `payment_pending` - Awaiting payment
+6. `payment_completed` - Payment received
+7. `transfer_in_progress` - Transferring assets
+8. `transfer_completed_seller_confirmed` - Seller done
+9. `transfer_completed_buyer_confirmed` - Complete!
 
-The logic for updating the `status` and `transfer_completed_at` fields of records in the `project_transfers` table is handled by a stored procedure, **not** an automatic database trigger on this table.
+---
 
-*   **Stored Procedure:** `manually_update_project_transfer_status(p_transfer_id UUID)`
-*   **Defined In:** `05_asset_transfer_completion.sql`
+## How to Run Migrations
 
-**How it Works:**
-This procedure is designed to be called explicitly by the application's backend (server-side code).
-1.  The application backend updates the boolean flags (`code_transferred`, `domain_transferred`, `assets_transferred`) in the `project_transfers` table.
-2.  Immediately after a successful update of these flags, the application backend **must** execute this stored procedure, passing the relevant `transfer_id`.
-    ```sql
-    SELECT manually_update_project_transfer_status('your-project-transfer-uuid');
-    ```
-3.  The stored procedure then reads the current state of the boolean flags for the given transfer and updates the `status` field to 'pending', 'in_progress', or 'completed', and sets the `transfer_completed_at` timestamp accordingly.
+### Option 1: Supabase SQL Editor (Recommended)
 
-**Reasoning for this approach:**
-Direct `BEFORE UPDATE` triggers on the `project_transfers` table for this logic may encounter errors depending on the PostgreSQL implementation. Moving this logic into an application-invoked stored procedure bypasses these trigger/function issues while still allowing the core status update rules to be defined within the database.
+1. Go to Supabase Dashboard → SQL Editor
+2. Copy content from appropriate file
+3. Run
 
-**Failure by the application to call this procedure after updating transfer flags will result in incorrect transfer statuses in the `project_transfers` table.**
+### Option 2: psql Command Line
 
-### Project Status Updates (`projects` table - Asset Transfer Related)
+```bash
+psql "postgresql://..." -f unified_schema.sql
+```
 
-The `projects` table includes boolean flags (`code_transferred`, `domain_transferred`, `assets_transferred`) and a `status` column (e.g., 'listed', 'assets_transferred') to track the overall state of asset transfer for a project itself.
+---
 
-The logic to update `projects.status` based on these flags (e.g., setting to 'assets_transferred' when all flags are true) is **handled by the server-side application code.**
+## Environment Configuration
 
-*   **Location of Logic:** Application backend (e.g., in services that manage project updates).
-*   **Database Component:** The `05_asset_transfer_completion.sql` migration file adds the necessary columns (`status`, `code_transferred`, etc.) to the `projects` table.
+### Production (Render)
 
-**How it Should Work (Application Backend):**
-1.  When the application backend updates any of the `code_transferred`, `domain_transferred`, or `assets_transferred` boolean flags on a `projects` record:
-2.  The backend should immediately re-evaluate these flags.
-3.  If all three are `TRUE`, the backend should update `projects.status` to `'assets_transferred'`.
-4.  If not all are `TRUE` (e.g., some are true, some are false, or all are false), the backend should set `projects.status` to an appropriate state like `'listed'` or `'transfer_in_progress'` based on business rules.
+```env
+DATABASE_URL=postgresql://...@supabase.co:5432/postgres
+DB_SSL=true
+NODE_ENV=production
+```
 
-**Failure by the application to implement this logic will result in the `projects.status` field not automatically reflecting the state of its asset transfer flags.**
+### Local Development
 
-Other triggers, such as the one on the `projects` table for `updated_at` timestamp (`update_projects_timestamp` from `01_base_schema.sql`), operate as standard database triggers.
+```env
+USE_SQLITE=true
+NODE_ENV=development
+```
 
-## Payment Feature Capabilities
-
-The completed payment system now offers:
-
-1. **Secure Payments** - All transactions processed through Stripe
-2. **Automated Transfers** - Funds automatically moved to seller accounts
-3. **Dispute Resolution** - Process for handling refunds and disputes
-4. **Saved Payment Methods** - Users can save and reuse payment methods
-5. **Payout Preferences** - Sellers can configure how they receive payments
-6. **Scheduled Payouts** - Regular automated payment transfers
-7. **Transfer Tracking** - Complete history of asset transfers
-8. **Seller Analytics** - Dashboard with sales and revenue insights
+---
 
 ## Troubleshooting
 
-### Common Issues
+### Registration Fails (500 Error)
 
-If you encounter errors during migration, check the following:
+Missing columns in users table. Run:
 
-1. Ensure the database user has sufficient privileges
-2. Verify that the scripts are run in the correct order
-3. Check for any type mismatches in existing data
-4. For UUID errors, ensure you're using a compatible version of PostgreSQL
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(50);
+```
 
-For assistance, refer to the error messages which typically provide clear information about the issue. 
+### User Count Returns 0
+
+The users table is empty. Run the migration to ensure schema is correct.
 
 ### Connection Issues
 
-If you have trouble connecting to Supabase:
-1. Verify your connection string is correct
-2. Ensure SSL is enabled for Supabase connections
-3. Check that your IP address is allowed in Supabase's security settings
-
-### Connection Limits
-
-Remember that Supabase's free tier has a limit of 10 concurrent connections. Configure your connection pool size accordingly (8 or fewer recommended). 
+1. Check DATABASE_URL in .env
+2. Ensure DB_SSL=true for Supabase
+3. Verify IP allowlist in Supabase settings
