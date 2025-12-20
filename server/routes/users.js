@@ -14,20 +14,17 @@ router.get('/profile', authMiddleware, async (req, res) => {
 
         const userProfile = await db.query(
             `SELECT
-                u.user_id, u.username, u.email, u.first_name, u.last_name,
-                COALESCE(u.bio, up.bio) as bio,
-                COALESCE(u.location, up.location) as location,
-                COALESCE(u.website_url, up.website) as portfolio_link,
-                COALESCE(u.linkedin_url, up.linkedin) as linkedin_profile_url,
-                COALESCE(u.github_username, up.github) as github_profile_url,
-                COALESCE(u.twitter_handle, up.twitter) as twitter_profile_url,
-                u.avatar_url, u.is_verified, u.verification_level,
-                u.total_projects_sold, u.total_projects_bought, u.total_revenue,
-                u.reputation_score, u.created_at, u.updated_at,
-                up.phone_number
-             FROM users u
-             LEFT JOIN user_profiles up ON u.user_id = up.user_id
-             WHERE u.user_id = ?`,
+                user_id, username, email, first_name, last_name,
+                bio, location, website_url as portfolio_link,
+                linkedin_url as linkedin_profile_url,
+                github_username as github_profile_url,
+                twitter_handle as twitter_profile_url,
+                avatar_url, is_verified, verification_level,
+                total_projects_sold, total_projects_bought, total_revenue,
+                reputation_score, created_at, updated_at,
+                stripe_account_id, onboarding_complete, stripe_onboarding_complete
+             FROM users
+             WHERE user_id = ?`,
             [userId]
         );
 
@@ -139,43 +136,23 @@ router.put('/profile', authMiddleware, async (req, res) => {
 
         await db.query(updateQuery, updateValues);
 
-        // Update user_profiles table if phone_number is provided
-        if (phone_number !== undefined) {
-            // Check if user profile exists
-            const existingProfile = await db.query('SELECT user_id FROM user_profiles WHERE user_id = ?', [userId]);
-
-            if (existingProfile.rows.length > 0) {
-                // Update existing profile
-                await db.query(
-                    'UPDATE user_profiles SET phone_number = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-                    [phone_number, userId]
-                );
-            } else {
-                // Insert new profile
-                await db.query(
-                    'INSERT INTO user_profiles (user_id, phone_number, created_at, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-                    [userId, phone_number]
-                );
-            }
-        }
+        // Note: phone_number is not stored in users table - skip for now
+        // TODO: Add phone_number column to users table if needed
 
         // Return updated profile
         const result = await db.query(
             `SELECT
-                u.user_id, u.username, u.email, u.first_name, u.last_name,
-                COALESCE(u.bio, up.bio) as bio,
-                COALESCE(u.location, up.location) as location,
-                COALESCE(u.website_url, up.website) as portfolio_link,
-                COALESCE(u.linkedin_url, up.linkedin) as linkedin_profile_url,
-                COALESCE(u.github_username, up.github) as github_profile_url,
-                COALESCE(u.twitter_handle, up.twitter) as twitter_profile_url,
-                u.avatar_url, u.is_verified, u.verification_level,
-                u.total_projects_sold, u.total_projects_bought, u.total_revenue,
-                u.reputation_score, u.created_at, u.updated_at,
-                up.phone_number
-             FROM users u
-             LEFT JOIN user_profiles up ON u.user_id = up.user_id
-             WHERE u.user_id = ?`,
+                user_id, username, email, first_name, last_name,
+                bio, location, website_url as portfolio_link,
+                linkedin_url as linkedin_profile_url,
+                github_username as github_profile_url,
+                twitter_handle as twitter_profile_url,
+                avatar_url, is_verified, verification_level,
+                total_projects_sold, total_projects_bought, total_revenue,
+                reputation_score, created_at, updated_at,
+                stripe_account_id, onboarding_complete, stripe_onboarding_complete
+             FROM users
+             WHERE user_id = ?`,
             [userId]
         );
 
@@ -225,7 +202,8 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
             `SELECT 
                 stripe_account_id, 
                 stripe_customer_id, 
-                onboarding_complete
+                onboarding_complete,
+                stripe_onboarding_complete
              FROM users 
              WHERE user_id = ?`,
             [userId]
@@ -238,10 +216,15 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
         const {
             stripe_account_id,
             stripe_customer_id,
-            onboarding_complete
+            onboarding_complete,
+            stripe_onboarding_complete
         } = result.rows[0];
 
-        const isComplete = onboarding_complete === 1 || onboarding_complete === true;
+        // Check both possible onboarding columns
+        const isComplete = onboarding_complete === 1 || onboarding_complete === true ||
+                          stripe_onboarding_complete === 1 || stripe_onboarding_complete === true;
+
+        console.log('Stripe status check:', { stripe_account_id, onboarding_complete, stripe_onboarding_complete, isComplete });
 
         res.json({
             accountId: stripe_account_id,
@@ -250,7 +233,7 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
             arePayoutsEnabled: isComplete,
             areChargesEnabled: isComplete,
             areDetailsSubmitted: isComplete,
-            needsAttention: !isComplete
+            needsAttention: stripe_account_id && !isComplete
         });
     } catch (err) {
         console.error("Get Stripe status error:", err.message);
