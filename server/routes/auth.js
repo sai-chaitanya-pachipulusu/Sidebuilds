@@ -55,14 +55,22 @@ router.post('/register', async (req, res) => {
     const finalUsername = username || email.split('@')[0];
 
     try {
+        console.log('Registration attempt for:', email, 'username:', finalUsername);
+        
         // Check if user already exists (by email or username)
         const userExists = await db.query(
-            'SELECT * FROM users WHERE email = ? OR username = ?',
+            'SELECT user_id, email, username FROM users WHERE email = ? OR username = ?',
             [email, finalUsername]
         );
 
-        if (userExists.rows.length > 0) {
-            return res.status(409).json({ message: 'Email or username already exists.' });
+        if (userExists.rows && userExists.rows.length > 0) {
+            const existingUser = userExists.rows[0];
+            const conflictField = existingUser.email === email ? 'email' : 'username';
+            console.log('Registration blocked - user exists:', conflictField);
+            return res.status(409).json({ 
+                message: `An account with this ${conflictField} already exists.`,
+                field: conflictField 
+            });
         }
 
         // Hash the password
@@ -70,34 +78,29 @@ router.post('/register', async (req, res) => {
 
         // Generate UUID for new user
         const userId = uuidv4();
+        console.log('Creating user with ID:', userId);
 
         // Insert new user into the database
-        const insertResult = await db.query(
+        await db.query(
             'INSERT INTO users (user_id, username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)',
             [userId, finalUsername, email, passwordHash, first_name || null, last_name || null]
         );
 
-        // For SQLite, get the inserted user by user_id
+        // Fetch the inserted user
         const newUser = await db.query(
             'SELECT user_id, username, email, created_at FROM users WHERE user_id = ?',
             [userId]
         );
 
         if (!newUser.rows || newUser.rows.length === 0) {
-            throw new Error('Failed to create user account');
+            console.error('User insert succeeded but fetch failed for ID:', userId);
+            throw new Error('Failed to verify user account creation');
         }
 
         const userData = newUser.rows[0];
+        console.log('User created successfully:', userData.email);
 
         // Generate JWT token
-        const tokenPayload = {
-            user: {
-                id: userData.user_id,
-                username: userData.username,
-                email: userData.email
-            }
-        };
-
         const token = generateToken(userData);
 
         // Respond with the token and user info (excluding password hash)
@@ -105,8 +108,21 @@ router.post('/register', async (req, res) => {
 
     } catch (err) {
         console.error("Registration error:", err.message);
-        console.error("Full error:", err);
-        res.status(500).json({ message: 'Server error during registration.', error: err.message });
+        console.error("Error stack:", err.stack);
+        
+        // Check for specific database errors
+        if (err.code === '23505' || err.message?.includes('UNIQUE constraint')) {
+            // Duplicate key violation
+            return res.status(409).json({ 
+                message: 'An account with this email or username already exists.',
+                error: 'duplicate_entry'
+            });
+        }
+        
+        res.status(500).json({ 
+            message: 'Server error during registration. Please try again.',
+            error: process.env.NODE_ENV !== 'production' ? err.message : undefined
+        });
     }
 });
 

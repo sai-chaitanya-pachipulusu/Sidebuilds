@@ -278,24 +278,24 @@ router.get('/stats/marketplace', async (req, res) => {
     try {
         // Get projects count (filter to only public ones)
         const projectsCountResult = await db.query(`
-            SELECT COUNT(*) FROM projects 
-            WHERE is_public = true
+            SELECT COUNT(*) as count FROM projects 
+            WHERE ${DB.checkBool('is_public')}
         `);
         
         // Get active listings count
         const activeListingsResult = await db.query(`
-            SELECT COUNT(*) FROM projects 
-            WHERE is_for_sale = true AND sale_price > 0
+            SELECT COUNT(*) as count FROM projects 
+            WHERE ${DB.checkBool('is_for_sale')} AND sale_price > 0
         `);
         
         // Get users count
         const activeUsersResult = await db.query(`
-            SELECT COUNT(*) FROM users
+            SELECT COUNT(*) as count FROM users
         `);
         
         // Get completed sales count
         const completedSalesResult = await db.query(`
-            SELECT COUNT(*) FROM purchase_requests
+            SELECT COUNT(*) as count FROM purchase_requests
             WHERE status = 'transfer_completed_buyer_confirmed'
         `);
         
@@ -329,6 +329,19 @@ router.get('/stats/marketplace', async (req, res) => {
         res.status(500).json({ message: 'Server error fetching stats' });
     }
 });
+
+// GET /api/public/user-count - Simple endpoint to get total user count
+router.get('/user-count', async (req, res) => {
+    try {
+        const result = await db.query('SELECT COUNT(*) as count FROM users');
+        const count = parseInt(result.rows[0]?.count || 0);
+        res.json({ count, userNumber: count + 1 });
+    } catch (err) {
+        console.error('Error fetching user count:', err);
+        res.json({ count: 0, userNumber: 1 }); // Return default instead of error
+    }
+});
+
 
 // GET /api/public/projects/featured - Get featured projects with enhanced data
 router.get('/projects/featured', async (req, res) => {

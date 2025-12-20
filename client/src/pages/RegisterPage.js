@@ -15,7 +15,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Logo from '../components/Logo';
-import { getMarketplaceStats } from '../services/api';
+import apiClient from '../services/api';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -29,18 +29,18 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [userCount, setUserCount] = useState(42); // Default fallback
+  const [userCount, setUserCount] = useState(0); // Will be fetched from API
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  // Fetch actual user count
+  // Fetch actual user count from dedicated endpoint
   useEffect(() => {
     const fetchUserCount = async () => {
       try {
-        const stats = await getMarketplaceStats();
-        setUserCount(stats.activeUsers || 42);
+        const response = await apiClient.get('/public/user-count');
+        setUserCount(response.data.count);
       } catch (error) {
-        console.log('Using default user count');
+        console.log('Could not fetch user count');
       }
     };
     fetchUserCount();
@@ -211,7 +211,11 @@ const RegisterPage = () => {
             </p>
             
             <p className="text-base text-white font-medium mb-4">
-              You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
+              {userCount > 0 ? (
+                <>You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!</>
+              ) : (
+                <>You are our <span className="text-purple-400 font-bold">valuable</span> user. Welcome to the family!</>
+              )}
             </p>
             
             <div className="space-y-2 text-sm text-gray-300">
