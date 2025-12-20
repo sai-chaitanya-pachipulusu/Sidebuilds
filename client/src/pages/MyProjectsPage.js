@@ -368,7 +368,7 @@ const MyProjectsPage = () => {
               </div>
               
               <motion.button
-                onClick={() => navigate('/projects/new')}
+                onClick={() => navigate('/create')}
                 className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -535,7 +535,7 @@ const MyProjectsPage = () => {
                     </p>
                     {!searchTerm && !stageFilter && (
                       <motion.button
-                        onClick={() => navigate('/projects/new')}
+                        onClick={() => navigate('/create')}
                         className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center gap-2 mx-auto hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

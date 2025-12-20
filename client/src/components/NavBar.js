@@ -238,7 +238,7 @@ const NavBar = () => {
                 <>
                   {/* Create Button - Gradient with glow like Clerk */}
                   <motion.button
-                    onClick={() => navigate('/projects/new')}
+                    onClick={() => navigate('/create')}
                     className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:from-purple-500 hover:to-pink-500 transition-all duration-300"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -473,7 +473,7 @@ const NavBar = () => {
                   {isAuthenticated ? (
                     <>
                       <Link
-                        to="/projects/new"
+                        to="/create"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium no-underline"
                       >

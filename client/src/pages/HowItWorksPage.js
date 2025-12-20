@@ -320,7 +320,7 @@ const HowItWorksPage = () => {
                 className="text-center mt-12"
               >
                 <Link
-                  to="/projects/new"
+                  to="/create"
                   className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/25"
                 >
                   List Your Project

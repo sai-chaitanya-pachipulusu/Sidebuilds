@@ -238,7 +238,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                     <button
                       onClick={() => {
                         onClose();
-                        window.location.href = '/projects/new';
+                        window.location.href = '/create';
                       }}
                       className="px-6 py-3 rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition-colors"
                     >
