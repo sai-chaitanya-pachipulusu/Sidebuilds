@@ -211,11 +211,7 @@ const RegisterPage = () => {
             </p>
             
             <p className="text-base text-white font-medium mb-4">
-              {userCount > 0 ? (
-                <>You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!</>
-              ) : (
-                <>You are our <span className="text-purple-400 font-bold">valuable</span> user. Welcome to the family!</>
-              )}
+              You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
             </p>
             
             <div className="space-y-2 text-sm text-gray-300">
