@@ -458,6 +458,155 @@ const HowItWorksPage = () => {
 
             </div>
 
+            {/* What You Can Sell Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-20"
+            >
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full mb-6">
+                  <Package className="w-4 h-4 text-green-400" />
+                  <span className="text-sm text-green-300">What You Can Sell</span>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-4">
+                  Sell Projects at Any Stage
+                </h2>
+                <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                  Unlike other platforms, SideBuilds welcomes projects at every stage of development.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  {
+                    emoji: '💡',
+                    title: 'Ideas & Concepts',
+                    description: 'Have a validated idea but no time to build? Sell the concept, market research, and domain.',
+                    examples: 'Domain names, business plans, market research'
+                  },
+                  {
+                    emoji: '🔨',
+                    title: 'Unfinished Projects',
+                    description: 'Started building but couldn\'t finish? Someone else might want to complete it.',
+                    examples: 'Partially built apps, MVPs in progress'
+                  },
+                  {
+                    emoji: '🚀',
+                    title: 'MVP & Launched Products',
+                    description: 'Working product with users? Sell it to someone who can scale it further.',
+                    examples: 'SaaS apps, mobile apps, websites'
+                  },
+                  {
+                    emoji: '📜',
+                    title: 'IP & Digital Assets',
+                    description: 'Sell intellectual property, codebases, design systems, or any digital assets.',
+                    examples: 'Code libraries, templates, design kits'
+                  }
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="bg-gray-900/50 border border-white/[0.08] rounded-2xl p-6 hover:border-green-500/30 transition-all duration-300"
+                  >
+                    <div className="text-4xl mb-4">{item.emoji}</div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
+                    <p className="text-gray-400 text-sm mb-4">{item.description}</p>
+                    <p className="text-xs text-gray-500">{item.examples}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Payment Information Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-20"
+            >
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
+                  <DollarSign className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm text-purple-300">Secure Payments</span>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-4">
+                  How Payments Work
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* For Buyers */}
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border border-blue-500/20 rounded-2xl p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-blue-500/20 rounded-xl">
+                      <Users className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">For Buyers</h3>
+                  </div>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Pay with Credit/Debit Card</p>
+                        <p className="text-gray-400 text-sm">No setup required. Just enter your card at checkout.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Escrow Protection</p>
+                        <p className="text-gray-400 text-sm">Your payment is held securely until you confirm receipt of all assets.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Dispute Resolution</p>
+                        <p className="text-gray-400 text-sm">If something goes wrong, we'll help resolve it before releasing funds.</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* For Sellers */}
+                <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/10 border border-purple-500/20 rounded-2xl p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-purple-500/20 rounded-xl">
+                      <DollarSign className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">For Sellers</h3>
+                  </div>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Connect Stripe (Optional)</p>
+                        <p className="text-gray-400 text-sm">Only required when listing your first project for sale.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Receive 95% of Sale</p>
+                        <p className="text-gray-400 text-sm">We take only a 5% platform fee. Funds deposited directly to your bank.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-white font-medium">Fast Payouts</p>
+                        <p className="text-gray-400 text-sm">After buyer confirms receipt, funds are released to your account.</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+
             {/* CTA Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

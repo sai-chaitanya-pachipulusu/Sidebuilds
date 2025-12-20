@@ -434,11 +434,7 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stripe Connect Banner */}
-        <StripeConnectBanner 
-          onConnectClick={() => navigate('/profile-settings?tab=payouts')}
-          isDismissible={true}
-        />
+        {/* NOTE: Stripe Connect prompt moved to project listing flow - not needed on main dashboard */}
 
         {/* Header */}
         <motion.div
