@@ -409,10 +409,8 @@ pool.connect((err, client, release) => {
     });
   });
   
-  module.exports = {
-    query: (text, params) => pool.query(text, params),
-    pool: pool // Export pool if you need to end it on shutdown
-  };
+  // NOTE: Main module.exports is at the end of the file (line ~600)
+  // This section just tests the connection
 
 // Track connection state
 let isConnected = false;
