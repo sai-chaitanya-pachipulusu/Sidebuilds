@@ -939,12 +939,13 @@ const HomePage = () => {
             
             <CTASection />
             
-            {/* NEW: Interactive Product Tour Modal */}
+            {/* Product Tour - Disabled for now
             <ProductTour 
                 isOpen={isTourOpen} 
                 onClose={closeTour} 
                 onComplete={completeTour}
             />
+            */}
         </div>
     );
 };
