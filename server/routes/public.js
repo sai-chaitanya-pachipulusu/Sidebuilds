@@ -30,7 +30,7 @@ router.get('/projects', async (req, res) => {
                 p.updated_at, u.username AS owner_username 
              FROM projects p 
              JOIN users u ON p.owner_id = u.user_id 
-             WHERE p.is_public = 1 
+             WHERE ${DB.checkBool('p.is_public')}
              ORDER BY p.updated_at DESC`
         );
         
@@ -69,7 +69,7 @@ router.get('/marketplace', async (req, res) => {
                 COALESCE(p.monthly_users, 0) as monthly_users,
                 COALESCE(p.growth_rate, 0) as growth_rate,
                 COALESCE(p.view_count, 0) as view_count,
-                COALESCE(p.is_on_hold, 0) as is_on_hold,
+                COALESCE(p.is_on_hold, false) as is_on_hold,
                 p.sale_price, 
                 p.price_negotiable,
                 COALESCE(p.contact_email, '') as contact_email, 
@@ -527,8 +527,8 @@ router.post('/marketplace/search', async (req, res) => {
         searchQuery += `
             FROM projects p 
             JOIN users u ON p.owner_id = u.user_id 
-            LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id AND ai.is_current = 1
-            WHERE p.is_for_sale = 1 AND p.is_public = 1`;
+            LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id AND ${DB.checkBool('ai.is_current')}
+            WHERE ${DB.checkBool('p.is_for_sale')} AND ${DB.checkBool('p.is_public')}`;
 
         const queryParams = [];
         let paramIndex = 1;
@@ -693,7 +693,7 @@ router.post('/marketplace/search', async (req, res) => {
             SELECT COUNT(*) as total_count
             FROM projects p 
             JOIN users u ON p.owner_id = u.user_id 
-            WHERE p.is_for_sale = 1 AND p.is_public = 1`;
+            WHERE ${DB.checkBool('p.is_for_sale')} AND ${DB.checkBool('p.is_public')}`;
 
         const countParams = [];
         let countParamIndex = 1;
