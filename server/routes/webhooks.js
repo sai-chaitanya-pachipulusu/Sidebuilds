@@ -79,7 +79,7 @@ router.get('/events', authMiddleware, async (req, res) => {
                 AVG(processing_time) as avg_processing_time,
                 MAX(processing_time) as max_processing_time
             FROM webhook_events 
-            WHERE received_at >= datetime('now', '-24 hours')
+            WHERE received_at >= NOW() - INTERVAL '24 hours'
             GROUP BY status
         `);
         
@@ -161,19 +161,19 @@ router.get('/stats', authMiddleware, async (req, res) => {
         let timeCondition;
         switch (period) {
             case '1h':
-                timeCondition = "received_at >= datetime('now', '-1 hour')";
+                timeCondition = "received_at >= NOW() - INTERVAL '1 hour'";
                 break;
             case '24h':
-                timeCondition = "received_at >= datetime('now', '-24 hours')";
+                timeCondition = "received_at >= NOW() - INTERVAL '24 hours'";
                 break;
             case '7d':
-                timeCondition = "received_at >= datetime('now', '-7 days')";
+                timeCondition = "received_at >= NOW() - INTERVAL '7 days'";
                 break;
             case '30d':
-                timeCondition = "received_at >= datetime('now', '-30 days')";
+                timeCondition = "received_at >= NOW() - INTERVAL '30 days'";
                 break;
             default:
-                timeCondition = "received_at >= datetime('now', '-24 hours')";
+                timeCondition = "received_at >= NOW() - INTERVAL '24 hours'";
         }
         
         // Get overall statistics
@@ -207,14 +207,14 @@ router.get('/stats', authMiddleware, async (req, res) => {
         // Get hourly distribution for the last 24 hours
         const hourlyStats = await db.query(`
             SELECT 
-                strftime('%Y-%m-%d %H:00', received_at) as hour,
+                TO_CHAR(received_at, 'YYYY-MM-DD HH24:00') as hour,
                 COUNT(*) as event_count,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as success_count,
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as error_count,
                 AVG(processing_time) as avg_processing_time
             FROM webhook_events 
-            WHERE received_at >= datetime('now', '-24 hours')
-            GROUP BY strftime('%Y-%m-%d %H:00', received_at)
+            WHERE received_at >= NOW() - INTERVAL '24 hours'
+            GROUP BY TO_CHAR(received_at, 'YYYY-MM-DD HH24:00')
             ORDER BY hour DESC
         `);
         

@@ -5,7 +5,7 @@ module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://localhost:5001',
+      target: 'http://localhost:5002',
       changeOrigin: true,
       secure: false,
       logLevel: 'debug',
@@ -19,7 +19,7 @@ module.exports = function(app) {
   app.use(
     '/socket.io',
     createProxyMiddleware({
-      target: 'http://localhost:5001',
+      target: 'http://localhost:5002',
       changeOrigin: true,
       ws: true // Enable websocket proxying
     })

@@ -156,7 +156,7 @@ const HowItWorksPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10 border-b border-white/[0.08]">
+        <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
           <div className="max-w-7xl mx-auto px-4 py-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -170,7 +170,7 @@ const HowItWorksPage = () => {
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 How{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   SideBuilds Works
                 </span>
               </h1>
@@ -361,7 +361,7 @@ const HowItWorksPage = () => {
                       <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${feature.color} bg-current/10`}>
                         <Icon className={`w-8 h-8 ${feature.color}`} />
                       </div>
-                      <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-purple-300 transition-colors duration-200">
+                      <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-cyan-300 transition-colors duration-200">
                         {feature.title}
                       </h3>
                       <p className="text-gray-400 leading-relaxed">
@@ -379,7 +379,7 @@ const HowItWorksPage = () => {
                   viewport={{ once: true }}
                   className="bg-gray-900 rounded-3xl border border-white/10 p-12 overflow-hidden relative"
               >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full filter blur-3xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full filter blur-3xl pointer-events-none" />
                   
                   <div className="grid md:grid-cols-2 gap-16 items-center">
                     <div>
@@ -612,7 +612,7 @@ const HowItWorksPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-pink-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Ready to Get Started?

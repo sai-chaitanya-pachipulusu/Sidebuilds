@@ -75,7 +75,7 @@ const PortfolioValueModal = ({ isOpen, onClose, stats, projects }) => {
                 <Card className="bg-gray-800/50 border-white/[0.08]">
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-2">
-                      <Eye className="w-4 h-4 text-blue-400" />
+                      <Eye className="w-4 h-4 text-purple-400" />
                       <span className="text-sm text-gray-400">Total Views</span>
                     </div>
                     <p className="text-2xl font-bold text-white mt-2">{stats.totalViews.toLocaleString()}</p>
@@ -107,7 +107,7 @@ const PortfolioValueModal = ({ isOpen, onClose, stats, projects }) => {
                         className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/[0.05]"
                       >
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
                             <Package className="w-6 h-6 text-white" />
                           </div>
                           <div>

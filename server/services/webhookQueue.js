@@ -335,7 +335,7 @@ class WebhookQueue {
         try {
             await db.query(`
                 CREATE TABLE IF NOT EXISTS webhook_queue (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     event_id TEXT UNIQUE,
                     event_type TEXT,
                     event_data TEXT,
@@ -344,10 +344,10 @@ class WebhookQueue {
                     status TEXT DEFAULT 'pending',
                     retry_count INTEGER DEFAULT 0,
                     error_message TEXT,
-                    created_at TEXT,
-                    updated_at TEXT,
-                    next_retry TEXT,
-                    completed_at TEXT
+                    created_at TIMESTAMPTZ,
+                    updated_at TIMESTAMPTZ,
+                    next_retry TIMESTAMPTZ,
+                    completed_at TIMESTAMPTZ
                 )
             `);
             

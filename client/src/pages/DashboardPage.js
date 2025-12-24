@@ -63,6 +63,7 @@ const DashboardPage = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [projects, setProjects] = useState([]);
+  // loading is initialized to true
   const [loading, setLoading] = useState(true);
 
   // Modal states
@@ -71,11 +72,26 @@ const DashboardPage = () => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [salesModalOpen, setSalesModalOpen] = useState(false);
 
-  // Use real-time dashboard sync
-  useDashboardSync({
-    refreshInterval: 60000, // 1 minute
-    enableRealTime: true
+  // Use real-time dashboard sync and actually CONSUME the data
+  const { 
+    data: syncData, 
+    loading: syncLoading
+  } = useDashboardSync({
+    refreshInterval: 60000, 
+    enableRealTime: true,
+    cacheData: false // Force fresh fetch on mount issues
   });
+
+  // Update effect for syncData
+  useEffect(() => {
+    if (syncData) {
+      console.log('[Dashboard] Sync hook data received:', syncData);
+      if (syncData.stats) setStats(syncData.stats);
+      if (syncData.recentProjects) setRecentProjects(syncData.recentProjects);
+      // If the hook provides data, we can turn off our local loading state
+      if (loading) setLoading(false);
+    }
+  }, [syncData, loading]);
 
   // Activity click handler
   const handleActivityClick = (activity) => {
@@ -91,6 +107,7 @@ const DashboardPage = () => {
     }
   };
 
+  // Initial Fetch Effect - Acts as immediate fallback while sync hook initializes
   useEffect(() => {
     console.log('Dashboard useEffect triggered, user:', user);
     const fetchDashboardData = async () => {
@@ -100,9 +117,9 @@ const DashboardPage = () => {
       }
       
       try {
-        console.log('Starting dashboard data fetch...');
+        console.log('Starting dashboard initial fetch...');
 
-        // Fetch comprehensive dashboard data from our updated API
+        // Fetch comprehensive dashboard data
         const dashboardResponse = await fetch('/api/dashboard', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -114,63 +131,76 @@ const DashboardPage = () => {
         }
 
         const dashboardData = await dashboardResponse.json();
-        console.log('Dashboard data received:', dashboardData);
-
-        // Use the dashboard API data
-        setStats(dashboardData.stats);
-        setRecentProjects(dashboardData.recentProjects || []);
-        setRecentActivity(dashboardData.recentActivity || []);
-
-        // Also fetch additional data for notifications and detailed project info
-        const [
-          projectsData,
-          sellerRequestsData,
-          buyerRequestsData,
-          notificationsData
-        ] = await Promise.all([
-          getProjects(),
-          getSellerPurchaseRequests(),
-          getBuyerPurchaseRequests(),
-          getNotifications()
-        ]);
-
-        console.log('Dashboard data fetched:', {
-          projectsData: projectsData?.length || 0,
-          sellerRequestsData: sellerRequestsData?.length || 0,
-          buyerRequestsData: buyerRequestsData?.length || 0,
-          notificationsData: notificationsData?.length || 0
-        });
-
-        // Keep the additional data for modals and detailed views
-        setProjects(projectsData || []);
-        setNotifications(notificationsData || []);
+        const s = dashboardData.stats || {};
+        console.log('[Dashboard] Raw stats received from API:', s);
         
-        // Create activity feed
-        const sellerActivities = sellerRequestsData.slice(0, 3).map(req => ({
-          type: 'interest',
-          message: `New interest received for "${req.project_name}"`,
-          time: req.created_at,
-          status: req.status
-        }));
+        // Use the dashboard API data
+        setStats(s);
+        setRecentProjects(dashboardData.recentProjects || []);
+        setLoading(false);
+        
+        // Show a brief debug toast in development
+        if (process.env.NODE_ENV !== 'production') {
+          const toast = require('react-hot-toast').default;
+          // toast.success(`Dashboard data synced: ${s.totalProjects || 0} projects found.`, { id: 'dashboard-debug' });
+        }
+        
+        // Also fetch additional data for notifications and detailed project info
+        try {
+          const [
+            projectsData,
+            sellerRequestsData,
+            buyerRequestsData,
+            notificationsData
+          ] = await Promise.all([
+            getProjects().catch(e => { console.error('getProjects failed', e); return []; }),
+            getSellerPurchaseRequests().catch(e => { console.error('getSellerPurchaseRequests failed', e); return []; }),
+            getBuyerPurchaseRequests().catch(e => { console.error('getBuyerPurchaseRequests failed', e); return []; }),
+            getNotifications().catch(e => { console.error('getNotifications failed', e); return []; })
+          ]);
 
-        const buyerActivities = buyerRequestsData.slice(0, 2).map(req => ({
-          type: 'purchase',
-          message: `Purchase request for "${req.project_name}"`,
-          time: req.created_at,
-          status: req.status
-        }));
 
-        const activities = [...sellerActivities, ...buyerActivities]
-          .sort((a, b) => new Date(b.time) - new Date(a.time))
-          .slice(0, 5);
+          console.log('[Dashboard] Additional data fetched:', {
+            projectsCount: projectsData?.length,
+            sellerReqCount: sellerRequestsData?.length,
+            buyerReqCount: buyerRequestsData?.length
+          });
 
-        console.log('Created activities:', activities);
-        setRecentActivity(activities);
+          // Keep the additional data for modals and detailed views
+          setProjects(projectsData || []);
+          setNotifications(notificationsData || []);
+          
+          // Create activity feed from requests
+          const sellerActivities = (sellerRequestsData || []).slice(0, 3).map(req => ({
+            type: 'interest',
+            message: `New interest received for "${req.project_name || 'Project'}"`,
+            time: req.created_at,
+            status: req.status
+          }));
+  
+          const buyerActivities = (buyerRequestsData || []).slice(0, 2).map(req => ({
+            type: 'purchase',
+            message: `Purchase request for "${req.project_name || 'Project'}"`,
+            time: req.created_at,
+            status: req.status
+          }));
+  
+          const activities = [...sellerActivities, ...buyerActivities]
+            .sort((a, b) => new Date(b.time) - new Date(a.time))
+            .slice(0, 5);
+  
+          if (activities.length > 0) {
+            setRecentActivity(activities);
+          }
+        } catch (dataErr) {
+          console.error('Error fetching supplementary dashboard data:', dataErr);
+        }
 
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
+        // Do NOT set loading(false) on error. 
+        // Let the loading screen persist so the user doesn't see empty 0 values.
+        // The useDashboardSync hook will retry and eventually populate the data.
       }
     };
     
@@ -236,137 +266,61 @@ const DashboardPage = () => {
   };
 
   const StatCard = ({ icon: Icon, title, value, trend, trendUp, description, color = "purple", onClick }) => {
+    // Simplified color mapping for the new premium theme
     const getColorClasses = (color) => {
       const colors = {
-        purple: {
-          bg: 'from-purple-600/10 to-purple-500/5',
-          border: 'border-purple-500/20',
-          iconBg: 'bg-purple-500/10',
-          iconBorder: 'border-purple-500/20',
-          iconColor: 'text-purple-400',
-          glow: 'shadow-purple-500/25'
-        },
-        green: {
-          bg: 'from-green-600/10 to-green-500/5',
-          border: 'border-green-500/20',
-          iconBg: 'bg-green-500/10',
-          iconBorder: 'border-green-500/20',
-          iconColor: 'text-green-400',
-          glow: 'shadow-green-500/25'
-        },
-        red: {
-          bg: 'from-red-600/10 to-red-500/5',
-          border: 'border-red-500/20',
-          iconBg: 'bg-red-500/10',
-          iconBorder: 'border-red-500/20',
-          iconColor: 'text-red-400',
-          glow: 'shadow-red-500/25'
-        },
-        blue: {
-          bg: 'from-blue-600/10 to-blue-500/5',
-          border: 'border-blue-500/20',
-          iconBg: 'bg-blue-500/10',
-          iconBorder: 'border-blue-500/20',
-          iconColor: 'text-blue-400',
-          glow: 'shadow-blue-500/25'
-        },
-        indigo: {
-          bg: 'from-indigo-600/10 to-indigo-500/5',
-          border: 'border-indigo-500/20',
-          iconBg: 'bg-indigo-500/10',
-          iconBorder: 'border-indigo-500/20',
-          iconColor: 'text-indigo-400',
-          glow: 'shadow-indigo-500/25'
-        },
-        cyan: {
-          bg: 'from-cyan-600/10 to-cyan-500/5',
-          border: 'border-cyan-500/20',
-          iconBg: 'bg-cyan-500/10',
-          iconBorder: 'border-cyan-500/20',
-          iconColor: 'text-cyan-400',
-          glow: 'shadow-cyan-500/25'
-        },
-        pink: {
-          bg: 'from-pink-600/10 to-pink-500/5',
-          border: 'border-pink-500/20',
-          iconBg: 'bg-pink-500/10',
-          iconBorder: 'border-pink-500/20',
-          iconColor: 'text-pink-400',
-          glow: 'shadow-pink-500/25'
-        },
-        orange: {
-          bg: 'from-orange-600/10 to-orange-500/5',
-          border: 'border-orange-500/20',
-          iconBg: 'bg-orange-500/10',
-          iconBorder: 'border-orange-500/20',
-          iconColor: 'text-orange-400',
-          glow: 'shadow-orange-500/25'
-        }
+        // Mapped back to include Purple as a distinct primary color
+        purple: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        green: { text: 'text-emerald-400', icon: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        red: { text: 'text-rose-400', icon: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+        blue: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        indigo: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        cyan: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        pink: { text: 'text-pink-400', icon: 'text-pink-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        orange: { text: 'text-amber-400', icon: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' }
       };
       return colors[color] || colors.purple;
     };
-
+    
     const colorClasses = getColorClasses(color);
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-2xl hover:shadow-purple-500/10' : ''}`}
+        className={`spotlight-card rounded-2xl p-6 transition-all duration-300 group cursor-pointer hover:shadow-premium-lg`}
         onClick={onClick}
-        whileHover={onClick ? {
-          scale: 1.02,
-          boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)`
-        } : {}}
-        whileTap={onClick ? { scale: 0.98 } : {}}
+        onMouseMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+          e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        }}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
       >
-        {/* Animated background gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
-        {/* Animated border glow */}
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colorClasses.bg} opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl`} />
-
-        {/* Floating particles effect */}
-        <div className="absolute top-4 right-4 w-2 h-2 bg-current opacity-0 group-hover:opacity-60 rounded-full animate-pulse" style={{ color: `var(--${color}-400)` }} />
-        <div className="absolute bottom-4 left-4 w-1 h-1 bg-current opacity-0 group-hover:opacity-40 rounded-full animate-pulse delay-75" style={{ color: `var(--${color}-400)` }} />
-
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
-            <motion.div
-              className={`p-3 rounded-xl ${colorClasses.iconBg} ${colorClasses.iconBorder} border`}
-              whileHover={{ rotate: 5, scale: 1.1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              <Icon className={`w-6 h-6 ${colorClasses.iconColor}`} />
-            </motion.div>
+            <div className={`p-3 rounded-xl ${colorClasses.bg} ${colorClasses.border} border shadow-inner`}>
+              <Icon className={`w-6 h-6 ${colorClasses.icon}`} />
+            </div>
             {trend && (
-              <motion.div
-                className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-medium ${
-                  trendUp
-                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                }`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2 }}
-              >
+              <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium border ${
+                trendUp
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+              }`}>
                 {trendUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {trend}
-              </motion.div>
+              </div>
             )}
           </div>
 
           <div className="space-y-1">
-            <motion.h3
-              className="text-2xl font-bold text-white"
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
+            <h3 className="text-3xl font-bold text-white tracking-tight">
               {value}
-            </motion.h3>
-            <p className="text-sm text-gray-400">{title}</p>
-            {description && <p className="text-xs text-gray-500">{description}</p>}
+            </h3>
+            <p className="text-sm text-gray-400 font-medium">{title}</p>
+            {description && <p className="text-xs text-gray-500 mt-1">{description}</p>}
           </div>
         </div>
       </motion.div>
@@ -387,7 +341,7 @@ const DashboardPage = () => {
       if (status?.includes('completed')) return 'text-green-400';
       if (status?.includes('pending') || status?.includes('interest')) return 'text-yellow-400';
       if (status?.includes('declined') || status?.includes('withdrawn')) return 'text-red-400';
-      return 'text-blue-400';
+      return 'text-purple-400';
     };
 
     return (
@@ -395,24 +349,33 @@ const DashboardPage = () => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.1 }}
-        className="flex items-start space-x-3 p-3 hover:bg-white/[0.03] rounded-xl transition-colors duration-200 cursor-pointer touch-manipulation"
+        className="glass-card hover:glass-card-hover flex items-start space-x-4 p-4 rounded-xl cursor-pointer group"
         onClick={() => {
           console.log('Activity item clicked:', activity);
           handleActivityClick(activity);
         }}
       >
-        <div className="p-2 rounded-lg bg-gray-800/50 border border-white/[0.05]">
+        <div className={`p-2 rounded-lg ${
+            activity.type === 'purchase' || activity.type === 'sale' ? 'bg-purple-500/10 text-purple-400' :
+            activity.type === 'interest' ? 'bg-purple-500/10 text-purple-400' :
+            'bg-gray-800 text-gray-400'
+        }`}>
           {getActivityIcon(activity.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-200 leading-relaxed break-words">{activity.message}</p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mt-1 space-y-1 sm:space-y-0">
-            <span className="text-xs text-gray-500">
+          <p className="text-sm text-gray-200 leading-relaxed font-medium">{activity.message}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mt-1.5">
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              <div className="w-1 h-1 rounded-full bg-gray-500" />
               {new Date(activity.time).toLocaleDateString()}
             </span>
             {activity.status && (
-              <span className={`text-xs ${getStatusColor(activity.status)}`}>
-                {activity.status.replace(/_/g, ' ')}
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                getStatusColor(activity.status) === 'text-green-400' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                getStatusColor(activity.status) === 'text-yellow-400' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                'bg-purple-500/10 border-purple-500/20 text-purple-400'
+              }`}>
+                {activity.status.replace('_', ' ')}
               </span>
             )}
           </div>
@@ -447,7 +410,7 @@ const DashboardPage = () => {
             </div>
             <motion.button
               onClick={() => navigate('/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:brightness-110 transition-all duration-200 shadow-lg shadow-purple-500/20 border border-purple-500/20"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -458,7 +421,7 @@ const DashboardPage = () => {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <StatCard
             icon={Package}
             title="Total Projects"
@@ -503,40 +466,40 @@ const DashboardPage = () => {
 
         {/* Additional Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+          <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-white">{stats.totalViews}</div>
+                <div className="text-2xl font-bold text-white tracking-tight">{stats.textViews || stats.totalViews}</div>
                 <div className="text-sm text-gray-400">Total Views</div>
               </div>
-              <Eye className="w-8 h-8 text-blue-400" />
+              <Eye className="w-8 h-8 text-purple-500/50" />
             </div>
           </div>
-          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+          <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-white">{stats.averageViews}</div>
+                <div className="text-2xl font-bold text-white tracking-tight">{stats.averageViews}</div>
                 <div className="text-sm text-gray-400">Avg Views</div>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-400" />
+              <TrendingUp className="w-8 h-8 text-emerald-500/50" />
             </div>
           </div>
-          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+          <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-white">{stats.interestReceived}</div>
+                <div className="text-2xl font-bold text-white tracking-tight">{stats.interestReceived}</div>
                 <div className="text-sm text-gray-400">Interests Received</div>
               </div>
-              <Users className="w-8 h-8 text-purple-400" />
+              <Users className="w-8 h-8 text-purple-500/50" />
             </div>
           </div>
-          <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
+          <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-white">{stats.purchasesMade}</div>
+                <div className="text-2xl font-bold text-white tracking-tight">{stats.purchasesMade}</div>
                 <div className="text-sm text-gray-400">Purchases Made</div>
               </div>
-              <ShoppingBag className="w-8 h-8 text-orange-400" />
+              <ShoppingBag className="w-8 h-8 text-amber-500/50" />
             </div>
           </div>
         </div>
@@ -562,7 +525,7 @@ const DashboardPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-6 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  className="glass-card hover:glass-card-hover p-6 cursor-pointer group"
                   onClick={() => navigate(`/projects/edit/${project.id}`)}
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -571,9 +534,9 @@ const DashboardPage = () => {
                       <p className="text-gray-400 text-sm line-clamp-2">{project.description}</p>
                     </div>
                     <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      project.status === 'launched' ? 'bg-green-500/10 text-green-400' :
-                      project.status === 'mvp' ? 'bg-purple-500/10 text-purple-400' :
-                      'bg-gray-500/10 text-gray-400'
+                      project.status === 'launched' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      project.status === 'mvp' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                      'bg-gray-500/10 text-gray-400 border border-gray-500/20'
                     }`}>
                       {project.status}
                     </div>
@@ -591,13 +554,17 @@ const DashboardPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg">
-              <Package className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">No projects yet</h3>
-              <p className="text-gray-400 mb-4">Create your first project to get started</p>
-              <Button onClick={() => navigate('/create')} className="bg-purple-600 hover:bg-purple-700">
+            <div className="spotlight-card rounded-2xl p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-white/5">
+                <Package className="w-8 h-8 text-gray-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No projects started yet</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Your portfolio is empty. Launch your first project to start tracking views and sales.
+              </p>
+              <Button onClick={() => navigate('/create')} className="btn-primary">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Project
+                Create First Project
               </Button>
             </div>
           )}
@@ -654,228 +621,7 @@ const DashboardPage = () => {
           )}
         </motion.div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Recent Activity & Projects */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 sm:p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
-                  <Activity className="w-5 h-5 text-purple-400" />
-                  <span>Recent Activity</span>
-                </h2>
-                <RouterLink
-                  to="/notifications"
-                  className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200"
-                >
-                  View all
-                </RouterLink>
-              </div>
-              
-              <div className="space-y-1">
-                {recentActivity.length > 0 ? (
-                  recentActivity.map((activity, index) => (
-                    <ActivityItem key={index} activity={activity} index={index} />
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Activity className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p>No recent activity</p>
-                    <p className="text-sm">Create a project to get started</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Recent Projects */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
-                  <Package className="w-5 h-5 text-blue-400" />
-                  <span>Your Projects</span>
-                </h2>
-                <RouterLink
-                  to="/my-projects"
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                >
-                  View all
-                </RouterLink>
-              </div>
-              
-              <div className="space-y-4">
-                {projects.length > 0 ? (
-                  projects.map((project, index) => (
-                    <motion.div
-                      key={project.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="flex items-center space-x-4 p-4 hover:bg-white/[0.03] rounded-xl transition-colors duration-200 cursor-pointer"
-                      onClick={() => navigate(`/project/${project.id}`)}
-                    >
-                      <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-                        <Package className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-medium truncate">{project.name}</h3>
-                        <p className="text-gray-400 text-sm truncate">{project.description}</p>
-                        <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-xs text-gray-500 flex items-center space-x-1">
-                            <Eye className="w-3 h-3" />
-                            <span>{project.view_count || 0} views</span>
-                          </span>
-                          {project.sale_price && (
-                            <span className="text-xs text-green-400">
-                              {formatPrice(project.sale_price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ArrowUpRight className="w-5 h-5 text-gray-400" />
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p>No projects yet</p>
-                    <motion.button
-                      onClick={() => navigate('/create')}
-                      className="mt-4 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-sm hover:bg-purple-600/30 transition-colors duration-200"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Create your first project
-                    </motion.button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            
-            {/* Notifications */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-4 sm:p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-white flex items-center space-x-2">
-                  <Bell className="w-5 h-5 text-yellow-400" />
-                  <span>Notifications</span>
-                </h2>
-                <RouterLink
-                  to="/notifications"
-                  className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors duration-200"
-                >
-                  View all
-                </RouterLink>
-              </div>
-              
-              <div className="space-y-3">
-                {notifications.length > 0 ? (
-                  notifications.map((notification, index) => (
-                    <motion.div
-                      key={notification.notification_id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className={`p-3 rounded-xl transition-colors duration-200 cursor-pointer border ${
-                        !notification.is_read
-                          ? 'bg-yellow-500/10 border-yellow-500/20 hover:bg-yellow-500/20'
-                          : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.05]'
-                      }`}
-                      onClick={() => {
-                        console.log('Notification clicked in sidebar:', notification);
-                        handleNotificationClick(notification);
-                      }}
-                    >
-                      <p className="text-sm text-gray-200 leading-relaxed break-words">
-                        {notification.message}
-                      </p>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 space-y-1 sm:space-y-0">
-                        <p className="text-xs text-gray-500">
-                          {new Date(notification.created_at).toLocaleDateString()}
-                        </p>
-                        {!notification.is_read && (
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full sm:ml-2"></div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">No notifications</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6"
-            >
-              <h2 className="text-lg font-semibold text-white mb-6 flex items-center space-x-2">
-                <Zap className="w-5 h-5 text-green-400" />
-                <span>Quick Actions</span>
-              </h2>
-              
-              <div className="space-y-3">
-                <motion.button
-                  onClick={() => navigate('/create')}
-                  className="w-full flex items-center space-x-3 p-3 bg-purple-600/10 border border-purple-600/20 rounded-xl text-purple-400 hover:bg-purple-600/20 transition-colors duration-200 text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Create New Project</span>
-                </motion.button>
-                
-                <motion.button
-                  onClick={() => navigate('/marketplace')}
-                  className="w-full flex items-center space-x-3 p-3 bg-blue-600/10 border border-blue-600/20 rounded-xl text-blue-400 hover:bg-blue-600/20 transition-colors duration-200 text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>Browse Marketplace</span>
-                </motion.button>
-                
-                <motion.button
-                  onClick={() => navigate('/dashboard/sales')}
-                  className="w-full flex items-center space-x-3 p-3 bg-green-600/10 border border-green-600/20 rounded-xl text-green-400 hover:bg-green-600/20 transition-colors duration-200 text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <DollarSign className="w-5 h-5" />
-                  <span>Manage Sales</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          </div>
-        </div>
       </div>
-
       {/* Modals */}
       <PortfolioValueModal
         isOpen={portfolioModalOpen}
@@ -902,6 +648,13 @@ const DashboardPage = () => {
         onClose={() => setSalesModalOpen(false)}
         userId={user?.id || user?.user_id}
       />
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true' && (
+        <div className="fixed bottom-0 left-0 right-0 bg-black/95 p-6 z-[9999] max-h-64 overflow-auto border-t border-blue-500">
+          <pre className="text-xs text-green-400">
+            {JSON.stringify({ stats, user, projectsCount: projects.length }, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

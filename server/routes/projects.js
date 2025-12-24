@@ -30,15 +30,25 @@ router.use(authMiddleware);
 // Helper function to check if user has a Stripe account
 async function checkUserStripeAccount(userId) {
     const userResult = await db.query(`
-        SELECT stripe_account_id, onboarding_complete 
+        SELECT stripe_account_id, onboarding_complete, stripe_onboarding_complete, 
+               payout_enabled, stripe_charges_enabled, stripe_details_submitted
         FROM users 
-        WHERE user_id = ?
+        WHERE user_id = $1
     `, [userId]);
     
     const user = userResult.rows[0];
+    
+    // Check any of the onboarding status columns
+    const isOnboardingComplete = 
+        user?.onboarding_complete === 1 || user?.onboarding_complete === true ||
+        user?.stripe_onboarding_complete === 1 || user?.stripe_onboarding_complete === true ||
+        (user?.payout_enabled === true && user?.stripe_charges_enabled === true);
+    
+    console.log('[Stripe Check] User:', userId, 'Account:', user?.stripe_account_id, 'Onboarding Complete:', isOnboardingComplete);
+    
     return {
         hasStripeAccount: !!user?.stripe_account_id,
-        isOnboardingComplete: user?.onboarding_complete === 1 || user?.onboarding_complete === true,
+        isOnboardingComplete: isOnboardingComplete,
         stripeAccountId: user?.stripe_account_id
     };
 }
@@ -130,7 +140,7 @@ router.post('/', async (req, res) => {
         let fields = ['project_id', 'owner_id', 'owner_username', 'name', 'description', 'stage', 'domain', 'demo_url', 'github_url', 'tech_stack', 'monthly_revenue', 'is_public', 'is_for_sale', 'is_on_hold'];
         
         // Get username for owner_username field
-        const userResult = await db.query('SELECT username FROM users WHERE user_id = ?', [userId]);
+        const userResult = await db.query('SELECT username FROM users WHERE user_id = $1', [userId]);
         const username = userResult.rows[0]?.username || 'unknown';
         
         // Generate UUID for project_id
@@ -152,37 +162,32 @@ router.post('/', async (req, res) => {
             !!is_for_sale,
             false // Default for is_on_hold
         ];
-        let placeholders = Array(fields.length).fill('?');
-        
         // Add sale-related fields if project is for sale
         if (is_for_sale) {
             fields.push('sale_price');
             values.push(sale_price);
-            placeholders.push('?');
             
             if (contact_email) {
                 fields.push('contact_email');
                 values.push(contact_email);
-                placeholders.push('?');
             }
             
             if (contact_phone) {
                 fields.push('contact_phone');
                 values.push(contact_phone);
-                placeholders.push('?');
             }
             
             if (payment_method) {
                 fields.push('payment_method');
                 values.push(payment_method);
-                placeholders.push('?');
             }
         }
 
-        // Create the SQL query (SQLite doesn't support RETURNING)
+        // Create the SQL query using PostgreSQL placeholders $1, $2, etc.
+        const pgPlaceholders = fields.map((_, i) => `$${i + 1}`).join(', ');
         const query = `
             INSERT INTO projects (${fields.join(', ')})
-            VALUES (${placeholders.join(', ')})
+            VALUES (${pgPlaceholders})
         `;
         
         console.log('Executing SQL query:', query);
@@ -190,9 +195,9 @@ router.post('/', async (req, res) => {
 
         await db.query(query, values);
         
-        // Get the created project (SQLite doesn't support RETURNING)
+        // Get the created project
         const createdProject = await db.query(
-            'SELECT * FROM projects WHERE project_id = ?',
+            'SELECT * FROM projects WHERE project_id = $1',
             [projectId]
         );
         
@@ -255,9 +260,9 @@ router.get('/', async (req, res) => {
                 updated_at,
                 COALESCE(view_count, 0) as view_count,
                 COALESCE(interest_count, 0) as interest_count,
-                COALESCE(is_on_hold, 0) as is_on_hold
+                COALESCE(is_on_hold, false) as is_on_hold
             FROM projects 
-            WHERE owner_id = ? 
+            WHERE (owner_id = $1 OR user_id = $1) 
             ORDER BY created_at DESC`,
             [userId]
         );
@@ -279,7 +284,7 @@ router.get('/:id', async (req, res) => {
         // Updated query to allow access if the project is public OR the user is the owner
         const projectResult = await db.query(
             `SELECT * FROM projects 
-             WHERE project_id = ? AND (owner_id = ? OR CAST(is_public AS BOOLEAN) IS TRUE)`,
+             WHERE project_id = $1 AND (owner_id = $2 OR CAST(is_public AS BOOLEAN) IS TRUE)`,
             [projectId, userId]
         );
 
@@ -318,7 +323,7 @@ router.put('/:id', async (req, res) => {
     try {
         // First check if project exists and belongs to user
         const existingProject = await db.query(
-            'SELECT * FROM projects WHERE project_id = ?',
+            'SELECT * FROM projects WHERE project_id = $1',
             [projectId]
         );
         
@@ -360,8 +365,9 @@ router.put('/:id', async (req, res) => {
         // Helper to add field to update query
         const addUpdateField = (field, value) => {
             if (value !== undefined) {
-                setParts.push(`${field} = ?`);
+                setParts.push(`${field} = $${currentParamIndex}`);
                 queryValues.push(value);
+                currentParamIndex++;
             }
         };
         
@@ -406,21 +412,21 @@ router.put('/:id', async (req, res) => {
             // However, 'updated_at' will always be set.
         }
         
-        setParts.push('updated_at = CURRENT_TIMESTAMP');
+        setParts.push(`updated_at = CURRENT_TIMESTAMP`);
         
         queryValues.push(projectId, userId); // Add projectId and userId for WHERE clause
         
         const updateQuery = `
             UPDATE projects 
             SET ${setParts.join(', ')} 
-            WHERE project_id = ? AND owner_id = ? 
+            WHERE project_id = $${currentParamIndex} AND owner_id = $${currentParamIndex + 1} 
         `;
         
         await db.query(updateQuery, queryValues);
 
-        // Get updated project data (SQLite doesn't support RETURNING)
+        // Get updated project data
         const updatedProjectResult = await db.query(
-            'SELECT * FROM projects WHERE project_id = ? AND owner_id = ?',
+            'SELECT * FROM projects WHERE project_id = $1 AND owner_id = $2',
             [projectId, userId]
         );
 
@@ -440,13 +446,13 @@ router.put('/:id', async (req, res) => {
             const statusUpdateQuery = `
                 UPDATE projects 
                 SET status = 'completed', updated_at = CURRENT_TIMESTAMP 
-                WHERE project_id = ? 
+                WHERE project_id = $1 
             `;
             await db.query(statusUpdateQuery, [projectData.project_id]);
             
             // Get updated project data
             const statusUpdatedProjectResult = await db.query(
-                'SELECT * FROM projects WHERE project_id = ?',
+                'SELECT * FROM projects WHERE project_id = $1',
                 [projectData.project_id]
             );
             if (statusUpdatedProjectResult.rows.length > 0) {
@@ -474,7 +480,7 @@ router.delete('/:id', async (req, res) => {
     try {
         // First check if project exists
         const existingProject = await db.query(
-            'SELECT project_id, owner_id FROM projects WHERE project_id = ?',
+            'SELECT project_id, owner_id FROM projects WHERE project_id = $1',
             [projectId]
         );
         
@@ -489,7 +495,7 @@ router.delete('/:id', async (req, res) => {
         
         // Now delete the project
         await db.query(
-            'DELETE FROM projects WHERE project_id = ?',
+            'DELETE FROM projects WHERE project_id = $1',
             [projectId]
         );
 
@@ -531,7 +537,7 @@ router.patch('/:id/toggle-hold', async (req, res) => {
     try {
         // Check ownership
         const projectResult = await db.query(
-            'SELECT owner_id, is_on_hold FROM projects WHERE project_id = ?',
+            'SELECT owner_id, is_on_hold FROM projects WHERE project_id = $1',
             [projectId]
         );
 
@@ -546,7 +552,7 @@ router.patch('/:id/toggle-hold', async (req, res) => {
         const newStatus = !projectResult.rows[0].is_on_hold;
         
         await db.query(
-            'UPDATE projects SET is_on_hold = ?, updated_at = CURRENT_TIMESTAMP WHERE project_id = ?',
+            'UPDATE projects SET is_on_hold = $1, updated_at = CURRENT_TIMESTAMP WHERE project_id = $2',
             [newStatus, projectId]
         );
 

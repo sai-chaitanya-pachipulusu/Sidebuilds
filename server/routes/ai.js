@@ -237,15 +237,9 @@ function calculateRevenueScore(monthlyRevenue) {
 
 async function calculateGrowthScore(projectData, userId) {
   try {
-    // Get historical data for growth calculation
-    let query;
-    if (db.isSQLite) {
-      query = `SELECT view_count, monthly_revenue FROM projects 
-               WHERE user_id = $1 AND created_at < datetime('now', '-30 days')`;
-    } else {
-      query = `SELECT view_count, monthly_revenue FROM projects 
+    // PostgreSQL-compatible query for historical data
+    let query = `SELECT view_count, monthly_revenue FROM projects 
                WHERE user_id = $1 AND created_at < NOW() - INTERVAL '30 days'`;
-    }
 
     const result = await db.query(query, [userId]);
 
@@ -400,7 +394,7 @@ async function generatePersonalizedRecommendations(userId, userProjects, prefere
       SELECT p.*, u.username
       FROM projects p
       JOIN users u ON p.user_id = u.user_id
-      WHERE p.is_for_sale = 1
+      WHERE p.is_for_sale = true
       ORDER BY p.view_count DESC, p.created_at DESC
       LIMIT 10
     `);
@@ -439,7 +433,7 @@ async function generateTrendingRecommendations(marketplaceData) {
         p.view_count
       FROM projects p
       JOIN users u ON p.user_id = u.user_id
-      WHERE p.is_for_sale = 1
+      WHERE p.is_for_sale = true
       ORDER BY p.view_count DESC
       LIMIT 8
     `);
@@ -474,7 +468,7 @@ async function generateSimilarRecommendations(userId, userProjects) {
       FROM projects p
       JOIN users u ON p.user_id = u.user_id
       WHERE p.user_id != $1 
-        AND p.is_for_sale = 1
+        AND p.is_for_sale = true
       ORDER BY p.monthly_revenue DESC
       LIMIT 6
     `, [userId]);
@@ -501,7 +495,7 @@ async function generateInvestmentRecommendations(marketplaceData, preferences) {
         (p.monthly_revenue * 12.0 / CASE WHEN p.sale_price = 0 THEN 1 ELSE p.sale_price END) as roi_ratio
       FROM projects p
       JOIN users u ON p.user_id = u.user_id
-      WHERE p.is_for_sale = 1
+      WHERE p.is_for_sale = true
         AND p.monthly_revenue > 0
         AND p.sale_price > 0
       ORDER BY roi_ratio DESC
@@ -537,7 +531,7 @@ async function generateMarketInsights(marketplaceData) {
         AVG(sale_price) as avg_price,
         COUNT(*) as total_projects
       FROM projects 
-      WHERE is_for_sale = 1 AND sale_price > 0
+      WHERE is_for_sale = true AND sale_price > 0
     `);
 
     const trends = [

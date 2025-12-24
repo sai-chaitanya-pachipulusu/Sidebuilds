@@ -18,7 +18,7 @@ router.get('/', authMiddleware, async (req, res) => {
         const params = [userId];
 
         if (unread_only === 'true') {
-            query += ' AND is_read = 0';
+            query += ' AND is_read = false';
         }
 
         query += ' ORDER BY is_read ASC, created_at DESC';
@@ -85,7 +85,7 @@ router.post('/:notificationId/mark-read', authMiddleware, async (req, res) => {
     try {
         const query = `
             UPDATE notifications
-            SET is_read = 1
+            SET is_read = true
             WHERE notification_id = ? AND user_id = ?;
         `;
         const result = await db.query(query, [notificationId, userId]);
@@ -105,8 +105,8 @@ router.post('/mark-all-read', authMiddleware, async (req, res) => {
     try {
         const query = `
             UPDATE notifications 
-            SET is_read = 1
-            WHERE user_id = ? AND is_read = 0
+            SET is_read = true
+            WHERE user_id = ? AND is_read = false
         `; // Only update those that are unread
         const { changes } = await db.query(query, [userId]);
         

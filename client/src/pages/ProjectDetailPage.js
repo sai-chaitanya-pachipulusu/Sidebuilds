@@ -290,7 +290,7 @@ const ProjectDetailPage = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading project details...</p>
         </div>
       </div>
@@ -312,7 +312,7 @@ const ProjectDetailPage = () => {
             <p className="text-red-400 mb-6">{error}</p>
             <motion.button
               onClick={() => navigate('/marketplace')}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors duration-200"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -333,7 +333,7 @@ const ProjectDetailPage = () => {
           <p className="text-gray-400">No project data available</p>
           <motion.button
             onClick={() => navigate('/marketplace')}
-            className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors duration-200"
+            className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -408,7 +408,7 @@ const ProjectDetailPage = () => {
           className="relative"
         >
           <div className="max-w-7xl mx-auto px-4 pb-8">
-            <div className="relative h-[60vh] rounded-3xl overflow-hidden bg-gray-900">
+            <div className="relative h-[35vh] min-h-[300px] rounded-3xl overflow-hidden bg-gray-900">
               <img 
                 src={project.cover_image_url || 'https://via.placeholder.com/1200x675?text=Project+Image'} 
                 alt={projectName}
@@ -428,7 +428,7 @@ const ProjectDetailPage = () => {
                         </div>
                       )}
                       {project.is_featured && (
-                        <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-400 text-sm font-medium flex items-center gap-1">
+                        <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-sm font-medium flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
                           Featured
                         </div>
@@ -448,7 +448,7 @@ const ProjectDetailPage = () => {
                       by{' '}
                       <RouterLink 
                         to={`/profile/${project.owner_id}`}
-                        className="text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                        className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
                       >
                         @{creatorUsername}
                       </RouterLink>
@@ -484,7 +484,7 @@ const ProjectDetailPage = () => {
                       whileTap={{ scale: 0.9 }}
                     >
                       {isBookmarked ? (
-                        <BookmarkCheck className="w-5 h-5 text-purple-400" />
+                        <BookmarkCheck className="w-5 h-5 text-blue-400" />
                       ) : (
                         <Bookmark className="w-5 h-5 text-gray-400" />
                       )}
@@ -517,7 +517,7 @@ const ProjectDetailPage = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                       activeTab === tab.id
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -644,7 +644,7 @@ const ProjectDetailPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="p-4 rounded-lg border border-white/10 bg-gray-900/40">
                             <div className="text-sm text-gray-400 mb-2">Valuation Helper</div>
-                            <button className="px-3 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+                            <button className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                               onClick={async ()=>{
                                 try {
                                   const resp = await fetch('http://localhost:5002/api/ai/score-project', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ projectId: project.project_id || project.id, projectData: { title: project.name, description: project.description, monthlyRevenue: project.monthly_revenue, category: project.category, technologies: project.tech_stack } }) });
@@ -692,7 +692,7 @@ const ProjectDetailPage = () => {
                       {project.is_for_sale ? formatPrice(salePrice) : 'Not for Sale'}
                     </div>
                     {monthlyRevenue > 0 && (
-                      <div className="text-purple-400 text-sm">
+                      <div className="text-blue-400 text-sm">
                         {monthsToBreakeven}x monthly revenue
                       </div>
                     )}
@@ -747,7 +747,7 @@ const ProjectDetailPage = () => {
                   {isOwner ? (
                     <motion.button
                       onClick={() => navigate(`/projects/edit/${projectId}`)}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -774,7 +774,7 @@ const ProjectDetailPage = () => {
                           </motion.button>
                           <motion.button
                             onClick={() => setShowInterestModal(true)}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -882,7 +882,7 @@ const ProjectDetailPage = () => {
                       value={interestMessage}
                       onChange={(e) => setInterestMessage(e.target.value)}
                       placeholder="Introduce yourself, your offer amount, and why you're interested in this project..."
-                      className="w-full h-32 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none resize-none"
+                      className="w-full h-32 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none"
                     />
                   </div>
 
@@ -901,7 +901,7 @@ const ProjectDetailPage = () => {
                             type="checkbox"
                             checked={commitments.has(commitment.id)}
                             onChange={() => toggleCommitment(commitment.id)}
-                            className="mt-1 w-4 h-4 bg-gray-800 border border-gray-600 rounded focus:ring-purple-500 focus:ring-2 text-purple-600"
+                            className="mt-1 w-4 h-4 bg-gray-800 border border-gray-600 rounded focus:ring-blue-500 focus:ring-2 text-blue-600"
                           />
                           <span className="text-gray-300 text-sm">{commitment.text}</span>
                         </label>
@@ -934,7 +934,7 @@ const ProjectDetailPage = () => {
                         handleInterestSubmit();
                       }}
                       disabled={commitments.size < 3 || !interestMessage.trim() || isSubmitting}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

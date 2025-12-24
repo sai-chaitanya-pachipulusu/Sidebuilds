@@ -75,7 +75,7 @@ function TermsPage() {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10 border-b border-white/[0.08]">
+        <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
           <div className="max-w-4xl mx-auto px-4 py-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -93,7 +93,7 @@ function TermsPage() {
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 Terms and{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   Conditions
                 </span>
               </h1>
@@ -119,7 +119,7 @@ function TermsPage() {
                 className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
               >
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full" />
+                  <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full" />
                   {section.title}
                 </h2>
                 
@@ -148,7 +148,7 @@ function TermsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="bg-gradient-to-r from-purple-600/10 via-blue-600/10 to-pink-600/10 border border-white/[0.08] rounded-2xl p-8 text-center"
+            className="bg-gradient-to-r from-blue-600/10 via-cyan-600/10 to-purple-600/10 border border-white/[0.08] rounded-2xl p-8 text-center"
           >
             <h3 className="text-xl font-bold text-white mb-4">
               Agreement Acknowledgment
@@ -160,7 +160,7 @@ function TermsPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
                 href="mailto:support@sidebuilds.space"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors duration-200"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200"
               >
                 <Mail className="w-4 h-4" />
                 Contact Support
@@ -180,16 +180,16 @@ function TermsPage() {
             className="mt-8 text-center"
           >
             <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <a href="/privacy" className="text-purple-400 hover:text-purple-300 transition-colors duration-200">
+              <a href="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors duration-200">
                 Privacy Policy
               </a>
-              <a href="/contact" className="text-purple-400 hover:text-purple-300 transition-colors duration-200">
+              <a href="/contact" className="text-blue-400 hover:text-blue-300 transition-colors duration-200">
                 Contact Us
               </a>
-              <a href="/faq" className="text-purple-400 hover:text-purple-300 transition-colors duration-200">
+              <a href="/faq" className="text-blue-400 hover:text-blue-300 transition-colors duration-200">
                 FAQ
               </a>
-              <a href="/help" className="text-purple-400 hover:text-purple-300 transition-colors duration-200">
+              <a href="/help" className="text-blue-400 hover:text-blue-300 transition-colors duration-200">
                 Help Center
               </a>
             </div>

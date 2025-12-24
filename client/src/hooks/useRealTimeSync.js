@@ -275,18 +275,18 @@ export const useRealTimeSync = (dataType, options = {}) => {
 // Helper function to get API endpoint for data type
 function getEndpointForDataType(dataType) {
   const endpoints = {
-    'dashboard': '/api/analytics/dashboard',
-    'projects': '/api/projects',
-    'notifications': '/api/notifications',
-    'recommendations': '/api/ai/recommendations',
-    'analytics': '/api/analytics/dashboard',
-    'marketplace': '/api/public/projects',
-    'insights': '/api/analytics/market-insights',
-    'activity': '/api/analytics/activity',
-    'revenue': '/api/analytics/revenue'
+    'dashboard': '/dashboard',
+    'projects': '/projects',
+    'notifications': '/notifications',
+    'recommendations': '/ai/recommendations',
+    'analytics': '/analytics/dashboard',
+    'marketplace': '/public/projects',
+    'insights': '/analytics/market-insights',
+    'activity': '/analytics/activity',
+    'revenue': '/analytics/revenue'
   };
 
-  return endpoints[dataType] || `/api/${dataType}`;
+  return endpoints[dataType] || `/${dataType}`;
 }
 
 // Specialized hooks for common data types

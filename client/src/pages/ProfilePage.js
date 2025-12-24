@@ -76,7 +76,7 @@ const ProfilePage = () => {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-purple-300 transition-colors duration-200">
+            <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-blue-300 transition-colors duration-200">
               {project.name}
             </h3>
             <p className="text-gray-400 text-sm line-clamp-2">
@@ -169,7 +169,7 @@ const ProfilePage = () => {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white text-4xl font-bold">
                     {user.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   {user.verified && (
@@ -212,7 +212,7 @@ const ProfilePage = () => {
                         href={user.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 hover:text-purple-400 transition-colors duration-200"
+                        className="flex items-center gap-1 hover:text-blue-400 transition-colors duration-200"
                       >
                         <LinkIcon className="w-4 h-4" />
                         Website
@@ -225,7 +225,7 @@ const ProfilePage = () => {
                 {/* Follow Button (if viewing someone else's profile) */}
                 {currentUser && currentUser.id !== user.id && (
                   <motion.button
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -295,7 +295,7 @@ const ProfilePage = () => {
                     onClick={() => setActiveTab('active')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                       activeTab === 'active'
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -305,7 +305,7 @@ const ProfilePage = () => {
                     onClick={() => setActiveTab('sold')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                       activeTab === 'sold'
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -319,7 +319,7 @@ const ProfilePage = () => {
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-lg transition-colors duration-200 ${
                       viewMode === 'grid' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'bg-blue-600 text-white' 
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -329,7 +329,7 @@ const ProfilePage = () => {
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-lg transition-colors duration-200 ${
                       viewMode === 'list' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'bg-blue-600 text-white' 
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >

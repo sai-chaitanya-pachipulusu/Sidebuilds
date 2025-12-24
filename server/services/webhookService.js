@@ -238,7 +238,7 @@ class WebhookService {
                 
                 await db.query(
                     'UPDATE users SET onboarding_complete = ? WHERE user_id = ?',
-                    [onboardingComplete ? 1 : 0, user.user_id]
+                    [onboardingComplete, user.user_id]
                 );
                 
                 console.log(`[WEBHOOK] Updated Stripe onboarding status for user ${user.username}`);
@@ -370,16 +370,17 @@ class WebhookService {
             // Create webhook_events table if it doesn't exist
             await db.query(`
                 CREATE TABLE IF NOT EXISTS webhook_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     event_id TEXT UNIQUE,
                     event_type TEXT,
                     request_id TEXT,
-                    received_at TEXT,
+                    received_at TIMESTAMPTZ,
                     status TEXT,
                     processing_time INTEGER,
                     error_message TEXT,
                     retry_count INTEGER DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
                 )
             `);
             
@@ -532,7 +533,7 @@ class WebhookService {
                     COUNT(*) as count,
                     AVG(processing_time) as avg_processing_time
                 FROM webhook_events 
-                WHERE received_at >= datetime('now', '-1 hour')
+                WHERE received_at >= NOW() - INTERVAL '1 hour'
                 GROUP BY status
             `);
             

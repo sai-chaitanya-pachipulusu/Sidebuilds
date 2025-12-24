@@ -102,7 +102,7 @@ const HeroSection = () => {
       <div 
         className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1400px] h-[800px] pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center top, rgba(139,92,246,0.18) 0%, rgba(139,92,246,0.08) 25%, rgba(139,92,246,0.03) 50%, transparent 75%)',
+          background: 'radial-gradient(ellipse at center top, rgba(168,85,247,0.18) 0%, rgba(168,85,247,0.08) 25%, rgba(168,85,247,0.03) 50%, transparent 75%)',
         }}
       />
       
@@ -110,7 +110,7 @@ const HeroSection = () => {
       <div 
         className="absolute top-20 right-[10%] w-[500px] h-[500px] pointer-events-none opacity-40"
         style={{
-          background: 'radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)',
           filter: 'blur(80px)',
         }}
       />
@@ -153,8 +153,8 @@ const HeroSection = () => {
                 className="inline-flex items-baseline gap-4 justify-center flex-wrap"
                 variants={wordVariants}
               >
-                <motion.span 
-                  className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
+                  <motion.span 
+                    className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -246,7 +246,7 @@ const HeroSection = () => {
                 <Button  
                   size="lg"  
                   variant="outline"  
-                  className="px-8 py-7 text-lg font-semibold border-white/10 hover:border-white/30 text-white rounded-xl backdrop-blur-xl bg-white/5 hover:bg-white/10 transition-all duration-300"  
+                  className="px-8 py-7 text-lg font-semibold border-white/10 hover:border-purple-500/30 text-white rounded-xl backdrop-blur-xl bg-white/5 hover:bg-white/10 transition-all duration-300"  
                   onClick={() => navigate('/how-it-works')}  
                 >  
                   <Play className="w-5 h-5 mr-2 fill-white" />  
@@ -352,18 +352,18 @@ const HowItWorksCTA = () => {
                     whileHover={{ scale: 1.02 }}
                 >
                     {/* Animated gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
                     {/* Icon cluster */}
                     <div className="flex justify-center gap-4 mb-8">
                         <motion.div 
-                            className="p-4 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg shadow-blue-500/20"
+                            className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg shadow-purple-500/20"
                             whileHover={{ rotate: -5, scale: 1.1 }}
                         >
                             <Search className="w-6 h-6 text-white" />
                         </motion.div>
                         <motion.div 
-                            className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg shadow-purple-500/20 -mt-2"
+                            className="p-4 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl shadow-lg shadow-violet-500/20 -mt-2"
                             whileHover={{ rotate: 5, scale: 1.1 }}
                         >
                             <Users className="w-6 h-6 text-white" />
@@ -446,9 +446,9 @@ const AnimatedCounter = ({ value, suffix = '', prefix = '' }) => {
 const StatsSection = () => {
     const [stats, setStats] = React.useState([
         { value: 0, label: 'Active Projects', suffix: '+', gradient: 'from-purple-500 to-pink-500', key: 'totalProjects' },
-        { value: 0, label: 'Projects for Sale', suffix: '', gradient: 'from-indigo-500 to-purple-500', key: 'projectsForSale' },
+        { value: 0, label: 'Projects for Sale', suffix: '', gradient: 'from-pink-500 to-rose-500', key: 'projectsForSale' },
         { value: 0, label: 'Active Makers', suffix: '+', gradient: 'from-orange-500 to-yellow-500', key: 'totalUsers' },
-        { value: 0, label: 'Successful Sales', suffix: '+', gradient: 'from-blue-500 to-cyan-500', key: 'successfulSales' },
+        { value: 0, label: 'Successful Sales', suffix: '+', gradient: 'from-purple-500 to-violet-500', key: 'successfulSales' },
         { value: 0, label: 'Total Volume', prefix: '$', suffix: 'K', gradient: 'from-green-500 to-emerald-500', key: 'totalVolume', isVolume: true },
     ]);
     const [isLoading, setIsLoading] = React.useState(true);
@@ -457,7 +457,7 @@ const StatsSection = () => {
         const fetchAnalytics = async () => {
             try {
                 // Use backend API directly (proxy may not always be configured)
-                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
                 const response = await fetch(`${apiUrl}/public/marketplace/analytics`);
                 if (response.ok) {
                     const data = await response.json();
@@ -638,14 +638,14 @@ const HomePage = () => {
                             <span><strong>Kinetic Software:</strong> Trade projects that have velocity and user-love, not just static repositories.</span>
                         </li>
                         <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2.5" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-pink-500 mt-2.5" />
                             <span><strong>Architectural Intent:</strong> Acquire the spark, the vision, and the "ghost in the machine." The implementation is just a detail.</span>
                         </li>
                     </ul>
                 </div>
             </div>
             <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 blur-3xl rounded-full" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 blur-3xl rounded-full" />
                 <motion.div 
                     className="relative bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden shadow-2xl font-mono text-sm leading-relaxed"
                     initial={{ opacity: 0, y: 20 }}
@@ -667,7 +667,7 @@ const HomePage = () => {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-purple-400">➜</span>
-                                <span className="text-blue-400">~/projects</span>
+                                <span className="text-purple-400">~/projects</span>
                                 <span className="text-gray-500">git clone idea-to-reality</span>
                             </div>
                             
@@ -687,7 +687,7 @@ const HomePage = () => {
                             >
                                 <div className="flex items-center gap-2">
                                     <span className="text-purple-400">➜</span>
-                                    <span className="text-blue-400">~/next-big-thing</span>
+                                    <span className="text-purple-400">~/next-big-thing</span>
                                     <span className="text-gray-200">npx <span className="text-yellow-400">inject-vibe@latest</span></span>
                                 </div>
                             </motion.div>
@@ -722,7 +722,7 @@ const HomePage = () => {
                                 className="pt-2 flex items-center gap-2 animate-pulse"
                             >
                                 <span className="text-purple-400">➜</span>
-                                <span className="text-blue-400">~/next-big-thing</span>
+                                <span className="text-purple-400">~/next-big-thing</span>
                                 <span className="w-2.5 h-4 bg-gray-500 block" />
                             </motion.div>
                         </div>

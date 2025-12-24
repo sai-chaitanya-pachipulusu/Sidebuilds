@@ -37,7 +37,7 @@ const PaymentMethodSelector = ({
       name: 'Stripe',
       description: 'Credit/Debit Cards, Apple Pay, Google Pay',
       icon: CreditCard,
-      color: 'from-purple-600 to-indigo-600',
+      color: 'from-purple-600 to-violet-600',
       features: ['Instant Processing', 'Secure Payments', 'Buyer Protection'],
       fees: '2.9% + $0.30',
       processingTime: 'Instant',

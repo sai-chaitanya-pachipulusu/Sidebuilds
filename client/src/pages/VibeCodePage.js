@@ -40,7 +40,7 @@ const VibeCodePage = () => {
       />
       <div className="container mx-auto px-4 py-24">
           <div className="text-center max-w-3xl mx-auto mb-16">
-              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Find Your Next Big Idea</h1>
+              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Find Your Next Big Idea</h1>
               <p className="text-xl text-gray-300">Enter a keyword or industry to generate a unique "Vibe Code" and discover its market potential.</p>
           </div>
 
@@ -74,7 +74,7 @@ const VibeCodePage = () => {
               {features.map((feature, idx) => (
                   <Card key={idx} className="bg-gray-900/50 border-gray-700 text-center">
                       <CardContent className="p-6">
-                          <feature.icon className="w-10 h-10 mx-auto mb-4 text-purple-400" />
+                          <feature.icon className="w-10 h-10 mx-auto mb-4 text-blue-400" />
                           <h3 className="font-semibold mb-2">{feature.title}</h3>
                           <p className="text-sm text-gray-400">{feature.description}</p>
                       </CardContent>

@@ -358,13 +358,13 @@ const MarketplacePage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
-          featured ? 'ring-2 ring-purple-500/20' : ''
+          featured ? 'ring-2 ring-blue-500/20' : ''
         }`}
       >
         {/* Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -390,7 +390,7 @@ const MarketplacePage = () => {
             whileTap={{ scale: 0.9 }}
           >
             {isInWishlist ? (
-              <BookmarkCheck className="w-4 h-4 text-purple-400" />
+              <BookmarkCheck className="w-4 h-4 text-blue-400" />
             ) : (
               <Bookmark className="w-4 h-4 text-gray-400" />
             )}
@@ -398,14 +398,14 @@ const MarketplacePage = () => {
         </div>
 
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-cyan-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between mt-8">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-semibold text-white group-hover:text-purple-300 transition-colors duration-200">
+                <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors duration-200">
                   {project.name}
                 </h3>
                 {project.verified && (
@@ -525,7 +525,7 @@ const MarketplacePage = () => {
                   className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                     project.is_on_hold === 1
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                      : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
+                      : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
                   }`}
                   whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
                   whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
@@ -551,7 +551,7 @@ const MarketplacePage = () => {
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
       </div>
 
@@ -559,13 +559,13 @@ const MarketplacePage = () => {
         <div className="text-center space-y-4 sm:space-y-6">
           {/* Badge */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-sm text-purple-200">Live marketplace with {projects.length} projects</span>
+            <span className="text-sm text-blue-200">Live marketplace with {projects.length} projects</span>
           </motion.div>
 
           {/* Main Headlines */}
@@ -577,7 +577,7 @@ const MarketplacePage = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Discover{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Premium
               </span>{' '}
               Projects
@@ -601,7 +601,7 @@ const MarketplacePage = () => {
             ].map((stat, index) => (
               <div key={stat.label} className="text-center min-w-0 flex-1 sm:flex-initial">
                 <div className="flex items-center justify-center gap-2 text-xl sm:text-2xl font-bold text-white mb-1">
-                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   {stat.value}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-400">{stat.label}</div>
@@ -632,7 +632,7 @@ const MarketplacePage = () => {
               placeholder="Search projects, technologies, or keywords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-16 sm:pr-4 py-3 sm:py-4 bg-gray-900/50 border border-gray-700 rounded-xl sm:rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 text-sm sm:text-base"
+              className="w-full pl-12 pr-16 sm:pr-4 py-3 sm:py-4 bg-gray-900/50 border border-gray-700 rounded-xl sm:rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-sm sm:text-base"
             />
             <div className="absolute right-4 top-1/2 transform -translate-y-1/2 hidden sm:flex items-center gap-2">
               <kbd className="px-2 py-1 bg-gray-800 text-gray-400 text-xs rounded border">⌘</kbd>
@@ -652,7 +652,7 @@ const MarketplacePage = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                       isActive
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                     }`}
                     whileHover={{ scale: 1.02 }}
@@ -671,7 +671,7 @@ const MarketplacePage = () => {
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                    viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -679,7 +679,7 @@ const MarketplacePage = () => {
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                    viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -691,7 +691,7 @@ const MarketplacePage = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-gray-800/50 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 pr-6 sm:pr-8"
+                  className="appearance-none bg-gray-800/50 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-6 sm:pr-8"
                 >
                   <option value="newest">Newest First</option>
                   <option value="price-low">Price: Low to High</option>
@@ -708,7 +708,7 @@ const MarketplacePage = () => {
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-all duration-200 ${
                   showAdvancedFilters
-                    ? 'bg-purple-600 text-white border-purple-600'
+                    ? 'bg-blue-600 text-white border-blue-600'
                     : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-600'
                 }`}
                 whileHover={{ scale: 1.02 }}
@@ -723,7 +723,7 @@ const MarketplacePage = () => {
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={`sm:hidden p-2 rounded-lg border transition-all duration-200 ${
                   showAdvancedFilters
-                    ? 'bg-purple-600 text-white border-purple-600'
+                    ? 'bg-blue-600 text-white border-blue-600'
                     : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-600'
                 }`}
                 whileHover={{ scale: 1.02 }}
@@ -781,7 +781,7 @@ const MarketplacePage = () => {
                     <select
                       value={filters.stage || ''}
                       onChange={(e) => updateFilter('stage', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       <option value="">All Stages</option>
                       <option value="idea">Idea</option>
@@ -797,7 +797,7 @@ const MarketplacePage = () => {
                     <select
                       value={filters.priceRange || ''}
                       onChange={(e) => updateFilter('priceRange', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       <option value="">All Prices</option>
                       <option value="under-10k">Under $10k</option>
@@ -819,11 +819,11 @@ const MarketplacePage = () => {
                         step="1000"
                         value={filters.revenueRange?.[1] || 100000}
                         onChange={(e) => updateFilter('revenueRange', [0, parseInt(e.target.value)])}
-                        className="flex-1 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        className="flex-1 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
                       />
                       <span className="text-xs text-gray-400">$100k+</span>
                     </div>
-                    <div className="text-center mt-1 text-sm text-purple-400">
+                    <div className="text-center mt-1 text-sm text-blue-400">
                       Up to ${(filters.revenueRange?.[1] || 100000).toLocaleString()}
                     </div>
                   </div>
@@ -898,12 +898,12 @@ const MarketplacePage = () => {
               <span>Search: {searchMetrics.searchTime.toFixed(1)}ms</span>
               <span>Cache hits: {searchMetrics.cacheHits}</span>
               {isFiltered && (
-                <span className="text-purple-400">Filtered</span>
+                <span className="text-blue-400">Filtered</span>
               )}
             </div>
             
             {hasMoreResults && (
-              <span className="text-purple-400">+ {searchResults.length - batchedResults.length} more</span>
+              <span className="text-blue-400">+ {searchResults.length - batchedResults.length} more</span>
             )}
           </motion.div>
         )}
@@ -979,7 +979,7 @@ const MarketplacePage = () => {
               {isFiltered && (
                 <motion.button
                   onClick={clearFilters}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors duration-200"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

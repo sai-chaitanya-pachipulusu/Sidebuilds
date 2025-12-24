@@ -72,7 +72,7 @@ function StripeConnectCompletePage() {
                         <div className="mb-6 flex justify-center">
                             {status === 'loading' && (
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-full border-4 border-purple-500/30 border-t-purple-500 animate-spin"></div>
+                                    <div className="w-16 h-16 rounded-full border-4 border-blue-500/30 border-t-blue-500 animate-spin"></div>
                                 </div>
                             )}
                             {status === 'success' && (
@@ -112,7 +112,7 @@ function StripeConnectCompletePage() {
                                 <>
                                     <Button 
                                         onClick={() => navigate('/profile-settings')}
-                                        className="w-full bg-purple-600 hover:bg-purple-700"
+                                        className="w-full bg-blue-600 hover:bg-blue-700"
                                     >
                                         Go to Settings
                                     </Button>

@@ -2,53 +2,20 @@ const express = require('express');
 const db = require('../db');
 require('dotenv').config();
 const crypto = require('crypto');
-const emailService = require('../services/emailService'); // Import email service
+const emailService = require('../services/emailService');
 
-// Get Stripe keys from environment variables only (no hardcoded fallbacks)
+// Get Stripe keys from environment variables
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL;
 
-// Log environment values for debugging
-console.log("Environment configuration:", {
-  CLIENT_URL,
-  NODE_ENV: process.env.NODE_ENV
-});
-
-// Check if required environment variables are set
-if (!STRIPE_SECRET_KEY) {
-  console.error("ERROR: STRIPE_SECRET_KEY is missing from .env file. Stripe payments will not work.");
-}
-
-if (!STRIPE_PUBLISHABLE_KEY) {
-  console.error("WARNING: STRIPE_PUBLISHABLE_KEY is missing from .env file.");
-}
-
-if (!STRIPE_WEBHOOK_SECRET) {
-  console.error("WARNING: STRIPE_WEBHOOK_SECRET is missing from .env file. Webhook verification will be skipped.");
-}
-
-// Initialize Stripe with the key from env
+// Initialize Stripe
 const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const authMiddleware = require('../middleware/authMiddleware');
 
-// Check if keys are loaded (using fallback or env)
-console.log("Stripe configuration:", {
-    secretKeyAvailable: !!STRIPE_SECRET_KEY,
-    publishableKeyAvailable: !!STRIPE_PUBLISHABLE_KEY,
-    webhookSecretAvailable: !!STRIPE_WEBHOOK_SECRET
-});
-
 const router = express.Router();
-
-// Define your Stripe webhook signing secret
-const endpointSecret = STRIPE_WEBHOOK_SECRET;
-
-// Commission rate as a percentage (5% by default)
 const COMMISSION_RATE = process.env.COMMISSION_RATE || 5;
-
-// === STRIPE CONNECT ENDPOINTS (Missing - needed by client) ===
 
 // POST /api/payments/connect/create-account
 router.post('/connect/create-account', authMiddleware, async (req, res) => {
@@ -60,7 +27,7 @@ router.post('/connect/create-account', authMiddleware, async (req, res) => {
         const userResult = await db.query(`
             SELECT email, stripe_account_id 
             FROM users 
-            WHERE user_id = ?
+            WHERE user_id = $1
         `, [userId]);
 
         if (userResult.rows.length === 0) {
@@ -86,7 +53,7 @@ router.post('/connect/create-account', authMiddleware, async (req, res) => {
             
             // Update user record with Stripe account ID
             await db.query(
-                'UPDATE users SET stripe_account_id = ? WHERE user_id = ?',
+                'UPDATE users SET stripe_account_id = $1 WHERE user_id = $2',
                 [stripeAccountId, userId]
             );
         }
@@ -121,11 +88,9 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
         // Get user's Stripe account info
         const result = await db.query(`
             SELECT stripe_account_id, onboarding_complete, 
-                   stripe_account_id as account_status, 
-                   onboarding_complete as payouts_enabled, 
-                   onboarding_complete as charges_enabled 
+                   payout_enabled, stripe_charges_enabled, stripe_details_submitted
             FROM users 
-            WHERE user_id = ?
+            WHERE user_id = $1
         `, [userId]);
 
         if (result.rows.length === 0) {
@@ -134,9 +99,6 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
 
         const {
             stripe_account_id,
-            account_status,
-            payouts_enabled,
-            charges_enabled
         } = result.rows[0];
 
         if (!stripe_account_id) {
@@ -160,9 +122,13 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
             // Update database with latest Stripe status
             await db.query(
                 `UPDATE users SET 
-                 onboarding_complete = ?
-                 WHERE user_id = ?`,
-                [isComplete ? 1 : 0, userId]
+                 onboarding_complete = $1,
+                 payout_enabled = $2,
+                 stripe_charges_enabled = $3,
+                 stripe_details_submitted = $4,
+                 updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = $5`,
+                [isComplete, account.payouts_enabled, account.charges_enabled, account.details_submitted, userId]
             );
 
             res.json({
@@ -185,7 +151,7 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
             // If account doesn't exist, clear it from database
             if (stripeError.code === 'resource_missing') {
                 await db.query(
-                    'UPDATE users SET stripe_account_id = NULL WHERE user_id = ?',
+                    'UPDATE users SET stripe_account_id = NULL WHERE user_id = $1',
                     [userId]
                 );
                 
@@ -204,26 +170,20 @@ router.get('/connect/status', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Connect status error:', error);
         res.status(500).json({ 
-            error: 'Failed to get Stripe Connect status',
-            message: error.message 
+            error: 'Failed to get Stripe Connect status'
         });
     }
 });
 
-// --- Create Checkout Session ---
 // POST /api/payments/create-checkout-session
 router.post('/create-checkout-session', authMiddleware, async (req, res) => {
     try {
-        const { purchase_request_id } = req.body; // CHANGED: Expect purchase_request_id
-        const buyerId = req.user.user_id; // Assuming req.user is populated by authMiddleware
+        const { purchase_request_id } = req.body;
+        const buyerId = req.user.user_id;
 
         if (!purchase_request_id) {
             return res.status(400).json({ error: 'Purchase Request ID is required.' });
         }
-
-        console.log(`[STRIPE DEBUG] Creating checkout session for purchase request ${purchase_request_id}, buyer ${buyerId}`);
-        console.log(`[STRIPE DEBUG] User auth info:`, JSON.stringify(req.user));
-        console.log(`[STRIPE DEBUG] Stripe config check: Secret Key Exists: ${!!STRIPE_SECRET_KEY}, Publishable Key Exists: ${!!STRIPE_PUBLISHABLE_KEY}`);
 
         // Get purchase request details and joined project/seller info
         const requestQuery = await db.query(
@@ -239,274 +199,111 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
                 p.is_for_sale AS project_is_for_sale,
                 s_user.user_id AS seller_id,
                 s_user.email AS seller_email, 
-                s_user.stripe_account_id AS seller_stripe_account_id,
-                s_user.username AS seller_username
+                s_user.stripe_account_id AS seller_stripe_account_id
              FROM purchase_requests pr
              JOIN projects p ON pr.project_id = p.project_id
              JOIN users s_user ON pr.seller_id = s_user.user_id
-             WHERE pr.id = ? AND pr.buyer_id = ?`,
+             WHERE pr.id = $1 AND pr.buyer_id = $2`,
             [purchase_request_id, buyerId]
         );
 
         if (requestQuery.rows.length === 0) {
-            console.log(`[STRIPE DEBUG] Purchase Request ${purchase_request_id} not found for buyer ${buyerId}`);
             return res.status(404).json({ error: 'Purchase request not found or you are not the buyer.' });
         }
 
         const purchaseRequest = requestQuery.rows[0];
-        const projectId = purchaseRequest.project_id; // Extracted for clarity
-
-        console.log(`[STRIPE DEBUG] Purchase Request details:`, JSON.stringify(purchaseRequest));
+        const projectId = purchaseRequest.project_id;
 
         if (purchaseRequest.status !== 'seller_accepted_pending_payment') {
-            console.log(`[STRIPE DEBUG] Purchase Request ${purchase_request_id} status is ${purchaseRequest.status}, not 'seller_accepted_pending_payment'.`);
-            return res.status(400).json({ error: `Payment cannot be processed. Request status is: ${purchaseRequest.status}` });
+            return res.status(400).json({ error: `Payment cannot be processed. Status is: ${purchaseRequest.status}` });
         }
 
         if (!purchaseRequest.project_is_for_sale) {
-            console.log(`[STRIPE DEBUG] Project ${projectId} (from purchase request) is no longer for sale.`);
-            // Optionally update purchase_request status here
-            await db.query("UPDATE purchase_requests SET status = 'aborted_project_unavailable' WHERE id = ?", [purchase_request_id]);
+            await db.query("UPDATE purchase_requests SET status = 'aborted_project_unavailable' WHERE id = $1", [purchase_request_id]);
             return res.status(400).json({ error: 'This project is no longer available for sale.' });
         }
 
         const sellerStripeAccountId = purchaseRequest.seller_stripe_account_id;
         if (!sellerStripeAccountId) {
-            console.log(`[STRIPE DEBUG] Seller ${purchaseRequest.seller_id} for project ${projectId} has no Stripe account ID connected.`);
-            return res.status(500).json({ error: 'Seller Stripe account not configured for payouts. Cannot process payment.' });
+            return res.status(500).json({ error: 'Seller Stripe account not configured.' });
         }
 
-        let productDescription = purchaseRequest.project_description || purchaseRequest.project_name;
-        if (productDescription && productDescription.length > 1000) { // Stripe limit for product description
-            productDescription = productDescription.substring(0, 997) + '...';
-        } else if (!productDescription) {
-            productDescription = `Purchase of project: ${purchaseRequest.project_name}`;
-        }
-        
         const totalAmount = parseFloat(purchaseRequest.accepted_price);
-        if (isNaN(totalAmount) || totalAmount <= 0.50) { // Stripe minimum is typically $0.50
-            console.error(`[STRIPE ERROR] Invalid accepted_price: ${purchaseRequest.accepted_price} for purchase request ${purchase_request_id}`);
-            return res.status(500).json({ error: 'Invalid project price for payment processing.' });
-        }
-
         const commissionAmount = parseFloat(((totalAmount * COMMISSION_RATE) / 100).toFixed(2));
-        const applicationFeeAmount = Math.round(commissionAmount * 100); // Stripe wants fee in cents
-
+        
         const successUrl = `${CLIENT_URL}/purchase/success?purchase_request_id=${purchase_request_id}&session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = `${CLIENT_URL}/projects/${projectId}?purchase_request_id=${purchase_request_id}&status=cancelled`;
         
-        console.log(`[STRIPE DEBUG] URLs for redirection: success_url=${successUrl}, cancel_url=${cancelUrl}`);
-
-        const lineItems = [{
-            price_data: {
-                currency: 'usd',
-                product_data: {
-                    name: purchaseRequest.project_name.substring(0, 100),
-                    description: productDescription,
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [{
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: purchaseRequest.project_name,
+                        description: purchaseRequest.project_description?.substring(0, 500) || '',
+                    },
+                    unit_amount: Math.round(totalAmount * 100),
                 },
-                unit_amount: Math.round(totalAmount * 100), // Price in cents
-            },
-            quantity: 1,
-        }];
-
-        const sessionParams = {
-            payment_method_types: process.env.STRIPE_PAYMENT_METHODS ? process.env.STRIPE_PAYMENT_METHODS.split(',') : ['card'],
-            line_items: lineItems,
+                quantity: 1,
+            }],
             mode: 'payment',
             success_url: successUrl,
             cancel_url: cancelUrl,
-            customer_email: req.user.email, // Pre-fill customer email from authenticated user
-            client_reference_id: purchase_request_id, 
-            metadata: { // Top-level metadata for the session object
-                purchase_request_id: purchase_request_id, // CRUCIAL for webhook
-                project_id: projectId,
-                buyer_id: buyerId,
-                seller_id: purchaseRequest.seller_id
+            customer_email: req.user.email,
+            client_reference_id: purchase_request_id,
+            metadata: {
+                purchase_request_id: purchase_request_id.toString(),
+                project_id: projectId.toString(),
+                buyer_id: buyerId.toString(),
+                seller_id: purchaseRequest.seller_id.toString()
             },
             payment_intent_data: {
-                // ESCROW IMPLEMENTATION: 
-                // We do NOT transfer funds immediately. We hold them in the platform account.
-                // We link them using transfer_group for later reconciliation.
                 transfer_group: `txn_${purchase_request_id}`,
-                metadata: { // Metadata for the Payment Intent
-                    purchase_request_id: purchase_request_id,
-                    project_id: projectId,
-                    buyer_id: buyerId,
-                    seller_id: purchaseRequest.seller_id,
-                    commission_rate_at_purchase: COMMISSION_RATE.toString(),
-                    total_amount_decimal: totalAmount.toFixed(2),
-                    commission_amount_decimal: commissionAmount.toFixed(2),
-                    seller_receives_decimal: (totalAmount - commissionAmount).toFixed(2),
-                    escrow_status: 'held' // Mark as held
+                metadata: {
+                    purchase_request_id: purchase_request_id.toString(),
+                    project_id: projectId.toString(),
+                    buyer_id: buyerId.toString(),
+                    seller_id: purchaseRequest.seller_id.toString(),
+                    escrow_status: 'held'
                 },
             },
-        };
+        });
 
-        console.log('[STRIPE DEBUG] Session parameters being sent to Stripe:', JSON.stringify(sessionParams, null, 2));
-
-        const session = await stripe.checkout.sessions.create(sessionParams);
-
-        // Update purchase request status to 'payment_processing' and store session ID
         await db.query(
-            "UPDATE purchase_requests SET status = 'payment_processing', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE purchase_requests SET status = 'payment_processing', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
             [purchase_request_id]
         );
 
-        console.log(`[STRIPE DEBUG] Checkout session ${session.id} created for purchase request ${purchase_request_id}. Redirecting to Stripe. URL: ${session.url}`);
         res.json({ url: session.url, sessionId: session.id });
 
     } catch (error) {
-        console.error('[STRIPE ERROR] Failed to create checkout session:', error);
-        // Log more detailed Stripe error if available
-        if (error.raw) {
-            console.error('[STRIPE RAW ERROR]', JSON.stringify(error.raw, null, 2));
-        }
-        res.status(500).json({ 
-            error: 'Failed to create payment session.', 
-            details: error.message,
-            type: error.type,
-            code: error.code,
-            stripe_error: error.raw // Send raw Stripe error if available (consider for dev only)
-        });
+        console.error('Failed to create checkout session:', error);
+        res.status(500).json({ error: 'Failed to create payment session.' });
     }
 });
 
-// --- Enhanced Stripe Webhook Handler ---
-// POST /api/payments/webhook
-const webhookService = require('../services/webhookService');
-
-// Load balancing: Decide whether to use queue based on system metrics
-async function shouldUseQueue() {
-    try {
-        // Simple load check based on memory usage and active connections
-        const memUsage = process.memoryUsage();
-        const memThreshold = 0.8; // 80% memory usage
-        const memUsagePercent = memUsage.heapUsed / memUsage.heapTotal;
-        
-        // Check database connection pool if available
-        let dbLoad = false;
-        if (db.pool && db.pool.totalCount && db.pool.idleCount) {
-            const activeConnections = db.pool.totalCount - db.pool.idleCount;
-            const connectionThreshold = 0.7; // 70% of max connections
-            const connectionUsagePercent = activeConnections / (db.pool.options?.max || 20);
-            dbLoad = connectionUsagePercent > connectionThreshold;
-        }
-        
-        // Use queue if system is under high load
-        const highLoad = memUsagePercent > memThreshold || dbLoad;
-        
-        if (highLoad) {
-            console.log('[WEBHOOK] High system load detected, using queue processing');
-        }
-        
-        return highLoad;
-        
-    } catch (error) {
-        console.error('[WEBHOOK] Error checking system load:', error);
-        return false; // Default to direct processing
-    }
-}
-
-const webhookHandler = async (req, res) => {
-    const startTime = Date.now();
-    const requestId = crypto.randomUUID();
-    
-    // Log webhook request
-    console.log(`[STRIPE WEBHOOK] ${requestId} - Incoming webhook request`);
-    
-    // Require webhook secret for security
-    if (!STRIPE_WEBHOOK_SECRET) {
-        console.error(`[STRIPE WEBHOOK] ${requestId} - ERROR: STRIPE_WEBHOOK_SECRET is required`);
-        return res.status(500).json({ 
-            error: 'Webhook secret configuration error',
-            requestId 
-        });
-    }
-
-    const sig = req.headers['stripe-signature'];
-    if (!sig) {
-        console.error(`[STRIPE WEBHOOK] ${requestId} - ERROR: No Stripe signature in request headers`);
-        return res.status(400).json({ 
-            error: 'No Stripe signature provided',
-            requestId 
-        });
-    }
-
-    let event;
-    try {
-        // Verify webhook signature
-        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-        console.log(`[STRIPE WEBHOOK] ${requestId} - ✅ Verified webhook. Event ID: ${event.id}, Type: ${event.type}`);
-    } catch (err) {
-        console.error(`[STRIPE WEBHOOK] ${requestId} - ❌ Webhook signature verification failed: ${err.message}`);
-        return res.status(400).json({ 
-            error: `Webhook signature verification failed: ${err.message}`,
-            requestId 
-        });
-    }
-
-    try {
-        // Check system load and decide whether to use queue
-        const useQueue = await shouldUseQueue();
-        
-        // Process webhook with comprehensive error handling and retry logic
-        const result = await webhookService.processWebhook(event, requestId, useQueue);
-        
-        const processingTime = Date.now() - startTime;
-        console.log(`[STRIPE WEBHOOK] ${requestId} - Successfully processed in ${processingTime}ms`);
-        
-        return res.json({ 
-            received: true, 
-            eventId: event.id,
-            requestId,
-            processingTime,
-            result 
-        });
-        
-    } catch (error) {
-        const processingTime = Date.now() - startTime;
-        console.error(`[STRIPE WEBHOOK] ${requestId} - Processing failed after ${processingTime}ms:`, error);
-        
-        // Return appropriate error status
-        const status = error.message.includes('timeout') ? 408 : 500;
-        return res.status(status).json({ 
-            error: 'Webhook processing failed',
-            message: error.message,
-            eventId: event.id,
-            requestId,
-            processingTime
-        });
-    }
-};
-
-// Legacy webhook processing functions removed - now handled by webhookService
-// This keeps the codebase clean and maintainable
-
-// --- Get Transaction Status ---
 // GET /api/payments/status/:sessionId
 router.get('/status/:sessionId', authMiddleware, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const userId = req.user.user_id;
 
-        // Get transaction details - Modified query to use seller_id from transaction for permission check
         const transactionResult = await db.query(
             `SELECT t.*, p.name as project_name, 
-             t.seller_id, -- Select seller_id from transaction record
-             s.username as seller_username, s.email as seller_email, 
-             b.username as buyer_username, b.email as buyer_email
+             s.username as seller_username,
+             b.username as buyer_username
              FROM project_transactions t
              JOIN projects p ON t.project_id = p.project_id
-             JOIN users s ON t.seller_id = s.user_id -- Join seller based on transaction seller_id
+             JOIN users s ON t.seller_id = s.user_id
              JOIN users b ON t.buyer_id = b.user_id
-             WHERE t.stripe_session_id = ? 
-               AND (t.buyer_id = ? OR t.seller_id = ?) -- Check permission against buyer or seller from transaction
-             LIMIT 1`, // Added LIMIT 1 for safety, though session ID should be unique
+             WHERE t.stripe_session_id = $1 
+               AND (t.buyer_id = $2 OR t.seller_id = $3)`,
             [sessionId, userId, userId]
         );
 
         if (transactionResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Transaction not found or you do not have permission to view it' });
+            return res.status(404).json({ error: 'Transaction not found or access denied' });
         }
 
         res.json(transactionResult.rows[0]);
@@ -516,13 +313,11 @@ router.get('/status/:sessionId', authMiddleware, async (req, res) => {
     }
 });
 
-// --- Get User Transactions ---
 // GET /api/payments/transactions
 router.get('/transactions', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.user_id;
 
-        // Get all transactions where user is either buyer or seller
         const transactionsResult = await db.query(
             `SELECT t.*, p.name as project_name, 
              s.username as seller_username, 
@@ -531,7 +326,7 @@ router.get('/transactions', authMiddleware, async (req, res) => {
              JOIN projects p ON t.project_id = p.project_id
              JOIN users s ON t.seller_id = s.user_id
              JOIN users b ON t.buyer_id = b.user_id
-             WHERE t.buyer_id = ? OR t.seller_id = ?
+             WHERE t.buyer_id = $1 OR t.seller_id = $2
              ORDER BY t.created_at DESC`,
             [userId, userId]
         );
@@ -539,30 +334,27 @@ router.get('/transactions', authMiddleware, async (req, res) => {
         res.json(transactionsResult.rows);
     } catch (error) {
         console.error('Error getting user transactions:', error);
-        res.status(500).json({ error: 'Failed to get transactions' });
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
-// --- Refresh Stripe Connect Onboarding Link ---
 // POST /api/payments/connect/refresh-link
 router.post('/connect/refresh-link', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.user_id;
         
-        // Get the user's Stripe account ID
         const userResult = await db.query(`
             SELECT stripe_account_id 
             FROM users 
-            WHERE user_id = ?
+            WHERE user_id = $1
         `, [userId]);
         
         if (userResult.rows.length === 0 || !userResult.rows[0].stripe_account_id) {
-            return res.status(404).json({ error: 'No Stripe account found for this user' });
+            return res.status(404).json({ error: 'No Stripe account found' });
         }
         
         const stripeAccountId = userResult.rows[0].stripe_account_id;
         
-        // Create a new account link
         const accountLink = await stripe.accountLinks.create({
             account: stripeAccountId,
             refresh_url: `${process.env.CLIENT_URL}/dashboard/connect/refresh`,
@@ -573,372 +365,110 @@ router.post('/connect/refresh-link', authMiddleware, async (req, res) => {
         res.json({ success: true, url: accountLink.url });
         
     } catch (error) {
-        console.error('Error refreshing Stripe onboarding link:', error);
-        res.status(500).json({ error: 'Failed to refresh Stripe Connect onboarding link' });
+        console.error('Error refreshing link:', error);
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
-// --- Get Project Transfer Status ---
-// GET /api/payments/transfers/:projectId
-router.get('/transfers/:projectId', authMiddleware, async (req, res) => {
-    try {
-        const { projectId } = req.params;
-        const userId = req.user.user_id;
-        
-        // Get transaction details (no transfers table in SQLite schema)
-        const transferResult = await db.query(
-            `SELECT t.*, p.name as project_name, 
-             s.username as seller_username, b.username as buyer_username
-             FROM project_transactions t
-             JOIN projects p ON t.project_id = p.project_id
-             JOIN users s ON t.seller_id = s.user_id
-             JOIN users b ON t.buyer_id = b.user_id
-             WHERE t.project_id = ? AND (t.buyer_id = ? OR t.seller_id = ?)
-             ORDER BY t.created_at DESC
-             LIMIT 1`,
-            [projectId, userId, userId]
-        );
-        
-        if (transferResult.rows.length === 0) {
-            return res.status(404).json({ error: 'No transfer found for this project' });
-        }
-        
-        res.json(transferResult.rows[0]);
-        
-    } catch (error) {
-        console.error('Error getting transfer status:', error);
-        res.status(500).json({ error: 'Failed to get transfer status' });
-    }
-});
-
-// --- Update Project Transfer Status (for Sellers) ---
-// POST /api/payments/transfers/:projectId/update
-router.post('/transfers/:projectId/update', authMiddleware, async (req, res) => {
-    try {
-        const { projectId } = req.params;
-        const userId = req.user.user_id;
-        const { code_transferred, domain_transferred, assets_transferred, notes } = req.body;
-        
-        // Get the transaction record (no transfers table)
-        const transferResult = await db.query(
-            `SELECT t.*, t.seller_id 
-             FROM project_transactions t
-             WHERE t.project_id = ?`,
-            [projectId]
-        );
-        
-        if (transferResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Transaction record not found' });
-        }
-        
-        const transaction = transferResult.rows[0];
-        
-        // Check if the user is the seller
-        if (transaction.seller_id !== userId) {
-            return res.status(403).json({ error: 'Only the seller can update transfer status' });
-        }
-        
-        // Update the transaction status (simplified without transfer tracking)
-        const allTransferred = code_transferred && domain_transferred && assets_transferred;
-        const status = allTransferred ? 'completed' : 'in_progress';
-        const completedAt = allTransferred ? 'CURRENT_TIMESTAMP' : null;
-        
-        await db.query(
-            `UPDATE project_transactions 
-             SET transfer_completed = ?, 
-                 transfer_completed_at = ?,
-                 transaction_notes = ?
-             WHERE transaction_id = ?`,
-            [allTransferred ? 1 : 0, completedAt, notes, transaction.transaction_id]
-        );
-        
-        res.json({ success: true, status, transfer_completed: allTransferred });
-        
-    } catch (error) {
-        console.error('Error updating transfer status:', error);
-        res.status(500).json({ error: 'Failed to update transfer status' });
-    }
-});
-
-// --- Confirm Receipt & Release Funds (Escrow Release) ---
-// POST /api/payments/confirm-receipt
+// POST /api/payments/confirm-receipt (Escrow Release)
 router.post('/confirm-receipt', authMiddleware, async (req, res) => {
     try {
         const { transactionId } = req.body;
         const buyerId = req.user.user_id;
 
-        console.log(`[ESCROW] Confirming receipt for transaction ${transactionId} by buyer ${buyerId}`);
-
-        // 1. Verify Transaction & Buyer
         const txnResult = await db.query(`
             SELECT t.*, u.stripe_account_id as seller_stripe_id
             FROM project_transactions t
             JOIN users u ON t.seller_id = u.user_id
-            WHERE t.transaction_id = ? AND t.buyer_id = ?
-        `, [transactionId, buyerId]);
-
-        if (txnResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Transaction not found or access denied.' });
-        }
-
-        const transaction = txnResult.rows[0];
-
-        if (transaction.status === 'completed' || transaction.transfer_completed === 1) {
-            return res.status(400).json({ error: 'Funds have already been released for this transaction.' });
-        }
-
-        // 2. Execute Transfer to Seller (Release Funds)
-        if (process.env.NODE_ENV !== 'production' && !transaction.stripe_session_id.startsWith('cs_')) {
-             // Mock transfer for dev/debug
-             console.log('[ESCROW] Mock release of funds (Dev Mode)');
-        } else {
-            // Real Stripe Transfer
-            const transferAmount = Math.round(parseFloat(transaction.seller_amount) * 100); // Cents
-            
-            // Check if seller has a stripe account
-            if (!transaction.seller_stripe_id) {
-                 return res.status(500).json({ error: 'Seller does not have a connected Stripe account.' });
-            }
-
-            try {
-                const transfer = await stripe.transfers.create({
-                    amount: transferAmount,
-                    currency: 'usd',
-                    destination: transaction.seller_stripe_id,
-                    transfer_group: `txn_${transaction.payment_id}`, // Matches checkout session
-                    metadata: {
-                        transaction_id: transaction.transaction_id,
-                        project_id: transaction.project_id
-                    }
-                });
-                console.log(`[ESCROW] Funds released via Transfer ${transfer.id}`);
-            } catch (stripeError) {
-                console.error('[ESCROW] Stripe Transfer Error:', stripeError);
-                return res.status(500).json({ error: 'Failed to release funds via Stripe: ' + stripeError.message });
-            }
-        }
-
-        // 3. Update Database Status
-        await db.query(`
-            UPDATE project_transactions
-            SET status = 'completed', 
-                transfer_completed = 1, 
-                transfer_completed_at = CURRENT_TIMESTAMP,
-                escrow_status = 'released'
-            WHERE transaction_id = ?
-        `, [transactionId]);
-
-        res.json({ success: true, message: 'Funds released to seller successfully.' });
-
-    } catch (error) {
-        console.error('Error confirming receipt:', error);
-        res.status(500).json({ error: 'Failed to confirm receipt.' });
-    }
-});
-
-// --- Report Issue / Dispute ---
-// POST /api/payments/report-issue
-router.post('/report-issue', authMiddleware, async (req, res) => {
-    try {
-        const { transactionId, issueDescription } = req.body;
-        const buyerId = req.user.user_id;
-
-        // 1. Verify Transaction
-        const txnResult = await db.query(`
-            SELECT * FROM project_transactions
-            WHERE transaction_id = ? AND buyer_id = ?
+            WHERE t.transaction_id = $1 AND t.buyer_id = $2
         `, [transactionId, buyerId]);
 
         if (txnResult.rows.length === 0) {
             return res.status(404).json({ error: 'Transaction not found.' });
         }
 
-        // 2. Update Status to Disputed
+        const transaction = txnResult.rows[0];
+
+        if (transaction.status === 'completed') {
+            return res.status(400).json({ error: 'Funds already released.' });
+        }
+
+        // Release funds via Stripe Transfer
+        const transferAmount = Math.round(parseFloat(transaction.seller_amount) * 100);
+        
+        if (!transaction.seller_stripe_id) {
+             return res.status(500).json({ error: 'Seller has no connected Stripe account.' });
+        }
+
+        try {
+            await stripe.transfers.create({
+                amount: transferAmount,
+                currency: 'usd',
+                destination: transaction.seller_stripe_id,
+                transfer_group: `txn_${transaction.payment_id}`,
+                metadata: {
+                    transaction_id: transaction.transaction_id.toString(),
+                    project_id: transaction.project_id.toString()
+                }
+            });
+        } catch (stripeError) {
+            console.error('[ESCROW] Stripe Transfer Error:', stripeError);
+            return res.status(500).json({ error: 'Stripe transfer failed.' });
+        }
+
         await db.query(`
             UPDATE project_transactions
-            SET status = 'disputed',
-                escrow_status = 'disputed',
-                transaction_notes = ? 
-            WHERE transaction_id = ?
-        `, [`Issue reported by buyer: ${issueDescription}`, transactionId]);
+            SET status = 'completed', 
+                transfer_completed = true, 
+                transfer_completed_at = CURRENT_TIMESTAMP,
+                escrow_status = 'released'
+            WHERE transaction_id = $1
+        `, [transactionId]);
 
-        // 3. (Optional) Email Admin/Support
-        // await emailService.sendDisputeNotification(...)
-
-        res.json({ success: true, message: 'Issue reported. Funds are frozen.' });
+        res.json({ success: true, message: 'Funds released.' });
 
     } catch (error) {
-        console.error('Error reporting issue:', error);
-        res.status(500).json({ error: 'Failed to report issue.' });
+        console.error('Error confirming receipt:', error);
+        res.status(500).json({ error: 'Failed.' });
     }
 });
 
-// GET /api/payments/debug/checkout
-if (process.env.NODE_ENV !== 'production') {
-    router.get('/debug/checkout', async (req, res) => {
-        try {
-            console.log('[DEBUG] Creating test checkout session');
-            
-            // Create a simple test product
-            const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [
-                    {
-                        price_data: {
-                            currency: 'usd',
-                            product_data: {
-                                name: 'Test Product',
-                                description: 'This is a test product for debugging Stripe integration',
-                            },
-                            unit_amount: 1000, // $10.00
-                        },
-                        quantity: 1,
-                    },
-                ],
-                mode: 'payment',
-                success_url: `${CLIENT_URL}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${CLIENT_URL}/marketplace`,
-            });
-            
-            console.log('[DEBUG] Test checkout session created:', session.id);
-            
-            // Return both the session ID and a direct URL for testing
-            res.json({
-                session_id: session.id,
-                checkout_url: `https://checkout.stripe.com/pay/${session.id}`,
-                alternate_url: `https://checkout.stripe.com/c/pay/${session.id}`,
-                success_url: `${CLIENT_URL}/purchase/success?session_id=${session.id}`,
-                cancel_url: `${CLIENT_URL}/marketplace`
-            });
-        } catch (error) {
-            console.error('[DEBUG] Error creating test checkout session:', error);
-            res.status(500).json({ error: error.message });
-        }
-    });
-}
-
-// --- DEBUG ONLY: Manual Transfer Route (FOR DEVELOPMENT ONLY) ---
-// POST /api/payments/debug/transfer-project
-router.post('/debug/transfer-project', authMiddleware, async (req, res) => {
-    // Only enable in development environment
-    if (process.env.NODE_ENV === 'production') {
-        return res.status(403).json({ error: 'This endpoint is not available in production' });
-    }
+// Webhook handler for Stripe events
+const webhookHandler = async (req, res) => {
+    const sig = req.headers['stripe-signature'];
     
-    try {
-        const { projectId, sellerId } = req.body;
-        const buyerId = req.user.user_id;
-        
-        if (!projectId || !sellerId) {
-            return res.status(400).json({ error: 'projectId and sellerId are required' });
-        }
-        
-        console.log(`DEBUG: Manual project transfer requested. Project: ${projectId}, Seller: ${sellerId}, Buyer: ${buyerId}`);
-        
-        // Verify the project exists and is for sale
-        const projectResult = await db.query(
-            'SELECT * FROM projects WHERE project_id = ? AND is_for_sale = 1',
-            [projectId]
-        );
-        
-        if (projectResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Project not found or not for sale' });
-        }
-        
-        const project = projectResult.rows[0];
-        console.log('DEBUG: Found project for transfer:', project.name);
-        
-        // Prevent buying your own project
-        if (project.user_id === buyerId) {
-            return res.status(400).json({ error: 'You cannot purchase your own project' });
-        }
-        
-        // Create a mock transaction
-        console.log('DEBUG: Creating mock transaction...');
-        const transactionId = `txn_debug_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const transactionResult = await db.query(
-            `INSERT INTO project_transactions 
-            (transaction_id, project_id, seller_id, buyer_id, amount, seller_amount, commission_amount, status, payment_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                transactionId,
-                projectId, 
-                sellerId, 
-                buyerId, 
-                project.sale_price || 99.99, 
-                (project.sale_price || 99.99) * 0.95, // 95% to seller
-                (project.sale_price || 99.99) * 0.05, // 5% commission
-                'completed',
-                'debug_session_' + Date.now()
-            ]
-        );
-        
-        console.log(`DEBUG: Created transaction ID: ${transactionId}`);
-        
-        // Update the project ownership
-        console.log('DEBUG: Updating project ownership...');
-        const updateResult = await db.query(
-            `UPDATE projects 
-            SET is_for_sale = 0, 
-                is_public = 0,
-                user_id = ?, 
-                updated_at = CURRENT_TIMESTAMP
-            WHERE project_id = ?`,
-            [buyerId, projectId]
-        );
-        
-        if (updateResult.changes === 0) {
-            throw new Error('Failed to update project ownership');
-        }
-        
-        console.log('DEBUG: Project ownership updated successfully');
-        
-        // Update transaction to mark transfer as completed
-        console.log('DEBUG: Updating transaction transfer status...');
-        await db.query(
-            `UPDATE project_transactions 
-            SET transfer_completed = 1, transfer_completed_at = CURRENT_TIMESTAMP
-            WHERE transaction_id = ?`,
-            [transactionId]
-        );
-        console.log(`DEBUG: Transaction ${transactionId} marked as transfer completed`);
-        
-        // Skip certificate creation for debug (table may not exist)
-        console.log('DEBUG: Skipping certificate creation for debug transfer');
-        
-        // Verify the changes are properly applied
-        console.log('DEBUG: Verifying project transfer...');
-        const verifyResult = await db.query(
-            'SELECT user_id, updated_at FROM projects WHERE project_id = ?',
-            [projectId]
-        );
-        
-        if (verifyResult.rows.length > 0) {
-            const verifiedProject = verifyResult.rows[0];
-            console.log('DEBUG: Verification result:', verifiedProject);
-            
-            if (verifiedProject.user_id !== buyerId) {
-                console.warn('WARNING: Project ownership transfer might have failed');
-            }
-        } else {
-            console.warn('WARNING: Could not verify project transfer');
-        }
-        
-        console.log(`DEBUG: Manual project transfer completed. Project ${projectId} transferred to user ${buyerId}.`);
-        
-        return res.json({
-            success: true,
-            message: 'Project transferred successfully',
-            transaction_id: transactionId,
-            project_id: projectId,
-            redirect_url: '/dashboard?purchased=true'
-        });
-        
-    } catch (error) {
-        console.error('ERROR in debug transfer route:', error);
-        return res.status(500).json({ error: 'Server error during manual transfer: ' + error.message });
+    if (!STRIPE_WEBHOOK_SECRET) {
+        console.error('[STRIPE WEBHOOK] FATAL: STRIPE_WEBHOOK_SECRET is not configured.');
+        return res.status(500).send('Webhook secret not configured');
     }
-});
 
-// Export both the router and the webhook handler
-module.exports = { router, webhookHandler }; 
+    let event;
+
+    try {
+        // Stripe requires the raw body for signature verification
+        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+        console.error(`[STRIPE WEBHOOK] ❌ Signature verification failed: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+        const webhookService = require('../services/webhookService');
+        const requestId = req.headers['x-request-id'] || `wh_${Date.now()}`;
+        
+        console.log(`[STRIPE WEBHOOK] 🔔 Received event: ${event.type} (${event.id})`);
+        
+        const result = await webhookService.processWebhook(event, requestId);
+        res.json({ received: true, ...result });
+    } catch (error) {
+        console.error(`[STRIPE WEBHOOK] ❌ Error processing event ${event.id}:`, error.message);
+        // Return 200 to Stripe but log the error to avoid constant retries if it's a processing issue
+        // or return 500 if you want Stripe to retry
+        res.status(500).json({ error: 'Webhook processing failed', message: error.message });
+    }
+};
+
+module.exports = {
+    router,
+    webhookHandler
+};

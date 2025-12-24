@@ -75,7 +75,7 @@ const PricingPage = () => {
       
       <div className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-cyan-900/20" />
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 pt-24 pb-12">
           {/* Header */}
@@ -103,7 +103,7 @@ const PricingPage = () => {
                 onClick={() => setIsAnnual(false)}
                 className={`px-6 py-2 rounded-md transition-all ${
                   !isAnnual 
-                    ? 'bg-purple-600 text-white' 
+                    ? 'bg-blue-600 text-white' 
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -113,7 +113,7 @@ const PricingPage = () => {
                 onClick={() => setIsAnnual(true)}
                 className={`px-6 py-2 rounded-md transition-all ${
                   isAnnual 
-                    ? 'bg-purple-600 text-white' 
+                    ? 'bg-blue-600 text-white' 
                     : 'text-gray-400 hover:text-white'
                 }`}
               >

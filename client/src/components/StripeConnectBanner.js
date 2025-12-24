@@ -52,12 +52,12 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="relative bg-gradient-to-r from-purple-900/90 to-blue-900/90 border border-purple-500/20 rounded-2xl p-6 mb-6 overflow-hidden"
+      className="relative bg-gradient-to-r from-blue-900/90 to-cyan-900/90 border border-purple-500/20 rounded-2xl p-6 mb-6 overflow-hidden"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, #8b5cf630 0%, transparent 50%), 
+          backgroundImage: `radial-gradient(circle at 20% 50%, #3b82f630 0%, transparent 50%), 
                            radial-gradient(circle at 80% 20%, #6366f130 0%, transparent 50%)`,
         }} />
       </div>
@@ -108,7 +108,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
 
         <motion.button
           onClick={onConnectClick}
-          className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg"
+          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg"
           whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
         >

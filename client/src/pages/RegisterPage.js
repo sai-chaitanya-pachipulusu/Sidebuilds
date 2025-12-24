@@ -145,7 +145,7 @@ const RegisterPage = () => {
     return (
     <div className="min-h-screen flex">
       {/* Left Panel - Feature Showcase */}
-      <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-orange-600/20 p-12 items-center justify-center">
+      <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-blue-600/20 via-cyan-600/20 to-orange-600/20 p-12 items-center justify-center">
         <div className="absolute inset-0 bg-black/50" />
         
         <motion.div
@@ -220,7 +220,7 @@ const RegisterPage = () => {
             </p>
             
             <p className="text-base text-white font-medium mb-4">
-              You are our <span className="text-purple-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
+              You are our <span className="text-cyan-400 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
             </p>
             
             <div className="space-y-2 text-sm text-gray-300">
@@ -260,7 +260,7 @@ const RegisterPage = () => {
             <h1 className="text-3xl font-bold mb-2">Create your account</h1>
             <p className="text-gray-400">
               Already have an account?{' '}
-              <Link to="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
+              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors">
                 Sign in
               </Link>
             </p>
@@ -278,7 +278,7 @@ const RegisterPage = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="John Cena"
                   required
                 />
@@ -295,7 +295,7 @@ const RegisterPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="youcant@seeme.com"
                   required
                 />
@@ -312,7 +312,7 @@ const RegisterPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                                                 placeholder="Be it a strong one"
                   required
                 />
@@ -351,7 +351,7 @@ const RegisterPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="Confirm it's strong"
                   required
                 />
@@ -378,15 +378,15 @@ const RegisterPage = () => {
                 id="terms"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 bg-gray-900 border-gray-800 rounded focus:ring-purple-500 mt-0.5"
+                className="w-4 h-4 bg-gray-900 border-gray-800 rounded focus:ring-blue-500 mt-0.5"
               />
               <label htmlFor="terms" className="ml-2 text-sm text-gray-400">
                 I agree to the{' '}
-                <Link to="/terms" className="text-purple-400 hover:text-purple-300">
+                <Link to="/terms" className="text-cyan-400 hover:text-cyan-300">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-purple-400 hover:text-purple-300">
+                <Link to="/privacy" className="text-cyan-400 hover:text-cyan-300">
                   Privacy Policy
                 </Link>
               </label>
@@ -398,7 +398,7 @@ const RegisterPage = () => {
               disabled={isLoading || !agreedToTerms}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>

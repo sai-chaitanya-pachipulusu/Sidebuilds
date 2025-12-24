@@ -55,7 +55,7 @@ const TrustBadge = ({
       icon: FiStar,
       label: 'Trust Score',
       description: 'AI-calculated trustworthiness score based on multiple factors',
-      className: 'bg-gradient-to-r from-yellow-400/20 to-orange-400/20 text-yellow-300 border-yellow-400/30',
+      className: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-300 border-purple-400/30',
       priority: 'high',
       dynamic: true
     },
@@ -107,7 +107,7 @@ const TrustBadge = ({
       icon: FiEye,
       label: 'Popular',
       description: 'High view count and engagement metrics',
-      className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+      className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
       priority: 'low'
     }
   };
@@ -275,7 +275,7 @@ export const TrustScoreDisplay = ({
     if (score >= 85) return 'from-green-400 to-emerald-400';
     if (score >= 70) return 'from-yellow-400 to-orange-400';
     if (score >= 50) return 'from-orange-400 to-red-400';
-    return 'from-red-400 to-red-600';
+    return 'from-purple-600 to-violet-600';
   };
 
   if (variant === 'minimal') {

@@ -142,7 +142,7 @@ const FAQPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 border-b border-white/[0.08]">
+        <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
           <div className="max-w-4xl mx-auto px-4 py-16 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -156,7 +156,7 @@ const FAQPage = () => {
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Frequently Asked{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   Questions
                 </span>
               </h1>
@@ -178,7 +178,7 @@ const FAQPage = () => {
                 placeholder="Search frequently asked questions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl text-white placeholder-gray-400 focus:border-purple-500/50 focus:outline-none transition-all duration-200"
+                className="w-full pl-12 pr-4 py-4 bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl text-white placeholder-gray-400 focus:border-blue-500/50 focus:outline-none transition-all duration-200"
               />
             </motion.div>
           </div>
@@ -203,7 +203,7 @@ const FAQPage = () => {
                       onClick={() => setActiveCategory(category.id)}
                       className={`w-full px-4 py-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200 ${
                         activeCategory === category.id
-                          ? 'bg-purple-600 text-white'
+                          ? 'bg-blue-600 text-white'
                           : 'text-gray-400 hover:text-white hover:bg-gray-800'
                       }`}
                     >
@@ -297,7 +297,7 @@ const FAQPage = () => {
                         setSearchQuery('');
                         setActiveCategory('all');
                       }}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors duration-200"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
                     >
                       Clear Filters
                     </button>
@@ -328,7 +328,7 @@ const FAQPage = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <motion.a
                     href="mailto:support@sidebuilds.space"
-                    className="flex items-center gap-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all duration-200"
+                    className="flex items-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

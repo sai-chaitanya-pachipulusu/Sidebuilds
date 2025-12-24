@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use consistent backend port (server runs on 5001)
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
+    // Use consistent backend port (server runs on 5002)
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
     headers: {
         'Content-Type': 'application/json',
     },

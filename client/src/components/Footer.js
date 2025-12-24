@@ -144,7 +144,7 @@ const Footer = () => {
       </div>
       
       {/* Subtle bottom accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-purple-600/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-blue-600/30 to-transparent" />
     </footer>
   );
 };

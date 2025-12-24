@@ -52,7 +52,7 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
         const userResult = await db.query(`
             SELECT u.email, u.stripe_account_id 
             FROM users u 
-            WHERE u.user_id = ?
+            WHERE u.user_id = $1
         `, [userId]);
         
         if (userResult.rows.length === 0) {
@@ -91,8 +91,8 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
                 
                 // Save the new Stripe account ID to the users table
                 await db.query(`
-                    UPDATE users SET stripe_account_id = ?, updated_at = CURRENT_TIMESTAMP 
-                    WHERE user_id = ?
+                    UPDATE users SET stripe_account_id = $1, updated_at = CURRENT_TIMESTAMP 
+                    WHERE user_id = $2
                 `, [stripeAccountId, userId]);
             } catch (accountError) {
                 console.error('Error creating Stripe account:', accountError);
@@ -167,6 +167,42 @@ router.post('/create-account-link', authMiddleware, async (req, res) => {
     }
 });
 
+// POST /api/stripe/reset-account
+// Clears the user's Stripe account and allows starting fresh
+router.post('/reset-account', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        console.log('[Stripe Reset] Resetting Stripe account for user:', userId);
+        
+        // Clear all Stripe-related fields for this user
+        await db.query(`
+            UPDATE users SET 
+                stripe_account_id = NULL,
+                stripe_customer_id = NULL,
+                onboarding_complete = false,
+                stripe_onboarding_complete = false,
+                payout_enabled = false,
+                stripe_charges_enabled = false,
+                stripe_details_submitted = false,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $1
+        `, [userId]);
+        
+        console.log('[Stripe Reset] Stripe account cleared for user:', userId);
+        
+        res.json({ 
+            success: true, 
+            message: 'Stripe account reset successfully. You can now connect a new Stripe account.' 
+        });
+    } catch (error) {
+        console.error('[Stripe Reset] Error:', error);
+        res.status(500).json({ 
+            message: 'Failed to reset Stripe account', 
+            error: error.message 
+        });
+    }
+});
+
 // GET /api/stripe/check-onboarding-status
 // Checks the user's Stripe account status and updates the database
 router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
@@ -211,7 +247,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             const userResult = await db.query(`
                 SELECT u.email, u.stripe_account_id 
                 FROM users u 
-                WHERE u.user_id = ?
+                WHERE u.user_id = $1
             `, [userId]);
             console.log('Query complete, rows returned:', userResult.rows.length);
 
@@ -241,8 +277,8 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                     
                     console.log('Updating users table with new Stripe account ID');
                     await db.query(`
-                        UPDATE users SET stripe_account_id = ?, updated_at = CURRENT_TIMESTAMP 
-                        WHERE user_id = ?
+                        UPDATE users SET stripe_account_id = $1, updated_at = CURRENT_TIMESTAMP 
+                        WHERE user_id = $2
                     `, [stripeAccountId, userId]);
                     console.log('Stripe accounts table updated');
                     
@@ -309,7 +345,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
                 console.log('Step 4: Updating user record with Stripe status');
                 try {
                     await db.query(
-                        'UPDATE users SET onboarding_complete = $1, payout_enabled = $2, stripe_charges_enabled = $3, stripe_details_submitted = $4, updated_at = NOW() WHERE user_id = $5',
+                        'UPDATE users SET onboarding_complete = $1, payout_enabled = $2, stripe_charges_enabled = $3, stripe_details_submitted = $4, updated_at = CURRENT_TIMESTAMP WHERE user_id = $5',
                         [onboardingComplete, payoutsEnabled, chargesEnabled, detailsSubmitted, userId]
                     );
                     console.log('User record updated with Stripe status');
@@ -348,7 +384,7 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
             // If account doesn't exist on Stripe's side, clear it from our DB
             try {
               console.log('Clearing invalid Stripe account ID from DB');
-              await db.query('UPDATE users SET stripe_account_id = NULL WHERE user_id = ?', [req.user.user_id]);
+              await db.query('UPDATE users SET stripe_account_id = NULL WHERE user_id = $1', [userId]);
               return res.status(404).json({ 
                 message: 'Your Stripe account was not found. We have reset your account. Please try connecting with Stripe again.',
                 accountId: null,

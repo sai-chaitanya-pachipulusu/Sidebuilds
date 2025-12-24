@@ -55,7 +55,7 @@ const AnimatedTestimonials = () => {
       content: "As a solo developer, I didn't know how to value or sell my project. SideBuilds AI gave me an instant valuation and connected me with serious buyers within days.",
       rating: 5,
       highlight: "AI-powered valuation",
-      gradient: "from-indigo-500 to-purple-500"
+      gradient: "from-purple-500 to-purple-600"
     }
   ];
 

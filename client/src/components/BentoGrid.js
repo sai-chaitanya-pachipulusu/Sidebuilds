@@ -64,14 +64,14 @@ const BentoGrid = () => {
       title: "Real-Time Analytics",
       description: "Track views, inquiries, and market position with comprehensive dashboards and insights.",
       icon: BarChart3,
-      gradient: "from-indigo-500 to-purple-500",
+      gradient: "from-purple-500 to-pink-500",
       span: "col-span-2", // Large card
       visual: (
         <div className="absolute right-4 bottom-4 flex gap-1">
           {[40, 65, 45, 80, 55, 70, 90].map((h, i) => (
             <motion.div
               key={i}
-              className="w-3 rounded-t bg-gradient-to-t from-indigo-500 to-purple-500 opacity-30"
+              className="w-3 rounded-t bg-gradient-to-t from-purple-500 to-pink-500 opacity-30"
               initial={{ height: 0 }}
               animate={{ height: h }}
               transition={{ delay: i * 0.1, duration: 0.5, type: "spring" }}

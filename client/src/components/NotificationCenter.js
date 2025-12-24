@@ -56,7 +56,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
       purchase: 'blue',
       offer: 'purple',
       view: 'gray',
-      message: 'indigo',
+      message: 'purple',
       system: 'cyan',
       achievement: 'yellow',
       security: 'red',
@@ -317,7 +317,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:border-purple-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:border-blue-500 focus:outline-none"
                 >
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>

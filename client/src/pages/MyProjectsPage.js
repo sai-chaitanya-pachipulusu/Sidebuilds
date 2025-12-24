@@ -44,7 +44,9 @@ const MyProjectsPage = () => {
       if (!user) return;
       try {
         const userProjects = await getProjects();
-        setProjects(userProjects.filter(p => p.user_id === user.id));
+        // API already returns only user's projects (filtered by owner_id on server)
+        // No need for additional client-side filtering
+        setProjects(userProjects);
       } catch (error) {
         console.error('Failed to fetch user projects:', error);
         toast.error('Failed to load your projects');
@@ -108,7 +110,7 @@ const MyProjectsPage = () => {
         className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
       >
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-cyan-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Project Image */}
@@ -123,7 +125,7 @@ const MyProjectsPage = () => {
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-200">
+              <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-blue-300 transition-colors duration-200">
                 {project.name}
               </h3>
               <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
@@ -199,7 +201,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -233,7 +235,7 @@ const MyProjectsPage = () => {
           {/* Project Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2">
-              <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors duration-200 truncate">
+              <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors duration-200 truncate">
                 {project.name}
               </h3>
               <div className="flex items-center gap-2">
@@ -296,7 +298,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-medium flex items-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -369,7 +371,7 @@ const MyProjectsPage = () => {
               
               <motion.button
                 onClick={() => navigate('/create')}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -446,7 +448,7 @@ const MyProjectsPage = () => {
                     placeholder="Search your projects..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   />
                 </div>
                 
@@ -455,7 +457,7 @@ const MyProjectsPage = () => {
                   <select
                     value={stageFilter}
                     onChange={(e) => setStageFilter(e.target.value)}
-                    className="px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+                    className="px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">All Stages</option>
                     <option value="idea">Idea</option>
@@ -471,7 +473,7 @@ const MyProjectsPage = () => {
                       onClick={() => setViewMode('grid')}
                       className={`p-2 rounded-lg transition-colors duration-200 ${
                         viewMode === 'grid' 
-                          ? 'bg-purple-600 text-white' 
+                          ? 'bg-blue-600 text-white' 
                           : 'text-gray-400 hover:text-white'
                       }`}
                     >
@@ -481,7 +483,7 @@ const MyProjectsPage = () => {
                       onClick={() => setViewMode('list')}
                       className={`p-2 rounded-lg transition-colors duration-200 ${
                         viewMode === 'list' 
-                          ? 'bg-purple-600 text-white' 
+                          ? 'bg-blue-600 text-white' 
                           : 'text-gray-400 hover:text-white'
                       }`}
                     >
@@ -536,7 +538,7 @@ const MyProjectsPage = () => {
                     {!searchTerm && !stageFilter && (
                       <motion.button
                         onClick={() => navigate('/create')}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium flex items-center gap-2 mx-auto hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center gap-2 mx-auto hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >

@@ -141,7 +141,7 @@ const MarketplacePageSimple = () => {
           <p className="text-gray-400 text-lg">
             Discover and purchase verified side projects
           </p>
-          <div className="mt-4 text-purple-400">
+          <div className="mt-4 text-blue-400">
             {projects.length} projects available
           </div>
         </div>
@@ -156,13 +156,13 @@ const MarketplacePageSimple = () => {
                 placeholder="Search projects, technologies, categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
+                className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
               />
             </div>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <option value="newest">Newest First</option>
               <option value="price-low">Price: Low to High</option>
@@ -194,7 +194,7 @@ const MarketplacePageSimple = () => {
                   <select
                     value={filters.stage}
                     onChange={(e) => setFilters({...filters, stage: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   >
                     <option value="">All Stages</option>
                     <option value="idea">Idea</option>
@@ -213,7 +213,7 @@ const MarketplacePageSimple = () => {
                     placeholder="0"
                     value={filters.minPrice}
                     onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
 
@@ -224,7 +224,7 @@ const MarketplacePageSimple = () => {
                     placeholder="100000"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
 
@@ -235,7 +235,7 @@ const MarketplacePageSimple = () => {
                     placeholder="React, Node.js..."
                     value={filters.techStack}
                     onChange={(e) => setFilters({...filters, techStack: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
               </div>

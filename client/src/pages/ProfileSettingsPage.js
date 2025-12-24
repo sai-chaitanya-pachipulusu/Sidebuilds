@@ -47,6 +47,7 @@ function ProfileSettingsPage() {
   const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const processedParamsRef = React.useRef(new Set());
 
   const fetchProfileAndStripeStatus = useCallback(async () => {
     setLoading(true);
@@ -107,11 +108,28 @@ function ProfileSettingsPage() {
       setActiveTab(tabParam);
     }
     
-    if (stripeReturn === 'true') {
-      toast.success("Stripe connection successful! Refreshing your status...");
-      fetchProfileAndStripeStatus();
-      navigate('/profile-settings', { replace: true });
-    } else if (stripeRefresh === 'true') {
+    const paramsKey = location.search;
+    
+    if (stripeReturn === 'true' && !processedParamsRef.current.has('stripe_return_' + paramsKey)) {
+      processedParamsRef.current.add('stripe_return_' + paramsKey);
+      const checkStatus = async () => {
+        const loadingToast = toast.loading("Checking your Stripe connection status...");
+        try {
+          const stripeData = await checkStripeOnboardingStatus();
+          setStripeStatus(stripeData);
+          if (stripeData.isOnboardingComplete) {
+            toast.success("Stripe account fully connected and verified!", { id: loadingToast });
+          } else {
+            toast.success("Account created! Please finish onboarding to start selling.", { id: loadingToast, icon: '⚠️' });
+          }
+        } catch (err) {
+          toast.error("Connected to Stripe, but failed to verify status.", { id: loadingToast });
+        }
+      };
+      checkStatus();
+      navigate('/profile-settings?tab=payouts', { replace: true });
+    } else if (stripeRefresh === 'true' && !processedParamsRef.current.has('stripe_refresh_' + paramsKey)) {
+      processedParamsRef.current.add('stripe_refresh_' + paramsKey);
       toast.error("Stripe session expired. Please try connecting again.");
       setShowStripeModal(true);
       navigate('/profile-settings', { replace: true });
@@ -199,7 +217,7 @@ function ProfileSettingsPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading profile and payment settings...</p>
         </div>
       </div>
@@ -233,7 +251,7 @@ function ProfileSettingsPage() {
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Profile &{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   Settings
                 </span>
               </h1>
@@ -251,7 +269,7 @@ function ProfileSettingsPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 ${
                       activeTab === tab.id
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -288,7 +306,7 @@ function ProfileSettingsPage() {
                             name="username"
                             value={profile.username}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                             placeholder="Enter your username"
                           />
                         </div>
@@ -320,7 +338,7 @@ function ProfileSettingsPage() {
                           value={profile.bio}
                           onChange={handleChange}
                           rows={4}
-                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200 resize-none"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200 resize-none"
                           placeholder="Tell us about yourself..."
                         />
                       </div>
@@ -336,7 +354,7 @@ function ProfileSettingsPage() {
                           name="location"
                           value={profile.location}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                           placeholder="City, Country"
                         />
                       </div>
@@ -357,7 +375,7 @@ function ProfileSettingsPage() {
                               name="portfolio_link"
                               value={profile.portfolio_link}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://myportfolio.com"
                             />
                           </div>
@@ -373,7 +391,7 @@ function ProfileSettingsPage() {
                               name="linkedin_profile_url"
                               value={profile.linkedin_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://linkedin.com/in/yourname"
                             />
                           </div>
@@ -389,7 +407,7 @@ function ProfileSettingsPage() {
                               name="github_profile_url"
                               value={profile.github_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://github.com/yourusername"
                             />
                           </div>
@@ -405,7 +423,7 @@ function ProfileSettingsPage() {
                               name="twitter_profile_url"
                               value={profile.twitter_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://twitter.com/yourusername"
                             />
                           </div>
@@ -416,7 +434,7 @@ function ProfileSettingsPage() {
                       <motion.button
                         type="submit"
                         disabled={saveLoading}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -479,9 +497,26 @@ function ProfileSettingsPage() {
                             {stripeStatus.needsAttention && (
                               <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                                 <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
-                                <div>
+                                <div className="space-y-2">
                                   <h3 className="text-red-400 font-semibold">Attention Required</h3>
-                                  <p className="text-gray-300 text-sm">Your Stripe account requires attention. Please update your details.</p>
+                                  <p className="text-gray-300 text-sm">Your Stripe account requires attention. Please complete the missing requirements to enable payouts.</p>
+                                  {stripeStatus.currentlyDue && stripeStatus.currentlyDue.length > 0 && (
+                                    <div className="mt-2">
+                                      <p className="text-xs font-bold text-red-400/80 uppercase tracking-wider">Missing Requirements:</p>
+                                      <ul className="list-disc list-inside text-xs text-gray-400 mt-1">
+                                        {stripeStatus.currentlyDue.map((req, idx) => (
+                                          <li key={idx}>
+                                            {req.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {stripeStatus.disabledReason && (
+                                    <p className="text-xs text-red-400/60 mt-2 italic">
+                                      Reason: {stripeStatus.disabledReason.replace(/_/g, ' ')}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -491,7 +526,7 @@ function ProfileSettingsPage() {
                               className={`w-full px-6 py-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 stripeStatus.isOnboardingComplete
                                   ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
-                                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
+                                  : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
                               }`}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}

@@ -349,6 +349,66 @@ if (useSQLite) {
   return;
 }
 // Configure connection pool with standard PostgreSQL settings
+
+// SQL Helper functions for cross-database compatibility
+// These are always PostgreSQL-compatible since we use PostgreSQL for production
+const SQL = {
+    // Boolean check helper - PostgreSQL uses true/false
+    checkBool: (col) => `${col} = true`,
+    
+    // Check for boolean being false
+    checkBoolFalse: (col) => `${col} = false`,
+    
+    // Set boolean to true
+    setBoolTrue: () => `true`,
+    
+    // Set boolean to false  
+    setBoolFalse: () => `false`,
+    
+    // Date/time interval - PostgreSQL syntax: NOW() - INTERVAL 'X days'
+    dateInterval: (interval) => `NOW() - INTERVAL '${interval}'`,
+    
+    // Date/time comparison - e.g., "created_at > NOW() - INTERVAL '30 days'"
+    dateAfter: (col, interval) => `${col} > NOW() - INTERVAL '${interval}'`,
+    
+    // Date/time between - PostgreSQL syntax
+    dateBetween: (col, startInterval, endInterval) => 
+        `${col} BETWEEN NOW() - INTERVAL '${startInterval}' AND NOW() - INTERVAL '${endInterval}'`,
+    
+    // Datetime function for INSERT/UPDATE - PostgreSQL uses CURRENT_TIMESTAMP or NOW()
+    datetime: (offset = '') => offset ? `NOW() - INTERVAL '${offset}'` : 'NOW()',
+    
+    // Strftime equivalent for PostgreSQL - TO_CHAR
+    strftime: (format, col) => {
+        // Convert SQLite strftime format to PostgreSQL TO_CHAR format
+        const formatMap = {
+            '%Y-%m-%d %H:00': 'YYYY-MM-DD HH24:00',
+            '%Y-%m-%d': 'YYYY-MM-DD',
+            '%H:00': 'HH24:00'
+        };
+        return `TO_CHAR(${col}, '${formatMap[format] || format}')`;
+    },
+    
+    // Julianday difference (days between dates) - PostgreSQL uses EXTRACT
+    daysDiff: (col1, col2 = 'NOW()') => 
+        `EXTRACT(EPOCH FROM (${col2} - ${col1})) / 86400`,
+    
+    // COALESCE for boolean columns - PostgreSQL uses true/false
+    coalesceBool: (col, defaultVal = false) => 
+        `COALESCE(${col}, ${defaultVal})`,
+    
+    // Check for boolean true in CASE WHEN
+    caseWhenBool: (col) => `WHEN ${col} = true THEN 1`,
+    
+    // Count case when boolean
+    countCaseWhenBool: (col, alias) => 
+        `COUNT(CASE WHEN ${col} = true THEN 1 END) as ${alias}`,
+    
+    // Sum case when boolean
+    sumCaseWhenBool: (col, valueCol, alias) => 
+        `SUM(CASE WHEN ${col} = true THEN ${valueCol} ELSE 0 END) as ${alias}`
+};
+
 const convertPlaceholders = (text = '') => {
     if (!text || typeof text !== 'string') return text;
     if (!text.includes('?')) return text;
@@ -389,7 +449,7 @@ const pool = new Pool({
     // Connection pool settings
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-    connectionTimeoutMillis: 5000, // Maximum time to wait for connection to be established
+    connectionTimeoutMillis: 10000, // Maximum time to wait for connection to be established (increased to 10s)
     // Standard PostgreSQL settings
     statement_timeout: 10000, // Statement timeout in ms (10s)
     query_timeout: 10000 // Query timeout in ms (10s)
@@ -603,6 +663,7 @@ if (useSQLite) {
     pool, // Export the pool itself if needed
     isConnectionHealthy,
     checkConnection,
-    isSQLite: false
+    isSQLite: false,
+    SQL // PostgreSQL SQL helper functions
   };
 }

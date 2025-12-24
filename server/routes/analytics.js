@@ -109,53 +109,46 @@ router.get('/revenue', authenticateToken, async (req, res) => {
 // Helper functions
 async function getDashboardMetrics(userId) {
   try {
-    // Calculate queries based on DB type
-    const recentProjectsQuery = db.isSQLite 
-      ? `COUNT(CASE WHEN created_at > datetime('now', '-30 days') THEN 1 END) as recent_projects` 
-      : `COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as recent_projects`;
+    // PostgreSQL-compatible date queries
+    const recentProjectsQuery = `COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as recent_projects`;
       
-    const previousProjectsQuery = db.isSQLite
-      ? `COUNT(CASE WHEN created_at BETWEEN datetime('now', '-60 days') AND datetime('now', '-30 days') THEN 1 END) as previous_projects`
-      : `COUNT(CASE WHEN created_at BETWEEN NOW() - INTERVAL '60 days' AND NOW() - INTERVAL '30 days' THEN 1 END) as previous_projects`;
+    const previousProjectsQuery = `COUNT(CASE WHEN created_at BETWEEN NOW() - INTERVAL '60 days' AND NOW() - INTERVAL '30 days' THEN 1 END) as previous_projects`;
 
-    // Get user's projects and performance metrics
     const projectsResult = await db.query(`
       SELECT 
         COUNT(*) as total_projects,
-        SUM(CASE WHEN is_for_sale = 1 THEN COALESCE(sale_price, 0) ELSE 0 END) as portfolio_value,
+        SUM(CASE WHEN is_for_sale = true THEN COALESCE(sale_price, 0) ELSE 0 END) as portfolio_value,
         COALESCE(SUM(monthly_revenue), 0) as monthly_revenue,
         COALESCE(SUM(view_count), 0) as total_views,
         COALESCE(AVG(view_count), 0) as average_views
       FROM projects 
-      WHERE owner_id = ?
-    `, [userId]);
+      WHERE (owner_id = ? OR user_id = ?)
+    `, [userId, userId]);
 
-    // Get purchase request metrics
     const offersResult = await db.query(`
       SELECT 
         COUNT(CASE WHEN pr.status NOT IN ('transfer_completed_buyer_confirmed', 'seller_rejected', 'buyer_withdrew') THEN 1 END) as active_offers,
         COUNT(CASE WHEN pr.status = 'transfer_completed_buyer_confirmed' THEN 1 END) as completed_sales,
         COUNT(*) as total_interest
-      FROM project_purchase_requests pr
+      FROM purchase_requests pr
       JOIN projects p ON pr.project_id = p.project_id
-      WHERE p.owner_id = ?
-    `, [userId]);
+      WHERE (p.owner_id = ? OR p.user_id = ?)
+    `, [userId, userId]);
 
     // Get buyer metrics
     const buyerResult = await db.query(`
-      SELECT COUNT(CASE WHEN status = 'transfer_completed_buyer_confirmed' THEN 1 END) as purchases_made
-      FROM project_purchase_requests 
+      SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END) as purchases_made
+      FROM purchase_requests 
       WHERE buyer_id = ?
     `, [userId]);
 
-    // Calculate growth rate (last 30 days vs previous 30 days)
     const growthResult = await db.query(`
       SELECT 
         ${recentProjectsQuery},
         ${previousProjectsQuery}
       FROM projects 
-      WHERE owner_id = ?
-    `, [userId]);
+      WHERE (owner_id = ? OR user_id = ?)
+    `, [userId, userId]);
 
     const projectData = projectsResult.rows[0] || {};
     const offerData = offersResult.rows[0] || {};
@@ -206,10 +199,8 @@ async function getDashboardMetrics(userId) {
 
 async function getMarketInsights() {
   try {
-    // Get category trends
-    const trendsWhereClause = db.isSQLite
-      ? `created_at > datetime('now', '-30 days')`
-      : `created_at > NOW() - INTERVAL '30 days'`;
+    // PostgreSQL-compatible date query
+    const trendsWhereClause = `created_at > NOW() - INTERVAL '30 days'`;
 
     const trendsResult = await db.query(`
       SELECT 
@@ -219,7 +210,7 @@ async function getMarketInsights() {
         AVG(COALESCE(monthly_revenue, 0)) as avg_revenue,
         AVG(COALESCE(sale_price, 0)) as avg_price
       FROM projects 
-      WHERE ${trendsWhereClause} AND is_for_sale = 1
+      WHERE ${trendsWhereClause} AND is_for_sale = true
       GROUP BY category
       ORDER BY project_count DESC
       LIMIT 10
@@ -233,7 +224,7 @@ async function getMarketInsights() {
         COALESCE(SUM(monthly_revenue), 0) as total_monthly_revenue,
         COUNT(DISTINCT owner_id) as active_sellers
       FROM projects 
-      WHERE is_for_sale = 1 AND sale_price > 0
+      WHERE is_for_sale = true AND sale_price > 0
     `);
 
     const trends = (trendsResult.rows || []).map((row, index) => ({
@@ -281,10 +272,8 @@ async function getMarketInsights() {
 
 async function getProjectPerformance(projectId) {
   try {
-    // Recent interest query part
-    const recentInterestQuery = db.isSQLite
-      ? `(SELECT COUNT(*) FROM purchase_requests WHERE project_id = $1 AND created_at > datetime('now', '-7 days'))`
-      : `(SELECT COUNT(*) FROM purchase_requests WHERE project_id = $1 AND created_at > NOW() - INTERVAL '7 days')`;
+    // PostgreSQL-compatible subquery for recent interest
+    const recentInterestQuery = `(SELECT COUNT(*) FROM purchase_requests WHERE project_id = $1 AND created_at > NOW() - INTERVAL '7 days')`;
 
     // Get project basic metrics
     const projectResult = await db.query(`
@@ -314,10 +303,8 @@ async function getProjectPerformance(projectId) {
       });
     }
 
-    // Get purchase request timeline
-    const daysAgoQuery = db.isSQLite
-      ? `(julianday('now') - julianday(created_at))`
-      : `EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400`;
+    // PostgreSQL-compatible days ago calculation
+    const daysAgoQuery = `EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400`;
 
     const requestsResult = await db.query(`
       SELECT 
@@ -372,10 +359,10 @@ async function getActivityFeed(userId, limit) {
         'views' as metric_type,
         updated_at as activity_time
       FROM projects
-      WHERE owner_id = ?
+      WHERE (owner_id = ? OR user_id = ?)
       ORDER BY updated_at DESC
       LIMIT ?
-    `, [userId, limit]);
+    `, [userId, userId, limit]);
 
     // Get recent purchase requests
     const requestsResult = await db.query(`
@@ -385,12 +372,12 @@ async function getActivityFeed(userId, limit) {
         1 as metric,
         pr.status as metric_type,
         pr.created_at as activity_time
-      FROM project_purchase_requests pr
+      FROM purchase_requests pr
       JOIN projects p ON pr.project_id = p.project_id
-      WHERE p.owner_id = ? OR pr.buyer_id = ?
+      WHERE (p.owner_id = ? OR p.user_id = ? OR pr.buyer_id = ?)
       ORDER BY pr.created_at DESC
       LIMIT ?
-    `, [userId, userId, limit]);
+    `, [userId, userId, userId, limit]);
 
     // Combine and sort activities
     const allActivities = [
@@ -415,11 +402,9 @@ async function getActivityFeed(userId, limit) {
 
 async function getRevenueAnalytics(userId, period) {
   try {
-    // Revenue Analytics
-    const dateFunction = db.isSQLite ? "date(created_at)" : "DATE(created_at)";
-    const whereClause = db.isSQLite
-      ? `created_at > datetime('now', '-${parseInt(period)} days')`
-      : `created_at > NOW() - INTERVAL '${parseInt(period)} days'`;
+    // PostgreSQL-compatible date functions
+    const dateFunction = "DATE(created_at)";
+    const whereClause = `created_at > NOW() - INTERVAL '${parseInt(period)} days'`;
 
     const result = await db.query(`
       SELECT 
@@ -427,12 +412,12 @@ async function getRevenueAnalytics(userId, period) {
         SUM(COALESCE(monthly_revenue, 0)) as daily_revenue,
         COUNT(*) as projects_created
       FROM projects 
-      WHERE owner_id = ? 
+      WHERE (owner_id = ? OR user_id = ?) 
         AND ${whereClause}
         AND monthly_revenue > 0
       GROUP BY ${dateFunction}
       ORDER BY ${dateFunction} ASC
-    `, [userId]);
+    `, [userId, userId]);
 
     const rows = result.rows || [];
     const totalRevenue = rows.reduce((sum, row) => sum + parseFloat(row.daily_revenue || 0), 0);

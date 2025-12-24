@@ -152,7 +152,7 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10 border-b border-white/[0.08]">
+      <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -166,7 +166,7 @@ const ContactPage = () => {
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               Get{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 in Touch
               </span>
             </h1>
@@ -200,7 +200,7 @@ const ContactPage = () => {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Your name"
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.name ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -219,7 +219,7 @@ const ContactPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="your@email.com"
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.email ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -236,7 +236,7 @@ const ContactPage = () => {
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.subject ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   >
@@ -261,7 +261,7 @@ const ContactPage = () => {
                     onChange={handleChange}
                     placeholder="Tell us more..."
                     rows={6}
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200 resize-none ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 resize-none ${
                       errors.message ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -275,7 +275,7 @@ const ContactPage = () => {
                   disabled={isSubmitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -361,7 +361,7 @@ const ContactPage = () => {
               
               <Link
                 to="/faq"
-                className="inline-block mt-4 px-4 py-2 text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                className="inline-block mt-4 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
               >
                 View All FAQs →
               </Link>
@@ -412,7 +412,7 @@ const ContactPage = () => {
                 <p className="text-gray-400 text-sm mb-4 leading-relaxed">
                   {item.description}
                 </p>
-                <button className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200">
+                <button className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200">
                   {item.cta}
                 </button>
               </motion.div>

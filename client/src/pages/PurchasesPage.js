@@ -222,7 +222,7 @@ const PurchasesPage = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading your purchases...</p>
         </div>
       </div>
@@ -433,7 +433,7 @@ const PurchasesPage = () => {
               <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-40" />
               <h3 className="text-lg font-medium text-gray-400 mb-2">No purchases yet</h3>
               <p className="text-sm mb-6">You haven't purchased any projects yet. Browse the marketplace to find projects you're interested in.</p>
-              <Button onClick={() => navigate('/marketplace')} className="bg-purple-600 hover:bg-purple-700">
+              <Button onClick={() => navigate('/marketplace')} className="bg-blue-600 hover:bg-blue-700">
                 Browse Marketplace
               </Button>
             </div>
@@ -453,7 +453,7 @@ const PurchasesPage = () => {
                 This will freeze the funds in escrow while we investigate.
             </p>
             <textarea
-                className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500 min-h-[100px]"
+                className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 min-h-[100px]"
                 placeholder="Describe the issue..."
                 value={disputeReason}
                 onChange={(e) => setDisputeReason(e.target.value)}

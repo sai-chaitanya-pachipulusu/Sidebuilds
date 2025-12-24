@@ -33,7 +33,7 @@ const TransactionDetailPage = () => {
         fetchTransactionDetails();
     }, [transactionId]);
 
-    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div></div>;
+    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>;
     if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
     if (!transaction) return <div className="text-center py-10 text-gray-400">Transaction not found.</div>;
 

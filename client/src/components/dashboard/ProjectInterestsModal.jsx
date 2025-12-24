@@ -120,7 +120,7 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                   <span className="ml-3 text-gray-400">Loading interests...</span>
                 </div>
               ) : requests.length > 0 ? (
@@ -135,7 +135,7 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
                             <User className="w-5 h-5 text-white" />
                           </div>
                           <div>

@@ -169,7 +169,7 @@ const NotificationsPage = () => {
         <SEO title="Notifications | SideBuilds" description="View your notifications and updates" />
         <div className="min-h-screen bg-black flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p className="text-gray-400">Loading notifications...</p>
           </div>
         </div>
@@ -202,7 +202,7 @@ const NotificationsPage = () => {
                     onClick={() => setFilter('all')}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                       filter === 'all'
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
                     }`}
                   >
@@ -212,7 +212,7 @@ const NotificationsPage = () => {
                     onClick={() => setFilter('unread')}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                       filter === 'unread'
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
                     }`}
                   >

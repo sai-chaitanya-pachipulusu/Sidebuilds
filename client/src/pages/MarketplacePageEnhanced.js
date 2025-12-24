@@ -393,7 +393,7 @@ const MarketplacePageEnhanced = () => {
         {/* Enhanced Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -418,7 +418,7 @@ const MarketplacePageEnhanced = () => {
           <div className="flex items-start justify-between mt-8">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-semibold text-white group-hover:text-purple-300 transition-colors duration-200">
+                <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors duration-200">
                   {project.name}
                 </h3>
                 {project.verified && (
@@ -538,7 +538,7 @@ const MarketplacePageEnhanced = () => {
               {!isOwnProject && (
                 <motion.button
                   onClick={() => handleShowInterest(project.project_id)}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -597,7 +597,7 @@ const MarketplacePageEnhanced = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Discover{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                 Premium
               </span>{' '}
               Projects
@@ -756,7 +756,7 @@ const MarketplacePageEnhanced = () => {
                 Cache hits: {searchMetrics.cacheHits}
               </span>
               {isFiltered && (
-                <span className="text-purple-400 flex items-center gap-1">
+                <span className="text-blue-400 flex items-center gap-1">
                   <FilterIcon className="w-3 h-3" />
                   Filtered
                 </span>
@@ -764,7 +764,7 @@ const MarketplacePageEnhanced = () => {
             </div>
             
             {hasMoreResults && (
-              <span className="text-purple-400 flex items-center gap-1">
+              <span className="text-blue-400 flex items-center gap-1">
                 <Plus className="w-3 h-3" />
                 {pagination.total - batchedResults.length} more available
               </span>
@@ -843,7 +843,7 @@ const MarketplacePageEnhanced = () => {
               {isFiltered && (
                 <motion.button
                   onClick={clearFilters}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors duration-200 flex items-center gap-2 mx-auto"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200 flex items-center gap-2 mx-auto"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

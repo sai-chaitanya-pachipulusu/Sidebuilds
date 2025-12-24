@@ -166,24 +166,17 @@ const NavBar = () => {
       {/* Modern navbar inspired by Linear, Resend, Clerk */}
       <motion.nav
         ref={navRef}
-        className={`fixed top-2 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-2 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? 'bg-black/80 backdrop-blur-2xl shadow-[0_1px_0_0_rgba(255,255,255,0.05)]' 
-            : 'bg-transparent'
+            ? 'bg-black/60 backdrop-blur-md border-b border-white/10' 
+            : 'bg-transparent border-b border-transparent'
         }`}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Scroll Progress Indicator - only visible when scrolled */}
-        {isScrolled && (
-          <motion.div
-            className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-purple-500/50 via-pink-500/50 to-purple-500/50 origin-left"
-            style={{ scaleX }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-          />
-        )}
+        {/* Scroll Progress Indicator removed for cleaner look */
+        }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             
@@ -239,7 +232,7 @@ const NavBar = () => {
                   {/* Create Button - Gradient with glow like Clerk */}
                   <motion.button
                     onClick={() => navigate('/create')}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:from-purple-500 hover:to-pink-500 transition-all duration-300"
+                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:brightness-110 transition-all duration-300"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -311,7 +304,7 @@ const NavBar = () => {
                       className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200"
                       whileTap={{ scale: 0.97 }}
                     >
-                      <div className="w-7 h-7 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center ring-2 ring-white/[0.1]">
+                      <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white/[0.1]">
                         <span className="text-white text-xs font-medium">
                           {user?.username?.[0]?.toUpperCase() || 'U'}
                         </span>
@@ -331,7 +324,7 @@ const NavBar = () => {
                             {/* User info */}
                             <div className="p-3 border-b border-white/[0.06]">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                                   <span className="text-white text-sm font-medium">
                                     {user?.username?.[0]?.toUpperCase() || 'U'}
                                   </span>
@@ -475,7 +468,7 @@ const NavBar = () => {
                       <Link
                         to="/create"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium no-underline"
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium no-underline"
                       >
                         <PlusCircle className="w-5 h-5" />
                         Create Project
@@ -500,7 +493,7 @@ const NavBar = () => {
                       <Link
                         to="/register"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-center px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium no-underline"
+                        className="block text-center px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium no-underline"
                       >
                         Get started
                       </Link>

@@ -294,7 +294,7 @@ const MobileMarketplacePage = () => {
               placeholder="Search projects, technologies, categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-mobile w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="search-mobile w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
 
@@ -309,7 +309,7 @@ const MobileMarketplacePage = () => {
               <SlidersHorizontal className="w-4 h-4 mr-2" />
               Filters
               {(selectedCategory !== 'all' || selectedStage !== 'all' || priceRange !== 'all') && (
-                <Badge className="ml-2 bg-purple-500 text-white text-xs">
+                <Badge className="ml-2 bg-blue-500 text-white text-xs">
                   Active
                 </Badge>
               )}
@@ -318,7 +318,7 @@ const MobileMarketplacePage = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="px-3 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -352,7 +352,7 @@ const MobileMarketplacePage = () => {
                         onClick={() => setSelectedCategory(category.value)}
                         className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           selectedCategory === category.value
-                            ? 'bg-purple-600 text-white'
+                            ? 'bg-blue-600 text-white'
                             : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
                         }`}
                       >
@@ -376,7 +376,7 @@ const MobileMarketplacePage = () => {
                         onClick={() => setSelectedStage(stage.value)}
                         className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           selectedStage === stage.value
-                            ? 'bg-purple-600 text-white'
+                            ? 'bg-blue-600 text-white'
                             : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
                         }`}
                       >
@@ -398,7 +398,7 @@ const MobileMarketplacePage = () => {
                       onClick={() => setPriceRange(range.value)}
                       className={`filter-button-mobile px-3 py-2 rounded-lg text-sm transition-colors ${
                         priceRange === range.value
-                          ? 'bg-purple-600 text-white'
+                          ? 'bg-blue-600 text-white'
                           : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
                       }`}
                     >

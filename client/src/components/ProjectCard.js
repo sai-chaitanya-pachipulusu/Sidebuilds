@@ -190,7 +190,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
     mature: { 
       label: 'Proven', 
       color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-      gradient: 'from-purple-400 to-pink-500',
+      gradient: 'from-purple-400 to-blue-500',
       icon: FiAward 
     },
   };
@@ -238,14 +238,14 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
           <motion.div
             className="absolute -inset-1 rounded-2xl opacity-0 blur-xl transition-opacity duration-500"
             style={{
-              background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(147,51,234,0.5) 0%, rgba(236,72,153,0.3) 50%, transparent 80%)`,
+              background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(59,130,246,0.5) 0%, rgba(6,182,212,0.3) 50%, transparent 80%)`,
               opacity: isHovered ? 0.7 : 0,
             }}
           />
           
           {/* Gradient border on hover - Linear inspired */}
           <motion.div
-            className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl opacity-0 blur-sm"
+            className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-purple-600 rounded-2xl opacity-0 blur-sm"
             animate={{ opacity: isHovered ? 0.5 : 0 }}
             transition={{ duration: 0.3 }}
           />
@@ -349,7 +349,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                   >
                     <Link to={`/projects/${project.project_id}`}>
                       <motion.button
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-purple-500 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-500 transition-colors"
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.1 }}
@@ -388,7 +388,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <Link to={`/projects/${project.project_id}`}>
-                    <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors truncate">
+                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors truncate">
                       {project.name}
                     </h3>
                   </Link>

@@ -429,36 +429,20 @@ Respond with valid JSON in this exact format:
   }
 
   async getMarketDataFromDB() {
-    let query;
-    if (db.isSQLite) {
-      query = `
-        SELECT 
-          category,
-          COUNT(*) as project_count,
-          AVG(sale_price) as avg_price,
-          AVG(monthly_revenue) as avg_revenue,
-          MAX(created_at) as latest_listing
-        FROM projects 
-        WHERE is_for_sale = 1 
-          AND created_at > datetime('now', '-90 days')
-        GROUP BY category
-        ORDER BY project_count DESC
-      `;
-    } else {
-      query = `
-        SELECT 
-          category,
-          COUNT(*) as project_count,
-          AVG(sale_price) as avg_price,
-          AVG(monthly_revenue) as avg_revenue,
-          MAX(created_at) as latest_listing
-        FROM projects 
-        WHERE is_for_sale = true 
-          AND created_at > NOW() - INTERVAL '90 days'
-        GROUP BY category
-        ORDER BY project_count DESC
-      `;
-    }
+    // PostgreSQL-compatible query only
+    const query = `
+      SELECT 
+        category,
+        COUNT(*) as project_count,
+        AVG(sale_price) as avg_price,
+        AVG(monthly_revenue) as avg_revenue,
+        MAX(created_at) as latest_listing
+      FROM projects 
+      WHERE is_for_sale = true 
+        AND created_at > NOW() - INTERVAL '90 days'
+      GROUP BY category
+      ORDER BY project_count DESC
+    `;
     
     const result = await db.query(query);
     return result.rows;

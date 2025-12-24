@@ -24,7 +24,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
                 reputation_score, created_at, updated_at,
                 stripe_account_id, onboarding_complete, stripe_onboarding_complete
              FROM users
-             WHERE user_id = ?`,
+             WHERE user_id = $1`,
             [userId]
         );
 
@@ -123,14 +123,17 @@ router.put('/profile', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'No fields to update.' });
         }
 
-        // Add updated_at
-        updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-        
-        // Add user_id for WHERE clause
-        updateValues.push(userId);
+        // Process fields to use PostgreSQL placeholders ($1, $2, etc.)
+        const parameterizedFields = updateFields.map((field, index) => {
+            if (field.includes('=')) {
+                return field.replace('?', `$${index + 1}`);
+            }
+            return field;
+        });
 
-        const updateQuery = `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = ?`;
-        
+        const updateQuery = `UPDATE users SET ${parameterizedFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE user_id = $${updateValues.length + 1}`;
+        updateValues.push(userId); // Add userId for WHERE clause
+
         console.log('🔄 Executing update query:', updateQuery);
         console.log('🔄 With values:', updateValues);
 
@@ -152,7 +155,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
                 reputation_score, created_at, updated_at,
                 stripe_account_id, onboarding_complete, stripe_onboarding_complete
              FROM users
-             WHERE user_id = ?`,
+             WHERE user_id = $1`,
             [userId]
         );
 
@@ -203,9 +206,12 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
                 stripe_account_id, 
                 stripe_customer_id, 
                 onboarding_complete,
-                stripe_onboarding_complete
+                stripe_onboarding_complete,
+                payout_enabled,
+                stripe_charges_enabled,
+                stripe_details_submitted
              FROM users 
-             WHERE user_id = ?`,
+             WHERE user_id = $1`,
             [userId]
         );
 
@@ -217,22 +223,78 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
             stripe_account_id,
             stripe_customer_id,
             onboarding_complete,
-            stripe_onboarding_complete
+            stripe_onboarding_complete,
+            payout_enabled,
+            stripe_charges_enabled,
+            stripe_details_submitted
         } = result.rows[0];
 
-        // Check both possible onboarding columns
-        const isComplete = onboarding_complete === 1 || onboarding_complete === true ||
-                          stripe_onboarding_complete === 1 || stripe_onboarding_complete === true;
+        // If user has a Stripe account, fetch live status from Stripe
+        if (stripe_account_id) {
+            try {
+                const { stripe } = require('../config/stripe.config');
+                const account = await stripe.accounts.retrieve(stripe_account_id);
+                
+                const liveOnboardingComplete = !!(account.details_submitted && account.charges_enabled && account.payouts_enabled);
+                const livePayoutsEnabled = !!account.payouts_enabled;
+                const liveChargesEnabled = !!account.charges_enabled;
+                const liveDetailsSubmitted = !!account.details_submitted;
+                
+                console.log(`[Stripe Status] Detailed check for user ${userId}:`, {
+                    details_submitted: liveDetailsSubmitted,
+                    charges_enabled: liveChargesEnabled,
+                    payouts_enabled: livePayoutsEnabled,
+                    onboarding_complete: liveOnboardingComplete,
+                    requirements: account.requirements?.currently_due || [],
+                    disabled_reason: account.requirements?.disabled_reason || 'none'
+                });
 
-        console.log('Stripe status check:', { stripe_account_id, onboarding_complete, stripe_onboarding_complete, isComplete });
+                // Update DB if status has changed
+                if (liveOnboardingComplete !== (onboarding_complete === true)) {
+                    await db.query(
+                        `UPDATE users SET 
+                            onboarding_complete = $1, 
+                            payout_enabled = $2, 
+                            stripe_charges_enabled = $3, 
+                            stripe_details_submitted = $4,
+                            updated_at = CURRENT_TIMESTAMP 
+                         WHERE user_id = $5`,
+                        [liveOnboardingComplete, livePayoutsEnabled, liveChargesEnabled, liveDetailsSubmitted, userId]
+                    );
+                    console.log('[Stripe Status] Updated DB with live Stripe status for user:', userId);
+                }
+
+                return res.json({
+                    accountId: stripe_account_id,
+                    customerId: stripe_customer_id,
+                    isOnboardingComplete: liveOnboardingComplete,
+                    arePayoutsEnabled: livePayoutsEnabled,
+                    areChargesEnabled: liveChargesEnabled,
+                    areDetailsSubmitted: liveDetailsSubmitted,
+                    needsAttention: (account.requirements?.currently_due?.length > 0) || (account.requirements?.disabled_reason),
+                    currentlyDue: account.requirements?.currently_due || [],
+                    disabledReason: account.requirements?.disabled_reason || null
+                });
+            } catch (stripeError) {
+                console.error('[Stripe Status] Error fetching from Stripe:', stripeError.message);
+                // Fall back to DB values if Stripe call fails
+            }
+        }
+
+        // Check both possible onboarding columns (fallback to DB values)
+        const isComplete = onboarding_complete === 1 || onboarding_complete === true ||
+                          stripe_onboarding_complete === 1 || stripe_onboarding_complete === true ||
+                          (payout_enabled === true && stripe_charges_enabled === true);
+
+        console.log('[Stripe Status] DB check:', { stripe_account_id, onboarding_complete, stripe_onboarding_complete, isComplete });
 
         res.json({
             accountId: stripe_account_id,
             customerId: stripe_customer_id,
             isOnboardingComplete: isComplete,
-            arePayoutsEnabled: isComplete,
-            areChargesEnabled: isComplete,
-            areDetailsSubmitted: isComplete,
+            arePayoutsEnabled: payout_enabled === true || isComplete,
+            areChargesEnabled: stripe_charges_enabled === true || isComplete,
+            areDetailsSubmitted: stripe_details_submitted === true || isComplete,
             needsAttention: stripe_account_id && !isComplete
         });
     } catch (err) {
@@ -258,7 +320,7 @@ router.get('/projects', authMiddleware, async (req, res) => {
                 view_count, interest_count, launch_date,
                 created_at, updated_at
              FROM projects 
-             WHERE user_id = ?
+             WHERE owner_id = $1
              ORDER BY created_at DESC`,
             [userId]
         );
@@ -282,13 +344,13 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
         const projectStats = await db.query(
             `SELECT 
                 COUNT(*) as total_projects,
-                COUNT(CASE WHEN is_for_sale = 1 THEN 1 END) as projects_for_sale,
+                COUNT(CASE WHEN is_for_sale = true THEN 1 END) as projects_for_sale,
                 COUNT(CASE WHEN stage = 'launched' THEN 1 END) as launched_projects,
-                SUM(CASE WHEN is_for_sale = 1 THEN sale_price ELSE 0 END) as total_listing_value,
+                SUM(CASE WHEN is_for_sale = true THEN sale_price ELSE 0 END) as total_listing_value,
                 SUM(view_count) as total_views,
                 SUM(interest_count) as total_interest
              FROM projects 
-             WHERE user_id = ?`,
+             WHERE (owner_id = $1 OR user_id = $1)`,
             [userId]
         );
 
@@ -299,7 +361,7 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
                 SUM(CASE WHEN status = 'completed' THEN seller_amount ELSE 0 END) as total_revenue,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_sales
              FROM project_transactions 
-             WHERE seller_id = ?`,
+             WHERE seller_id = $1`,
             [userId]
         );
 
@@ -310,7 +372,7 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
                 COUNT(CASE WHEN status = 'interest_expressed' THEN 1 END) as pending_requests,
                 COUNT(CASE WHEN status = 'seller_accepted_pending_payment' THEN 1 END) as accepted_requests
              FROM purchase_requests 
-             WHERE seller_id = ?`,
+             WHERE seller_id = $1`,
             [userId]
         );
 

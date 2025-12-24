@@ -122,8 +122,21 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     };
 
     const handleOnboardingComplete = () => {
-        fetchProjectAndStripeStatus();
-        toast.success("Stripe connection successful!");
+        const checkStatus = async () => {
+            const loadingToast = toast.loading("Checking your Stripe connection status...");
+            try {
+                const status = await checkStripeOnboardingStatus();
+                setStripeStatus(status);
+                if (status.isOnboardingComplete) {
+                    toast.success("Stripe account fully connected and verified!", { id: loadingToast });
+                } else {
+                    toast.success("Account created! Please finish onboarding to start selling.", { id: loadingToast, icon: '⚠️' });
+                }
+            } catch (err) {
+                toast.error("Connected to Stripe, but failed to verify status.", { id: loadingToast });
+            }
+        };
+        checkStatus();
     };
     
     const handleSubmit = async (e) => {
@@ -204,7 +217,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                     <AlertTitle>Action Required</AlertTitle>
                                     <AlertDescription>
                                         You need to complete your Stripe onboarding to sell projects. 
-                                        <Button variant="link" onClick={() => setShowStripeModal(true)} className="ml-2 text-purple-400">
+                                        <Button variant="link" onClick={() => setShowStripeModal(true)} className="ml-2 text-blue-400">
                                             Complete Onboarding <ExternalLink className="h-4 w-4 ml-1" />
                                         </Button>
                                     </AlertDescription>
@@ -258,7 +271,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 />
                                 <p className="text-sm text-gray-500 mt-1">
                                     A brief, compelling description of what your project does. Focus on the value proposition.
-                                    <span className="text-purple-400 ml-1">{formData.description.length}/500 characters</span>
+                                    <span className="text-blue-400 ml-1">{formData.description.length}/500 characters</span>
                                 </p>
                             </motion.div>
 
