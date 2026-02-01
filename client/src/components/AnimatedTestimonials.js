@@ -19,7 +19,7 @@ const AnimatedTestimonials = () => {
       content: "Sold my SaaS project in just 2 weeks. The AI valuation was spot-on, and the verification process gave buyers the confidence they needed. The escrow made the transfer completely seamless.",
       rating: 5,
       highlight: "Sold in 2 weeks",
-      gradient: "from-purple-500 to-pink-500"
+      gradient: "from-amber-500 to-orange-500"
     },
     {
       name: "Marcus Johnson",
@@ -28,7 +28,7 @@ const AnimatedTestimonials = () => {
       content: "Found the perfect project to accelerate our startup. Revenue verification meant we knew exactly what we were buying. Best acquisition decision we've made.",
       rating: 5,
       highlight: "Revenue verified",
-      gradient: "from-blue-500 to-cyan-500"
+      gradient: "from-blue-500 to-sky-500"
     },
     {
       name: "Emily Rodriguez",
@@ -37,7 +37,7 @@ const AnimatedTestimonials = () => {
       content: "The escrow service gave me complete peace of mind. I was nervous about selling my first project, but everything was handled professionally from start to finish.",
       rating: 5,
       highlight: "Stress-free sale",
-      gradient: "from-green-500 to-emerald-500"
+      gradient: "from-emerald-500 to-green-500"
     },
     {
       name: "David Park",
@@ -55,7 +55,7 @@ const AnimatedTestimonials = () => {
       content: "As a solo developer, I didn't know how to value or sell my project. SideBuilds AI gave me an instant valuation and connected me with serious buyers within days.",
       rating: 5,
       highlight: "AI-powered valuation",
-      gradient: "from-purple-500 to-purple-600"
+      gradient: "from-amber-500 to-yellow-500"
     }
   ];
 
@@ -110,8 +110,8 @@ const AnimatedTestimonials = () => {
   return (
     <section className="py-24 bg-[#000000] relative overflow-hidden">
       {/* Background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
       
       <div className="max-w-6xl mx-auto px-4 relative z-10">
         <motion.div
@@ -122,7 +122,7 @@ const AnimatedTestimonials = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Loved by <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Makers</span> Worldwide
+            Loved by <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">Makers</span> Worldwide
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
             Join thousands of entrepreneurs who've successfully bought and sold projects on our platform.
@@ -205,8 +205,8 @@ const AnimatedTestimonials = () => {
               key={index}
               onClick={() => goToSlide(index)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentIndex 
-                  ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' 
+                index === currentIndex
+                  ? 'w-8 bg-gradient-to-r from-amber-500 to-orange-500'
                   : 'bg-white/20 hover:bg-white/40'
               }`}
             />
