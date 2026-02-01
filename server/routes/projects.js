@@ -2,6 +2,10 @@ const express = require('express');
 const db = require('../db');
 const authMiddleware = require('../middleware/authMiddleware');
 const xss = require('xss');
+const { upload, uploadMultiple, handleMulterError, getFileType, getFileCategory } = require('../config/multer');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -563,6 +567,295 @@ router.patch('/:id/toggle-hold', async (req, res) => {
     } catch (err) {
         console.error("Toggle hold error:", err.message);
         res.status(500).json({ message: 'Server error toggling hold status.' });
+    }
+});
+
+// --- UPLOAD Project Files ---
+// POST /api/projects/:id/files
+router.post('/:id/files', uploadMultiple('files', 10), handleMulterError, async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const userId = req.user.user_id;
+        const { description, is_public } = req.body;
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No files uploaded'
+            });
+        }
+
+        // Check if project exists and user is the owner
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        const project = projectResult.rows[0];
+        const ownerId = project.owner_id || project.user_id;
+
+        if (ownerId !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to upload files to this project'
+            });
+        }
+
+        // Process uploaded files
+        const uploadedFiles = [];
+        
+        for (const file of req.files) {
+            const fileId = uuidv4();
+            const fileType = getFileType(file.mimetype, file.originalname);
+            const fileCategory = getFileCategory(fileType);
+            
+            // Store file metadata in database
+            const result = await db.query(
+                `INSERT INTO project_files (
+                    file_id, project_id, user_id, file_name, original_name,
+                    file_type, file_category, file_size, mime_type,
+                    storage_path, storage_type, is_public, description
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                RETURNING file_id, file_name, original_name, file_type, file_category, file_size, mime_type, is_public, description, created_at`,
+                [
+                    fileId,
+                    projectId,
+                    userId,
+                    file.filename,
+                    file.originalname,
+                    fileType,
+                    fileCategory,
+                    file.size,
+                    file.mimetype,
+                    file.path,
+                    'local',
+                    is_public === 'true' || is_public === true,
+                    description || null
+                ]
+            );
+
+            uploadedFiles.push({
+                ...result.rows[0],
+                download_url: `/api/files/download/${fileId}`
+            });
+        }
+
+        res.status(201).json({
+            success: true,
+            message: `${uploadedFiles.length} file(s) uploaded successfully`,
+            files: uploadedFiles
+        });
+
+    } catch (error) {
+        console.error('Project file upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during file upload',
+            error: error.message
+        });
+    }
+});
+
+// --- GET Project Files ---
+// GET /api/projects/:id/files
+router.get('/:id/files', async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const userId = req.user?.user_id;
+
+        // Check project access
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        const project = projectResult.rows[0];
+        const isOwner = (project.owner_id || project.user_id) === userId;
+        const isPublic = project.is_public === true || project.is_public === 1;
+
+        // Build query based on access level
+        let query = `
+            SELECT file_id, file_name, original_name, file_type, file_category, 
+                   file_size, mime_type, is_public, description, download_count, created_at
+            FROM project_files 
+            WHERE project_id = $1
+        `;
+        let params = [projectId];
+
+        // If not owner, only show public files or files from public projects
+        if (!isOwner) {
+            if (isPublic) {
+                query += ' AND (is_public = true OR is_public = 1)';
+            } else {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const filesResult = await db.query(query, params);
+
+        // Add download URLs
+        const files = filesResult.rows.map(file => ({
+            ...file,
+            download_url: `/api/files/download/${file.file_id}`,
+            preview_url: file.file_type?.startsWith('image') ? `/api/files/preview/${file.file_id}` : null,
+            is_owner: isOwner
+        }));
+
+        res.json({
+            success: true,
+            files: files,
+            is_owner: isOwner
+        });
+
+    } catch (error) {
+        console.error('Get project files error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching files'
+        });
+    }
+});
+
+// --- DELETE Project File ---
+// DELETE /api/projects/:id/files/:fileId
+router.delete('/:id/files/:fileId', async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const fileId = req.params.fileId;
+        const userId = req.user.user_id;
+
+        // Check project ownership
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        const project = projectResult.rows[0];
+        const ownerId = project.owner_id || project.user_id;
+
+        if (ownerId !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to delete files from this project'
+            });
+        }
+
+        // Get file metadata
+        const fileResult = await db.query(
+            'SELECT * FROM project_files WHERE file_id = $1 AND project_id = $2',
+            [fileId, projectId]
+        );
+
+        if (fileResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'File not found'
+            });
+        }
+
+        const file = fileResult.rows[0];
+
+        // Delete file from disk
+        if (fs.existsSync(file.storage_path)) {
+            fs.unlinkSync(file.storage_path);
+        }
+
+        // Delete file record from database
+        await db.query('DELETE FROM project_files WHERE file_id = $1', [fileId]);
+
+        res.json({
+            success: true,
+            message: 'File deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete project file error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error deleting file'
+        });
+    }
+});
+
+// --- GET Project File Statistics ---
+// GET /api/projects/:id/files/stats
+router.get('/:id/files/stats', async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const userId = req.user.user_id;
+
+        // Check project ownership
+        const projectResult = await db.query(
+            'SELECT * FROM projects WHERE project_id = $1',
+            [projectId]
+        );
+
+        if (projectResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        const project = projectResult.rows[0];
+        if ((project.owner_id || project.user_id) !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+
+        // Get file statistics
+        const statsResult = await db.query(
+            `SELECT 
+                COUNT(*) as total_files,
+                COALESCE(SUM(file_size), 0) as total_size,
+                COALESCE(SUM(download_count), 0) as total_downloads,
+                COUNT(CASE WHEN file_category = 'images' THEN 1 END) as image_count,
+                COUNT(CASE WHEN file_category = 'documents' THEN 1 END) as document_count,
+                COUNT(CASE WHEN file_category = 'code' THEN 1 END) as code_count
+             FROM project_files 
+             WHERE project_id = $1`,
+            [projectId]
+        );
+
+        res.json({
+            success: true,
+            stats: statsResult.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Get project file stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching file statistics'
+        });
     }
 });
 

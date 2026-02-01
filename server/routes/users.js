@@ -7,10 +7,8 @@ const router = express.Router();
 // --- GET current user's profile ---
 // GET /api/users/profile
 router.get('/profile', authMiddleware, async (req, res) => {
-    console.log('GET /profile - req.user:', JSON.stringify(req.user, null, 2));
     try {
         const userId = req.user.user_id;
-        console.log('🔍 Fetching profile for user ID:', userId);
 
         const userProfile = await db.query(
             `SELECT
@@ -28,21 +26,13 @@ router.get('/profile', authMiddleware, async (req, res) => {
             [userId]
         );
 
-        console.log('🔍 Query result rows:', userProfile.rows.length);
-        if (userProfile.rows.length > 0) {
-            console.log('🔍 Found user profile:', Object.keys(userProfile.rows[0]));
-        }
-
         if (userProfile.rows.length === 0) {
-            console.log('❌ User profile not found for ID:', userId);
             return res.status(404).json({ message: 'User profile not found.' });
         }
 
-        console.log('✅ Returning user profile successfully');
         res.json(userProfile.rows[0]);
     } catch (err) {
-        console.error("❌ Get profile error:", err.message);
-        console.error("❌ Full error:", err);
+        console.error("Get profile error:", err.message);
         res.status(500).json({ message: 'Server error fetching profile.' });
     }
 });
@@ -50,8 +40,6 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // --- UPDATE current user's profile ---
 // PUT /api/users/profile
 router.put('/profile', authMiddleware, async (req, res) => {
-    console.log('PUT /profile - req.user:', JSON.stringify(req.user, null, 2));
-    console.log('PUT /profile - req.body:', JSON.stringify(req.body, null, 2));
     try {
         const userId = req.user.user_id;
         const {
@@ -134,13 +122,12 @@ router.put('/profile', authMiddleware, async (req, res) => {
         const updateQuery = `UPDATE users SET ${parameterizedFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE user_id = $${updateValues.length + 1}`;
         updateValues.push(userId); // Add userId for WHERE clause
 
-        console.log('🔄 Executing update query:', updateQuery);
-        console.log('🔄 With values:', updateValues);
+        // Executing update query
 
         await db.query(updateQuery, updateValues);
 
-        // Note: phone_number is not stored in users table - skip for now
-        // TODO: Add phone_number column to users table if needed
+        // Note: phone_number is stored in the projects table (contact_phone field) for project listings
+        // User profile phone number can be added to users table via migration if business requirements change
 
         // Return updated profile
         const result = await db.query(
@@ -182,7 +169,6 @@ router.put('/profile', authMiddleware, async (req, res) => {
         
         // Handle database connection errors
         if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-            console.error("❌ Database connection error");
             return res.status(503).json({ message: 'Database temporarily unavailable. Please try again later.' });
         }
         
@@ -240,15 +226,6 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
                 const liveChargesEnabled = !!account.charges_enabled;
                 const liveDetailsSubmitted = !!account.details_submitted;
                 
-                console.log(`[Stripe Status] Detailed check for user ${userId}:`, {
-                    details_submitted: liveDetailsSubmitted,
-                    charges_enabled: liveChargesEnabled,
-                    payouts_enabled: livePayoutsEnabled,
-                    onboarding_complete: liveOnboardingComplete,
-                    requirements: account.requirements?.currently_due || [],
-                    disabled_reason: account.requirements?.disabled_reason || 'none'
-                });
-
                 // Update DB if status has changed
                 if (liveOnboardingComplete !== (onboarding_complete === true)) {
                     await db.query(
@@ -261,7 +238,6 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
                          WHERE user_id = $5`,
                         [liveOnboardingComplete, livePayoutsEnabled, liveChargesEnabled, liveDetailsSubmitted, userId]
                     );
-                    console.log('[Stripe Status] Updated DB with live Stripe status for user:', userId);
                 }
 
                 return res.json({
@@ -276,7 +252,6 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
                     disabledReason: account.requirements?.disabled_reason || null
                 });
             } catch (stripeError) {
-                console.error('[Stripe Status] Error fetching from Stripe:', stripeError.message);
                 // Fall back to DB values if Stripe call fails
             }
         }
@@ -285,8 +260,6 @@ router.get('/stripe-status', authMiddleware, async (req, res) => {
         const isComplete = onboarding_complete === 1 || onboarding_complete === true ||
                           stripe_onboarding_complete === 1 || stripe_onboarding_complete === true ||
                           (payout_enabled === true && stripe_charges_enabled === true);
-
-        console.log('[Stripe Status] DB check:', { stripe_account_id, onboarding_complete, stripe_onboarding_complete, isComplete });
 
         res.json({
             accountId: stripe_account_id,
@@ -325,10 +298,9 @@ router.get('/projects', authMiddleware, async (req, res) => {
             [userId]
         );
 
-        console.log(`✅ Found ${projects.rows.length} projects for user`);
         res.json(projects.rows);
     } catch (err) {
-        console.error("❌ Get user projects error:", err.message);
+        console.error("Get user projects error:", err.message);
         res.status(500).json({ message: 'Server error fetching projects.' });
     }
 });
@@ -338,7 +310,6 @@ router.get('/projects', authMiddleware, async (req, res) => {
 router.get('/dashboard-stats', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.user_id;
-        console.log('🔍 Fetching dashboard stats for user ID:', userId);
 
         // Get project counts
         const projectStats = await db.query(
@@ -382,10 +353,9 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
             requests: requestStats.rows[0] || {}
         };
 
-        console.log('✅ Dashboard stats fetched successfully');
         res.json(stats);
     } catch (err) {
-        console.error("❌ Get dashboard stats error:", err.message);
+        console.error("Get dashboard stats error:", err.message);
         res.status(500).json({ message: 'Server error fetching dashboard stats.' });
     }
 });

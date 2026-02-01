@@ -1,20 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { getMarketplaceProjects } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../shadcn/ui/button';
 import { Label } from '../shadcn/ui/label';
 import toast from 'react-hot-toast';
+import { useDebounce } from '../hooks/useDebounce';
+import { useOptimizedSearch } from '../hooks/useOptimizedSearch';
+import { apiCache, CACHE_TTL, CACHE_TAGS } from '../utils/apiCache';
 
-// Use the enhanced ProjectCard component
-import ProjectCard from '../components/ProjectCard';
+// Use the enhanced ProjectCard component - memoized for performance
+const MemoizedProjectCard = memo(({ project }) => {
+  const ProjectCard = require('../components/ProjectCard').default;
+  return <ProjectCard project={project} />;
+});
+
+// Virtualized list item renderer
+const VirtualizedProjectItem = memo(({ project, index, style }) => (
+  <motion.div
+    style={style}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: Math.min(index * 0.05, 0.3) }}
+  >
+    <MemoizedProjectCard project={project} />
+  </motion.div>
+));
 
 const MarketplacePageSimple = () => {
-  const [projects, setProjects] = useState([]);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProjects, setTotalProjects] = useState(0);
+  const itemsPerPage = 20;
+  
+  // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filters, setFilters] = useState({
@@ -26,90 +52,105 @@ const MarketplacePageSimple = () => {
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
+  // Debounced search term for performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchMarketplaceProjects = async () => {
-      try {
-        console.log('Fetching marketplace projects...');
-        setError('');
-        setLoading(true);
-        const marketplaceProjects = await getMarketplaceProjects();
-        console.log('Received projects:', marketplaceProjects.length);
-        setProjects(marketplaceProjects);
-      } catch (err) {
-        console.error("Failed to fetch marketplace projects:", err);
-        setError(err.message || 'Failed to load marketplace projects.');
-      } finally {
+  // Fetch projects with pagination and caching
+  const fetchProjects = useCallback(async (page = 1) => {
+    const cacheKey = `marketplace:page:${page}:sort:${sortBy}`;
+    
+    try {
+      setError('');
+      setLoading(true);
+      
+      // Check cache first
+      const cached = apiCache.get(cacheKey);
+      if (cached && !cached.__stale) {
+        setProjects(cached.data || []);
+        setTotalPages(cached.pagination?.totalPages || 1);
+        setTotalProjects(cached.pagination?.total || 0);
         setLoading(false);
+        return;
       }
-    };
-
-    fetchMarketplaceProjects();
-  }, []);
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const getStageColor = (stage) => {
-    const stageColors = {
-      'idea': 'gray',
-      'planning': 'blue',
-      'mvp': 'purple',
-      'development': 'orange',
-      'launched': 'green',
-      'on_hold': 'red'
-    };
-    return stageColors[stage?.toLowerCase()] || 'gray';
-  };
-
-  const filteredProjects = projects.filter(project => {
-    // Text search
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        project.name?.toLowerCase().includes(searchLower) ||
-        project.description?.toLowerCase().includes(searchLower) ||
-        project.tech_stack?.toLowerCase().includes(searchLower) ||
-        project.category?.toLowerCase().includes(searchLower);
-
-      if (!matchesSearch) return false;
+      
+      // Map sort options to API parameters
+      const sortMapping = {
+        'newest': { sortBy: 'created_at', sortOrder: 'desc' },
+        'price-low': { sortBy: 'sale_price', sortOrder: 'asc' },
+        'price-high': { sortBy: 'sale_price', sortOrder: 'desc' },
+        'revenue': { sortBy: 'monthly_revenue', sortOrder: 'desc' },
+        'views': { sortBy: 'view_count', sortOrder: 'desc' },
+        'score': { sortBy: 'overall_score', sortOrder: 'desc' }
+      };
+      
+      const sortParams = sortMapping[sortBy] || sortMapping['newest'];
+      
+      // Fetch from API with pagination
+      const response = await getMarketplaceProjects({
+        page,
+        limit: itemsPerPage,
+        ...sortParams
+      });
+      
+      if (response && response.data) {
+        setProjects(response.data);
+        setTotalPages(response.pagination?.totalPages || 1);
+        setTotalProjects(response.pagination?.total || 0);
+        
+        // Cache the response
+        apiCache.set(cacheKey, response, CACHE_TTL.MARKETPLACE);
+      } else {
+        // Fallback for old API format
+        setProjects(response || []);
+        setTotalPages(1);
+        setTotalProjects(response?.length || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch marketplace projects:", err);
+      setError(err.message || 'Failed to load marketplace projects.');
+      
+      // Try to use stale cache on error
+      const stale = apiCache.get(cacheKey);
+      if (stale) {
+        setProjects(stale.data || []);
+        toast.error('Using cached data - connection issue detected');
+      }
+    } finally {
+      setLoading(false);
     }
+  }, [sortBy]);
 
-    // Advanced filters
-    if (filters.stage && project.stage !== filters.stage) return false;
-    if (filters.minPrice && (project.sale_price || 0) < parseInt(filters.minPrice)) return false;
-    if (filters.maxPrice && (project.sale_price || 0) > parseInt(filters.maxPrice)) return false;
-    if (filters.techStack && !project.tech_stack?.toLowerCase().includes(filters.techStack.toLowerCase())) return false;
-    if (filters.category && project.category !== filters.category) return false;
+  // Initial fetch
+  useEffect(() => {
+    fetchProjects(currentPage);
+  }, [fetchProjects, currentPage]);
 
-    return true;
-  });
-
-  const sortedProjects = [...filteredProjects].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return (a.sale_price || 0) - (b.sale_price || 0);
-      case 'price-high':
-        return (b.sale_price || 0) - (a.sale_price || 0);
-      case 'revenue':
-        return (b.monthly_revenue || 0) - (a.monthly_revenue || 0);
-      case 'views':
-        return (b.view_count || 0) - (a.view_count || 0);
-      case 'score':
-        return (b.overall_score || 0) - (a.overall_score || 0);
-      case 'newest':
-      default:
-        return new Date(b.created_at) - new Date(a.created_at);
+  // Client-side filtering with optimized search
+  const { filteredItems: filteredProjects, isSearching } = useOptimizedSearch(
+    projects,
+    {},
+    {
+      searchKeys: ['name', 'description', 'tech_stack', 'category'],
+      debounceMs: 150,
+      enableIndexing: true,
+      minSearchLength: 1
     }
-  });
+  );
+
+  // Apply additional filters
+  const fullyFilteredProjects = useMemo(() => {
+    return filteredProjects.filter(project => {
+      if (filters.stage && project.stage !== filters.stage) return false;
+      if (filters.minPrice && (project.sale_price || 0) < parseInt(filters.minPrice)) return false;
+      if (filters.maxPrice && (project.sale_price || 0) > parseInt(filters.maxPrice)) return false;
+      if (filters.techStack && !project.tech_stack?.toLowerCase().includes(filters.techStack.toLowerCase())) return false;
+      if (filters.category && project.category !== filters.category) return false;
+      return true;
+    });
+  }, [filteredProjects, filters]);
 
   const handleShowInterest = (projectId) => {
     if (!user) {
@@ -120,12 +161,97 @@ const MarketplacePageSimple = () => {
     navigate(`/projects/${projectId}?showInterest=true`);
   };
 
-  // Removed inline ProjectCard - using enhanced component from ../components/ProjectCard
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      stage: '',
+      minPrice: '',
+      maxPrice: '',
+      techStack: '',
+      category: ''
+    });
+    setSearchTerm('');
+  };
+
+  // Pagination component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+    
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 rounded ${
+            i === currentPage
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-2 mt-8">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded bg-gray-800 text-gray-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        
+        {startPage > 1 && (
+          <>
+            <button onClick={() => handlePageChange(1)} className="px-3 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">1</button>
+            {startPage > 2 && <span className="text-gray-500">...</span>}
+          </>
+        )}
+        
+        {pages}
+        
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="text-gray-500">...</span>}
+            <button onClick={() => handlePageChange(totalPages)} className="px-3 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">{totalPages}</button>
+          </>
+        )}
+        
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded bg-gray-800 text-gray-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading marketplace projects...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="text-white">Loading marketplace projects...</div>
+        </div>
       </div>
     );
   }
@@ -142,14 +268,14 @@ const MarketplacePageSimple = () => {
             Discover and purchase verified side projects
           </p>
           <div className="mt-4 text-blue-400">
-            {projects.length} projects available
+            {totalProjects} projects available
           </div>
         </div>
 
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
+          <div className="flex gap-4 flex-wrap md:flex-nowrap">
+            <div className="flex-1 relative min-w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
@@ -158,10 +284,18 @@ const MarketplacePageSimple = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
               />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                </div>
+              )}
             </div>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1); // Reset to first page on sort change
+              }}
               className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <option value="newest">Newest First</option>
@@ -242,19 +376,13 @@ const MarketplacePageSimple = () => {
 
               <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                 <div className="text-sm text-gray-400">
-                  {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''} found
+                  {fullyFilteredProjects.length} project{fullyFilteredProjects.length !== 1 ? 's' : ''} found
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setFilters({
-                      stage: '',
-                      minPrice: '',
-                      maxPrice: '',
-                      techStack: '',
-                      category: ''
-                    })}
+                    onClick={clearFilters}
                   >
                     Clear Filters
                   </Button>
@@ -268,28 +396,41 @@ const MarketplacePageSimple = () => {
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-8">
             <p className="text-red-400">{error}</p>
+            <button
+              onClick={() => fetchProjects(currentPage)}
+              className="mt-2 text-sm text-red-400 underline hover:text-red-300"
+            >
+              Retry
+            </button>
           </div>
         )}
 
         {/* Projects Grid */}
-        {sortedProjects.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {sortedProjects.map((project, index) => (
-              <motion.div
-                key={project.project_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <ProjectCard project={project} />
-              </motion.div>
-            ))}
-          </div>
+        {fullyFilteredProjects.length > 0 ? (
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {fullyFilteredProjects.map((project, index) => (
+                <VirtualizedProjectItem
+                  key={project.project_id}
+                  project={project}
+                  index={index}
+                />
+              ))}
+            </div>
+            
+            {/* Pagination */}
+            <Pagination />
+          </>
         ) : (
           <div className="text-center py-16">
             <div className="text-gray-400 text-lg mb-4">
-              {searchTerm ? 'No projects found matching your search.' : 'No projects available.'}
+              {debouncedSearchTerm ? 'No projects found matching your search.' : 'No projects available.'}
             </div>
+            {debouncedSearchTerm && (
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Search
+              </Button>
+            )}
           </div>
         )}
       </div>

@@ -2,13 +2,6 @@ const { Pool } = require('pg');
 const path = require('path'); // Import the path module
 
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-console.log("DATABASE_URL from env:", process.env.DATABASE_URL);
-// Explicitly load .env file from the server directory
-// REMOVED: require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-
-// REMOVED: console.log("DATABASE_URL from env:", process.env.DATABASE_URL);
-
-console.log("[SERVER/DB.JS] Initializing Pool. DATABASE_URL=", process.env.DATABASE_URL);
 
 // Environment-based database selection
 const useSQLite = process.env.NODE_ENV === 'development' && process.env.USE_SQLITE === 'true';
@@ -22,7 +15,7 @@ if (useSQLite) {
   const dbPath = path.join(__dirname, 'sidebuilds-complete.db');
   const db = new sqlite3.Database(dbPath);
 
-  console.log(`[SERVER/DB.JS] Using SQLite database at: ${dbPath}`);
+  // SQLite database initialized
 
   // Initialize basic tables asynchronously (don't block server startup)
   process.nextTick(() => {
@@ -180,6 +173,33 @@ if (useSQLite) {
       FOREIGN KEY (seller_id) REFERENCES users(user_id)
     )`);
 
+    // Create project_files table for file uploads
+    db.run(`CREATE TABLE IF NOT EXISTS project_files (
+      file_id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      file_type TEXT NOT NULL,
+      file_category TEXT DEFAULT 'document',
+      file_size INTEGER NOT NULL,
+      mime_type TEXT,
+      storage_path TEXT NOT NULL,
+      storage_type TEXT DEFAULT 'local',
+      is_public INTEGER DEFAULT 0,
+      download_count INTEGER DEFAULT 0,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    )`);
+
+    // Create indexes for project_files
+    db.run(`CREATE INDEX IF NOT EXISTS idx_project_files_project_id ON project_files(project_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_project_files_user_id ON project_files(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_project_files_type ON project_files(file_type)`);
+
       // Seed basic data
       db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
         if (!err && row.count === 0) {
@@ -214,9 +234,9 @@ if (useSQLite) {
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [project2Id, 'seller1', 'DevCollab', 'Developer collaboration platform', 'prototype', 1, 1, 3500]);
 
-          console.log('[SERVER/DB.JS] Test data seeded successfully');
+          // Test data seeded
           } catch (hashError) {
-            console.error('[SERVER/DB.JS] Error hashing passwords:', hashError);
+            // Error hashing passwords - using fallback
             // Use a simple fallback password for testing
             const fallbackPassword = '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'; // 'password'
 
@@ -228,28 +248,24 @@ if (useSQLite) {
                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
               ['buyer1', 'buyer1', 'buyer1@test.com', fallbackPassword, 'Jane', 'Buyer', 1]);
 
-            console.log('[SERVER/DB.JS] Used fallback password for test users');
+            // Used fallback password for test users
           }
         }
       });
 
-      console.log('[SERVER/DB.JS] Basic tables initialized');
+      // Basic tables initialized
     });
   });
   
   // Query wrapper to match PostgreSQL interface
   const query = (text, params = []) => {
     return new Promise((resolve, reject) => {
-      console.log('[DB-SQLITE] Query:', text, 'Params:', params);
-      
       // Handle transaction commands
       if (text.toLowerCase().trim() === 'begin transaction' || text.toLowerCase().trim() === 'begin') {
         db.run('BEGIN TRANSACTION', (err) => {
           if (err) {
-            console.error('[DB-SQLITE] BEGIN Error:', err);
             reject(err);
           } else {
-            console.log('[DB-SQLITE] BEGIN Result: transaction started');
             resolve({ rows: [], changes: 0 });
           }
         });
@@ -259,10 +275,8 @@ if (useSQLite) {
       if (text.toLowerCase().trim() === 'commit') {
         db.run('COMMIT', (err) => {
           if (err) {
-            console.error('[DB-SQLITE] COMMIT Error:', err);
             reject(err);
           } else {
-            console.log('[DB-SQLITE] COMMIT Result: transaction committed');
             resolve({ rows: [], changes: 0 });
           }
         });
@@ -272,10 +286,8 @@ if (useSQLite) {
       if (text.toLowerCase().trim() === 'rollback') {
         db.run('ROLLBACK', (err) => {
           if (err) {
-            console.error('[DB-SQLITE] ROLLBACK Error:', err);
             reject(err);
           } else {
-            console.log('[DB-SQLITE] ROLLBACK Result: transaction rolled back');
             resolve({ rows: [], changes: 0 });
           }
         });
@@ -285,20 +297,16 @@ if (useSQLite) {
       if (text.toLowerCase().includes('select')) {
         db.all(text, params, (err, rows) => {
           if (err) {
-            console.error('[DB-SQLITE] SELECT Error:', err);
             reject(err);
           } else {
-            console.log(`[DB-SQLITE] SELECT Result: ${rows.length} rows`);
             resolve({ rows });
           }
         });
       } else if (text.toLowerCase().includes('insert')) {
         db.run(text, params, function(err) {
           if (err) {
-            console.error('[DB-SQLITE] INSERT Error:', err);
             reject(err);
           } else {
-            console.log('[DB-SQLITE] INSERT Result: lastID=', this.lastID);
             resolve({ 
               rows: [], 
               insertId: this.lastID,
@@ -309,10 +317,8 @@ if (useSQLite) {
       } else {
         db.run(text, params, function(err) {
           if (err) {
-            console.error('[DB-SQLITE] RUN Error:', err);
             reject(err);
           } else {
-            console.log('[DB-SQLITE] RUN Result: changes=', this.changes);
             resolve({ 
               rows: [], 
               changes: this.changes
@@ -446,13 +452,63 @@ const convertPlaceholders = (text = '') => {
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-    // Connection pool settings
-    max: 20, // Maximum number of clients in the pool
+    // Enhanced connection pool settings for better performance
+    max: parseInt(process.env.DB_POOL_MAX || '20'), // Maximum number of clients in the pool
+    min: parseInt(process.env.DB_POOL_MIN || '5'), // Minimum number of clients to maintain
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-    connectionTimeoutMillis: 10000, // Maximum time to wait for connection to be established (increased to 10s)
-    // Standard PostgreSQL settings
-    statement_timeout: 10000, // Statement timeout in ms (10s)
-    query_timeout: 10000 // Query timeout in ms (10s)
+    connectionTimeoutMillis: 10000, // Maximum time to wait for connection to be established
+    // Performance optimizations
+    statement_timeout: 30000, // Statement timeout in ms (30s)
+    query_timeout: 30000, // Query timeout in ms (30s)
+    // Connection lifecycle
+    keepAlive: true, // Keep connections alive
+    keepAliveInitialDelayMillis: 10000, // Start keepalive after 10s
+    // Pool behavior
+    allowExitOnIdle: false, // Don't allow process to exit with idle clients
+    // Application name for monitoring
+    application_name: 'sidebuilds_api'
+});
+
+// Query performance monitoring
+const queryStats = {
+    totalQueries: 0,
+    slowQueries: 0,
+    errors: 0,
+    avgQueryTime: 0
+};
+
+// Monitor query performance
+const originalQuery = pool.query.bind(pool);
+pool.query = async (text, params) => {
+    const start = Date.now();
+    queryStats.totalQueries++;
+    
+    try {
+        const result = await originalQuery(text, params);
+        const duration = Date.now() - start;
+        
+        // Update average query time
+        queryStats.avgQueryTime = (queryStats.avgQueryTime * (queryStats.totalQueries - 1) + duration) / queryStats.totalQueries;
+        
+        // Log slow queries (over 1 second)
+        if (duration > 1000) {
+            queryStats.slowQueries++;
+            console.warn(`[DB] Slow query (${duration}ms): ${text.substring(0, 100)}...`);
+        }
+        
+        return result;
+    } catch (error) {
+        queryStats.errors++;
+        throw error;
+    }
+};
+
+// Get query statistics
+const getQueryStats = () => ({
+    ...queryStats,
+    poolSize: pool.totalCount,
+    idleConnections: pool.idleCount,
+    waitingClients: pool.waitingCount
 });
 
 // Test connection
@@ -465,7 +521,7 @@ pool.connect((err, client, release) => {
       if (err) {
         return console.error('Error executing query', err.stack);
       }
-      console.log('Successfully connected to PostgreSQL database. Server time:', result.rows[0].now);
+      // Database connection successful
     });
   });
   
@@ -486,18 +542,15 @@ async function reconnect() {
     }
     
     const delay = Math.min(2 ** connectionRetries * 1000, 30000); // Max 30 second delay
-    console.log(`Attempting to reconnect to database in ${delay/1000} seconds...`);
     
     setTimeout(async () => {
         connectionRetries++;
         try {
             const client = await pool.connect();
-            console.log('Successfully reconnected to database');
             client.release();
             isConnected = true;
             connectionRetries = 0; // Reset retry counter on success
         } catch (err) {
-            console.error('Reconnection attempt failed:', err.message);
             reconnect(); // Try again
         }
     }, delay);
@@ -505,7 +558,7 @@ async function reconnect() {
 
 // Monitor the connection pool
 pool.on('error', (err, client) => {
-    console.error('Unexpected error on idle client', err);
+    console.error('Unexpected error on idle client', err.message);
     isConnected = false;
     
     // Start reconnection process
@@ -515,9 +568,7 @@ pool.on('error', (err, client) => {
 // Test the connection
 async function testConnection() {
     try {
-        const res = await pool.query('SELECT version()');
-        console.log('Successfully connected to PostgreSQL database');
-        console.log('Database version:', res.rows[0].version);
+        await pool.query('SELECT version()');
         isConnected = true;
         return true;
     } catch (err) {
@@ -538,18 +589,10 @@ const query = async (text, params = []) => {
     
     try {
         const formattedText = convertPlaceholders(text);
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('[DB-POSTGRES] Original query:', text.substring(0, 200));
-            console.log('[DB-POSTGRES] Converted query:', formattedText.substring(0, 200));
-            console.log('[DB-POSTGRES] Params:', params);
-        }
         const result = await pool.query(formattedText, params);
         return result;
     } catch (err) {
         console.error('[DB-POSTGRES] Query error:', err.message);
-        console.error('[DB-POSTGRES] Query:', text.substring(0, 200));
-        console.error('[DB-POSTGRES] Error code:', err.code);
-        console.error('[DB-POSTGRES] Error detail:', err.detail);
         
         // Check for connection-related errors
         if (err.code === 'ECONNREFUSED' || err.code === '57P01' || err.code === '08006' || err.code === '08001') {
@@ -664,6 +707,7 @@ if (useSQLite) {
     isConnectionHealthy,
     checkConnection,
     isSQLite: false,
-    SQL // PostgreSQL SQL helper functions
+    SQL, // PostgreSQL SQL helper functions
+    getQueryStats // Query performance statistics
   };
 }

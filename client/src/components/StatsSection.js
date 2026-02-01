@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiUsers, FiDollarSign, FiActivity } from 'react-icons/fi';
+import { TrendingUp, Users, DollarSign, Activity } from 'lucide-react';
 
 const AnimatedCounter = ({ value, prefix = '', suffix = '', duration = 2 }) => {
   const [count, setCount] = useState(0);
@@ -33,10 +33,10 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '', duration = 2 }) => {
 
 const StatsSection = ({ stats }) => {
   const statItems = [
-    { label: 'Total Projects', value: stats?.totalProjects, icon: FiActivity, prefix: '', suffix: '' },
-    { label: 'Active Listings', value: stats?.activeListings, icon: FiTrendingUp, prefix: '', suffix: '' },
-    { label: 'Total Value', value: stats?.totalValue, icon: FiDollarSign, prefix: '$', suffix: '' },
-    { label: 'Community', value: stats?.activeUsers, icon: FiUsers, prefix: '', suffix: ' Makers' },
+    { label: 'Total Projects', value: stats?.totalProjects, icon: Activity, prefix: '', suffix: '' },
+    { label: 'Active Listings', value: stats?.activeListings, icon: TrendingUp, prefix: '', suffix: '' },
+    { label: 'Total Value', value: stats?.totalValue, icon: DollarSign, prefix: '$', suffix: '' },
+    { label: 'Community', value: stats?.activeUsers, icon: Users, prefix: '', suffix: ' Makers' },
   ];
 
   return (

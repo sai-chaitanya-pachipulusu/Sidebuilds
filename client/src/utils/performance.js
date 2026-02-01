@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback, memo } from 'react';
 
 // performance.js - Enhanced Performance optimization utilities
 
@@ -74,7 +74,7 @@ export const createIntersectionObserver = (callback, options = {}) => {
   return new IntersectionObserver(callback, defaultOptions);
 };
 
-// Virtual scrolling implementation
+// Virtual scrolling implementation using react-window style approach
 export class VirtualScroller {
   constructor(container, itemHeight, renderItem, bufferSize = 5) {
     this.container = container;
@@ -84,14 +84,16 @@ export class VirtualScroller {
     this.scrollTop = 0;
     this.containerHeight = 0;
     this.items = [];
+    this.animationFrameId = null;
     
     this.init();
   }
   
   init() {
-    this.container.addEventListener('scroll', this.handleScroll.bind(this));
+    // Use passive event listener for better scroll performance
+    this.container.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
     this.updateContainerHeight();
-    window.addEventListener('resize', this.updateContainerHeight.bind(this));
+    window.addEventListener('resize', this.updateContainerHeight.bind(this), { passive: true });
   }
   
   updateContainerHeight() {
@@ -100,8 +102,16 @@ export class VirtualScroller {
   }
   
   handleScroll() {
-    this.scrollTop = this.container.scrollTop;
-    this.render();
+    // Cancel any pending animation frame
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    
+    // Use requestAnimationFrame for smooth rendering
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.scrollTop = this.container.scrollTop;
+      this.render();
+    });
   }
   
   setItems(items) {
@@ -132,6 +142,7 @@ export class VirtualScroller {
     // Create visible items container
     const itemsContainer = document.createElement('div');
     itemsContainer.style.transform = `translateY(${offsetY}px)`;
+    itemsContainer.style.willChange = 'transform'; // GPU acceleration hint
     
     visibleItems.forEach((item, index) => {
       const element = this.renderItem(item, startIndex + index);
@@ -143,6 +154,9 @@ export class VirtualScroller {
   }
   
   destroy() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
     this.container.removeEventListener('scroll', this.handleScroll);
     window.removeEventListener('resize', this.updateContainerHeight);
   }
@@ -305,141 +319,176 @@ export class PerformanceMonitor {
   }
 }
 
-// Bundle size analyzer
-export const analyzeBundleSize = () => {
-  if (window.performance && window.performance.getEntriesByType) {
-    const resources = window.performance.getEntriesByType('resource');
-    const jsResources = resources.filter(resource => 
-      resource.name.includes('.js') || resource.name.includes('.jsx')
-    );
-    
-    const totalSize = jsResources.reduce((total, resource) => {
-      return total + (resource.transferSize || 0);
-    }, 0);
-    
-    return {
-      totalJSSize: totalSize,
-      resources: jsResources.map(resource => ({
-        name: resource.name,
-        size: resource.transferSize,
-        loadTime: resource.duration
-      })),
-      recommendations: totalSize > 1000000 ? [
-        'Consider code splitting',
-        'Implement lazy loading',
-        'Remove unused dependencies'
-      ] : []
-    };
+// React.memo optimization helpers
+export const areEqual = (prevProps, nextProps) => {
+  // Deep comparison for simple objects
+  if (typeof prevProps !== 'object' || typeof nextProps !== 'object') {
+    return prevProps === nextProps;
   }
   
-  return null;
+  const keys = Object.keys(prevProps);
+  if (keys.length !== Object.keys(nextProps).length) {
+    return false;
+  }
+  
+  return keys.every(key => prevProps[key] === nextProps[key]);
 };
 
-// React performance hooks
-export const usePerformanceMonitor = (componentName) => {
-  const monitor = React.useRef(new PerformanceMonitor());
-  
-  React.useEffect(() => {
-    monitor.current.markRenderStart(componentName);
-    
-    return () => {
-      monitor.current.markRenderEnd(componentName);
-    };
-  });
-  
-  return monitor.current;
+// Memoized component wrapper
+export const memoizeComponent = (Component, customAreEqual) => {
+  return memo(Component, customAreEqual || areEqual);
 };
 
-// Memoization utilities
-export const createMemoizedSelector = (selector, equalityFn = (a, b) => a === b) => {
-  let lastArgs = [];
-  let lastResult;
-  
-  return (...args) => {
-    const hasChanged = args.length !== lastArgs.length || 
-      args.some((arg, index) => !equalityFn(arg, lastArgs[index]));
-    
-    if (hasChanged) {
-      lastResult = selector(...args);
-      lastArgs = args;
+// Web Worker for heavy computations
+export const createWorker = (workerFunction) => {
+  const workerCode = `
+    self.onmessage = function(e) {
+      const result = (${workerFunction.toString()})(e.data);
+      self.postMessage(result);
     }
-    
-    return lastResult;
-  };
+  `;
+  
+  const blob = new Blob([workerCode], { type: 'application/javascript' });
+  return new Worker(URL.createObjectURL(blob));
 };
 
-// Network optimization
-export const createRequestBatcher = (batchSize = 10, delay = 100) => {
-  let batch = [];
-  let timeoutId = null;
+// RAF-based animation scheduler for smooth 60fps
+export const createAnimationScheduler = () => {
+  let rafId = null;
+  const tasks = new Set();
   
-  return (request) => {
-    return new Promise((resolve, reject) => {
-      batch.push({ request, resolve, reject });
-      
-      if (batch.length >= batchSize) {
-        processBatch();
-      } else if (!timeoutId) {
-        timeoutId = setTimeout(processBatch, delay);
+  const schedule = () => {
+    if (rafId) return;
+    
+    rafId = requestAnimationFrame((timestamp) => {
+      rafId = null;
+      tasks.forEach(task => task(timestamp));
+      if (tasks.size > 0) {
+        schedule();
       }
     });
   };
   
-  function processBatch() {
-    const currentBatch = batch.splice(0);
-    clearTimeout(timeoutId);
-    timeoutId = null;
-    
-    // Process all requests in the batch
-    Promise.allSettled(currentBatch.map(item => item.request()))
-      .then(results => {
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            currentBatch[index].resolve(result.value);
-          } else {
-            currentBatch[index].reject(result.reason);
-          }
-        });
-      });
+  return {
+    add: (task) => {
+      tasks.add(task);
+      schedule();
+    },
+    remove: (task) => {
+      tasks.delete(task);
+    },
+    clear: () => {
+      tasks.clear();
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+  };
+};
+
+// Bundle size analyzer helper
+export const analyzeBundleSize = () => {
+  if (typeof window !== 'undefined' && window.performance) {
+    const navigation = window.performance.getEntriesByType('navigation')[0];
+    if (navigation) {
+      return {
+        transferSize: navigation.transferSize,
+        encodedBodySize: navigation.encodedBodySize,
+        decodedBodySize: navigation.decodedBodySize,
+        loadTime: navigation.loadEventEnd - navigation.startTime
+      };
+    }
+  }
+  return null;
+};
+
+// Code splitting with prefetch
+export const prefetchComponent = (importFunc) => {
+  const prefetch = () => {
+    importFunc();
+  };
+  
+  // Prefetch on idle time
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(prefetch, { timeout: 2000 });
+  } else {
+    setTimeout(prefetch, 2000);
   }
 };
 
-// Export performance monitor instance
+// GPU-accelerated animations helper
+export const enableGPUAcceleration = (element) => {
+  if (element && element.style) {
+    element.style.willChange = 'transform, opacity';
+    element.style.transform = 'translateZ(0)'; // Force GPU layer
+  }
+};
+
+// Remove GPU acceleration to free memory
+export const disableGPUAcceleration = (element) => {
+  if (element && element.style) {
+    element.style.willChange = 'auto';
+    element.style.transform = '';
+  }
+};
+
+// Memory leak detector
+export const createMemoryLeakDetector = (threshold = 50 * 1024 * 1024) => {
+  let baselineMemory = 0;
+  
+  return {
+    start: () => {
+      if (window.performance && window.performance.memory) {
+        baselineMemory = window.performance.memory.usedJSHeapSize;
+      }
+    },
+    check: () => {
+      if (window.performance && window.performance.memory) {
+        const currentMemory = window.performance.memory.usedJSHeapSize;
+        const memoryGrowth = currentMemory - baselineMemory;
+        
+        if (memoryGrowth > threshold) {
+          console.warn(`[Memory Leak] Potential leak detected: ${(memoryGrowth / 1024 / 1024).toFixed(2)}MB growth`);
+          return true;
+        }
+      }
+      return false;
+    }
+  };
+};
+
+// React hooks for performance optimization
+export const useMemoizedCallback = (callback, deps) => {
+  return useCallback(callback, deps);
+};
+
+export const useMemoizedValue = (factory, deps) => {
+  return useMemo(factory, deps);
+};
+
+// Export singleton instance
 export const performanceMonitor = new PerformanceMonitor();
-  timers.forEach(timer => {
-    if (timer) clearTimeout(timer);
-  });
-};
-
-export const cleanupIntervals = (intervals) => {
-  intervals.forEach(interval => {
-    if (interval) clearInterval(interval);
-  });
-};
-
-// Performance monitoring
-export const measurePerformance = (name, fn) => {
-  const start = performance.now();
-  const result = fn();
-  const end = performance.now();
-  console.log(`${name} took ${end - start} milliseconds`);
-  return result;
-};
-
-// Bundle analysis helper
-export const checkBundleSize = () => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Bundle analysis available in production build');
-  }
-};
 
 export default {
   lazyLoad,
   debounce,
   throttle,
   createIntersectionObserver,
+  VirtualScroller,
+  createLazyImageLoader,
   cleanupTimers,
-  cleanupIntervals,
-  measurePerformance,
-  checkBundleSize
-}; 
+  PerformanceMonitor,
+  performanceMonitor,
+  areEqual,
+  memoizeComponent,
+  createWorker,
+  createAnimationScheduler,
+  analyzeBundleSize,
+  prefetchComponent,
+  enableGPUAcceleration,
+  disableGPUAcceleration,
+  createMemoryLeakDetector,
+  useMemoizedCallback,
+  useMemoizedValue
+};

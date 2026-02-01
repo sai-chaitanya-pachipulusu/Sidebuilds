@@ -19,9 +19,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-    background-size: 24px 24px;
-    background-position: 0 0;
+    background-color: #0a0a0a;
     min-height: 100vh;
   }
 
@@ -60,7 +58,7 @@
 @layer components {
   /* Button enhancements */
   .btn-primary {
-    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+    @apply bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
   }
 
   .btn-secondary {
@@ -85,13 +83,13 @@
     @apply bg-gray-900/50 border border-gray-700 text-white placeholder-gray-400 rounded-lg px-4 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200;
   }
 
-  /* Text gradient utilities */
+  /* Text gradient utilities - replaced with solid colors */
   .text-gradient-primary {
-    @apply bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent;
+    @apply text-purple-400;
   }
 
   .text-gradient-secondary {
-    @apply bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent;
+    @apply text-fuchsia-400;
   }
 
   /* Loading states */
@@ -105,7 +103,7 @@
 
   .loading-shimmer::after {
     content: "";
-    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    @apply absolute inset-0 -translate-x-full bg-gray-700/50;
     animation: shimmer 2s infinite;
   }
 
@@ -480,13 +478,8 @@ a:focus {
     --spring-duration: 0.6s;
     --spring-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
-    /* Premium color palette - Purple Theme */
-    --purple-gradient: linear-gradient(
-      135deg,
-      #8b5cf6 0%,
-      #d946ef 50%,
-      #ec4899 100%
-    );
+    /* Premium color palette - Purple Theme (solid color replacement) */
+    --purple-solid: #8b5cf6;
     --glass-bg: rgba(5, 5, 5, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-hover: rgba(255, 255, 255, 0.05);
@@ -583,21 +576,13 @@ a:focus {
     animation: fade-in-up 0.8s var(--spring-ease) forwards;
   }
 
-  /* Premium gradient text - Holographic */
+  /* Premium gradient text - replaced with solid colors */
   .gradient-text {
-    background: var(--purple-gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: var(--purple-solid);
   }
   
   .gradient-text-silver {
-    background: linear-gradient(to bottom, #ffffff 0%, #a1a1aa 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: #d4d4d8;
   }
 
   /* Floating navbar effect */
@@ -637,7 +622,7 @@ a:focus {
       0 10px 10px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05); /* Darker shadows for depth */
   }
   
-  /* Spotlight Effect Container */
+  /* Spotlight Effect Container - simplified without gradient */
   .spotlight-card {
     position: relative;
     overflow: hidden;
@@ -645,26 +630,9 @@ a:focus {
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
-  .spotlight-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(
-      800px circle at var(--mouse-x) var(--mouse-y),
-      rgba(255, 255, 255, 0.06),
-      transparent 40%
-    );
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.5s;
-    pointer-events: none;
-  }
-  
-  .spotlight-card:hover::before {
-    opacity: 1;
+  .spotlight-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(20, 20, 20, 0.9);
   }
 }
 

@@ -1,15 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Linkedin, Rss } from 'lucide-react';
-import {
-  FiGithub,
-  FiTwitter,
-  FiLinkedin,
-  FiHeart,
-  FiMail,
-  FiMapPin
-} from 'react-icons/fi';
-import { BsDiscord } from 'react-icons/bs';
+import { Github, Twitter, Linkedin, Heart, Mail, MapPin, MessageCircle } from 'lucide-react';
 import Logo from './Logo';
 
 const Footer = () => {
@@ -28,10 +19,10 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: FiGithub, href: 'https://github.com/sidebuilds', label: 'GitHub' },
-    { icon: FiTwitter, href: 'https://twitter.com/sidebuilds', label: 'Twitter' },
-    { icon: FiLinkedin, href: 'https://linkedin.com/company/sidebuilds', label: 'LinkedIn' },
-    { icon: BsDiscord, href: 'https://discord.gg/sidebuilds', label: 'Discord' }
+    { icon: Github, href: 'https://github.com/sidebuilds', label: 'GitHub' },
+    { icon: Twitter, href: 'https://twitter.com/sidebuilds', label: 'Twitter' },
+    { icon: Linkedin, href: 'https://linkedin.com/company/sidebuilds', label: 'LinkedIn' },
+    { icon: MessageCircle, href: 'https://discord.gg/sidebuilds', label: 'Discord' }
   ];
 
   return (
@@ -129,7 +120,7 @@ const Footer = () => {
               <span>© 2024 SideBuilds</span>
               <span className="w-1 h-1 bg-gray-600 rounded-full" />
               <span className="flex items-center gap-1">
-                Made with <FiHeart className="w-3 h-3 text-red-500" /> by makers
+                Made with <Heart className="w-3 h-3 text-red-500" /> by makers
               </span>
             </div>
 

@@ -71,11 +71,11 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-[#000000] text-white overflow-x-hidden">
-      {/* Global top glow - visible behind transparent navbar */}
+      {/* Global top glow - simplified without gradient */}
       <div 
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[600px] pointer-events-none z-40"
         style={{
-          background: 'radial-gradient(ellipse at center top, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.06) 30%, transparent 60%)',
+          background: 'rgba(139,92,246,0.08)',
         }}
       />
       
@@ -150,16 +150,17 @@ const AppContent = () => {
       
       {/* Enhanced Toast Notifications */}
       <Toaster 
-        position="bottom-right"
+        position="top-center"
         toastOptions={{
-          duration: 4000,
+          duration: 5000,
           style: {
-            background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
+            background: '#1a1a1a',
             color: '#fff',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
             boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
             backdropFilter: 'blur(10px)',
+            zIndex: 99999,
           },
           success: {
             iconTheme: {

@@ -54,11 +54,7 @@ const corsOptions = {
         if (normalizedAllowedOrigins.indexOf(normalizedOrigin) !== -1) {
             callback(null, true);
         } else {
-            console.log(
-                'CORS blocked origin:', origin, '(Normalized:', normalizedOrigin + ')',
-                'Expected one of:', allowedOrigins, '(Normalized:', normalizedAllowedOrigins.join(', ') + ')',
-                'or server self-origin:', serverHost
-            );
+            console.warn('CORS blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -93,7 +89,6 @@ const authenticateSocket = (socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
-        console.log(`[Socket.IO] No token provided for socket ${socket.id}`);
         return next(new Error('Authentication required'));
     }
 
@@ -107,10 +102,8 @@ const authenticateSocket = (socket, next) => {
         socket.user = decoded.user;
         socket.isAuthenticated = true;
         
-        console.log(`[Socket.IO] User ${decoded.user.id} authenticated successfully`);
         next();
     } catch (err) {
-        console.log(`[Socket.IO] Authentication failed for socket ${socket.id}:`, err.message);
         next(new Error('Invalid token'));
     }
 };
@@ -133,11 +126,8 @@ setInterval(() => {
 app.set('wsEvents', wsEvents);
 
 io.on('connection', (socket) => {
-    console.log(`[Socket.IO] Authenticated user ${socket.user.username} (${socket.userId}) connected: ${socket.id}`);
-
     // Auto-join user to their personal room
     socket.join(`user_${socket.userId}`);
-    console.log(`[Socket.IO] User ${socket.userId} joined personal room: user_${socket.userId}`);
 
     // Broadcast online status
     socket.broadcast.emit('user_online', {
@@ -156,7 +146,6 @@ io.on('connection', (socket) => {
             const roomName = `user_${data.userId}`;
             if (!socket.rooms.has(roomName)) {
                 socket.join(roomName);
-                console.log(`[Socket.IO] User ${data.userId} joined room ${roomName}`);
             }
             socket.emit('room_joined', { room: roomName });
         } else {
@@ -165,8 +154,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', (reason) => {
-        console.log(`[Socket.IO] User ${socket.user?.username} (${socket.userId}) disconnected: ${reason}`);
-        
         // Broadcast offline status
         socket.broadcast.emit('user_offline', {
             userId: socket.userId,
@@ -214,8 +201,6 @@ io.on('connection', (socket) => {
                 socket.typingInRooms.delete(roomName);
             }
         }, 10000);
-        
-        console.log(`[Socket.IO] User ${socket.user.username} started typing in ${roomName}`);
     });
 
     socket.on('typing_stopped', ({ purchase_request_id }) => {
@@ -233,7 +218,6 @@ io.on('connection', (socket) => {
         if (socket.typingInRooms) {
             socket.typingInRooms.delete(roomName);
         }
-        console.log(`[Socket.IO] User ${socket.user.username} stopped typing in ${roomName}`);
     });
 
     // Enhanced purchase request room management
@@ -253,8 +237,6 @@ io.on('connection', (socket) => {
             username: socket.user.username,
             purchase_request_id
         });
-        
-        console.log(`[Socket.IO] User ${socket.user.username} joined ${roomName}`);
     });
 
     socket.on('leave_purchase_request_room', ({ purchase_request_id }) => {
@@ -280,8 +262,6 @@ io.on('connection', (socket) => {
             username: socket.user.username,
             purchase_request_id
         });
-        
-        console.log(`[Socket.IO] User ${socket.user.username} left ${roomName}`);
     });
 
     // Enhanced message handling
@@ -309,10 +289,8 @@ io.on('connection', (socket) => {
                 sender_name: socket.user.username,
                 sender_role: socket.user.role || 'user'
             });
-
-            console.log(`[Socket.IO] Message sent in ${roomName} by ${socket.user.username}`);
         } catch (error) {
-            console.error('[Socket.IO] Message send error:', error);
+            console.error('[Socket.IO] Message send error:', error.message);
             socket.emit('error', { message: 'Failed to send message' });
         }
     });
@@ -329,7 +307,7 @@ app.use((req, res, next) => {
     "style-src 'self' https://js.stripe.com 'unsafe-inline' https://*.stripe.com; " +      // Allow unsafe-inline for styles
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://*.stripe.com; " +
     "connect-src 'self' https://api.stripe.com https://m.stripe.network https://*.stripe.com http://localhost:5002 ws://localhost:5002; " + // Added localhost:5002 and ws://localhost:5002 for Socket.IO
-    "img-src 'self' data: https://*.stripe.com; " + // Allow images from Stripe and data URIs
+    "img-src 'self' data: blob: https://*.stripe.com; " + // Allow images from Stripe, data URIs, and blob URLs
     "font-src 'self' https://js.stripe.com https://*.stripe.com;" // Allow fonts from Stripe
   );
   next();
@@ -357,7 +335,35 @@ app.post('/api/payments/webhook',
 // For all other routes - Parse JSON body
 app.use(express.json());
 
-// --- Routes --- 
+// --- Compression Middleware ---
+const compression = require('compression');
+app.use(compression({
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+            // Don't compress responses with this request header
+            return false;
+        }
+        // Compress all HTTP responses
+        return compression.filter(req, res);
+    },
+    level: 6 // Balanced compression level
+}));
+
+// --- Rate Limiting Middleware ---
+const { apiLimiter, searchLimiter, uploadLimiter } = require('./middleware/rateLimiter');
+
+// Apply API rate limiting to all API routes
+app.use('/api/', apiLimiter);
+
+// Apply stricter rate limiting to search endpoints
+app.use('/api/projects/search', searchLimiter);
+app.use('/api/public/marketplace', searchLimiter);
+
+// Apply upload rate limiting to file upload endpoints
+app.use('/api/files/upload', uploadLimiter);
+app.use('/api/projects/:id/files', uploadLimiter);
+
+// --- Routes ---
 app.get('/', (req, res) => {
     res.send('Side Project Tracker API is running!');
 });
@@ -372,10 +378,8 @@ app.use('/api/payments', payments.router);
 // Add payment extension routes
 app.use('/api/payments', require('./routes/payments-extensions'));
 
-console.log('SERVER_INDEX: About to mount /api/auth routes...');
 // Mount authentication routes
-app.use('/api/auth', require('./routes/auth')); 
-console.log('SERVER_INDEX: Successfully mounted /api/auth routes.');
+app.use('/api/auth', require('./routes/auth'));
 
 // Mount user profile routes
 app.use('/api/users', require('./routes/users'));
@@ -426,6 +430,13 @@ app.use('/api/notifications', notificationRoutes);
 const dashboardRoutes = require('./routes/dashboard');
 app.use('/api/dashboard', dashboardRoutes);
 
+// Mount File routes
+const fileRoutes = require('./routes/files');
+app.use('/api/files', fileRoutes);
+
+// Serve uploaded files statically (for development)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // AI and Analytics routes
 const aiRoutes = require('./routes/ai');
 const analyticsRoutes = require('./routes/analytics');
@@ -436,39 +447,34 @@ app.use('/api/analytics', analyticsRoutes);
 const webhookRoutes = require('./routes/webhooks');
 app.use('/api/webhooks', webhookRoutes);
 
+// Performance monitoring routes
+const performanceRoutes = require('./routes/performance');
+app.use('/api/performance', performanceRoutes);
+
 // --- Server Initialization ---
 
 // Uncaught exception handling
 process.on('uncaughtException', (err) => {
-    console.error('UNCAUGHT EXCEPTION!');
-    console.error(err.name, err.message);
-    console.error(err.stack);
-    console.error('Server will continue running...');
+    console.error('UNCAUGHT EXCEPTION:', err.name, err.message);
     // In production, you might want to restart the process with a process manager like PM2
 });
 
 // Unhandled promise rejection handling
 process.on('unhandledRejection', (err) => {
-    console.error('UNHANDLED REJECTION!');
-    console.error(err.name, err.message);
-    console.error(err.stack);
-    console.error('Server will continue running...');
+    console.error('UNHANDLED REJECTION:', err.name, err.message);
     // In production, you might want to restart the process with a process manager like PM2
 });
 
 // Keep the server alive with a heartbeat
 const heartbeatInterval = setInterval(() => {
-    console.log(`Server heartbeat - ${new Date().toISOString()}`);
     // Optionally, check database connection health
     db.query('SELECT 1').catch(err => {
-        console.error('Database connection check failed:', err);
-        // Attempt to reconnect if necessary
+        console.error('Database connection check failed:', err.message);
     });
 }, 60000); // Check every minute
 
 // Clean up resources if the process is killed
 process.on('exit', (code) => {
-    console.log(`Server is shutting down with code: ${code}`);
     clearInterval(heartbeatInterval);
 });
 
@@ -476,11 +482,7 @@ function startServer(onPort) {
   return new Promise((resolve, reject) => {
     server.listen(onPort, () => {
       console.log(`Server listening on port ${onPort}`);
-      console.log(`Socket.IO server initialized and listening.`);
-      console.log(`CORS enabled. Allowed origins include: ${allowedOrigins.join(', ')} and server self-origin (http://localhost:${onPort})`);
-      if (process.env.STRIPE_WEBHOOK_SECRET) {
-        console.log('Stripe webhook secret is configured');
-      } else {
+      if (!process.env.STRIPE_WEBHOOK_SECRET) {
         console.warn('WARNING: Stripe webhook secret is missing. Webhooks will not work properly.');
       }
       resolve(onPort);
@@ -489,7 +491,7 @@ function startServer(onPort) {
         console.error(`Port ${onPort} is already in use.`);
         reject(error);
       } else {
-        console.error('Server error:', error);
+        console.error('Server error:', error.message);
         reject(error);
       }
     });
@@ -520,26 +522,18 @@ function startServer(onPort) {
 
 // Optional: Graceful shutdown
 process.on('SIGINT', async () => {
-    console.log('\nGracefully shutting down from SIGINT (Ctrl+C)');
-    clearInterval(heartbeatInterval); // Assuming heartbeatInterval is defined globally or accessible
+    clearInterval(heartbeatInterval);
     
-    io.close(() => { // Close socket.io server
-        console.log('Socket.IO server closed.');
-    });
-
-    server.close(() => {
-        console.log('HTTP server closed.');
-    });
+    io.close(() => {});
+    server.close(() => {});
     
     try {
-        // Assuming db.pool is the correct way to access your PostgreSQL pool
         if (db && db.pool && typeof db.pool.end === 'function') {
-            await db.pool.end(); 
-            console.log('Database pool closed.');
+            await db.pool.end();
         }
         process.exit(0);
     } catch (err) {
-        console.error('Error during shutdown:', err.stack);
+        console.error('Error during shutdown:', err.message);
         process.exit(1);
     }
 }); 

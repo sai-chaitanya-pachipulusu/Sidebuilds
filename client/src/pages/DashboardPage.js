@@ -410,7 +410,7 @@ const DashboardPage = () => {
             </div>
             <motion.button
               onClick={() => navigate('/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:brightness-110 transition-all duration-200 shadow-lg shadow-purple-500/20 border border-purple-500/20"
+              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-500/20 border border-purple-500/20"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >

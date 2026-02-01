@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaCheck, FaArrowRight, FaStar, FaRocket, FaCrown } from 'react-icons/fa';
+import { Check, ArrowRight, Star, Rocket, Crown } from 'lucide-react';
 import SEO from '../components/SEO';
 
 const PricingPage = () => {
@@ -18,7 +18,7 @@ const PricingPage = () => {
         'Standard listing visibility',
         'Basic messaging'
       ],
-      icon: FaRocket,
+      icon: Rocket,
       color: 'blue',
       popular: false
     },
@@ -36,7 +36,7 @@ const PricingPage = () => {
         'Custom project showcase',
         'Buyer verification badge'
       ],
-      icon: FaStar,
+      icon: Star,
       color: 'purple',
       popular: true
     },
@@ -54,7 +54,7 @@ const PricingPage = () => {
         'Priority listing placement',
         'Advanced security features'
       ],
-      icon: FaCrown,
+      icon: Crown,
       color: 'gold',
       popular: false
     }
@@ -167,14 +167,14 @@ const PricingPage = () => {
                       : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
                   }`}>
                     Get Started
-                    <FaArrowRight className="inline ml-2" />
+                    <ArrowRight className="inline ml-2" />
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   {plan.features.map((feature, featureIndex) => (
                     <div key={featureIndex} className="flex items-center">
-                      <FaCheck className="w-4 h-4 text-green-400 mr-3 flex-shrink-0" />
+                      <Check className="w-4 h-4 text-green-400 mr-3 flex-shrink-0" />
                       <span className="text-gray-300">{feature}</span>
                     </div>
                   ))}

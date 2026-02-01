@@ -45,8 +45,6 @@ const updateStatus = (newStatus, details = null) => {
     }
   }
   
-  console.log(`[Socket.IO] Status: ${newStatus}${details ? ' - ' + details : ''}`);
-  
   // Notify all listeners
   statusListeners.forEach(listener => {
     try {
@@ -78,10 +76,6 @@ export const getSocket = () => {
     throw new Error("Socket not initialized. Call initializeSocket first.");
   }
   
-  if (!socket.connected && !socket.connecting) {
-    console.warn('[Socket.IO] Socket exists but is not connected. Current status:', status);
-  }
-  
   return socket;
 };
 
@@ -99,22 +93,18 @@ export const initializeSocket = (token) => {
   
   if (socket && !needsReconnect) {
     if (socket.connected) {
-      console.log('[Socket.IO] Already connected with same token');
       return socket;
     } else if (socket.connecting) {
-      console.log('[Socket.IO] Connection in progress with same token');
       return socket;
     }
   }
   
   // Clean up existing connection if needed
   if (socket) {
-    console.log('[Socket.IO] Cleaning up existing connection...');
     cleanupSocket();
   }
   
   currentToken = token;
-  console.log(`[Socket.IO] Initializing production connection to ${SOCKET_URL}`);
   
   // Enhanced socket configuration
   socket = io(SOCKET_URL, {
@@ -194,13 +184,6 @@ const handleConnect = () => {
   
   // Flush message buffer
   flushMessageBuffer();
-  
-  console.log('[Socket.IO] Connected successfully:', {
-    socketId: socket.id,
-    transport: socket.io.engine.transport.name,
-    connectTime,
-    reconnectAttempt
-  });
 };
 
 // Enhanced disconnect handler
@@ -223,8 +206,6 @@ const handleDisconnect = (reason) => {
     // Network issues or other problems
     updateStatus('reconnecting', `Reconnecting due to: ${reason}`);
   }
-  
-  console.log('[Socket.IO] Disconnected:', reason);
 };
 
 // Enhanced error handling
@@ -244,28 +225,12 @@ const handleConnectionError = (error) => {
   
   updateStatus('error', `${errorMessage} (attempt ${reconnectAttempt}/${maxReconnectAttempts})`);
   updateConnectionQuality('disconnected');
-  
-  console.error('[Socket.IO] Connection error:', {
-    error,
-    attempt: reconnectAttempt,
-    maxAttempts: maxReconnectAttempts
-  });
 };
 
 // Reconnection attempt handler
 const handleReconnectAttempt = (attempt) => {
   reconnectAttempt = attempt;
   updateStatus('reconnecting', `Attempt ${attempt}/${maxReconnectAttempts}`);
-  
-  // Exponential backoff with jitter
-  const delay = Math.min(reconnectDelay * Math.pow(2, attempt - 1), 30000);
-  const jitter = Math.random() * 1000;
-  
-  setTimeout(() => {
-    if (socket && !socket.connected) {
-      console.log(`[Socket.IO] Reconnect attempt ${attempt} after ${delay + jitter}ms`);
-    }
-  }, delay + jitter);
 };
 
 // Successful reconnection handler
@@ -312,8 +277,6 @@ const handleServerMaintenance = (data) => {
 
 // Rate limit warning handler
 const handleRateLimitWarning = (data) => {
-  console.warn('[Socket.IO] Rate limit warning:', data);
-  
   // Reduce heartbeat frequency temporarily
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
@@ -323,21 +286,15 @@ const handleRateLimitWarning = (data) => {
 
 // Generic error handler
 const handleError = (error) => {
-  console.error('[Socket.IO] Socket error:', error);
-  
   // Categorize error types
   if (error.type === 'RateLimitError') {
     handleRateLimitWarning(error.data);
-  } else if (error.type === 'ValidationError') {
-    console.error('[Socket.IO] Message validation error:', error);
   }
 };
 
 // Enhanced disconnect with cleanup
 export const disconnectSocket = () => {
   if (socket) {
-    console.log('[Socket.IO] Disconnecting socket...');
-    
     // Stop heartbeat
     stopHeartbeat();
     
@@ -444,15 +401,11 @@ const handlePong = (data) => {
     
     // Update connection quality based on latency
     updateConnectionQuality(getQualityFromLatency(averageLatency));
-    
-    console.log(`[Socket.IO] Ping: ${latency}ms (avg: ${Math.round(averageLatency)}ms)`);
   }
 };
 
 // Handle server heartbeat response
 const handleServerHeartbeat = (data) => {
-  console.log('[Socket.IO] Server heartbeat:', data);
-  
   // Update server status information
   if (data.connectedUsers !== undefined) {
     // Emit event for UI components that might want to show this
@@ -468,7 +421,6 @@ const handleServerHeartbeat = (data) => {
 
 // Enhanced token refresh success handler
 const handleTokenRefreshSuccess = (data) => {
-  console.log('[Socket.IO] Token refresh successful:', data);
   updateStatus('connected', 'Authentication refreshed');
   
   // Emit success event for UI components
@@ -482,7 +434,6 @@ const handleTokenRefreshSuccess = (data) => {
 
 // Enhanced token refresh error handler
 const handleTokenRefreshError = (data) => {
-  console.error('[Socket.IO] Token refresh error:', data);
   updateStatus('error', `Token refresh failed: ${data.error}`);
   
   // Try to get a new token one more time
@@ -503,7 +454,6 @@ const getQualityFromLatency = (latency) => {
 const updateConnectionQuality = (quality) => {
   if (connectionQuality !== quality) {
     connectionQuality = quality;
-    console.log(`[Socket.IO] Connection quality: ${quality}`);
   }
 };
 
@@ -523,8 +473,6 @@ const bufferMessage = (event, data) => {
 
 const flushMessageBuffer = () => {
   if (socket && socket.connected && messageBuffer.length > 0) {
-    console.log(`[Socket.IO] Flushing ${messageBuffer.length} buffered messages`);
-    
     messageBuffer.forEach(message => {
       try {
         socket.emit(message.event, message.data);
@@ -569,7 +517,6 @@ export const emitWithRetry = (event, data, options = {}) => {
       
       const timeoutId = setTimeout(() => {
         if (attempts < retries) {
-          console.log(`[Socket.IO] Retry emit ${event} (attempt ${attempts + 1}/${retries})`);
           attemptEmit();
         } else {
           reject(new Error(`Failed to emit ${event} after ${retries} attempts`));
@@ -593,13 +540,10 @@ export const emitWithRetry = (event, data, options = {}) => {
 
 // Enhanced token refresh functionality with multiple strategies
 const handleTokenRefreshRequired = async () => {
-  console.log('[Socket.IO] Token refresh required by server');
   await refreshTokenAndReconnect();
 };
 
 const handleTokenRefreshWarning = (data) => {
-  console.log('[Socket.IO] Token refresh warning:', data);
-  
   // Emit custom event for UI components to show warning
   window.dispatchEvent(new CustomEvent('socket-token-expiring', {
     detail: {
@@ -616,7 +560,6 @@ const handleTokenRefreshWarning = (data) => {
 
 const refreshTokenAndReconnect = async () => {
   try {
-    console.log('[Socket.IO] Attempting token refresh...');
     updateStatus('reconnecting', 'Refreshing authentication...');
     
     // Strategy 1: Try refresh endpoint
@@ -633,8 +576,6 @@ const refreshTokenAndReconnect = async () => {
     }
     
     if (newToken) {
-      console.log('[Socket.IO] Token refreshed successfully');
-      
       // Update token in localStorage
       localStorage.setItem('token', newToken);
       currentToken = newToken;
@@ -675,8 +616,6 @@ const refreshTokenAndReconnect = async () => {
       throw new Error('Unable to obtain new token');
     }
   } catch (error) {
-    console.error('[Socket.IO] Token refresh failed:', error);
-    
     // Redirect to login if refresh fails
     updateStatus('error', 'Authentication expired - please log in again');
     notifyAuthenticationFailure();

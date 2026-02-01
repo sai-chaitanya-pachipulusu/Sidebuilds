@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
-const auth = require('../middleware/auth');
+const auth = require('../middleware/authMiddleware');
 const db = require('../db');
 
 // @route   GET /api/purchase-requests/:requestId/messages

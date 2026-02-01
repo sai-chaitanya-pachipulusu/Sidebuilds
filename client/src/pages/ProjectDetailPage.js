@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
@@ -6,8 +6,41 @@ import { useAuth } from '../context/AuthContext';
 import { getProjectById, expressInterestInProject } from '../services/api';
 import PaymentService from '../services/paymentService';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
-import { DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, Github, Send, X, CheckCircle, BookmarkCheck, Trophy, ExternalLink, Lightbulb, Clock4, MousePointerClick, AlertCircle, ShoppingBag, Lock, Unlock } from 'lucide-react';
+import ProjectDetailSkeleton from '../components/ProjectDetailSkeleton';
+import ErrorBoundary from '../components/ErrorBoundary';
+import { 
+  DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, 
+  Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, 
+  Github, Send, X, CheckCircle, BookmarkCheck, Trophy, ExternalLink, 
+  Lightbulb, Clock4, AlertCircle, Loader2, Info, AlertTriangle 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Generate unique idempotency key
+const generateIdempotencyKey = () => {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Validation helper functions
+const validateInterestMessage = (message) => {
+  if (!message || message.trim().length === 0) {
+    return 'Please include a message to the seller.';
+  }
+  if (message.trim().length < 10) {
+    return 'Message must be at least 10 characters long.';
+  }
+  if (message.trim().length > 2000) {
+    return 'Message must be less than 2000 characters.';
+  }
+  return null;
+};
+
+const validateCommitments = (commitments) => {
+  if (commitments.size < 3) {
+    return 'Please agree to all commitments.';
+  }
+  return null;
+};
 
 const ProjectDetailPage = () => {
   const { id: projectId } = useParams();
@@ -26,8 +59,18 @@ const ProjectDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isBuyButtonLoading, setIsBuyButtonLoading] = useState(false);
+  const [isOfferButtonLoading, setIsOfferButtonLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [purchaseInitiated, setPurchaseInitiated] = useState(false);
+  
+  // Abort controller for request cancellation
+  const abortControllerRef = useRef(null);
 
   // Fetch project data with proper error handling
   useEffect(() => {
@@ -37,6 +80,13 @@ const ProjectDetailPage = () => {
         setLoading(false);
         return;
       }
+
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      abortControllerRef.current = new AbortController();
 
       try {
         setLoading(true);
@@ -52,6 +102,10 @@ const ProjectDetailPage = () => {
         
         setProject(data);
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Request was cancelled');
+          return;
+        }
         console.error('Error fetching project:', err);
         setError(err.message || 'Failed to load project. It may be private or does not exist.');
       } finally {
@@ -60,6 +114,13 @@ const ProjectDetailPage = () => {
     };
     
     fetchProject();
+    
+    // Cleanup function to abort pending requests
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [projectId]);
   
   // Handle URL parameters - opens modal once and clears the URL param
@@ -82,17 +143,23 @@ const ProjectDetailPage = () => {
           setShowInterestModal(false);
           setInterestMessage('');
           setCommitments(new Set());
+          setValidationErrors({});
         }
         if (showPaymentModal) {
           console.log('ESC pressed - closing payment modal');
           setShowPaymentModal(false);
+          setSelectedPaymentMethod('');
+          setPurchaseError(null);
+        }
+        if (showConfirmationModal) {
+          setShowConfirmationModal(false);
         }
       }
     };
     
     window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
-  }, [showInterestModal, showPaymentModal]);
+  }, [showInterestModal, showPaymentModal, showConfirmationModal]);
 
   // Enhanced interest submission with better error handling
   const handleInterestSubmit = async () => {
@@ -100,6 +167,7 @@ const ProjectDetailPage = () => {
     
     if (!user) {
       toast.error('Please log in to express interest.');
+      navigate('/login');
       return;
     }
     
@@ -108,17 +176,23 @@ const ProjectDetailPage = () => {
       return;
     }
     
-    if (commitments.size < 3) {
-      toast.error('Please agree to all commitments.');
+    // Frontend validation
+    const messageError = validateInterestMessage(interestMessage);
+    const commitmentsError = validateCommitments(commitments);
+    
+    const errors = {};
+    if (messageError) errors.message = messageError;
+    if (commitmentsError) errors.commitments = commitmentsError;
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error('Please fix the validation errors.');
       return;
     }
     
-    if (!interestMessage.trim()) {
-      toast.error('Please include a message to the seller.');
-      return;
-    }
-
+    setValidationErrors({});
     console.log('All validations passed, submitting interest...');
+    setIsOfferButtonLoading(true);
     setIsSubmitting(true);
     
     try {
@@ -128,7 +202,12 @@ const ProjectDetailPage = () => {
         message: interestMessage
       });
       
-      const result = await expressInterestInProject(projectId, Array.from(commitments), interestMessage);
+      const result = await expressInterestInProject(
+        projectId, 
+        Array.from(commitments), 
+        interestMessage
+      );
+      
       console.log('Interest submission successful:', result);
       
       // Reset form first
@@ -155,7 +234,6 @@ const ProjectDetailPage = () => {
         const serverMessage = error.response.data?.message;
         if (serverMessage?.includes('Invalid token format') || serverMessage?.includes('Token expired')) {
           errorMessage = 'Your session has expired. Please log in again.';
-          // Clear the invalid token and redirect to login
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setTimeout(() => window.location.href = '/login', 2000);
@@ -168,6 +246,8 @@ const ProjectDetailPage = () => {
         errorMessage = 'You cannot make an offer on your own project.';
       } else if (error.response?.status === 400) {
         errorMessage = error.response.data?.error || 'Invalid request. Please check your input.';
+      } else if (error.response?.status === 409) {
+        errorMessage = error.response.data?.error || 'You already have an active request for this project.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -187,6 +267,7 @@ const ProjectDetailPage = () => {
       }
     } finally {
       setIsSubmitting(false);
+      setIsOfferButtonLoading(false);
     }
   };
 
@@ -198,8 +279,38 @@ const ProjectDetailPage = () => {
       newCommitments.add(commitment);
     }
     setCommitments(newCommitments);
+    // Clear commitment error when user makes a selection
+    if (validationErrors.commitments) {
+      setValidationErrors(prev => ({ ...prev, commitments: null }));
+    }
   };
 
+  const handleMessageChange = (e) => {
+    setInterestMessage(e.target.value);
+    // Clear message error when user types
+    if (validationErrors.message) {
+      setValidationErrors(prev => ({ ...prev, message: null }));
+    }
+  };
+
+  // Handle buy now button click - show confirmation modal
+  const handleBuyNowClick = () => {
+    if (!user) {
+      toast.error('Please log in to purchase this project.');
+      navigate('/login');
+      return;
+    }
+    
+    setShowConfirmationModal(true);
+  };
+
+  // Handle purchase confirmation
+  const handleConfirmPurchase = async () => {
+    setShowConfirmationModal(false);
+    setShowPaymentModal(true);
+  };
+
+  // Handle actual purchase
   const handlePurchase = async () => {
     if (!user) {
       toast.error('Please log in to purchase this project.');
@@ -212,7 +323,17 @@ const ProjectDetailPage = () => {
       return;
     }
 
+    // Prevent duplicate submissions
+    if (purchaseInitiated || paymentProcessing) {
+      return;
+    }
+
     setPaymentProcessing(true);
+    setPurchaseInitiated(true);
+    setPurchaseError(null);
+    
+    // Generate idempotency key
+    const idempotencyKey = generateIdempotencyKey();
     
     try {
       const paymentService = new PaymentService();
@@ -223,16 +344,46 @@ const ProjectDetailPage = () => {
         projectName: project.name,
         sellerId: project.owner_id,
         buyerId: user.user_id || user.id
-      }, selectedPaymentMethod);
+      }, selectedPaymentMethod, {
+        idempotencyKey
+      });
 
-      if (checkoutData.checkout_url) {
-        window.location.href = checkoutData.checkout_url;
+      if (checkoutData.checkout_url || checkoutData.url) {
+        // Store purchase attempt in session storage for recovery
+        sessionStorage.setItem('pendingPurchase', JSON.stringify({
+          projectId: project.project_id || project.id,
+          timestamp: Date.now(),
+          idempotencyKey
+        }));
+        
+        window.location.href = checkoutData.checkout_url || checkoutData.url;
       } else {
-        toast.error('Failed to create checkout session. Please try again.');
+        throw new Error('No checkout URL received from payment provider.');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed. Please try again.');
+      
+      let errorMessage = error.message || 'Payment failed. Please try again.';
+      
+      // Handle specific error types
+      if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      } else if (error.code === 'TIMEOUT') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.response?.status === 409) {
+        errorMessage = 'You already have an active purchase process for this project.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.error || 'Invalid request. Please check your input.';
+      }
+      
+      setPurchaseError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 6000,
+      });
+      
+      // Allow retry
+      setRetryCount(prev => prev + 1);
+      setPurchaseInitiated(false);
     } finally {
       setPaymentProcessing(false);
     }
@@ -240,6 +391,7 @@ const ProjectDetailPage = () => {
 
   const handlePaymentMethodSelect = (method) => {
     setSelectedPaymentMethod(method);
+    setPurchaseError(null);
   };
 
   // Force close modal function with comprehensive cleanup
@@ -253,11 +405,14 @@ const ProjectDetailPage = () => {
     // Force close all modals and reset all states
     setShowInterestModal(false);
     setShowPaymentModal(false);
+    setShowConfirmationModal(false);
     setInterestMessage('');
     setCommitments(new Set());
     setSelectedPaymentMethod('');
     setIsSubmitting(false);
     setPaymentProcessing(false);
+    setValidationErrors({});
+    setPurchaseError(null);
     
     // Additional cleanup to ensure modal is closed
     document.body.style.overflow = 'unset';
@@ -270,28 +425,13 @@ const ProjectDetailPage = () => {
     }
   };
 
-  // Handle escape key
-  useEffect(() => {
-    const handleEscapeKey = (e) => {
-      if (e.key === 'Escape') {
-        console.log('Escape key pressed, closing modal');
-        forceCloseModal();
-      }
-    };
-
-    if (showInterestModal || showPaymentModal) {
-      document.addEventListener('keydown', handleEscapeKey, true); // Use capture phase
-      return () => document.removeEventListener('keydown', handleEscapeKey, true);
-    }
-  }, [showInterestModal, showPaymentModal]);
-
-  // Loading state
+  // Loading state with skeleton screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading project details...</p>
+      <div className="min-h-screen bg-black">
+        <SEO title="Loading Project..." />
+        <div className="max-w-7xl mx-auto px-4 pt-8">
+          <ProjectDetailSkeleton />
         </div>
       </div>
     );
@@ -307,18 +447,31 @@ const ProjectDetailPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-gray-900/50 backdrop-blur-sm border border-red-500/20 rounded-2xl p-8"
           >
-            <div className="text-red-400 text-xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-white mb-2">Project Not Found</h2>
+            <div className="text-red-400 text-4xl mb-4">
+              <AlertTriangle className="w-16 h-16 mx-auto" />
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Unable to Load Project</h2>
             <p className="text-red-400 mb-6">{error}</p>
-            <motion.button
-              onClick={() => navigate('/marketplace')}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2 inline" />
-              Back to Marketplace
-            </motion.button>
+            <div className="flex gap-3 justify-center">
+              <motion.button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Loader2 className="w-4 h-4" />
+                Try Again
+              </motion.button>
+              <motion.button
+                onClick={() => navigate('/marketplace')}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2 inline" />
+                Back to Marketplace
+              </motion.button>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -345,7 +498,6 @@ const ProjectDetailPage = () => {
   }
 
   // Safe property access with defaults
-  // Use user_id from user object (snake_case from DB) and compare with project.owner_id
   const isOwner = user && project && (user.user_id === project.owner_id || user.id === project.owner_id);
   const projectName = project.name || 'Untitled Project';
   const projectDescription = project.description || 'No description available.';
@@ -504,191 +656,169 @@ const ProjectDetailPage = () => {
           </div>
         </motion.div>
 
-        {/* Content Section */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Content Grid */}
+        <div className="max-w-7xl mx-auto px-4 pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Navigation Tabs */}
-              <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-2xl">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                      activeTab === tab.id
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.name}
-                  </button>
-                ))}
+              {/* Tabs */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {tab.name}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Tab Content */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8"
-                >
-                  {activeTab === 'overview' && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-2xl font-bold text-white mb-4">Creator's Story</h2>
-                        <p className="text-gray-300 text-lg leading-relaxed">
-                          {projectDescription}
-                        </p>
-                      </div>
-                      
-                      {/* Key Features */}
-                      <div>
-                        <h3 className="text-xl font-semibold text-white mb-4">Key Features</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            'Revenue generating',
-                            'Fully documented',
-                            'Production ready',
-                            'Scalable architecture'
-                          ].map((feature, index) => (
-                            <div key={index} className="flex items-center gap-3">
-                              <CheckCircle className="w-5 h-5 text-green-400" />
-                              <span className="text-gray-300">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'demo' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-white mb-4">Live Demo</h2>
-                      <div className="aspect-video bg-gray-800 rounded-xl overflow-hidden">
-                        <iframe
-                          title={`${projectName} Live Demo`}
-                          src={project.domain ? `https://${project.domain}` : undefined}
-                          className="w-full h-full"
-                          allowFullScreen
-                        />
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Note: Live demo is embedded. Some features may be restricted.
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8"
+              >
+                {activeTab === 'overview' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white mb-4">About This Project</h2>
+                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {projectDescription}
                       </p>
                     </div>
-                  )}
+                    
+                    {project.detailed_description && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Details</h3>
+                        <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          {project.detailed_description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                  {activeTab === 'gallery' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-white mb-4">Project Gallery</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i} className="aspect-video bg-gray-800 rounded-xl flex items-center justify-center">
-                            <ImageIcon className="w-8 h-8 text-gray-600" />
-                          </div>
+                {activeTab === 'demo' && (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-white mb-4">Live Demo</h2>
+                    {project.domain ? (
+                      <div className="aspect-video rounded-xl overflow-hidden bg-gray-800">
+                        <iframe
+                          src={`https://${project.domain}`}
+                          title="Live Demo"
+                          className="w-full h-full"
+                          sandbox="allow-same-origin allow-scripts"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">No live demo available for this project.</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'gallery' && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Project Gallery</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {project.gallery_images?.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image}
+                          alt={`Gallery ${index + 1}`}
+                          className="rounded-xl w-full h-48 object-cover"
+                        />
+                      )) || (
+                        <p className="text-gray-400 col-span-2">No gallery images available.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'code' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white mb-4">Tech Stack</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {techStack.map((tech, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm"
+                          >
+                            {tech}
+                          </span>
                         ))}
                       </div>
                     </div>
-                  )}
+                    
+                    {project.github_url && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Source Code</h3>
+                        <a
+                          href={project.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
+                        >
+                          <Github className="w-5 h-5" />
+                          View on GitHub
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                  {activeTab === 'code' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-white mb-4">Technical Details</h2>
+                {activeTab === 'ai' && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white mb-4">AI Insights</h2>
+                    {project.ai_analysis ? (
                       <div className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white mb-2">Tech Stack</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {techStack.map((tech, index) => (
-                              <span key={index} className="px-3 py-1 bg-gray-800 text-gray-300 rounded-lg border border-gray-700">
-                                {tech}
-                              </span>
-                            ))}
+                        <div className="bg-gray-800/50 rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-white mb-2">Overall Score</h3>
+                          <div className="flex items-center gap-4">
+                            <div className="text-4xl font-bold text-blue-400">
+                              {project.ai_analysis.overall_score}/100
+                            </div>
+                            <div className="text-gray-400">
+                              {project.ai_analysis.confidence_level} confidence
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="bg-gray-800/50 rounded-xl p-4">
-                          <h4 className="text-white font-medium mb-2">What's Included</h4>
-                          <ul className="space-y-2 text-gray-300">
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              Complete source code
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              Documentation & setup guide
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              Database schema
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              30-day support
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'ai' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-white mb-4">AI Insights</h2>
-                      <div className="bg-gray-800/50 rounded-xl p-6">
-                        <p className="text-gray-300 mb-4">AI-driven recommendations to improve listing quality and sale readiness.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-4 rounded-lg border border-white/10 bg-gray-900/40">
-                            <div className="text-sm text-gray-400 mb-2">Valuation Helper</div>
-                            <button className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                              onClick={async ()=>{
-                                try {
-                                  const resp = await fetch('http://localhost:5002/api/ai/score-project', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ projectId: project.project_id || project.id, projectData: { title: project.name, description: project.description, monthlyRevenue: project.monthly_revenue, category: project.category, technologies: project.tech_stack } }) });
-                                  const data = await resp.json();
-                                  if (!resp.ok) throw new Error(data.error||'AI scoring failed');
-                                  toast.success(`AI Score: ${data.score}`);
-                                } catch (e) { toast.error(e.message); }
-                              }}>
-                              Get AI Score
-                            </button>
+                        {project.ai_analysis.insights && (
+                          <div className="bg-gray-800/50 rounded-xl p-6">
+                            <h3 className="text-lg font-semibold text-white mb-2">Key Insights</h3>
+                            <p className="text-gray-300">{project.ai_analysis.insights}</p>
                           </div>
-                          <div className="p-4 rounded-lg border border-white/10 bg-gray-900/40">
-                            <div className="text-sm text-gray-400 mb-2">Idea Assist</div>
-                            <button className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-                              onClick={async ()=>{
-                                try {
-                                  const resp = await fetch('http://localhost:5002/api/ai/idea-assist', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ stage: project.stage, category: project.category }) });
-                                  const data = await resp.json();
-                                  if (!resp.ok) throw new Error(data.error||'AI idea assist failed');
-                                  navigator.clipboard.writeText(JSON.stringify(data.template, null, 2));
-                                  toast.success('AI template copied to clipboard');
-                                } catch (e) { toast.error(e.message); }
-                              }}>
-                              Generate Stage Template
-                            </button>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                    ) : (
+                      <p className="text-gray-400">No AI analysis available for this project.</p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Project Details Card */}
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 sticky top-8">
-                <h3 className="text-xl font-bold text-white mb-6">Project Details</h3>
-                
-                {/* Price */}
-                <div className="bg-gray-800/30 rounded-xl p-4 mb-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white mb-1">
+              {/* Purchase Card */}
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 sticky top-24">
+                <div className="mb-6">
+                  <div className="text-sm text-gray-400 mb-1">Sale Price</div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-4xl font-bold text-white">
                       {project.is_for_sale ? formatPrice(salePrice) : 'Not for Sale'}
                     </div>
                     {monthlyRevenue > 0 && (
@@ -764,22 +894,32 @@ const ProjectDetailPage = () => {
                       ) : (
                         <>
                           <motion.button
-                            onClick={() => setShowPaymentModal(true)}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            onClick={handleBuyNowClick}
+                            disabled={isBuyButtonLoading || purchaseInitiated}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            whileHover={{ scale: isBuyButtonLoading ? 1 : 1.02 }}
+                            whileTap={{ scale: isBuyButtonLoading ? 1 : 0.98 }}
                           >
-                            <DollarSign className="w-4 h-4" />
-                            Buy Now • {formatPrice(salePrice)}
+                            {isBuyButtonLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <DollarSign className="w-4 h-4" />
+                            )}
+                            {isBuyButtonLoading ? 'Processing...' : `Buy Now • ${formatPrice(salePrice)}`}
                           </motion.button>
                           <motion.button
                             onClick={() => setShowInterestModal(true)}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            disabled={isOfferButtonLoading}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            whileHover={{ scale: isOfferButtonLoading ? 1 : 1.02 }}
+                            whileTap={{ scale: isOfferButtonLoading ? 1 : 0.98 }}
                           >
-                            <Heart className="w-4 h-4" />
-                            Make Offer
+                            {isOfferButtonLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Heart className="w-4 h-4" />
+                            )}
+                            {isOfferButtonLoading ? 'Sending...' : 'Make Offer'}
                           </motion.button>
                         </>
                       )}
@@ -829,20 +969,84 @@ const ProjectDetailPage = () => {
           </div>
         </div>
 
+        {/* Confirmation Modal */}
+        <AnimatePresence>
+          {showConfirmationModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
+              onClick={handleBackdropClick}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-gray-900 border border-white/[0.12] rounded-2xl p-8 max-w-md w-full shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertTriangle className="w-8 h-8 text-yellow-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Confirm Purchase</h2>
+                  <p className="text-gray-400">
+                    You are about to purchase <span className="text-white font-semibold">{projectName}</span> for <span className="text-green-400 font-semibold">{formatPrice(salePrice)}</span>
+                  </p>
+                </div>
+
+                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-gray-300">
+                      <p className="mb-2">By proceeding, you agree to:</p>
+                      <ul className="list-disc list-inside space-y-1 text-gray-400">
+                        <li>Pay the full amount of {formatPrice(salePrice)}</li>
+                        <li>Complete the purchase process</li>
+                        <li>Our terms of service and buyer protection policy</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <motion.button
+                    onClick={() => setShowConfirmationModal(false)}
+                    className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    onClick={handleConfirmPurchase}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Continue
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Interest Modal */}
-        {showInterestModal && (
-          <div 
-            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                console.log('Backdrop clicked - closing modal');
-                setShowInterestModal(false);
-                setInterestMessage('');
-                setCommitments(new Set());
-              }
-            }}
-          >
-              <div
+        <AnimatePresence>
+          {showInterestModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
+              onClick={handleBackdropClick}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 className="bg-gray-900 border border-white/[0.12] rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -851,14 +1055,7 @@ const ProjectDetailPage = () => {
                     <h2 className="text-2xl font-bold text-white">Make an Offer for {projectName}</h2>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('X button clicked - closing modal');
-                        setShowInterestModal(false);
-                        setInterestMessage('');
-                        setCommitments(new Set());
-                      }}
+                      onClick={forceCloseModal}
                       className="p-2 hover:bg-red-600 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative bg-gray-800"
                       style={{ pointerEvents: 'auto' }}
                       title="Close modal (or press ESC)"
@@ -876,21 +1073,34 @@ const ProjectDetailPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Message to Seller
+                      Message to Seller <span className="text-red-400">*</span>
                     </label>
                     <textarea
                       value={interestMessage}
-                      onChange={(e) => setInterestMessage(e.target.value)}
+                      onChange={handleMessageChange}
                       placeholder="Introduce yourself, your offer amount, and why you're interested in this project..."
-                      className="w-full h-32 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none resize-none"
+                      className={`w-full h-32 px-4 py-3 bg-gray-800 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-colors ${
+                        validationErrors.message 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : 'border-gray-700 focus:border-blue-500'
+                      }`}
                     />
+                    {validationErrors.message && (
+                      <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {validationErrors.message}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      {interestMessage.length}/2000 characters
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-4">
-                      Commitments (all required)
+                      Commitments (all required) <span className="text-red-400">*</span>
                     </label>
-                    <div className="space-y-3">
+                    <div className={`space-y-3 p-4 rounded-xl border ${validationErrors.commitments ? 'border-red-500 bg-red-500/5' : 'border-gray-700'}`}>
                       {[
                         { id: 'funds_ready', text: 'I have the funds available for this purchase.' },
                         { id: 'respect_process', text: 'I understand this is a negotiation and the seller may decline.' },
@@ -907,37 +1117,34 @@ const ProjectDetailPage = () => {
                         </label>
                       ))}
                     </div>
+                    {validationErrors.commitments && (
+                      <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {validationErrors.commitments}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-4 pt-4">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Cancel button clicked - closing modal');
-                        setShowInterestModal(false);
-                        setInterestMessage('');
-                        setCommitments(new Set());
-                      }}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 z-10 relative"
-                      style={{ pointerEvents: 'auto' }}
+                      onClick={forceCloseModal}
+                      disabled={isSubmitting}
+                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 disabled:opacity-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Send Offer button clicked');
-                        handleInterestSubmit();
-                      }}
-                      disabled={commitments.size < 3 || !interestMessage.trim() || isSubmitting}
+                      onClick={handleInterestSubmit}
+                      disabled={isSubmitting}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Sending...
+                        </>
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
@@ -947,9 +1154,10 @@ const ProjectDetailPage = () => {
                     </button>
                   </div>
                 </div>
-              </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Payment Modal */}
         <AnimatePresence>
@@ -959,11 +1167,7 @@ const ProjectDetailPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                  setShowPaymentModal(false);
-                }
-              }}
+              onClick={handleBackdropClick}
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -976,12 +1180,7 @@ const ProjectDetailPage = () => {
                   <h2 className="text-2xl font-bold text-white">Purchase {projectName}</h2>
                   <motion.button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Payment modal X button clicked - closing modal');
-                      setShowPaymentModal(false);
-                    }}
+                    onClick={forceCloseModal}
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -1029,6 +1228,24 @@ const ProjectDetailPage = () => {
                     />
                   </div>
 
+                  {/* Error Display */}
+                  {purchaseError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-red-400 font-medium">Payment Error</p>
+                          <p className="text-red-300/80 text-sm">{purchaseError}</p>
+                          {retryCount > 0 && (
+                            <p className="text-gray-400 text-sm mt-1">
+                              Retry attempt {retryCount}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Security Notice */}
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
                     <div className="flex items-start gap-3">
@@ -1045,16 +1262,11 @@ const ProjectDetailPage = () => {
                   <div className="flex gap-4 pt-4">
                     <motion.button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('Payment modal Cancel button clicked - closing modal');
-                        setShowPaymentModal(false);
-                      }}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 z-10 relative"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      style={{ pointerEvents: 'auto' }}
+                      onClick={forceCloseModal}
+                      disabled={paymentProcessing}
+                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 disabled:opacity-50"
+                      whileHover={{ scale: paymentProcessing ? 1 : 1.02 }}
+                      whileTap={{ scale: paymentProcessing ? 1 : 0.98 }}
                     >
                       Cancel
                     </motion.button>
@@ -1062,11 +1274,14 @@ const ProjectDetailPage = () => {
                       onClick={handlePurchase}
                       disabled={!selectedPaymentMethod || paymentProcessing}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 1.02 }}
+                      whileTap={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 0.98 }}
                     >
                       {paymentProcessing ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing...
+                        </>
                       ) : (
                         <>
                           <Zap className="w-4 h-4" />

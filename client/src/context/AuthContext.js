@@ -20,29 +20,12 @@ export const AuthProvider = ({ children }) => {
             try {
                 const socket = initializeSocket(token);
                 
-                socket.on('connect', () => {
-                    console.log('[AuthContext] Socket connected successfully for user:', user.username);
-                });
-
                 socket.on('connect_error', (error) => {
                     console.error('[AuthContext] Socket connection failed:', error.message);
-                    if (error.message === 'Authentication required' || error.message === 'Invalid token') {
-                        // Token might be expired, try to refresh
-                        console.log('[AuthContext] Attempting to refresh token...');
-                        // Could implement token refresh logic here
-                    }
                 });
 
                 socket.on('error', (error) => {
                     console.error('[AuthContext] Socket error:', error);
-                });
-
-                socket.on('user_online', (data) => {
-                    console.log(`[AuthContext] User ${data.username} came online`);
-                });
-
-                socket.on('user_offline', (data) => {
-                    console.log(`[AuthContext] User ${data.username} went offline`);
                 });
 
                 return socket;
@@ -56,7 +39,6 @@ export const AuthProvider = ({ children }) => {
         const tokenToUse = currentToken;
         if (tokenToUse) {
             try {
-                console.log('AuthContext: Fetching user profile...');
                 const profileData = await getUserProfile();
                 localStorage.setItem('user', JSON.stringify(profileData));
                 setAuthState(prev => ({
@@ -64,7 +46,6 @@ export const AuthProvider = ({ children }) => {
                     user: profileData,
                     isAuthenticated: true,
                 }));
-                console.log('AuthContext: User profile updated', profileData);
                 // Connect socket after profile is successfully fetched and user ID is available
                 if (profileData && profileData.user_id) {
                     connectUserSocket(tokenToUse, profileData);
@@ -73,7 +54,6 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 console.error("AuthContext: Failed to fetch user profile:", error);
                 if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                    console.log("AuthContext: Auth error during profile fetch, logging out.");
                     logout();
                 }
                 throw error;
@@ -98,16 +78,11 @@ export const AuthProvider = ({ children }) => {
                 await fetchUserProfile(storedToken);
                 clearTimeout(timeoutId);
             } catch (error) {
-                console.log("Initial profile fetch failed:", error.message);
                 // On any error during startup, clear auth state to prevent infinite loading
                 if (error.name === 'AbortError' || error.message.includes('timeout')) {
-                    console.log("Profile fetch timed out, clearing auth state");
                     logout();
                 } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                     logout();
-                } else {
-                    // For other errors, still clear loading state
-                    console.log("Network error during profile fetch, continuing without auth");
                 }
             }
         }
@@ -122,7 +97,6 @@ export const AuthProvider = ({ children }) => {
     // Listen for token expiration events
     useEffect(() => {
         const handleTokenExpired = (event) => {
-            console.log('Token expired event received:', event.detail);
             // Show user a message and redirect to login
             toast.error(event.detail.message || 'Your session has expired. Please log in again.');
             logout();
@@ -154,7 +128,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        console.log('[AuthContext] Logging out, disconnecting socket...');
         disconnectSocket(); // Disconnect socket on logout
         localStorage.removeItem('token');
         localStorage.removeItem('user');

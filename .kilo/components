@@ -1,0 +1,324 @@
+/**
+ * Enhanced Buy Button Component with Loading States and Error Handling
+ * 
+ * This component provides a robust buy button with:
+ * - Proper loading states to prevent race conditions
+ * - Error handling and retry logic
+ * - Validation before initiating checkout
+ * - Confirmation modal before purchase
+ */
+
+import React, { useState, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { DollarSign, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const BuyButton = ({ 
+  salePrice, 
+  formatPrice,
+  project,
+  user,
+  onPurchaseInitiated,
+  disabled = false,
+  className = ''
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const abortControllerRef = useRef(null);
+
+  // Validate purchase prerequisites
+  const validatePurchase = useCallback(() => {
+    const errors = [];
+    
+    if (!user) {
+      errors.push('Please log in to purchase this project');
+    }
+    
+    if (!project) {
+      errors.push('Project information is not available');
+    }
+    
+    if (project?.is_for_sale !== 1 && project?.is_for_sale !== true) {
+      errors.push('This project is not available for purchase');
+    }
+    
+    if (project?.is_on_hold === 1 || project?.is_on_hold === true) {
+      errors.push('This project is currently under negotiation');
+    }
+    
+    if (user?.user_id === project?.owner_id || user?.id === project?.owner_id) {
+      errors.push('You cannot purchase your own project');
+    }
+    
+    if (!salePrice || salePrice <= 0) {
+      errors.push('Invalid sale price');
+    }
+    
+    return errors;
+  }, [user, project, salePrice]);
+
+  // Handle buy button click
+  const handleBuyClick = useCallback(async (e) => {
+    // Prevent multiple clicks
+    if (isLoading) {
+      console.log('[BuyButton] Already processing, ignoring click');
+      return;
+    }
+
+    // Validate before showing confirmation
+    const validationErrors = validatePurchase();
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors[0]);
+      return;
+    }
+
+    // Show confirmation modal
+    setShowConfirmation(true);
+    setError(null);
+  }, [isLoading, validatePurchase]);
+
+  // Handle confirmed purchase
+  const handleConfirmedPurchase = useCallback(async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    // Create abort controller for request cancellation
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      console.log('[BuyButton] Initiating purchase for project:', project.project_id);
+      
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/api/purchase-requests/projects/${project.project_id}/initiate-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          signal: abortControllerRef.current.signal
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 409) {
+          throw new Error('You already have an active purchase process for this project. Please check your dashboard.');
+        }
+        if (response.status === 404) {
+          throw new Error('Project not found or is not currently for sale.');
+        }
+        if (response.status === 400) {
+          throw new Error(data.error || 'Invalid request. Please try again.');
+        }
+        throw new Error(data.error || 'Failed to initiate checkout');
+      }
+
+      // Success - clear retry count
+      setRetryCount(0);
+      
+      // Show success message
+      toast.success('Purchase initiated! Redirecting to payment...');
+      
+      // Close confirmation modal
+      setShowConfirmation(false);
+      
+      // Notify parent component
+      if (onPurchaseInitiated) {
+        onPurchaseInitiated(data);
+      }
+      
+    } catch (err) {
+      console.error('[BuyButton] Purchase initiation failed:', err);
+      
+      // Don't show error for aborted requests
+      if (err.name === 'AbortError') {
+        console.log('[BuyButton] Request was aborted');
+        return;
+      }
+      
+      setError(err.message || 'Failed to initiate purchase. Please try again.');
+      toast.error(err.message || 'Failed to initiate purchase. Please try again.');
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, project, onPurchaseInitiated]);
+
+  // Handle retry
+  const handleRetry = useCallback(() => {
+    setError(null);
+    handleConfirmedPurchase();
+  }, [handleConfirmedPurchase]);
+
+  // Handle cancellation
+  const handleCancel = useCallback(() => {
+    // Abort any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setShowConfirmation(false);
+    setError(null);
+    setIsLoading(false);
+  }, []);
+
+  return (
+    <>
+      {/* Main Buy Button */}
+      <motion.button
+        onClick={handleBuyClick}
+        disabled={isLoading || disabled}
+        className={`w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        whileHover={{ scale: disabled ? 1 : 1.02 }}
+        whileTap={{ scale: disabled ? 1 : 0.98 }}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Processing...</span>
+          </>
+        ) : (
+          <>
+            <DollarSign className="w-4 h-4" />
+            <span>Buy Now • {formatPrice ? formatPrice(salePrice) : `$${salePrice}`}</span>
+          </>
+        )}
+      </motion.button>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLoading) {
+              handleCancel();
+            }
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-gray-900 border border-white/[0.1] rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">
+                Confirm Purchase
+              </h3>
+              {!isLoading && (
+                <button
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-red-400 text-sm">{error}</p>
+                    {retryCount < 3 && (
+                      <button
+                        onClick={handleRetry}
+                        className="mt-2 text-sm text-red-300 hover:text-red-200 flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Retry
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Purchase Summary */}
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Project</span>
+                  <span className="text-white font-medium">{project?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Seller</span>
+                  <span className="text-white font-medium">@{project?.creator_username || project?.owner_username}</span>
+                </div>
+                <div className="border-t border-gray-700 pt-3">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-white font-semibold">Total</span>
+                    <span className="text-green-400 font-bold">
+                      {formatPrice ? formatPrice(salePrice) : `$${salePrice}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-6">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-blue-300 text-xs">
+                  Your payment will be held securely in escrow until you confirm receipt of all project assets.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="flex-1 px-4 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmedPurchase}
+                disabled={isLoading}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4" />
+                    Confirm Purchase
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Retry Count Indicator */}
+            {retryCount > 0 && !error && (
+              <p className="mt-3 text-center text-xs text-gray-500">
+                Attempt {retryCount}/3
+              </p>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default BuyButton;

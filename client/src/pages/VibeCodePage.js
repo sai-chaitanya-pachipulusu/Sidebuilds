@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiSearch, FiTrendingUp, FiZap, FiGlobe, FiTarget } from 'react-icons/fi';
+import { Search, TrendingUp, Zap, Globe, Target } from 'lucide-react';
 import SEO from '../components/SEO';
 import { Input } from '../shadcn/ui/input';
 import { Button } from '../shadcn/ui/button';
@@ -26,10 +26,10 @@ const VibeCodePage = () => {
   };
 
   const features = [
-      { icon: FiTrendingUp, title: "Market Trends", description: "Analyze current market demand for project ideas." },
-      { icon: FiTarget, title: "Niche Targeting", description: "Identify profitable niches with low competition." },
-      { icon: FiZap, title: "Feature Prioritization", description: "Suggest key features for a successful MVP." },
-      { icon: FiGlobe, title: "Global Viability", description: "Assess the potential for international adoption." }
+      { icon: TrendingUp, title: "Market Trends", description: "Analyze current market demand for project ideas." },
+      { icon: Target, title: "Niche Targeting", description: "Identify profitable niches with low competition." },
+      { icon: Zap, title: "Feature Prioritization", description: "Suggest key features for a successful MVP." },
+      { icon: Globe, title: "Global Viability", description: "Assess the potential for international adoption." }
   ];
 
   return (
@@ -54,7 +54,7 @@ const VibeCodePage = () => {
                       className="flex-grow"
                   />
                   <Button onClick={handleGenerate} disabled={isGenerating || !searchQuery}>
-                      {isGenerating ? 'Generating...' : <><FiSearch className="mr-2 h-4 w-4"/>Generate</>}
+                      {isGenerating ? 'Generating...' : <><Search className="mr-2 h-4 w-4"/>Generate</>}
                   </Button>
               </div>
           </div>

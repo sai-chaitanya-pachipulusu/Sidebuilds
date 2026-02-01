@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useDebounce } from './useDebounce';
+import { useDebounce, useDebouncedCallback } from './useDebounce';
 
 // Production-ready search hook with caching, debouncing, and performance optimization
 export const useOptimizedSearch = (
@@ -15,7 +15,11 @@ export const useOptimizedSearch = (
     batchSize = 20,
     enableIndexing = true,
     enableFuzzySearch = false,
-    caseSensitive = false
+    caseSensitive = false,
+    minSearchLength = 2,
+    maxResults = null,
+    sortFn = null,
+    filterFn = null
   } = options;
 
   // Search state
@@ -35,13 +39,21 @@ export const useOptimizedSearch = (
   const searchIndex = useRef(new Map());
   const lastSearchTime = useRef(0);
   const searchWorker = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Debounced search term
-  const debouncedSearchTerm = useDebounce(searchTerm, debounceMs);
+  const debouncedSearchTerm = useDebounce(searchTerm, debounceMs, {
+    maxWait: debounceMs * 3 // Force update after 3x debounce time
+  });
+
+  // Get nested object value by path
+  const getNestedValue = useCallback((obj, path) => {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  }, []);
 
   // Build search index for faster searching
   const buildSearchIndex = useCallback((itemsToIndex) => {
-    if (!enableIndexing) return;
+    if (!enableIndexing || itemsToIndex.length === 0) return;
 
     const startTime = performance.now();
     const index = new Map();
@@ -56,7 +68,7 @@ export const useOptimizedSearch = (
         .toLowerCase();
 
       // Create n-grams for better partial matching
-      const words = searchableText.split(/\s+/);
+      const words = searchableText.split(/\s+/).filter(w => w.length > 0);
       const ngrams = new Set();
 
       words.forEach(word => {
@@ -85,252 +97,291 @@ export const useOptimizedSearch = (
     searchIndex.current = index;
     
     const indexTime = performance.now() - startTime;
-    console.log(`[Search] Index built in ${indexTime.toFixed(2)}ms for ${itemsToIndex.length} items`);
-  }, [searchKeys, enableIndexing, enableFuzzySearch]);
-
-  // Get nested object value by path
-  const getNestedValue = (obj, path) => {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-  };
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Search] Index built in ${indexTime.toFixed(2)}ms for ${itemsToIndex.length} items`);
+    }
+  }, [searchKeys, enableIndexing, enableFuzzySearch, getNestedValue]);
 
   // Generate cache key
   const getCacheKey = useCallback((term, currentFilters) => {
-    return JSON.stringify({ term: term.toLowerCase(), filters: currentFilters });
-  }, []);
+    return JSON.stringify({ 
+      term: term.toLowerCase().trim(), 
+      filters: currentFilters,
+      keys: searchKeys
+    });
+  }, [searchKeys]);
 
   // Clean up old cache entries
   const cleanupCache = useCallback(() => {
     if (searchCache.current.size > cacheSize) {
-      const entries = Array.from(searchCache.current.entries());
-      const cutoff = Math.floor(cacheSize * 0.8); // Keep 80% of cache size
-      
-      // Sort by last access time and remove oldest entries
-      entries
-        .sort((a, b) => a[1].lastAccess - b[1].lastAccess)
-        .slice(0, entries.length - cutoff)
-        .forEach(([key]) => searchCache.current.delete(key));
+      const entriesToDelete = searchCache.current.size - cacheSize;
+      const keys = Array.from(searchCache.current.keys());
+      for (let i = 0; i < entriesToDelete; i++) {
+        searchCache.current.delete(keys[i]);
+      }
     }
   }, [cacheSize]);
 
-  // Fuzzy search scoring
+  // Fuzzy match score calculation
   const calculateFuzzyScore = useCallback((term, text) => {
-    if (!enableFuzzySearch) return term === text ? 1 : 0;
-
-    const termLower = term.toLowerCase();
-    const textLower = text.toLowerCase();
-
-    // Exact match
-    if (textLower.includes(termLower)) {
-      return 1.0;
+    if (!term || !text) return 0;
+    
+    const searchTerm = term.toLowerCase();
+    const searchText = text.toLowerCase();
+    
+    // Exact match gets highest score
+    if (searchText === searchTerm) return 100;
+    
+    // Starts with search term
+    if (searchText.startsWith(searchTerm)) return 80;
+    
+    // Contains search term
+    if (searchText.includes(searchTerm)) return 60;
+    
+    // Calculate Levenshtein distance for fuzzy matching
+    if (enableFuzzySearch) {
+      const distance = levenshteinDistance(searchTerm, searchText);
+      const maxLength = Math.max(searchTerm.length, searchText.length);
+      const similarity = 1 - (distance / maxLength);
+      return similarity * 40; // Max 40 for fuzzy matches
     }
-
-    // Character-based similarity (Levenshtein-inspired)
-    let matches = 0;
-    let termIndex = 0;
-
-    for (let i = 0; i < textLower.length && termIndex < termLower.length; i++) {
-      if (textLower[i] === termLower[termIndex]) {
-        matches++;
-        termIndex++;
-      }
-    }
-
-    return matches / termLower.length;
+    
+    return 0;
   }, [enableFuzzySearch]);
 
-  // Fallback linear search
-  const performLinearSearch = useCallback((term, itemsToSearch) => {
-    const termLower = caseSensitive ? term : term.toLowerCase();
+  // Levenshtein distance for fuzzy matching
+  const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
     
-    return itemsToSearch.filter(item => {
-      return searchKeys.some(key => {
-        const value = getNestedValue(item, key);
-        if (!value) return false;
-        
-        const stringValue = caseSensitive ? String(value) : String(value).toLowerCase();
-        
-        if (enableFuzzySearch) {
-          const score = calculateFuzzyScore(termLower, stringValue);
-          return score > 0.5; // Adjust threshold as needed
-        } else {
-          return stringValue.includes(termLower);
-        }
-      });
-    });
-  }, [searchKeys, caseSensitive, enableFuzzySearch, calculateFuzzyScore]);
-
-  // Fast search using index
-  const performIndexedSearch = useCallback((term, itemsToSearch) => {
-    if (!enableIndexing || !searchIndex.current.size) {
-      return performLinearSearch(term, itemsToSearch);
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
     }
-
-    const termLower = term.toLowerCase();
-    const words = termLower.split(/\s+/).filter(word => word.length > 0);
     
-    if (words.length === 0) return itemsToSearch;
-
-    // Find candidate items for each word
-    const candidateSets = words.map(word => {
-      const candidates = new Set();
-      
-      // Look for exact matches and n-grams
-      for (const [ngram, indices] of searchIndex.current.entries()) {
-        if (ngram.includes(word) || word.includes(ngram)) {
-          indices.forEach(index => candidates.add(index));
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
         }
       }
-      
-      return candidates;
-    });
-
-    // Find intersection of all candidate sets
-    let finalCandidates = candidateSets[0] || new Set();
-    for (let i = 1; i < candidateSets.length; i++) {
-      finalCandidates = new Set([...finalCandidates].filter(x => candidateSets[i].has(x)));
     }
+    
+    return matrix[str2.length][str1.length];
+  };
 
-    // Convert indices back to items and score them
-    const results = Array.from(finalCandidates)
-      .map(index => {
-        const item = itemsToSearch[index];
-        const searchText = searchKeys
-          .map(key => getNestedValue(item, key))
-          .join(' ');
-        
-        const score = calculateFuzzyScore(term, searchText);
-        return { item, score };
-      })
-      .filter(result => result.score > 0.3) // Minimum relevance threshold
-      .sort((a, b) => b.score - a.score)
-      .map(result => result.item);
-
-    return results;
-  }, [enableIndexing, searchKeys, calculateFuzzyScore, performLinearSearch]);
-
-  // Apply filters to items
-  const applyFilters = useCallback((itemsToFilter, currentFilters) => {
-    return itemsToFilter.filter(item => {
-      return Object.entries(currentFilters).every(([key, value]) => {
-        if (!value || value === '' || value === 'all') return true;
-        
-        const itemValue = getNestedValue(item, key);
-        
-        // Handle different filter types
-        if (Array.isArray(value)) {
-          return value.includes(itemValue);
-        } else if (typeof value === 'object' && value.min !== undefined) {
-          // Range filter
-          const numValue = Number(itemValue) || 0;
-          return numValue >= (value.min || 0) && numValue <= (value.max || Infinity);
-        } else {
-          return itemValue === value;
-        }
-      });
-    });
-  }, []);
-
-
-  // Build index when items change
-  useEffect(() => {
-    if (items.length > 0) {
-      buildSearchIndex(items);
-    }
-  }, [items, buildSearchIndex]);
-
-  // Synchronous search function for immediate results
-  const performSyncSearch = useCallback((term, currentFilters, itemsToSearch) => {
+  // Perform search using index
+  const performSearch = useCallback((term, currentFilters) => {
     const startTime = performance.now();
-    const cacheKey = getCacheKey(term, currentFilters);
     
     // Check cache first
-    if (searchCache.current.has(cacheKey)) {
-      const cached = searchCache.current.get(cacheKey);
-      cached.lastAccess = Date.now();
-      
-      setSearchMetrics(prev => ({ 
-        ...prev, 
+    const cacheKey = getCacheKey(term, currentFilters);
+    const cached = searchCache.current.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < 30000) { // 30 second cache
+      setSearchMetrics(prev => ({
+        ...prev,
         cacheHits: prev.cacheHits + 1,
         searchTime: performance.now() - startTime
       }));
-      
       return cached.results;
     }
 
-    let results = [...itemsToSearch];
+    setSearchMetrics(prev => ({
+      ...prev,
+      cacheMisses: prev.cacheMisses + 1
+    }));
 
-    // Apply search if term exists
-    if (term && term.trim()) {
+    let results = [...items];
+
+    // Apply text search
+    if (term && term.length >= minSearchLength) {
+      const searchTerm = caseSensitive ? term : term.toLowerCase();
+      
       if (enableIndexing && searchIndex.current.size > 0) {
-        results = performIndexedSearch(term.trim(), results);
+        // Use index for faster search
+        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        const matchedIndices = new Set();
+        
+        searchWords.forEach(word => {
+          const indices = searchIndex.current.get(word);
+          if (indices) {
+            indices.forEach(idx => matchedIndices.add(idx));
+          }
+        });
+        
+        results = Array.from(matchedIndices).map(idx => items[idx]);
+        
+        // Score and sort by relevance if fuzzy search enabled
+        if (enableFuzzySearch) {
+          results = results.map(item => {
+            const searchableText = searchKeys
+              .map(key => {
+                const value = getNestedValue(item, key);
+                return typeof value === 'string' ? value : String(value || '');
+              })
+              .join(' ');
+            
+            return {
+              item,
+              score: calculateFuzzyScore(searchTerm, searchableText)
+            };
+          })
+          .filter(r => r.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(r => r.item);
+        }
       } else {
-        results = performLinearSearch(term.trim(), results);
+        // Fallback to linear search
+        results = results.filter(item => {
+          return searchKeys.some(key => {
+            const value = getNestedValue(item, key);
+            const text = typeof value === 'string' ? value : String(value || '');
+            const compareText = caseSensitive ? text : text.toLowerCase();
+            return compareText.includes(searchTerm);
+          });
+        });
       }
     }
 
     // Apply filters
-    results = applyFilters(results, currentFilters);
+    if (currentFilters && Object.keys(currentFilters).length > 0) {
+      results = results.filter(item => {
+        return Object.entries(currentFilters).every(([key, filterValue]) => {
+          if (filterValue === null || filterValue === undefined || filterValue === '') {
+            return true;
+          }
+          
+          const itemValue = getNestedValue(item, key);
+          
+          // Handle different filter types
+          if (Array.isArray(filterValue)) {
+            return filterValue.includes(itemValue);
+          }
+          
+          if (typeof filterValue === 'object') {
+            // Range filters
+            if (filterValue.min !== undefined && itemValue < filterValue.min) return false;
+            if (filterValue.max !== undefined && itemValue > filterValue.max) return false;
+            return true;
+          }
+          
+          return String(itemValue).toLowerCase() === String(filterValue).toLowerCase();
+        });
+      });
+    }
 
-    const searchTime = performance.now() - startTime;
+    // Apply custom filter function
+    if (filterFn) {
+      results = results.filter(filterFn);
+    }
+
+    // Apply custom sort
+    if (sortFn) {
+      results.sort(sortFn);
+    }
+
+    // Limit results
+    if (maxResults && results.length > maxResults) {
+      results = results.slice(0, maxResults);
+    }
 
     // Cache results
     searchCache.current.set(cacheKey, {
       results,
-      lastAccess: Date.now(),
-      searchTime
+      timestamp: Date.now()
     });
-
     cleanupCache();
 
+    const searchTime = performance.now() - startTime;
     setSearchMetrics(prev => ({
-      totalItems: itemsToSearch.length,
-      filteredItems: results.length,
+      ...prev,
       searchTime,
-      cacheHits: prev.cacheHits,
-      cacheMisses: prev.cacheMisses + 1
+      filteredItems: results.length,
+      totalItems: items.length
     }));
 
     return results;
   }, [
-    getCacheKey, 
-    performIndexedSearch, 
-    performLinearSearch, 
-    applyFilters, 
+    items, 
+    searchKeys, 
+    caseSensitive, 
+    minSearchLength, 
+    enableIndexing, 
+    enableFuzzySearch,
+    maxResults,
+    sortFn,
+    filterFn,
+    getCacheKey,
     cleanupCache,
-    enableIndexing
+    getNestedValue,
+    calculateFuzzyScore
   ]);
-  
-  // Memoized filtered results - now synchronous
-  const filteredItems = useMemo(() => {
-    if (items.length === 0) return [];
-    
-    return performSyncSearch(debouncedSearchTerm, filters, items);
-  }, [items, debouncedSearchTerm, filters, performSyncSearch]);
 
-  // Batched results for virtualization
-  const [displayBatch, setDisplayBatch] = useState(0);
-  const batchedResults = useMemo(() => {
+  // Build index when items change
+  useEffect(() => {
+    if (enableIndexing) {
+      buildSearchIndex(items);
+    }
+  }, [items, enableIndexing, buildSearchIndex]);
+
+  // Perform search when debounced term or filters change
+  useEffect(() => {
+    // Cancel previous search
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    setIsSearching(true);
+    
+    // Use requestAnimationFrame for non-blocking search
+    requestAnimationFrame(() => {
+      performSearch(debouncedSearchTerm, filters);
+      setIsSearching(false);
+    });
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [debouncedSearchTerm, filters, performSearch]);
+
+  // Memoized filtered results
+  const filteredItems = useMemo(() => {
+    return performSearch(debouncedSearchTerm, filters);
+  }, [debouncedSearchTerm, filters, performSearch]);
+
+  // Virtualization helpers
+  const getVirtualizedItems = useCallback((scrollTop, containerHeight) => {
     if (!enableVirtualization) return filteredItems;
     
-    const endIndex = (displayBatch + 1) * batchSize;
-    return filteredItems.slice(0, endIndex);
-  }, [filteredItems, displayBatch, batchSize, enableVirtualization]);
+    const startIndex = Math.floor(scrollTop / batchSize);
+    const endIndex = Math.min(
+      startIndex + Math.ceil(containerHeight / batchSize) + 1,
+      filteredItems.length
+    );
+    
+    return filteredItems.slice(startIndex, endIndex);
+  }, [filteredItems, enableVirtualization, batchSize]);
 
-  // Load more results (for virtualization)
-  const loadMoreResults = useCallback(() => {
-    if (enableVirtualization && (displayBatch + 1) * batchSize < filteredItems.length) {
-      setDisplayBatch(prev => prev + 1);
-    }
-  }, [displayBatch, batchSize, filteredItems.length, enableVirtualization]);
+  // Update search term
+  const updateSearchTerm = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
 
-  // Reset batch when search changes
-  useEffect(() => {
-    setDisplayBatch(0);
-  }, [debouncedSearchTerm, filters]);
-
-  // Update individual filter
-  const updateFilter = useCallback((key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  // Update filters
+  const updateFilters = useCallback((newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
 
   // Clear all filters
@@ -339,37 +390,105 @@ export const useOptimizedSearch = (
     setSearchTerm('');
   }, [initialFilters]);
 
-  // Clear cache manually
+  // Clear cache
   const clearCache = useCallback(() => {
     searchCache.current.clear();
-    setSearchMetrics(prev => ({ ...prev, cacheHits: 0, cacheMisses: 0 }));
   }, []);
 
   return {
     // State
     searchTerm,
-    setSearchTerm,
+    debouncedSearchTerm,
     filters,
-    setFilters,
-    updateFilter,
     isSearching,
     
     // Results
     filteredItems,
-    batchedResults,
-    
-    // Actions
-    clearFilters,
-    clearCache,
-    loadMoreResults,
     
     // Metrics
     searchMetrics,
-    hasMoreResults: enableVirtualization && batchedResults.length < filteredItems.length,
     
-    // Status
-    isEmpty: filteredItems.length === 0,
-    isFiltered: searchTerm.length > 0 || Object.values(filters).some(v => v && v !== 'all'),
+    // Actions
+    setSearchTerm: updateSearchTerm,
+    setFilters: updateFilters,
+    clearFilters,
+    clearCache,
+    getVirtualizedItems,
+    
+    // Refs for advanced usage
+    searchIndex: searchIndex.current,
+    searchCache: searchCache.current
+  };
+};
+
+/**
+ * useServerSearch hook - For server-side search with debouncing
+ * 
+ * @param {Function} searchFn - Async function that performs the search
+ * @param {Object} options - Configuration options
+ */
+export const useServerSearch = (searchFn, options = {}) => {
+  const {
+    debounceMs = 300,
+    minSearchLength = 2,
+    initialQuery = ''
+  } = options;
+
+  const [query, setQuery] = useState(initialQuery);
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const abortControllerRef = useRef(null);
+
+  const debouncedSearch = useDebouncedCallback(
+    async (searchQuery) => {
+      if (searchQuery.length < minSearchLength) {
+        setResults([]);
+        return;
+      }
+
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await searchFn(searchQuery, abortControllerRef.current.signal);
+        setResults(data);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    debounceMs,
+    { maxWait: debounceMs * 2 }
+  );
+
+  useEffect(() => {
+    debouncedSearch(query);
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [query, debouncedSearch]);
+
+  return {
+    query,
+    setQuery,
+    results,
+    isLoading,
+    error,
+    refresh: () => debouncedSearch(query)
   };
 };
 

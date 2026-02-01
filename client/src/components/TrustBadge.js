@@ -1,17 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  FiShield, 
-  FiDollarSign, 
-  FiCode, 
-  FiCheck, 
-  FiStar,
-  FiUsers,
-  FiTrendingUp,
-  FiAward,
-  FiZap,
-  FiEye
-} from 'react-icons/fi';
+  Shield, 
+  DollarSign, 
+  Code, 
+  Check, 
+  Star,
+  Users,
+  TrendingUp,
+  Award,
+  Zap,
+  Eye
+} from 'lucide-react';
 import { Badge } from '../shadcn/ui/badge';
 import { cn } from '../lib/utils';
 
@@ -27,7 +27,7 @@ const TrustBadge = ({
   const trustBadgeConfigs = {
     // Core verification badges
     identity_verified: {
-      icon: FiShield,
+      icon: Shield,
       label: 'ID Verified',
       description: 'Seller identity confirmed through document verification',
       className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
@@ -35,7 +35,7 @@ const TrustBadge = ({
     },
     
     revenue_verified: {
-      icon: FiDollarSign,
+      icon: DollarSign,
       label: 'Revenue Verified',
       description: 'Monthly revenue confirmed through Stripe integration',
       className: 'bg-green-500/10 text-green-400 border-green-500/30',
@@ -43,7 +43,7 @@ const TrustBadge = ({
     },
     
     code_reviewed: {
-      icon: FiCode,
+      icon: Code,
       label: 'Code Reviewed',
       description: 'Repository analyzed for quality and security standards',
       className: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
@@ -52,7 +52,7 @@ const TrustBadge = ({
     
     // Trust score badge
     trust_score: {
-      icon: FiStar,
+      icon: Star,
       label: 'Trust Score',
       description: 'AI-calculated trustworthiness score based on multiple factors',
       className: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-300 border-purple-400/30',
@@ -62,7 +62,7 @@ const TrustBadge = ({
     
     // Performance badges
     top_seller: {
-      icon: FiAward,
+      icon: Award,
       label: 'Top Seller',
       description: 'Consistently high-performing seller with excellent ratings',
       className: 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30',
@@ -70,7 +70,7 @@ const TrustBadge = ({
     },
     
     fast_responder: {
-      icon: FiZap,
+      icon: Zap,
       label: 'Fast Response',
       description: 'Responds to messages within 2 hours on average',
       className: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
@@ -79,7 +79,7 @@ const TrustBadge = ({
     
     // Community badges
     community_favorite: {
-      icon: FiUsers,
+      icon: Users,
       label: 'Community Favorite',
       description: 'Project highly rated by the SideBuilds community',
       className: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
@@ -87,7 +87,7 @@ const TrustBadge = ({
     },
     
     trending: {
-      icon: FiTrendingUp,
+      icon: TrendingUp,
       label: 'Trending',
       description: 'High interest and activity in the past 7 days',
       className: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
@@ -96,7 +96,7 @@ const TrustBadge = ({
     
     // Quality indicators
     high_quality: {
-      icon: FiCheck,
+      icon: Check,
       label: 'High Quality',
       description: 'Meets premium quality standards for code and documentation',
       className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
@@ -104,7 +104,7 @@ const TrustBadge = ({
     },
     
     popular: {
-      icon: FiEye,
+      icon: Eye,
       label: 'Popular',
       description: 'High view count and engagement metrics',
       className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
@@ -281,7 +281,7 @@ export const TrustScoreDisplay = ({
   if (variant === 'minimal') {
     return (
       <div className={cn("flex items-center gap-1", className)}>
-        <FiStar className={cn("w-4 h-4", getScoreColor(score))} />
+        <Star className={cn("w-4 h-4", getScoreColor(score))} />
         <span className={cn("text-sm font-medium", getScoreColor(score))}>
           {score}
         </span>

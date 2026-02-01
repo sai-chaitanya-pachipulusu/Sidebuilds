@@ -31,17 +31,14 @@ class WebSocketEvents {
       } catch (jwtError) {
         if (jwtError.name === 'TokenExpiredError') {
           // Token expired - emit refresh required event and allow graceful handling
-          console.log(`[WebSocket Auth] Token expired for socket ${socket.id}`);
           socket.emit('token_refresh_required', { 
             reason: 'expired', 
             timestamp: new Date().toISOString() 
           });
           return next(new Error('Token expired'));
         } else if (jwtError.name === 'JsonWebTokenError') {
-          console.error(`[WebSocket Auth] Invalid token format for socket ${socket.id}:`, jwtError.message);
           return next(new Error('Invalid token format'));
         } else {
-          console.error(`[WebSocket Auth] JWT verification failed for socket ${socket.id}:`, jwtError.message);
           return next(new Error('Token verification failed'));
         }
       }
@@ -49,7 +46,6 @@ class WebSocketEvents {
       // Get user data from database with enhanced error handling
       const userId = decoded.user ? decoded.user.user_id : decoded.userId;
       if (!userId) {
-        console.error('[WebSocket Auth] No user ID in token payload:', decoded);
         return next(new Error('Invalid token payload'));
       }
 
@@ -59,7 +55,6 @@ class WebSocketEvents {
       );
 
       if (result.rows.length === 0) {
-        console.error(`[WebSocket Auth] User not found in database: ${userId}`);
         return next(new Error('User not found'));
       }
 
@@ -74,10 +69,8 @@ class WebSocketEvents {
         userId: userId
       };
       
-      console.log(`[WebSocket Auth] User authenticated: ${socket.user.username} (${socket.user.id})`);
       next();
     } catch (error) {
-      console.error('[WebSocket Auth] Authentication error:', error);
       next(new Error(`Authentication failed: ${error.message}`));
     }
   }
@@ -86,8 +79,6 @@ class WebSocketEvents {
   handleConnection(socket) {
     const userId = socket.user.id;
     const username = socket.user.username;
-
-    console.log(`[WebSocket] User ${username} (${userId}) connected: ${socket.id}`);
 
     // Store user connection with enhanced metadata
     this.connectedUsers.set(userId, {
@@ -180,7 +171,6 @@ class WebSocketEvents {
       socket.emit(`${dataType}_initial_data`, initialData);
 
     } catch (error) {
-      console.error('Subscription error:', error);
       socket.emit('subscription_error', { error: error.message });
     }
   }
@@ -197,8 +187,6 @@ class WebSocketEvents {
     if (this.roomSubscriptions.has(roomName)) {
       this.roomSubscriptions.get(roomName).delete(socket.id);
     }
-
-    console.log(`[WebSocket] User ${userId} unsubscribed from ${dataType}`);
   }
 
   // Handle project view events
@@ -499,8 +487,6 @@ class WebSocketEvents {
     const username = socket.user?.username;
 
     if (userId) {
-      console.log(`[WebSocket] User ${username} (${userId}) disconnected: ${socket.id}, reason: ${reason}`);
-      
       // Track disconnect reason for analytics
       const disconnectInfo = {
         reason,

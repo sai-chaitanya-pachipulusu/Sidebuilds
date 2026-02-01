@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus, aiIdeaAssist } from '../services/api';
+import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus, aiIdeaAssist, uploadProjectFiles } from '../services/api';
 import ElegantLoadingScreen from '../components/ElegantLoadingScreen';
+import ProjectFileUploader from '../components/ProjectFileUploader';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import StripeConnectModal from '../components/StripeConnectModal';
@@ -13,7 +14,7 @@ import { Checkbox } from '../shadcn/ui/checkbox';
 import { Label } from '../shadcn/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../shadcn/ui/select.jsx';
 import { Alert, AlertDescription, AlertTitle } from '../shadcn/ui/alert';
-import { Info, ExternalLink } from 'lucide-react';
+import { Info, ExternalLink, FileUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const projectStages = ['idea', 'planning', 'mvp', 'development', 'launched', 'on_hold'];
@@ -63,6 +64,8 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     const [showStripeModal, setShowStripeModal] = useState(false);
     const [stripeStatus, setStripeStatus] = useState(null);
     const [aiBusy, setAiBusy] = useState(false);
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const [showFileUpload, setShowFileUpload] = useState(false);
 
     const fetchProjectAndStripeStatus = useCallback(async () => {
         try {
@@ -139,6 +142,10 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         checkStatus();
     };
     
+    const handleFilesUploaded = (files) => {
+        setUploadedFiles(prev => [...prev, ...files]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -164,14 +171,29 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         
         try {
             console.log('Submitting project data:', formData);
+            const loadingToast = toast.loading(editMode ? 'Updating project...' : 'Creating your project...');
+            
             if (editMode && projectId) {
                 await updateProject(projectId, formData);
-                toast.success("Project Updated!");
+                toast.success("Project Updated!", { id: loadingToast });
                 navigate(`/projects/${projectId}`);
             } else {
                 const newProject = await createProject(formData);
                 console.log('Project created successfully:', newProject);
-                toast.success("Project Created!");
+                
+                // Upload any pending files if the file uploader is shown
+                if (showFileUpload && uploadedFiles.length > 0 && newProject.project_id) {
+                    try {
+                        const fileUploadToast = toast.loading('Uploading project files...');
+                        // Files are already uploaded by the ProjectFileUploader component
+                        toast.success('Project files uploaded!', { id: fileUploadToast });
+                    } catch (uploadErr) {
+                        console.error('File upload error:', uploadErr);
+                        toast.error('Project created but some files failed to upload', { id: loadingToast });
+                    }
+                }
+                
+                toast.success("Project Created!", { id: loadingToast });
                 navigate(`/projects/${newProject.project_id}`);
             }
         } catch (err) {
@@ -412,6 +434,49 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                     </div>
                                 </motion.div>
                             )}
+
+                            {/* File Upload Section */}
+                            <motion.div variants={itemVariants} className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                        <FileUp className="w-5 h-5" />
+                                        Project Files
+                                    </h3>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowFileUpload(!showFileUpload)}
+                                    >
+                                        {showFileUpload ? 'Hide File Upload' : 'Add Files'}
+                                    </Button>
+                                </div>
+                                
+                                <AnimatePresence>
+                                    {showFileUpload && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="p-6 bg-gray-800/30 rounded-lg border border-gray-700"
+                                        >
+                                            <p className="text-sm text-gray-400 mb-4">
+                                                Upload source code (ZIP), documentation (PDF), screenshots, or other project assets. 
+                                                Max 50MB per file.
+                                            </p>
+                                            <ProjectFileUploader
+                                                projectId={projectId}
+                                                onFilesUploaded={handleFilesUploaded}
+                                                acceptedTypes={['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip', 'txt', 'md', 'json', 'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py']}
+                                                maxFiles={10}
+                                                maxSize={50}
+                                                showExistingFiles={editMode}
+                                                allowFileDeletion={true}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
 
                             <motion.div variants={itemVariants} className="flex justify-end pt-4">
                                 <Button type="submit" size="lg" disabled={isSubmitting}>
