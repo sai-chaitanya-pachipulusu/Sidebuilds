@@ -188,7 +188,7 @@ const NavBar = () => {
             >
               <Link to="/" className="flex items-center gap-2.5 no-underline">
                 <Logo size={32} />
-                <span className="text-lg font-semibold text-white tracking-tight">SideBuilds</span>
+                <span className="text-lg font-bold text-white tracking-tight font-mono uppercase">SideBuilds</span>
               </Link>
             </motion.div>
 
@@ -201,7 +201,7 @@ const NavBar = () => {
                     <Link
                       key={item.label}
                       to={item.path}
-                      className={`relative px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 no-underline ${
+                      className={`relative px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 no-underline font-mono uppercase tracking-wider ${
                         isActive
                           ? 'text-white bg-white/[0.1]'
                           : 'text-gray-400 hover:text-white'
@@ -224,7 +224,7 @@ const NavBar = () => {
                 whileTap={{ scale: 0.97 }}
               >
                 <Command className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">⌘K</span>
+                <span className="text-xs font-medium font-mono">⌘K</span>
               </motion.button>
 
               {isAuthenticated ? (
@@ -232,11 +232,11 @@ const NavBar = () => {
                   {/* Create Button - Brutalist */}
                   <motion.button
                     onClick={() => navigate('/create')}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200"
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 font-mono"
                     whileTap={{ scale: 0.98 }}
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>Create</span>
+                    <span className="font-mono">Create</span>
                   </motion.button>
 
                   {/* Notification Bell - Clean */}
@@ -278,7 +278,7 @@ const NavBar = () => {
                                   className="p-3 hover:bg-white/[0.03] transition-colors cursor-pointer border-b border-white/[0.04] last:border-0"
                                   onClick={() => handleNotificationClick(notification)}
                                 >
-                                  <p className="text-sm text-gray-300 leading-relaxed">{notification.message}</p>
+                                  <p className="text-sm text-gray-300 leading-relaxed font-mono">{notification.message}</p>
                                   <p className="text-xs text-gray-600 mt-1.5">
                                     {new Date(notification.created_at).toLocaleDateString()}
                                   </p>
@@ -287,7 +287,7 @@ const NavBar = () => {
                             ) : (
                               <div className="p-6 text-center">
                                 <Bell className="w-6 h-6 mx-auto mb-2 text-gray-600" />
-                                <p className="text-sm text-gray-500">No notifications</p>
+                                <p className="text-sm text-gray-500 font-mono">No notifications</p>
                               </div>
                             )}
                           </div>
@@ -349,7 +349,7 @@ const NavBar = () => {
                                   <Link
                                     key={item.label}
                                     to={item.path}
-                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] transition-colors no-underline"
+                                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] transition-colors no-underline font-mono"
                                     onClick={() => setIsProfileOpen(false)}
                                   >
                                     <Icon className="w-4 h-4" />
@@ -363,10 +363,10 @@ const NavBar = () => {
                             <div className="border-t border-white/[0.06] py-1">
                               <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors font-mono uppercase tracking-wider"
                               >
                                 <LogOut className="w-4 h-4" />
-                                Sign out
+                                SIGN OUT
                               </button>
                             </div>
                           </motion.div>
@@ -378,16 +378,16 @@ const NavBar = () => {
                 <div className="hidden md:flex items-center gap-2">
                   <Link
                     to="/login"
-                    className="px-3.5 py-1.5 text-sm font-medium text-gray-400 hover:text-white transition-colors no-underline"
+                    className="px-3.5 py-1.5 text-sm font-medium text-gray-400 hover:text-white transition-colors no-underline font-mono uppercase tracking-wider"
                   >
-                    Sign in
+                    SIGN IN
                   </Link>
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Link
                       to="/register"
-                      className="px-4 py-1.5 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.1] rounded-full transition-all duration-200 no-underline"
+                      className="px-4 py-1.5 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.1] rounded-full transition-all duration-200 no-underline font-mono uppercase tracking-wider"
                     >
-                      Get started
+                      GET STARTED
                     </Link>
                   </motion.div>
                 </div>
