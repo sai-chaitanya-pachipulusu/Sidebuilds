@@ -43,7 +43,7 @@ const Modal = ({
       content: cn(
         "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
         getSizeClasses(size),
-        "bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl z-50 p-6",
+        "bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-none shadow-2xl z-50 p-6",
         className
       ),
       animation: {
@@ -92,7 +92,7 @@ const Modal = ({
                 {/* Bottom sheet handle */}
                 {modalVariant === 'bottom-sheet' && (
                   <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+                    <div className="w-12 h-1.5 bg-gray-600 rounded-none" />
                   </div>
                 )}
                 
@@ -110,7 +110,7 @@ const Modal = ({
                   <Dialog.Close asChild>
                     <button 
                       className={cn(
-                        "p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-700/50",
+                        "p-2 text-gray-400 hover:text-white transition-colors rounded-none hover:bg-gray-700/50",
                         modalVariant === 'center' ? "absolute top-4 right-4" : "ml-auto"
                       )}
                       aria-label="Close modal"

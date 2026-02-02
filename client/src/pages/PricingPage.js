@@ -98,7 +98,7 @@ const PricingPage = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="bg-gray-800/50 p-1 rounded-lg backdrop-blur-sm border border-gray-700">
+            <div className="bg-gray-800/50 p-1 rounded-none backdrop-blur-sm border border-gray-700">
               <button
                 onClick={() => setIsAnnual(false)}
                 className={`px-6 py-2 rounded-md transition-all ${
@@ -118,7 +118,7 @@ const PricingPage = () => {
                 }`}
               >
                 Annual
-                <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-none">
                   Save 20%
                 </span>
               </button>
@@ -130,7 +130,7 @@ const PricingPage = () => {
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
-                className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-2xl p-8 ${
+                className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-none p-8 ${
                   plan.popular 
                     ? 'border-white shadow-white/25 shadow-2xl'
                     : 'border-gray-700'
@@ -141,7 +141,7 @@ const PricingPage = () => {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium">
+                    <span className="bg-white text-black px-4 py-2 rounded-none text-sm font-medium">
                       Most Popular
                     </span>
                   </div>
@@ -161,7 +161,7 @@ const PricingPage = () => {
                     </span>
                   </div>
                   
-                  <button className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                  <button className={`w-full py-3 rounded-none font-semibold transition-all ${
                     plan.popular 
                       ? 'bg-white hover:bg-gray-200 text-black'
                       : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
@@ -213,7 +213,7 @@ const PricingPage = () => {
                   answer: "Yes, we offer a 30-day money-back guarantee for all paid plans."
                 }
               ].map((faq, index) => (
-                <div key={index} className="bg-gray-900/30 rounded-lg p-6 border border-gray-700">
+                <div key={index} className="bg-gray-900/30 rounded-none p-6 border border-gray-700">
                   <h3 className="font-semibold mb-2">{faq.question}</h3>
                   <p className="text-gray-400">{faq.answer}</p>
                 </div>

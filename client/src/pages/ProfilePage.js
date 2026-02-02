@@ -61,11 +61,11 @@ const ProfilePage = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group"
+      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group"
     >
       <div className="space-y-4">
         {/* Project Image */}
-        <div className="aspect-video rounded-xl overflow-hidden bg-gray-800">
+        <div className="aspect-video rounded-none overflow-hidden bg-gray-800">
           <img 
             src={project.cover_image_url || 'https://via.placeholder.com/400x225?text=Project+Image'} 
             alt={project.name}
@@ -84,7 +84,7 @@ const ProfilePage = () => {
             </p>
           </div>
           {project.status === 'sold' && (
-            <div className="px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-xs font-medium ml-2">
+            <div className="px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-none text-green-400 text-xs font-medium ml-2">
               Sold
             </div>
           )}
@@ -119,14 +119,14 @@ const ProfilePage = () => {
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="space-y-8">
             <div className="text-center">
-              <div className="w-32 h-32 bg-gray-800 rounded-full animate-pulse mx-auto mb-4"></div>
-              <div className="h-6 bg-gray-800 rounded-lg animate-pulse w-48 mx-auto mb-2"></div>
-              <div className="h-4 bg-gray-800 rounded-lg animate-pulse w-64 mx-auto"></div>
+              <div className="w-32 h-32 bg-gray-800 rounded-none animate-pulse mx-auto mb-4"></div>
+              <div className="h-6 bg-gray-800 rounded-none animate-pulse w-48 mx-auto mb-2"></div>
+              <div className="h-4 bg-gray-800 rounded-none animate-pulse w-64 mx-auto"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-900/50 rounded-2xl p-6 animate-pulse">
-                  <div className="h-16 bg-gray-800 rounded-xl"></div>
+                <div key={i} className="bg-gray-900/50 rounded-none p-6 animate-pulse">
+                  <div className="h-16 bg-gray-800 rounded-none"></div>
                 </div>
               ))}
             </div>
@@ -140,7 +140,7 @@ const ProfilePage = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl p-8">
+          <div className="bg-gray-900/50 border border-white/[0.08] rounded-none p-8">
             <User className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h2 className="text-2xl font-semibold text-white mb-2">User not found</h2>
             <p className="text-gray-400">This profile doesn't exist or has been removed.</p>
@@ -165,15 +165,15 @@ const ProfilePage = () => {
             className="space-y-8"
           >
             {/* Profile Header */}
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-gray-600 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-32 h-32 rounded-none bg-gradient-to-br from-blue-600 to-gray-600 flex items-center justify-center text-white text-4xl font-bold">
                     {user.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   {user.verified && (
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-none flex items-center justify-center">
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
                   )}
@@ -184,7 +184,7 @@ const ProfilePage = () => {
                   <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                     <h1 className="text-3xl font-bold text-white">{user.username}</h1>
                     {user.role === 'premium' && (
-                      <div className="px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm font-medium">
+                      <div className="px-2 py-1 bg-white/10 border border-white/20 rounded-none text-white text-sm font-medium">
                         Pro
                       </div>
                     )}
@@ -225,7 +225,7 @@ const ProfilePage = () => {
                 {/* Follow Button (if viewing someone else's profile) */}
                 {currentUser && currentUser.id !== user.id && (
                   <motion.button
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -237,9 +237,9 @@ const ProfilePage = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-white/10 rounded-xl">
+                  <div className="p-3 bg-white/10 rounded-none">
                     <Package className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -249,9 +249,9 @@ const ProfilePage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-green-500/10 rounded-xl">
+                  <div className="p-3 bg-green-500/10 rounded-none">
                     <Trophy className="w-6 h-6 text-green-400" />
                   </div>
                   <div>
@@ -261,9 +261,9 @@ const ProfilePage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-500/10 rounded-xl">
+                  <div className="p-3 bg-blue-500/10 rounded-none">
                     <Eye className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
@@ -273,9 +273,9 @@ const ProfilePage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-yellow-500/10 rounded-xl">
+                  <div className="p-3 bg-yellow-500/10 rounded-none">
                     <Target className="w-6 h-6 text-yellow-400" />
                   </div>
                   <div>
@@ -287,13 +287,13 @@ const ProfilePage = () => {
             </div>
 
             {/* Projects Section */}
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
               {/* Tabs */}
               <div className="flex items-center justify-between mb-6">
-                <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-xl">
+                <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-none">
                   <button
                     onClick={() => setActiveTab('active')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-none font-medium transition-all duration-200 ${
                       activeTab === 'active'
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
@@ -303,7 +303,7 @@ const ProfilePage = () => {
                   </button>
                   <button
                     onClick={() => setActiveTab('sold')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-none font-medium transition-all duration-200 ${
                       activeTab === 'sold'
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
@@ -314,10 +314,10 @@ const ProfilePage = () => {
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex items-center gap-1 bg-gray-800/50 rounded-xl p-1">
+                <div className="flex items-center gap-1 bg-gray-800/50 rounded-none p-1">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                    className={`p-2 rounded-none transition-colors duration-200 ${
                       viewMode === 'grid' 
                         ? 'bg-blue-600 text-white' 
                         : 'text-gray-400 hover:text-white'
@@ -327,7 +327,7 @@ const ProfilePage = () => {
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                    className={`p-2 rounded-none transition-colors duration-200 ${
                       viewMode === 'list' 
                         ? 'bg-blue-600 text-white' 
                         : 'text-gray-400 hover:text-white'

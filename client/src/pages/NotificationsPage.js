@@ -169,7 +169,7 @@ const NotificationsPage = () => {
         <SEO title="Notifications | SideBuilds" description="View your notifications and updates" />
         <div className="min-h-screen bg-black flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-none h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p className="text-gray-400">Loading notifications...</p>
           </div>
         </div>
@@ -200,7 +200,7 @@ const NotificationsPage = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-none text-sm font-medium transition-all duration-200 ${
                       filter === 'all'
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
@@ -210,7 +210,7 @@ const NotificationsPage = () => {
                   </button>
                   <button
                     onClick={() => setFilter('unread')}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-none text-sm font-medium transition-all duration-200 ${
                       filter === 'unread'
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800'
@@ -223,7 +223,7 @@ const NotificationsPage = () => {
                 <div className="flex items-center gap-2">
                   <motion.button
                     onClick={fetchUserNotifications}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors duration-200"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-none transition-colors duration-200"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -233,7 +233,7 @@ const NotificationsPage = () => {
                   {unreadCount > 0 && (
                     <motion.button
                       onClick={handleMarkAllRead}
-                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-medium transition-colors duration-200"
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-none text-sm font-medium transition-colors duration-200"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -249,7 +249,7 @@ const NotificationsPage = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6"
+                className="bg-red-500/10 border border-red-500/20 rounded-none p-6"
               >
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -258,7 +258,7 @@ const NotificationsPage = () => {
                   </div>
                   <button
                     onClick={fetchUserNotifications}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-none text-sm font-medium transition-colors duration-200"
                   >
                     Try Again
                   </button>
@@ -271,7 +271,7 @@ const NotificationsPage = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-12 text-center"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-12 text-center"
               >
                 <Bell className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">
@@ -300,7 +300,7 @@ const NotificationsPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.05 }}
-                      className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-2xl p-6 transition-all duration-200 group ${
+                      className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-none p-6 transition-all duration-200 group ${
                         !notification.is_read 
                           ? 'border-white/50/30 bg-white/10/5' 
                           : 'border-white/[0.08] hover:border-white/[0.12]'
@@ -309,13 +309,13 @@ const NotificationsPage = () => {
                     >
                       {/* Unread indicator */}
                       {!notification.is_read && (
-                        <div className="absolute top-4 right-4 w-2 h-2 bg-white/10 rounded-full"></div>
+                        <div className="absolute top-4 right-4 w-2 h-2 bg-white/10 rounded-none"></div>
                       )}
 
                       <div className="flex items-start gap-4">
                         {/* Icon */}
                         <div className="flex-shrink-0">
-                          <div className="p-2 bg-gray-800/50 rounded-lg">
+                          <div className="p-2 bg-gray-800/50 rounded-none">
                             <IconComponent className={`w-5 h-5 ${iconColor}`} />
                           </div>
                         </div>
@@ -335,7 +335,7 @@ const NotificationsPage = () => {
                             </span>
                             
                             {notification.type && (
-                              <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                              <span className={`px-2 py-1 rounded-none text-xs font-medium ${
                                 notification.type === 'payment' ? 'bg-green-500/10 text-green-400' :
                                 notification.type === 'purchase' ? 'bg-blue-500/10 text-blue-400' :
                                 notification.type === 'offer' ? 'bg-white/10/10 text-white' :
@@ -352,7 +352,7 @@ const NotificationsPage = () => {
                           <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <motion.button
                               onClick={(e) => handleMarkOneAsRead(notification.notification_id, true, e)}
-                              className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors duration-200"
+                              className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-none transition-colors duration-200"
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               title="Mark as read"

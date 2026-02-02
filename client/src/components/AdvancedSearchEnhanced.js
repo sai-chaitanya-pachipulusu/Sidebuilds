@@ -544,7 +544,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 }
               }, 150)
             }}
-            className="w-full pl-12 pr-20 py-4 bg-gray-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors duration-200 text-lg"
+            className="w-full pl-12 pr-20 py-4 bg-gray-900/50 border border-white/10 rounded-none text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors duration-200 text-lg"
           />
           
           {/* Search Actions */}
@@ -552,7 +552,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="p-1 hover:bg-gray-700 rounded-full transition-colors duration-200"
+                className="p-1 hover:bg-gray-700 rounded-none transition-colors duration-200"
               >
                 <X className="w-4 h-4 text-gray-400" />
               </button>
@@ -564,7 +564,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={cn(
-                "p-2 rounded-lg transition-colors duration-200",
+                "p-2 rounded-none transition-colors duration-200",
                 showAdvancedFilters
                   ? "bg-white/20 text-white"
                   : "hover:bg-gray-700 text-gray-400"
@@ -579,7 +579,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
         {showSuggestions && suggestions.length > 0 && (
           <div 
             ref={suggestionsRef}
-            className="absolute top-full mt-2 w-full bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto"
+            className="absolute top-full mt-2 w-full bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-none shadow-xl z-50 max-h-80 overflow-y-auto"
           >
             <div className="p-2">
               <div className="px-3 py-2 text-xs text-gray-500 font-medium flex items-center gap-2">
@@ -593,7 +593,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                     key={`${suggestion.type}-${suggestion.value}`}
                     onClick={suggestion.action}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors duration-200",
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-none text-left transition-colors duration-200",
                       selectedSuggestionIndex === index
                         ? "bg-white/20 border border-white/50/30"
                         : "hover:bg-white/5"
@@ -639,7 +639,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
               key={category.id}
               onClick={() => setFilters(prev => ({ ...prev, category: category.id }))}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors duration-200",
+                "flex items-center gap-2 px-3 py-1.5 rounded-none text-sm transition-colors duration-200",
                 filters.category === category.id
                   ? "bg-white/10 text-white border border-white/20"
                   : "bg-gray-900/30 text-gray-400 hover:text-white hover:bg-gray-800/50"
@@ -657,7 +657,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
         <button
           onClick={() => setFilters(prev => ({ ...prev, verified: !prev.verified }))}
           className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors duration-200",
+            "flex items-center gap-2 px-3 py-1.5 rounded-none text-sm transition-colors duration-200",
             filters.verified
               ? "bg-green-600/20 text-green-300 border border-green-500/30"
               : "bg-gray-900/30 text-gray-400 hover:text-white hover:bg-gray-800/50"
@@ -670,7 +670,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
         <button
           onClick={() => setFilters(prev => ({ ...prev, featured: !prev.featured }))}
           className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors duration-200",
+            "flex items-center gap-2 px-3 py-1.5 rounded-none text-sm transition-colors duration-200",
             filters.featured
               ? "bg-yellow-600/20 text-yellow-300 border border-yellow-500/30"
               : "bg-gray-900/30 text-gray-400 hover:text-white hover:bg-gray-800/50"
@@ -688,7 +688,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-gray-900/30 border border-white/10 rounded-2xl p-6 space-y-6"
+            className="bg-gray-900/30 border border-white/10 rounded-none p-6 space-y-6"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-white flex items-center gap-2">
@@ -736,7 +736,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                                 }))
                               }}
                               className={cn(
-                                "px-3 py-1 rounded-full text-xs transition-all duration-200 border",
+                                "px-3 py-1 rounded-none text-xs transition-all duration-200 border",
                                 filters.techStack.includes(tech.id)
                                   ? "bg-white text-black border-white shadow-lg shadow-white/25"
                                   : "bg-gray-800/50 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white hover:border-gray-600"
@@ -758,7 +758,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 <select
                   value={filters.sortBy}
                   onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white"
+                  className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-none text-white"
                 >
                   {sortOptions.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -787,7 +787,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                           ...prev, 
                           priceRange: [parseInt(e.target.value), prev.priceRange[1]] 
                         }))}
-                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gray-600"
+                        className="w-full h-2 bg-gray-800 rounded-none appearance-none cursor-pointer accent-gray-600"
                       />
                     </div>
                     <div className="flex-1">
@@ -802,7 +802,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                           ...prev, 
                           priceRange: [prev.priceRange[0], parseInt(e.target.value)] 
                         }))}
-                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gray-600"
+                        className="w-full h-2 bg-gray-800 rounded-none appearance-none cursor-pointer accent-gray-600"
                       />
                     </div>
                   </div>
@@ -859,14 +859,14 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                     navigator.clipboard?.writeText(window.location.href + '?q=' + encodeURIComponent(searchTerm))
                     // You could show a toast here
                   }}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 transition-colors duration-200 text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded-none text-gray-400 hover:text-white hover:border-gray-500 transition-colors duration-200 text-sm"
                 >
                   <ArrowRight className="w-4 h-4" />
                   Share
                 </button>
                 <button
                   onClick={saveCurrentSearch}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-lg text-gray-300 hover:bg-white/30 transition-colors duration-200"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-none text-gray-300 hover:bg-white/30 transition-colors duration-200"
                 >
                   <Bookmark className="w-4 h-4" />
                   <span>Save Search</span>
@@ -889,7 +889,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
               <motion.button
                 key={search.id}
                 onClick={() => loadSavedSearch(search)}
-                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-gray-900/50 border border-white/10 rounded-lg hover:border-white/20 transition-all duration-200 group"
+                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-gray-900/50 border border-white/10 rounded-none hover:border-white/20 transition-all duration-200 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

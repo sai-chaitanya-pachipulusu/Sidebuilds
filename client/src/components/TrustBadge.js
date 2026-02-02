@@ -182,7 +182,7 @@ const TrustBadge = ({
       {/* Premium glow effect for high priority badges */}
       {config.priority === 'high' && animated && (
         <motion.div
-          className="absolute inset-0 -z-10 rounded-lg opacity-0"
+          className="absolute inset-0 -z-10 rounded-none opacity-0"
           animate={{ 
             opacity: [0, 0.3, 0],
             scale: [0.8, 1.2, 0.8]
@@ -293,12 +293,12 @@ export const TrustScoreDisplay = ({
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <div className="relative">
-          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center">
             <span className={cn("text-xs font-bold", getScoreColor(score))}>
               {score}
             </span>
           </div>
-          <div className="absolute inset-0 rounded-full" style={{
+          <div className="absolute inset-0 rounded-none" style={{
             background: `conic-gradient(from 0deg, ${getScoreColor(score).replace('text-', '')} ${score}%, transparent ${score}%)`
           }} />
         </div>
@@ -318,10 +318,10 @@ export const TrustScoreDisplay = ({
 
   // Full variant with detailed breakdown
   return (
-    <div className={cn("bg-gray-900/50 border border-gray-700 rounded-xl p-4", className)}>
+    <div className={cn("bg-gray-900/50 border border-gray-700 rounded-none p-4", className)}>
       <div className="text-center mb-4">
         <div className="relative inline-block">
-          <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-none bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
             <div className="text-center">
               <div className={cn("text-xl font-bold", getScoreColor(score))}>
                 {score}

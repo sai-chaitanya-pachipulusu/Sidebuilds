@@ -249,7 +249,7 @@ const MarketplacePageSimple = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/50 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-none h-12 w-12 border-b-2 border-white/50 mx-auto mb-4"></div>
           <div className="text-white">Loading marketplace projects...</div>
         </div>
       </div>
@@ -282,11 +282,11 @@ const MarketplacePageSimple = () => {
                 placeholder="Search projects, technologies, categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  <div className="animate-spin rounded-none h-4 w-4 border-b-2 border-blue-500"></div>
                 </div>
               )}
             </div>
@@ -296,7 +296,7 @@ const MarketplacePageSimple = () => {
                 setSortBy(e.target.value);
                 setCurrentPage(1); // Reset to first page on sort change
               }}
-              className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-none text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <option value="newest">Newest First</option>
               <option value="price-low">Price: Low to High</option>
@@ -320,7 +320,7 @@ const MarketplacePageSimple = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="bg-gray-900/30 backdrop-blur-sm border border-gray-700 rounded-lg p-6"
+              className="bg-gray-900/30 backdrop-blur-sm border border-gray-700 rounded-none p-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
@@ -328,7 +328,7 @@ const MarketplacePageSimple = () => {
                   <select
                     value={filters.stage}
                     onChange={(e) => setFilters({...filters, stage: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-none text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   >
                     <option value="">All Stages</option>
                     <option value="idea">Idea</option>
@@ -347,7 +347,7 @@ const MarketplacePageSimple = () => {
                     placeholder="0"
                     value={filters.minPrice}
                     onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-none text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
 
@@ -358,7 +358,7 @@ const MarketplacePageSimple = () => {
                     placeholder="100000"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-none text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
 
@@ -369,7 +369,7 @@ const MarketplacePageSimple = () => {
                     placeholder="React, Node.js..."
                     value={filters.techStack}
                     onChange={(e) => setFilters({...filters, techStack: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-none text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   />
                 </div>
               </div>
@@ -394,7 +394,7 @@ const MarketplacePageSimple = () => {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-8">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-none p-4 mb-8">
             <p className="text-red-400">{error}</p>
             <button
               onClick={() => fetchProjects(currentPage)}

@@ -101,7 +101,7 @@ const EnhancedToast = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           <div className={`
-            flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm
+            flex items-start gap-3 p-4 rounded-none border backdrop-blur-sm
             shadow-lg max-w-md min-w-80
             ${config.colors}
           `}>
@@ -117,7 +117,7 @@ const EnhancedToast = ({
             
             {/* Close button */}
             <motion.button
-              className="flex-shrink-0 p-1 hover:bg-white/10 rounded-lg transition-colors"
+              className="flex-shrink-0 p-1 hover:bg-white/10 rounded-none transition-colors"
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}

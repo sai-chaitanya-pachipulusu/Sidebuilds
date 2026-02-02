@@ -150,7 +150,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
 
         {/* Modal */}
         <motion.div
-          className="relative w-full max-w-lg bg-[#0a0a0a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+          className="relative w-full max-w-lg bg-[#0a0a0a] rounded-none border border-white/10 shadow-2xl overflow-hidden"
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -169,7 +169,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
           {/* Close button */}
           <button
             onClick={skipTour}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+            className="absolute top-4 right-4 w-8 h-8 rounded-none bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -188,7 +188,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                 {/* Icon or Animation */}
                 <div className="flex justify-center mb-6">
                   {currentStepData.animation || (
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${currentStepData.gradient} p-5 shadow-2xl`}>
+                    <div className={`w-20 h-20 rounded-none bg-gradient-to-br ${currentStepData.gradient} p-5 shadow-2xl`}>
                       <currentStepData.icon className="w-full h-full text-white" />
                     </div>
                   )}
@@ -215,7 +215,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         transition={{ delay: index * 0.1 }}
                         className="flex items-center gap-3 justify-center"
                       >
-                        <CheckCircle className={`w-5 h-5 text-transparent bg-gradient-to-r ${currentStepData.gradient} rounded-full`} style={{ fill: 'url(#grad)' }} />
+                        <CheckCircle className={`w-5 h-5 text-transparent bg-gradient-to-r ${currentStepData.gradient} rounded-none`} style={{ fill: 'url(#grad)' }} />
                         <Zap className={`w-4 h-4 bg-gradient-to-r ${currentStepData.gradient} bg-clip-text text-green-400`} />
                         <span className="text-gray-300">{feature}</span>
                       </motion.div>
@@ -231,7 +231,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         onClose();
                         window.location.href = '/marketplace';
                       }}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-white/50 to-gray-500 text-white font-semibold hover:opacity-90 transition-opacity"
+                      className="px-6 py-3 rounded-none bg-gradient-to-r from-white/50 to-gray-500 text-white font-semibold hover:opacity-90 transition-opacity"
                     >
                       Explore Marketplace
                     </button>
@@ -240,7 +240,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         onClose();
                         window.location.href = '/create';
                       }}
-                      className="px-6 py-3 rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition-colors"
+                      className="px-6 py-3 rounded-none border border-white/20 text-white font-semibold hover:bg-white/5 transition-colors"
                     >
                       List a Project
                     </button>
@@ -258,7 +258,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                 <button
                   key={index}
                   onClick={() => setCurrentStep(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  className={`w-2 h-2 rounded-none transition-all duration-300 ${
                     index === currentStep 
                       ? `w-6 bg-gradient-to-r ${currentStepData.gradient}` 
                       : index < currentStep
@@ -283,7 +283,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
               
               <button
                 onClick={nextStep}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r ${currentStepData.gradient} text-white font-medium hover:opacity-90 transition-opacity`}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-none bg-gradient-to-r ${currentStepData.gradient} text-white font-medium hover:opacity-90 transition-opacity`}
               >
                 {isLastStep ? 'Get Started' : 'Next'}
                 {!isLastStep && <ChevronRight className="w-4 h-4" />}

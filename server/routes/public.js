@@ -292,4 +292,27 @@ router.get('/marketplace/analytics',
     }
 );
 
+// --- Get User Count for Signup Page ---
+// GET /api/public/user-count
+router.get('/user-count',
+    async (req, res) => {
+        try {
+            console.log('[PUBLIC API] Fetching user count');
+            
+            const result = await db.query(
+                `SELECT COUNT(*) as count FROM users`
+            );
+            
+            const count = parseInt(result.rows[0].count);
+            
+            res.json({
+                count: count
+            });
+        } catch (err) {
+            console.error('[PUBLIC API] Get user count error:', err.message);
+            res.status(500).json({ error: 'Server error fetching user count' });
+        }
+    }
+);
+
 module.exports = router;

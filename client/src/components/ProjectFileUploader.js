@@ -310,7 +310,7 @@ const ProjectFileUploader = ({
       {/* Upload Area */}
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
+          "relative border-2 border-dashed rounded-none p-8 text-center transition-all duration-200",
           dragActive
             ? "border-white bg-white/10"
             : "border-gray-600 hover:border-gray-500 bg-gray-900/30"
@@ -332,7 +332,7 @@ const ProjectFileUploader = ({
 
         <div className="space-y-4">
           <div className={cn(
-            "w-16 h-16 mx-auto rounded-full flex items-center justify-center transition-colors duration-200",
+            "w-16 h-16 mx-auto rounded-none flex items-center justify-center transition-colors duration-200",
             dragActive ? "bg-white/20" : "bg-gray-800"
           )}>
             <Upload className={cn(
@@ -367,7 +367,7 @@ const ProjectFileUploader = ({
 
       {/* Privacy Setting */}
       {files.length > 0 && (
-        <div className="flex items-center space-x-2 p-4 bg-gray-800/50 rounded-lg">
+        <div className="flex items-center space-x-2 p-4 bg-gray-800/50 rounded-none">
           <Checkbox 
             id="is_public" 
             checked={isPublic} 
@@ -414,7 +414,7 @@ const ProjectFileUploader = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center gap-4 p-4 bg-gray-900/50 border border-white/10 rounded-xl hover:border-white/20 transition-colors duration-200"
+                    className="flex items-center gap-4 p-4 bg-gray-900/50 border border-white/10 rounded-none hover:border-white/20 transition-colors duration-200"
                   >
                     {/* File Preview/Icon */}
                     <div className="flex-shrink-0">
@@ -422,10 +422,10 @@ const ProjectFileUploader = ({
                         <img
                           src={file.preview}
                           alt={file.name}
-                          className="w-12 h-12 object-cover rounded-lg"
+                          className="w-12 h-12 object-cover rounded-none"
                         />
                       ) : (
-                        <div className={cn("p-2 rounded-lg border", colorClasses)}>
+                        <div className={cn("p-2 rounded-none border", colorClasses)}>
                           <Icon className="w-8 h-8" />
                         </div>
                       )}
@@ -443,9 +443,9 @@ const ProjectFileUploader = ({
                             <span>Uploading...</span>
                             <span>{file.progress}%</span>
                           </div>
-                          <div className="w-full bg-gray-800 rounded-full h-1.5">
+                          <div className="w-full bg-gray-800 rounded-none h-1.5">
                             <div 
-                              className="bg-white h-1.5 rounded-full transition-all duration-300"
+                              className="bg-white h-1.5 rounded-none transition-all duration-300"
                               style={{ width: `${file.progress}%` }}
                             />
                           </div>
@@ -551,9 +551,9 @@ const ProjectFileUploader = ({
               return (
                 <div
                   key={file.file_id}
-                  className="flex items-center gap-4 p-4 bg-gray-900/30 border border-white/5 rounded-xl"
+                  className="flex items-center gap-4 p-4 bg-gray-900/30 border border-white/5 rounded-none"
                 >
-                  <div className={cn("p-2 rounded-lg border flex-shrink-0", colorClasses)}>
+                  <div className={cn("p-2 rounded-none border flex-shrink-0", colorClasses)}>
                     <Icon className="w-6 h-6" />
                   </div>
 

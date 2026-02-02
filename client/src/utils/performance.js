@@ -7,7 +7,7 @@ export const lazyLoad = (importFunc, fallback = null) => {
   const LazyComponent = React.lazy(importFunc);
   
   return (props) => (
-    <React.Suspense fallback={fallback || <div className="animate-pulse bg-gray-800 rounded-lg h-32" />}>
+    <React.Suspense fallback={fallback || <div className="animate-pulse bg-gray-800 rounded-none h-32" />}>
       <LazyComponent {...props} />
     </React.Suspense>
   );

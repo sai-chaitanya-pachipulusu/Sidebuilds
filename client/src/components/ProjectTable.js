@@ -32,7 +32,7 @@ const ProjectTable = ({ projects, loading, error }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-none h-8 w-8 border-b-2 border-white"></div>
         <span className="ml-2 text-gray-300">Loading projects...</span>
       </div>
     );
@@ -40,7 +40,7 @@ const ProjectTable = ({ projects, loading, error }) => {
 
   if (error) {
     return (
-      <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+      <div className="bg-red-900/20 border border-red-500/30 rounded-none p-4 mb-6">
         <div className="flex items-center">
           <svg className="w-5 h-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -61,7 +61,7 @@ const ProjectTable = ({ projects, loading, error }) => {
   }
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-lg overflow-hidden">
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-none overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-800/50">

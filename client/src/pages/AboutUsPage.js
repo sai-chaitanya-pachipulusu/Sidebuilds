@@ -164,7 +164,7 @@ const AboutUsPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-12"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none mb-6">
                 <Heart className="w-4 h-4 text-white" />
                 <span className="text-sm text-gray-300">The Vibe Engineering Revolution</span>
               </div>
@@ -189,7 +189,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/marketplace"
-                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25 flex items-center gap-2"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25 flex items-center gap-2"
                   >
                     Explore Marketplace
                     <ArrowRight className="w-5 h-5" />
@@ -202,7 +202,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/how-it-works"
-                    className="px-8 py-4 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                    className="px-8 py-4 bg-gray-800 text-white rounded-none font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
                   >
                     How It Works
                   </Link>
@@ -269,7 +269,7 @@ const AboutUsPage = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center"
+                  className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 text-center"
                 >
                   <Globe className="w-16 h-16 text-white mx-auto mb-4" />
                   <h3 className="text-2xl font-bold text-white mb-2">Global Reach</h3>
@@ -286,7 +286,7 @@ const AboutUsPage = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 hover:border-white/[0.12] transition-all duration-200"
               >
                 <Target className="w-12 h-12 text-white mb-6" />
                 <h3 className="text-2xl font-bold text-white mb-4">Our Mission</h3>
@@ -301,7 +301,7 @@ const AboutUsPage = () => {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 hover:border-white/[0.12] transition-all duration-200"
               >
                 <Zap className="w-12 h-12 text-blue-400 mb-6" />
                 <h3 className="text-2xl font-bold text-white mb-4">Our Vision</h3>
@@ -335,9 +335,9 @@ const AboutUsPage = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-200 group hover:scale-105"
+                      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-200 group hover:scale-105"
                     >
-                      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${value.bgColor}`}>
+                      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-none mb-4 ${value.bgColor}`}>
                         <Icon className={`w-6 h-6 ${value.color}`} />
                       </div>
                       <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-gray-300 transition-colors duration-200">
@@ -372,9 +372,9 @@ const AboutUsPage = () => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center hover:border-white/[0.12] transition-all duration-200 max-w-sm"
+                    className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 text-center hover:border-white/[0.12] transition-all duration-200 max-w-sm"
                   >
-                    <div className="w-24 h-24 bg-gradient-to-r from-gray-600 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-24 h-24 bg-gradient-to-r from-gray-600 to-blue-600 rounded-none mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
@@ -400,7 +400,7 @@ const AboutUsPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-12"
+              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-12"
             >
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                 {statsData.map((stat, index) => {
@@ -447,14 +447,14 @@ const AboutUsPage = () => {
                       className="relative flex items-center"
                     >
                       <div className={`flex-1 ${milestone.side === 'left' ? 'pr-8 text-right' : 'opacity-0'}`}>
-                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-full text-sm font-medium mb-2">
+                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-none text-sm font-medium mb-2">
                           {milestone.year}
                         </div>
                         <p className="text-white">{milestone.event}</p>
                       </div>
-                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white/10 rounded-full border-4 border-black" />
+                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white/10 rounded-none border-4 border-black" />
                       <div className={`flex-1 ${milestone.side === 'right' ? 'pl-8 text-left' : 'opacity-0'}`}>
-                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-full text-sm font-medium mb-2">
+                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-none text-sm font-medium mb-2">
                           {milestone.year}
                         </div>
                         <p className="text-white">{milestone.event}</p>
@@ -469,7 +469,7 @@ const AboutUsPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-none p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Join Our Growing Community
@@ -485,7 +485,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/register"
-                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                   >
                     Get Started
                   </Link>
@@ -496,7 +496,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/contact"
-                    className="px-8 py-4 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                    className="px-8 py-4 bg-gray-800 text-white rounded-none font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
                   >
                     Contact Us
                   </Link>

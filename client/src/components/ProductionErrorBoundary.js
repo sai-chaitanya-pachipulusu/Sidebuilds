@@ -136,13 +136,13 @@ class ProductionErrorBoundary extends React.Component {
             className="max-w-2xl w-full"
           >
             {/* Error Card */}
-            <div className="bg-gray-900/80 backdrop-blur-sm border border-red-500/20 rounded-2xl p-8 text-center">
+            <div className="bg-gray-900/80 backdrop-blur-sm border border-red-500/20 rounded-none p-8 text-center">
               {/* Error Icon */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6"
+                className="w-16 h-16 bg-red-500/20 rounded-none flex items-center justify-center mx-auto mb-6"
               >
                 <AlertTriangle className="w-8 h-8 text-red-400" />
               </motion.div>
@@ -157,7 +157,7 @@ class ProductionErrorBoundary extends React.Component {
               </p>
 
               {/* Error ID */}
-              <div className="bg-gray-800/50 rounded-lg p-3 mb-6">
+              <div className="bg-gray-800/50 rounded-none p-3 mb-6">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-400">Error ID:</span>
                   <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ class ProductionErrorBoundary extends React.Component {
                     <motion.div
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"
+                      className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-none"
                     />
                     Reporting error...
                   </div>
@@ -212,7 +212,7 @@ class ProductionErrorBoundary extends React.Component {
                 
                 <motion.button
                   onClick={this.handleReload}
-                  className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-none font-medium transition-colors duration-200 flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -222,7 +222,7 @@ class ProductionErrorBoundary extends React.Component {
                 
                 <motion.button
                   onClick={this.handleGoHome}
-                  className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-none font-medium transition-colors duration-200 flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -253,7 +253,7 @@ class ProductionErrorBoundary extends React.Component {
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-6 text-left"
                 >
-                  <div className="bg-gray-800/30 rounded-lg p-4 text-sm">
+                  <div className="bg-gray-800/30 rounded-none p-4 text-sm">
                     <div className="space-y-4">
                       {error && (
                         <div>
@@ -325,7 +325,7 @@ export class ComponentErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-none">
           <div className="flex items-center gap-2 text-red-400">
             <AlertTriangle className="w-4 h-4" />
             <span className="text-sm">Something went wrong with this component</span>

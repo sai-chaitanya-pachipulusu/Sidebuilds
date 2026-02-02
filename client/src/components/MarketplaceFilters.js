@@ -111,7 +111,7 @@ const MarketplaceFilters = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 min-w-[44px] min-h-[44px] hover:bg-gray-700 rounded-full transition-colors duration-200"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 min-w-[44px] min-h-[44px] hover:bg-gray-700 rounded-none transition-colors duration-200"
             >
               <X className="w-4 h-4 text-gray-400" />
             </button>
@@ -124,7 +124,7 @@ const MarketplaceFilters = ({
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200 flex-1"
+              className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200 flex-1"
             >
               <Filter className="w-4 h-4" />
               <span>Filters</span>
@@ -137,7 +137,7 @@ const MarketplaceFilters = ({
             {(searchTerm || categoryFilter !== 'all' || sortBy !== 'newest' || priceFilter !== 'all') && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-red-600/20 border border-red-500/30 rounded-xl text-red-300 hover:bg-red-600/30 transition-colors duration-200"
+                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-red-600/20 border border-red-500/30 rounded-none text-red-300 hover:bg-red-600/30 transition-colors duration-200"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -150,7 +150,7 @@ const MarketplaceFilters = ({
             <div className="relative">
               <button
                 onClick={() => setActiveDropdown(activeDropdown === 'category' ? null : 'category')}
-                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
               >
                 <Globe className="w-4 h-4" />
                 <span>Category</span>
@@ -163,7 +163,7 @@ const MarketplaceFilters = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full mt-2 w-64 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50"
+                  className="absolute top-full mt-2 w-64 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-none shadow-xl z-50"
                 >
                   <div className="p-2 max-h-80 overflow-y-auto">
                     {categories.map((category) => {
@@ -195,7 +195,7 @@ const MarketplaceFilters = ({
             <div className="relative">
               <button
                 onClick={() => setActiveDropdown(activeDropdown === 'sort' ? null : 'sort')}
-                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
               >
                 <TrendingUp className="w-4 h-4" />
                 <span>Sort</span>
@@ -208,7 +208,7 @@ const MarketplaceFilters = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full mt-2 w-56 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50"
+                  className="absolute top-full mt-2 w-56 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-none shadow-xl z-50"
                 >
                   <div className="p-2">
                     {sortOptions.map((option) => {
@@ -221,7 +221,7 @@ const MarketplaceFilters = ({
                             setActiveDropdown(null)
                           }}
                           className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-white/5 transition-colors duration-200",
+                            "w-full flex items-center gap-3 px-3 py-2 rounded-none text-left hover:bg-white/5 transition-colors duration-200",
                             sortBy === option.id && "bg-white/20 text-gray-300"
                           )}
                         >
@@ -240,7 +240,7 @@ const MarketplaceFilters = ({
             <div className="relative">
               <button
                 onClick={() => setActiveDropdown(activeDropdown === 'price' ? null : 'price')}
-                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200 whitespace-nowrap"
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Price</span>
@@ -253,7 +253,7 @@ const MarketplaceFilters = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full mt-2 w-56 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50"
+                  className="absolute top-full mt-2 w-56 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-none shadow-xl z-50"
                 >
                   <div className="p-2">
                     {priceRanges.map((range) => (
@@ -264,7 +264,7 @@ const MarketplaceFilters = ({
                           setActiveDropdown(null)
                         }}
                         className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-white/5 transition-colors duration-200",
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-none text-left hover:bg-white/5 transition-colors duration-200",
                           priceFilter === range.id && "bg-white/20 text-gray-300"
                         )}
                       >
@@ -295,7 +295,7 @@ const MarketplaceFilters = ({
             {(searchTerm || categoryFilter !== 'all' || sortBy !== 'newest' || priceFilter !== 'all') && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-red-600/20 border border-red-500/30 rounded-xl text-red-300 hover:bg-red-600/30 transition-colors duration-200 whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-3 min-h-[48px] bg-red-600/20 border border-red-500/30 rounded-none text-red-300 hover:bg-red-600/30 transition-colors duration-200 whitespace-nowrap"
               >
                 <X className="w-4 h-4" />
                 <span>Clear All</span>
@@ -322,7 +322,7 @@ const MarketplaceFilters = ({
             </div>
           )}
           {priceFilter !== 'all' && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-green-600/20 border border-green-500/30 rounded-lg text-green-300">
+            <div className="flex items-center gap-1 px-2 py-1 bg-green-600/20 border border-green-500/30 rounded-none text-green-300">
               <span className="text-xs">{priceRanges.find(p => p.id === priceFilter)?.name}</span>
               <button onClick={() => setPriceFilter('all')}>
                 <X className="w-3 h-3" />
@@ -339,7 +339,7 @@ const MarketplaceFilters = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-gray-900/30 border border-white/10 rounded-xl p-6"
+            className="bg-gray-900/30 border border-white/10 rounded-none p-6"
           >
             <h3 className="text-lg font-semibold text-white mb-4">Advanced Filters</h3>
             
@@ -385,7 +385,7 @@ const MarketplaceFilters = ({
               {/* Project Stage */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Project Stage</label>
-                <select className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white">
+                <select className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-none text-white">
                   <option value="">Any Stage</option>
                   <option value="mvp">MVP</option>
                   <option value="beta">Beta</option>
@@ -464,7 +464,7 @@ const MobileFilterModal = ({
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+              <div className="w-12 h-1.5 bg-gray-600 rounded-none" />
             </div>
             
             {/* Header */}
@@ -472,7 +472,7 @@ const MobileFilterModal = ({
               <h3 className="text-lg font-semibold text-white">Filters</h3>
               <button
                 onClick={onClose}
-                className="p-2 min-w-[44px] min-h-[44px] hover:bg-gray-700 rounded-full transition-colors"
+                className="p-2 min-w-[44px] min-h-[44px] hover:bg-gray-700 rounded-none transition-colors"
               >
                 <X className="w-5 h-5 text-gray-400" />
               </button>
@@ -491,7 +491,7 @@ const MobileFilterModal = ({
                         key={category.id}
                         onClick={() => setCategoryFilter(category.id)}
                         className={cn(
-                          "flex items-center gap-2 p-3 min-h-[48px] rounded-xl text-left transition-colors duration-200",
+                          "flex items-center gap-2 p-3 min-h-[48px] rounded-none text-left transition-colors duration-200",
                           categoryFilter === category.id 
                             ? "bg-white/20 border border-white/50/30 text-gray-300" 
                             : "bg-gray-800/50 border border-gray-700 text-gray-300 hover:border-gray-600"
@@ -514,7 +514,7 @@ const MobileFilterModal = ({
                       key={range.id}
                       onClick={() => setPriceFilter(range.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 p-3 min-h-[48px] rounded-xl text-left transition-colors duration-200",
+                        "w-full flex items-center gap-3 p-3 min-h-[48px] rounded-none text-left transition-colors duration-200",
                         priceFilter === range.id 
                           ? "bg-green-600/20 border border-green-500/30 text-green-300" 
                           : "bg-gray-800/50 border border-gray-700 text-gray-300 hover:border-gray-600"
@@ -537,7 +537,7 @@ const MobileFilterModal = ({
                         key={option.id}
                         onClick={() => setSortBy(option.id)}
                         className={cn(
-                          "w-full flex items-center gap-3 p-3 min-h-[48px] rounded-xl text-left transition-colors duration-200",
+                          "w-full flex items-center gap-3 p-3 min-h-[48px] rounded-none text-left transition-colors duration-200",
                           sortBy === option.id 
                             ? "bg-blue-600/20 border border-blue-500/30 text-blue-300" 
                             : "bg-gray-800/50 border border-gray-700 text-gray-300 hover:border-gray-600"
@@ -556,13 +556,13 @@ const MobileFilterModal = ({
             <div className="flex gap-3 p-6 border-t border-white/10 bg-gray-900/50">
               <button
                 onClick={clearAllFilters}
-                className="flex-1 px-4 py-3 min-h-[48px] bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-600 transition-colors"
+                className="flex-1 px-4 py-3 min-h-[48px] bg-gray-700 text-white rounded-none font-medium hover:bg-gray-600 transition-colors"
               >
                 Clear All
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 min-h-[48px] bg-white text-white rounded-xl font-medium hover:bg-white-700 transition-colors"
+                className="flex-1 px-4 py-3 min-h-[48px] bg-white text-white rounded-none font-medium hover:bg-white-700 transition-colors"
               >
                 Apply Filters
               </button>

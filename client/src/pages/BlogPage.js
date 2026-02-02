@@ -134,7 +134,7 @@ const BlogPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-12"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none mb-6">
                 <BookOpen className="w-4 h-4 text-white" />
                 <span className="text-sm text-gray-300">Blog</span>
               </div>
@@ -167,13 +167,13 @@ const BlogPage = () => {
                   placeholder="Search articles..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
                 />
               </div>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
+                className="px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-none text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
               >
                 {categories.map(cat => (
                   <option key={cat.value} value={cat.value} className="bg-gray-900">
@@ -196,7 +196,7 @@ const BlogPage = () => {
                   <button
                     key={cat.value}
                     onClick={() => setSelectedCategory(cat.value)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 border ${
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-none font-medium transition-all duration-200 border ${
                       selectedCategory === cat.value 
                         ? getCategoryColor(cat.value) 
                         : 'bg-gray-900/50 text-gray-400 border-gray-800 hover:border-gray-700'
@@ -217,7 +217,7 @@ const BlogPage = () => {
             >
               <Link
                 to={`/blog/${featuredPost.id}`}
-                className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/[0.12] hover:scale-[1.02] transition-all duration-300 group"
+                className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none overflow-hidden hover:border-white/[0.12] hover:scale-[1.02] transition-all duration-300 group"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   <div className="aspect-video lg:aspect-square bg-gradient-to-br from-gray-600/20 to-blue-600/20 flex items-center justify-center">
@@ -228,10 +228,10 @@ const BlogPage = () => {
                   </div>
                   <div className="p-8 flex flex-col justify-center">
                     <div className="flex items-center gap-3 mb-4">
-                      <span className="px-3 py-1 bg-white/10/10 text-white border border-white/50/20 rounded-full text-sm font-medium">
+                      <span className="px-3 py-1 bg-white/10/10 text-white border border-white/50/20 rounded-none text-sm font-medium">
                         Featured
                       </span>
-                      <span className={`px-3 py-1 border rounded-full text-sm font-medium ${getCategoryColor(featuredPost.category)}`}>
+                      <span className={`px-3 py-1 border rounded-none text-sm font-medium ${getCategoryColor(featuredPost.category)}`}>
                         Guides
                       </span>
                     </div>
@@ -275,11 +275,11 @@ const BlogPage = () => {
                 >
                   <Link
                     to={`/blog/${post.id}`}
-                    className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/[0.12] hover:scale-105 transition-all duration-200 group h-full"
+                    className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none overflow-hidden hover:border-white/[0.12] hover:scale-105 transition-all duration-200 group h-full"
                   >
                     <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 relative">
                       <div className="absolute top-4 left-4">
-                        <span className={`px-3 py-1 border rounded-full text-sm font-medium ${getCategoryColor(post.category)}`}>
+                        <span className={`px-3 py-1 border rounded-none text-sm font-medium ${getCategoryColor(post.category)}`}>
                           {categories.find(c => c.value === post.category)?.label}
                         </span>
                       </div>
@@ -306,13 +306,13 @@ const BlogPage = () => {
                         {post.tags.slice(0, 3).map(tag => (
                           <span
                             key={tag}
-                            className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-lg border border-gray-700"
+                            className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-none border border-gray-700"
                           >
                             {tag}
                           </span>
                         ))}
                         {post.tags.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-800/50 text-gray-500 text-xs rounded-lg border border-gray-700">
+                          <span className="px-2 py-1 bg-gray-800/50 text-gray-500 text-xs rounded-none border border-gray-700">
                             +{post.tags.length - 3}
                           </span>
                         )}
@@ -350,7 +350,7 @@ const BlogPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-none p-12 text-center"
             >
               <Mail className="w-16 h-16 text-white mx-auto mb-6" />
               <h2 className="text-3xl font-bold text-white mb-4">
@@ -363,12 +363,12 @@ const BlogPage = () => {
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
+                  className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
                 />
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-8 py-3 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
+                  className="px-8 py-3 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                 >
                   Subscribe
                 </motion.button>

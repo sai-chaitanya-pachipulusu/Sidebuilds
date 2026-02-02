@@ -72,25 +72,25 @@ function StripeConnectCompletePage() {
                         <div className="mb-6 flex justify-center">
                             {status === 'loading' && (
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-full border-4 border-blue-500/30 border-t-blue-500 animate-spin"></div>
+                                    <div className="w-16 h-16 rounded-none border-4 border-blue-500/30 border-t-blue-500 animate-spin"></div>
                                 </div>
                             )}
                             {status === 'success' && (
                                 <motion.div 
                                     initial={{ scale: 0 }} 
                                     animate={{ scale: 1 }}
-                                    className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center"
+                                    className="w-16 h-16 bg-green-500/20 rounded-none flex items-center justify-center"
                                 >
                                     <CheckCircle className="w-8 h-8 text-green-500" />
                                 </motion.div>
                             )}
                             {status === 'partial' && (
-                                <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                <div className="w-16 h-16 bg-yellow-500/20 rounded-none flex items-center justify-center">
                                     <Loader2 className="w-8 h-8 text-yellow-500 animate-spin" />
                                 </div>
                             )}
                             {status === 'error' && (
-                                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <div className="w-16 h-16 bg-red-500/20 rounded-none flex items-center justify-center">
                                     <AlertCircle className="w-8 h-8 text-red-500" />
                                 </div>
                             )}

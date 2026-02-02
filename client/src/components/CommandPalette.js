@@ -341,7 +341,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="w-full max-w-2xl max-h-[90vh] bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl max-h-[90vh] bg-gray-900 border border-white/[0.08] rounded-none shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -398,7 +398,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.02 }}
                     >
-                      <div className={`p-2 rounded-lg ${
+                      <div className={`p-2 rounded-none ${
                         index === selectedIndex
                           ? 'bg-white/20'
                           : command.destructive

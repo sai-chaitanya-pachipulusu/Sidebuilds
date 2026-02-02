@@ -50,13 +50,13 @@ const StatsSection = ({ stats }) => {
           {statItems.map((item, index) => (
             <motion.div
               key={item.label}
-              className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 text-center"
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-none p-6 text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
               <div className="flex justify-center mb-4">
-                <div className="p-3 bg-white/10 rounded-xl">
+                <div className="p-3 bg-white/10 rounded-none">
                   <item.icon className="w-8 h-8 text-white" />
                 </div>
               </div>

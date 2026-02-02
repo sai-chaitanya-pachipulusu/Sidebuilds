@@ -217,7 +217,7 @@ function ProfileSettingsPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-none h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading profile and payment settings...</p>
         </div>
       </div>
@@ -243,7 +243,7 @@ function ProfileSettingsPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10/10 border border-white/50/20 backdrop-blur-sm mb-6"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-white/10/10 border border-white/50/20 backdrop-blur-sm mb-6"
               >
                 <Settings className="w-4 h-4 text-white" />
                 <span className="text-sm text-gray-300">Account Settings</span>
@@ -262,12 +262,12 @@ function ProfileSettingsPage() {
 
             {/* Navigation Tabs */}
             <div className="flex justify-center">
-              <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-2xl">
+              <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-none">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 ${
+                    className={`px-6 py-3 rounded-none font-medium transition-all duration-200 flex items-center gap-2 ${
                       activeTab === tab.id
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-400 hover:text-white'
@@ -290,7 +290,7 @@ function ProfileSettingsPage() {
                 transition={{ duration: 0.2 }}
               >
                 {activeTab === 'profile' && (
-                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
                     <h2 className="text-2xl font-bold text-white mb-6">Personal Information</h2>
                     
                     <form onSubmit={handleSave} className="space-y-6">
@@ -306,7 +306,7 @@ function ProfileSettingsPage() {
                             name="username"
                             value={profile.username}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                             placeholder="Enter your username"
                           />
                         </div>
@@ -322,7 +322,7 @@ function ProfileSettingsPage() {
                             name="email"
                             value={profile.email}
                             readOnly
-                            className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700 rounded-xl text-gray-400 cursor-not-allowed"
+                            className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700 rounded-none text-gray-400 cursor-not-allowed"
                           />
                           <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                         </div>
@@ -338,7 +338,7 @@ function ProfileSettingsPage() {
                           value={profile.bio}
                           onChange={handleChange}
                           rows={4}
-                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200 resize-none"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200 resize-none"
                           placeholder="Tell us about yourself..."
                         />
                       </div>
@@ -354,7 +354,7 @@ function ProfileSettingsPage() {
                           name="location"
                           value={profile.location}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                           placeholder="City, Country"
                         />
                       </div>
@@ -375,7 +375,7 @@ function ProfileSettingsPage() {
                               name="portfolio_link"
                               value={profile.portfolio_link}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://myportfolio.com"
                             />
                           </div>
@@ -391,7 +391,7 @@ function ProfileSettingsPage() {
                               name="linkedin_profile_url"
                               value={profile.linkedin_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://linkedin.com/in/yourname"
                             />
                           </div>
@@ -407,7 +407,7 @@ function ProfileSettingsPage() {
                               name="github_profile_url"
                               value={profile.github_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://github.com/yourusername"
                             />
                           </div>
@@ -423,7 +423,7 @@ function ProfileSettingsPage() {
                               name="twitter_profile_url"
                               value={profile.twitter_profile_url}
                               onChange={handleChange}
-                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                               placeholder="https://twitter.com/yourusername"
                             />
                           </div>
@@ -434,7 +434,7 @@ function ProfileSettingsPage() {
                       <motion.button
                         type="submit"
                         disabled={saveLoading}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -455,7 +455,7 @@ function ProfileSettingsPage() {
                 )}
 
                 {activeTab === 'payouts' && (
-                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
                     <h2 className="text-2xl font-bold text-white mb-6">Payout Settings</h2>
                     
                     {isStripeLoading ? (
@@ -468,7 +468,7 @@ function ProfileSettingsPage() {
                         {stripeStatus && (
                           <>
                             {stripeStatus.accountId && stripeStatus.isOnboardingComplete ? (
-                              <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                              <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-none">
                                 <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
                                 <div>
                                   <h3 className="text-green-400 font-semibold">Stripe Connected!</h3>
@@ -477,7 +477,7 @@ function ProfileSettingsPage() {
                                 </div>
                               </div>
                             ) : stripeStatus.accountId && !stripeStatus.isOnboardingComplete ? (
-                              <div className="flex items-start gap-3 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                              <div className="flex items-start gap-3 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-none">
                                 <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
                                 <div>
                                   <h3 className="text-yellow-400 font-semibold">Onboarding Incomplete</h3>
@@ -485,7 +485,7 @@ function ProfileSettingsPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                              <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-none">
                                 <Info className="w-5 h-5 text-blue-400 mt-0.5" />
                                 <div>
                                   <h3 className="text-blue-400 font-semibold">Connect Stripe</h3>
@@ -495,7 +495,7 @@ function ProfileSettingsPage() {
                             )}
                             
                             {stripeStatus.needsAttention && (
-                              <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                              <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-none">
                                 <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
                                 <div className="space-y-2">
                                   <h3 className="text-red-400 font-semibold">Attention Required</h3>
@@ -523,7 +523,7 @@ function ProfileSettingsPage() {
 
                             <motion.button
                               onClick={() => setShowStripeModal(true)}
-                              className={`w-full px-6 py-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                              className={`w-full px-6 py-4 rounded-none font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 stripeStatus.isOnboardingComplete
                                   ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
                                   : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
@@ -552,11 +552,11 @@ function ProfileSettingsPage() {
                 )}
 
                 {activeTab === 'security' && (
-                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
                     <h2 className="text-2xl font-bold text-white mb-6">Security Settings</h2>
                     
                     <div className="space-y-6">
-                      <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                      <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-none">
                         <Info className="w-5 h-5 text-blue-400 mt-0.5" />
                         <div>
                           <h3 className="text-blue-400 font-semibold">Coming Soon</h3>
@@ -565,7 +565,7 @@ function ProfileSettingsPage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-800/30 rounded-xl">
+                        <div className="p-4 bg-gray-800/30 rounded-none">
                           <div className="flex items-center gap-3 mb-2">
                             <Shield className="w-5 h-5 text-white" />
                             <h4 className="text-white font-medium">Two-Factor Auth</h4>
@@ -573,13 +573,13 @@ function ProfileSettingsPage() {
                           <p className="text-gray-400 text-sm">Add an extra layer of security to your account.</p>
                           <button 
                             disabled 
-                            className="mt-3 px-4 py-2 bg-gray-700 text-gray-500 rounded-lg text-sm cursor-not-allowed"
+                            className="mt-3 px-4 py-2 bg-gray-700 text-gray-500 rounded-none text-sm cursor-not-allowed"
                           >
                             Coming Soon
                           </button>
                         </div>
 
-                        <div className="p-4 bg-gray-800/30 rounded-xl">
+                        <div className="p-4 bg-gray-800/30 rounded-none">
                           <div className="flex items-center gap-3 mb-2">
                             <Zap className="w-5 h-5 text-yellow-400" />
                             <h4 className="text-white font-medium">Login Activity</h4>
@@ -587,7 +587,7 @@ function ProfileSettingsPage() {
                           <p className="text-gray-400 text-sm">Monitor your account login activity and devices.</p>
                           <button 
                             disabled 
-                            className="mt-3 px-4 py-2 bg-gray-700 text-gray-500 rounded-lg text-sm cursor-not-allowed"
+                            className="mt-3 px-4 py-2 bg-gray-700 text-gray-500 rounded-none text-sm cursor-not-allowed"
                           >
                             Coming Soon
                           </button>

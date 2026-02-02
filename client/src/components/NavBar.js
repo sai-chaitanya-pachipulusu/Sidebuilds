@@ -194,14 +194,14 @@ const NavBar = () => {
 
             {/* Center Navigation - Pill container like Clerk/Linear */}
             <div className="hidden lg:flex items-center">
-              <div className="flex items-center bg-white/[0.02] rounded-full px-1.5 py-1">
+              <div className="flex items-center bg-white/[0.02] rounded-none px-1.5 py-1">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
                     <Link
                       key={item.label}
                       to={item.path}
-                      className={`relative px-4 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 no-underline font-mono uppercase tracking-wider ${
+                      className={`relative px-4 py-1.5 text-[13px] font-medium rounded-none transition-all duration-200 no-underline font-mono uppercase tracking-wider ${
                         isActive
                           ? 'text-white bg-white/[0.1]'
                           : 'text-gray-400 hover:text-white'
@@ -220,7 +220,7 @@ const NavBar = () => {
               {/* Command Palette - Minimal like Resend */}
               <motion.button
                 onClick={openCommandPalette}
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.05] transition-all duration-200 border border-transparent hover:border-white/[0.08]"
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-gray-500 hover:text-gray-300 hover:bg-white/[0.05] transition-all duration-200 border border-transparent hover:border-white/[0.08]"
                 whileTap={{ scale: 0.97 }}
               >
                 <Command className="w-3.5 h-3.5" />
@@ -243,12 +243,12 @@ const NavBar = () => {
                   <div className="relative" ref={notificationRef}>
                     <motion.button
                       onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                      className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+                      className="relative p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
                       whileTap={{ scale: 0.95 }}
                     >
                       <Bell className="w-[18px] h-[18px]" />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-none flex items-center justify-center font-bold">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
@@ -262,7 +262,7 @@ const NavBar = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.96 }}
                           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                          className="absolute top-full right-0 mt-2 w-80 bg-[#0a0a0a] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50"
+                          className="absolute top-full right-0 mt-2 w-80 bg-[#0a0a0a] border border-white/[0.08] rounded-none shadow-2xl overflow-hidden z-50"
                         >
                           <div className="p-4 border-b border-white/[0.06]">
                             <h3 className="text-sm font-semibold text-white">Notifications</h3>
@@ -300,7 +300,7 @@ const NavBar = () => {
                   <div className="relative" ref={profileRef}>
                     <motion.button
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200"
+                      className="flex items-center gap-2.5 p-1.5 rounded-none hover:bg-white/[0.05] transition-all duration-200"
                       whileTap={{ scale: 0.97 }}
                     >
                       <div className="w-7 h-7 bg-white flex items-center justify-center">
@@ -314,7 +314,7 @@ const NavBar = () => {
                     <AnimatePresence>
                       {isProfileOpen && (
                         <motion.div
-                          className="absolute top-full right-0 mt-2 w-56 bg-[#0a0a0a] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50"
+                          className="absolute top-full right-0 mt-2 w-56 bg-[#0a0a0a] border border-white/[0.08] rounded-none shadow-2xl overflow-hidden z-50"
                           initial={{ opacity: 0, y: -8, scale: 0.96 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -385,7 +385,7 @@ const NavBar = () => {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Link
                       to="/register"
-                      className="px-4 py-1.5 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.1] rounded-full transition-all duration-200 no-underline font-mono uppercase tracking-wider"
+                      className="px-4 py-1.5 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.1] rounded-none transition-all duration-200 no-underline font-mono uppercase tracking-wider"
                     >
                       GET STARTED
                     </Link>
@@ -396,7 +396,7 @@ const NavBar = () => {
               {/* Mobile Menu Toggle */}
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+                className="lg:hidden p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
                 whileTap={{ scale: 0.95 }}
               >
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -431,7 +431,7 @@ const NavBar = () => {
                 <div className="flex justify-end mb-8">
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.05]"
+                    className="p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/[0.05]"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -448,7 +448,7 @@ const NavBar = () => {
                         key={item.path}
                         to={item.path}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all no-underline ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-none transition-all no-underline ${
                           isActive
                             ? 'bg-white/[0.08] text-white'
                             : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'
@@ -474,7 +474,7 @@ const NavBar = () => {
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.05]"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-none border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.05]"
                       >
                         <LogOut className="w-5 h-5" />
                         Sign out
@@ -485,7 +485,7 @@ const NavBar = () => {
                       <Link
                         to="/login"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-center px-4 py-3 rounded-lg border border-white/[0.08] text-gray-400 hover:text-white no-underline"
+                        className="block text-center px-4 py-3 rounded-none border border-white/[0.08] text-gray-400 hover:text-white no-underline"
                       >
                         Sign in
                       </Link>

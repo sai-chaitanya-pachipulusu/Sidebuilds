@@ -232,7 +232,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
         <div className="relative h-full overflow-hidden">
           {/* Dynamic gradient glow that follows mouse */}
           <motion.div
-            className="absolute -inset-1 rounded-2xl opacity-0 blur-xl transition-opacity duration-500"
+            className="absolute -inset-1 rounded-none opacity-0 blur-xl transition-opacity duration-500"
             style={{
               background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(59,130,246,0.5) 0%, rgba(6,182,212,0.3) 50%, transparent 80%)`,
               opacity: isHovered ? 0.7 : 0,
@@ -247,7 +247,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
           />
           
           {/* Main card */}
-          <div className="relative h-full bg-[#0c0c0c] backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/[0.15]">
+          <div className="relative h-full bg-[#0c0c0c] backdrop-blur-xl border border-white/[0.08] rounded-none overflow-hidden transition-all duration-300 hover:border-white/[0.15]">
             
             {/* Thumbnail/Image Section */}
             <div className="relative h-40 overflow-hidden bg-gradient-to-br from-gray-900 to-black">
@@ -281,7 +281,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-md ${status.color}`}
+                  className={`px-2.5 py-1 rounded-none text-xs font-medium border backdrop-blur-md ${status.color}`}
                 >
                   <span className="flex items-center gap-1.5">
                     <StatusIcon className="w-3 h-3" />
@@ -295,7 +295,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="px-2 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 backdrop-blur-md flex items-center gap-1"
+                      className="px-2 py-1 rounded-none bg-orange-500/20 border border-orange-500/30 backdrop-blur-md flex items-center gap-1"
                     >
                       <Flame className="w-3 h-3 text-orange-400" />
                       <span className="text-xs text-orange-400 font-medium">Hot</span>
@@ -308,7 +308,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       e.preventDefault();
                       setIsBookmarked(!isBookmarked);
                     }}
-                    className={`w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${
+                    className={`w-8 h-8 rounded-none backdrop-blur-md flex items-center justify-center transition-colors ${
                       isBookmarked
                         ? 'bg-white/20 border-white/40'
                         : 'bg-black/30 border-white/10 hover:bg-white/10'
@@ -362,7 +362,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                         href={project.demo_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-medium flex items-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
+                        className="px-4 py-2 bg-white/10 text-white rounded-none text-sm font-medium flex items-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.15 }}
@@ -486,7 +486,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       href={project.github_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-lg bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
+                      className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => e.stopPropagation()}
@@ -500,7 +500,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       href={`https://${project.domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-lg bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
+                      className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => e.stopPropagation()}

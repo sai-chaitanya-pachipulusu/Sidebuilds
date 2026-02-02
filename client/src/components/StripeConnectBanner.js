@@ -66,7 +66,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
       {isDismissible && (
         <motion.button
           onClick={handleDismiss}
-          className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors duration-200"
+          className="absolute top-4 right-4 p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/10 transition-colors duration-200"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >

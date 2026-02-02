@@ -66,7 +66,7 @@ const VibeCodePage = () => {
                   className="text-center mb-16"
               >
                   <p className="text-gray-400 mb-2">Your Generated Vibe Code:</p>
-                  <p className="text-4xl font-mono bg-gray-800 inline-block px-6 py-3 rounded-lg border border-gray-700">{generatedCode}</p>
+                  <p className="text-4xl font-mono bg-gray-800 inline-block px-6 py-3 rounded-none border border-gray-700">{generatedCode}</p>
               </motion.div>
           )}
 

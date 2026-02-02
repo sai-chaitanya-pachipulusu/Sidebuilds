@@ -386,14 +386,14 @@ const MarketplacePageEnhanced = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
+        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
           featured ? 'ring-2 ring-white/50/20' : ''
         }`}
       >
         {/* Enhanced Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-gray-600 to-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-gray-600 to-gray-600 rounded-none text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -403,7 +403,7 @@ const MarketplacePageEnhanced = () => {
         {/* AI Score Badge */}
         {project.ai_confidence && (
           <div className="absolute top-4 right-4 z-20">
-            <div className="px-2 py-1 bg-blue-600/20 border border-blue-500/30 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-2 py-1 bg-blue-600/20 border border-blue-500/30 rounded-none text-xs font-medium flex items-center gap-1">
               <Brain className="w-3 h-3 text-blue-400" />
               {Math.round(project.ai_confidence * 100)}% AI Score
             </div>
@@ -432,7 +432,7 @@ const MarketplacePageEnhanced = () => {
           </div>
 
           {/* Enhanced Metrics Row */}
-          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-lg">
+          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-none">
             <div className="text-center">
               <div className="text-lg font-bold text-white">
                 {project.monthly_revenue ? formatPrice(project.monthly_revenue) : '$0'}
@@ -456,7 +456,7 @@ const MarketplacePageEnhanced = () => {
 
           {/* Stage and Status */}
           <div className="flex items-center justify-between">
-            <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
+            <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
               {project.stage}
             </div>
             <div className="flex items-center space-x-1 text-xs text-gray-500">
@@ -469,12 +469,12 @@ const MarketplacePageEnhanced = () => {
           {project.tech_stack && typeof project.tech_stack === 'string' && project.tech_stack.trim() && (
             <div className="flex flex-wrap gap-2">
               {project.tech_stack.split(',').slice(0, 4).map((tech, index) => (
-                <span key={index} className="px-2 py-1 bg-gray-800/50 text-gray-300 text-xs rounded-lg border border-gray-700">
+                <span key={index} className="px-2 py-1 bg-gray-800/50 text-gray-300 text-xs rounded-none border border-gray-700">
                   {tech.trim()}
                 </span>
               ))}
               {project.tech_stack.split(',').length > 4 && (
-                <span className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-lg border border-gray-700">
+                <span className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-none border border-gray-700">
                   +{project.tech_stack.split(',').length - 4} more
                 </span>
               )}
@@ -482,7 +482,7 @@ const MarketplacePageEnhanced = () => {
           )}
 
           {/* Enhanced Financial Metrics */}
-          <div className="bg-gray-800/20 rounded-lg p-3 space-y-2">
+          <div className="bg-gray-800/20 rounded-none p-3 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Sale Price</span>
               <span className="text-white font-bold">{formatPrice(project.sale_price)}</span>
@@ -515,7 +515,7 @@ const MarketplacePageEnhanced = () => {
             {!isOwnProject && (
               <motion.button
                 onClick={() => handleQuickPurchase(project)}
-                className="w-full px-4 py-2 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -527,7 +527,7 @@ const MarketplacePageEnhanced = () => {
             <div className="flex items-center gap-2">
               <motion.button
                 onClick={() => navigate(`/projects/${project.project_id}`)}
-                className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -538,7 +538,7 @@ const MarketplacePageEnhanced = () => {
               {!isOwnProject && (
                 <motion.button
                   onClick={() => handleShowInterest(project.project_id)}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-lg hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -563,20 +563,20 @@ const MarketplacePageEnhanced = () => {
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10/10 rounded-none blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-none blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <div className="text-center space-y-4 sm:space-y-6">
           {/* Enhanced Badge with search capabilities */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none backdrop-blur-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-green-400 rounded-none animate-pulse" />
             <span className="text-sm text-white-200 flex items-center gap-1">
               Live marketplace with {projects.length} projects
               {searchCapabilities.fuzzySearch && (
@@ -647,7 +647,7 @@ const MarketplacePageEnhanced = () => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/30 border border-white/10 rounded-lg p-4 mb-6"
+        className="bg-gray-900/30 border border-white/10 rounded-none p-4 mb-6"
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
@@ -722,7 +722,7 @@ const MarketplacePageEnhanced = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 mb-8 flex items-center gap-3"
+            className="bg-red-500/10 border border-red-500/20 rounded-none p-6 mb-8 flex items-center gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-400" />
             <p className="text-red-400">{error}</p>
@@ -734,7 +734,7 @@ const MarketplacePageEnhanced = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mb-4 flex items-center justify-between text-xs text-gray-500 bg-gray-900/20 rounded-lg p-3"
+            className="mb-4 flex items-center justify-between text-xs text-gray-500 bg-gray-900/20 rounded-none p-3"
           >
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
@@ -812,7 +812,7 @@ const MarketplacePageEnhanced = () => {
                 >
                   <button
                     onClick={loadMoreResults}
-                    className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
+                    className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-none transition-colors duration-200 flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Load More Projects ({(pagination.total || searchResults.length) - batchedResults.length} remaining)
@@ -843,7 +843,7 @@ const MarketplacePageEnhanced = () => {
               {isFiltered && (
                 <motion.button
                   onClick={clearFilters}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200 flex items-center gap-2 mx-auto"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-colors duration-200 flex items-center gap-2 mx-auto"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

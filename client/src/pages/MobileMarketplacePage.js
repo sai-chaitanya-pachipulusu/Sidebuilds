@@ -225,8 +225,8 @@ const MobileMarketplacePage = () => {
   const LoadingSkeleton = () => (
     <div className="space-y-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-gray-900/50 rounded-2xl p-4 animate-pulse">
-          <div className="h-48 bg-gray-800 rounded-xl mb-4" />
+        <div key={i} className="bg-gray-900/50 rounded-none p-4 animate-pulse">
+          <div className="h-48 bg-gray-800 rounded-none mb-4" />
           <div className="space-y-3">
             <div className="h-4 bg-gray-800 rounded w-3/4" />
             <div className="h-3 bg-gray-800 rounded w-1/2" />
@@ -294,7 +294,7 @@ const MobileMarketplacePage = () => {
               placeholder="Search projects, technologies, categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-mobile w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="search-mobile w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-800/50 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
 
@@ -318,7 +318,7 @@ const MobileMarketplacePage = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="px-3 py-2 bg-gray-900/50 border border-gray-800/50 rounded-none text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -350,7 +350,7 @@ const MobileMarketplacePage = () => {
                       <button
                         key={category.value}
                         onClick={() => setSelectedCategory(category.value)}
-                        className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-none text-sm transition-colors ${
                           selectedCategory === category.value
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
@@ -374,7 +374,7 @@ const MobileMarketplacePage = () => {
                       <button
                         key={stage.value}
                         onClick={() => setSelectedStage(stage.value)}
-                        className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`filter-button-mobile flex items-center gap-2 px-3 py-2 rounded-none text-sm transition-colors ${
                           selectedStage === stage.value
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
@@ -396,7 +396,7 @@ const MobileMarketplacePage = () => {
                     <button
                       key={range.value}
                       onClick={() => setPriceRange(range.value)}
-                      className={`filter-button-mobile px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`filter-button-mobile px-3 py-2 rounded-none text-sm transition-colors ${
                         priceRange === range.value
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
@@ -428,7 +428,7 @@ const MobileMarketplacePage = () => {
       <div className="container mx-auto px-4 py-6">
         {displayedProjects.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800/50 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-none bg-gray-800/50 flex items-center justify-center">
               <Search className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium mb-2">No projects found</h3>

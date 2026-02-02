@@ -207,7 +207,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/10 rounded-xl">
+          <div className="p-2 bg-white/10 rounded-none">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -220,7 +220,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
           onClick={generateRecommendations}
           disabled={loading}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-lg text-gray-300 hover:bg-white/30 transition-colors duration-200",
+            "flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-none text-gray-300 hover:bg-white/30 transition-colors duration-200",
             loading && "animate-pulse"
           )}
         >
@@ -247,7 +247,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
               <Icon className="w-4 h-4" />
               <span>{tab.name}</span>
               {tab.count > 0 && (
-                <span className="px-2 py-0.5 bg-gray-700 text-xs rounded-full">
+                <span className="px-2 py-0.5 bg-gray-700 text-xs rounded-none">
                   {tab.count}
                 </span>
               )}
@@ -266,7 +266,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
             exit={{ opacity: 0 }}
             className="text-center py-12"
           >
-            <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-none flex items-center justify-center">
               <Brain className="w-8 h-8 text-white animate-pulse" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2">AI is thinking...</h3>
@@ -291,11 +291,11 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors duration-200"
+                      className="bg-gray-900/50 border border-white/10 rounded-none p-6 hover:border-white/20 transition-colors duration-200"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-4">
-                          <div className={cn("p-2 rounded-lg", colorClasses)}>
+                          <div className={cn("p-2 rounded-none", colorClasses)}>
                             <Icon className="w-5 h-5" />
                           </div>
                           <div className="flex-1">
@@ -308,9 +308,9 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
                           <div className={cn("text-sm font-medium", getConfidenceColor(rec.confidence))}>
                             {rec.confidence}% confident
                           </div>
-                          <div className="w-16 h-1 bg-gray-800 rounded-full mt-1">
+                          <div className="w-16 h-1 bg-gray-800 rounded-none mt-1">
                             <div 
-                              className={cn("h-1 rounded-full", getConfidenceColor(rec.confidence).replace('text-', 'bg-'))}
+                              className={cn("h-1 rounded-none", getConfidenceColor(rec.confidence).replace('text-', 'bg-'))}
                               style={{ width: `${rec.confidence}%` }}
                             />
                           </div>
@@ -319,7 +319,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
 
                       {/* Recommendation Details */}
                       {rec.project && (
-                        <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                        <div className="bg-gray-800/50 rounded-none p-4 mb-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <h4 className="font-medium text-white">{rec.project.name}</h4>
@@ -329,7 +329,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
                                 <span>Match: {rec.project.matchScore}%</span>
                               </div>
                             </div>
-                            <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30">
+                            <button className="p-2 bg-white/20 rounded-none text-white hover:bg-white/30">
                               <Eye className="w-4 h-4" />
                             </button>
                           </div>
@@ -351,7 +351,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
 
                       {/* Actions */}
                       <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white text-white rounded-lg hover:bg-white-700 transition-colors duration-200">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white text-white rounded-none hover:bg-white-700 transition-colors duration-200">
                           <span>Take Action</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
@@ -376,11 +376,11 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-900/50 border border-white/10 rounded-2xl p-6"
+                    className="bg-gray-900/50 border border-white/10 rounded-none p-6"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div className={cn(
-                        "w-2 h-2 rounded-full",
+                        "w-2 h-2 rounded-none",
                         insight.trend === 'up' ? 'bg-green-400' : 
                         insight.trend === 'down' ? 'bg-red-400' : 'bg-yellow-400'
                       )} />

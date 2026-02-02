@@ -47,7 +47,7 @@ const PremiumModal = ({
           onClick={e => e.stopPropagation()}
         >
           {/* Modal Box */}
-          <div className="bg-gray-900 border border-gray-700/50 rounded-2xl shadow-2xl">
+          <div className="bg-gray-900 border border-gray-700/50 rounded-none shadow-2xl">
             {/* Header */}
             {(title || !hideCloseButton) && (
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -57,7 +57,7 @@ const PremiumModal = ({
                 {!hideCloseButton && (
                   <motion.button
                     onClick={onClose}
-                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
+                    className="p-2 rounded-none text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >

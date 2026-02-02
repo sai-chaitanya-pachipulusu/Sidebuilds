@@ -166,7 +166,7 @@ export const LazyImage = ({
       {!isLoaded && !isError && (
         <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
           {placeholder || (
-            <div className="w-8 h-8 border-2 border-gray-600 border-t-gray-400 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gray-600 border-t-gray-400 rounded-none animate-spin" />
           )}
         </div>
       )}

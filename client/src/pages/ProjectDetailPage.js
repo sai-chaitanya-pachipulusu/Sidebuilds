@@ -445,7 +445,7 @@ const ProjectDetailPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-900/50 backdrop-blur-sm border border-red-500/20 rounded-2xl p-8"
+            className="bg-gray-900/50 backdrop-blur-sm border border-red-500/20 rounded-none p-8"
           >
             <div className="text-red-400 text-4xl mb-4">
               <AlertTriangle className="w-16 h-16 mx-auto" />
@@ -455,7 +455,7 @@ const ProjectDetailPage = () => {
             <div className="flex gap-3 justify-center">
               <motion.button
                 onClick={() => window.location.reload()}
-                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-none transition-colors duration-200 flex items-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -464,7 +464,7 @@ const ProjectDetailPage = () => {
               </motion.button>
               <motion.button
                 onClick={() => navigate('/marketplace')}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-colors duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -486,7 +486,7 @@ const ProjectDetailPage = () => {
           <p className="text-gray-400">No project data available</p>
           <motion.button
             onClick={() => navigate('/marketplace')}
-            className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
+            className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-colors duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -560,7 +560,7 @@ const ProjectDetailPage = () => {
           className="relative"
         >
           <div className="max-w-7xl mx-auto px-4 pb-8">
-            <div className="relative h-[35vh] min-h-[300px] rounded-3xl overflow-hidden bg-gray-900">
+            <div className="relative h-[35vh] min-h-[300px] rounded-none overflow-hidden bg-gray-900">
               <img 
                 src={project.cover_image_url || 'https://via.placeholder.com/1200x675?text=Project+Image'} 
                 alt={projectName}
@@ -574,19 +574,19 @@ const ProjectDetailPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
                       {project.verified && (
-                        <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-green-400 text-sm font-medium flex items-center gap-1">
+                        <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-none text-green-400 text-sm font-medium flex items-center gap-1">
                           <Shield className="w-3 h-3" />
                           Verified
                         </div>
                       )}
                       {project.is_featured && (
-                        <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-sm font-medium flex items-center gap-1">
+                        <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-none text-blue-400 text-sm font-medium flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
                           Featured
                         </div>
                       )}
                       {project.is_on_hold === 1 && (
-                        <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md border border-red-500/30 rounded-full text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2 animate-pulse">
+                        <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md border border-red-500/30 rounded-none text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2 animate-pulse">
                           <Clock4 className="w-4 h-4" />
                           On Hold / Under Negotiation
                         </div>
@@ -631,7 +631,7 @@ const ProjectDetailPage = () => {
                   <div className="flex items-center gap-3">
                     <motion.button
                       onClick={() => setIsBookmarked(!isBookmarked)}
-                      className="p-3 bg-gray-800/80 backdrop-blur-sm rounded-full hover:bg-gray-700/80 transition-colors duration-200"
+                      className="p-3 bg-gray-800/80 backdrop-blur-sm rounded-none hover:bg-gray-700/80 transition-colors duration-200"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -643,7 +643,7 @@ const ProjectDetailPage = () => {
                     </motion.button>
                     
                     <motion.button
-                      className="p-3 bg-gray-800/80 backdrop-blur-sm rounded-full hover:bg-gray-700/80 transition-colors duration-200"
+                      className="p-3 bg-gray-800/80 backdrop-blur-sm rounded-none hover:bg-gray-700/80 transition-colors duration-200"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -669,7 +669,7 @@ const ProjectDetailPage = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-none whitespace-nowrap transition-all duration-200 ${
                         activeTab === tab.id
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -688,7 +688,7 @@ const ProjectDetailPage = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8"
               >
                 {activeTab === 'overview' && (
                   <div className="space-y-6">
@@ -714,7 +714,7 @@ const ProjectDetailPage = () => {
                   <div className="space-y-4">
                     <h2 className="text-2xl font-bold text-white mb-4">Live Demo</h2>
                     {project.domain ? (
-                      <div className="aspect-video rounded-xl overflow-hidden bg-gray-800">
+                      <div className="aspect-video rounded-none overflow-hidden bg-gray-800">
                         <iframe
                           src={`https://${project.domain}`}
                           title="Live Demo"
@@ -737,7 +737,7 @@ const ProjectDetailPage = () => {
                           key={index}
                           src={image}
                           alt={`Gallery ${index + 1}`}
-                          className="rounded-xl w-full h-48 object-cover"
+                          className="rounded-none w-full h-48 object-cover"
                         />
                       )) || (
                         <p className="text-gray-400 col-span-2">No gallery images available.</p>
@@ -754,7 +754,7 @@ const ProjectDetailPage = () => {
                         {techStack.map((tech, index) => (
                           <span
                             key={index}
-                            className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm"
+                            className="px-3 py-1 bg-gray-800 text-gray-300 rounded-none text-sm"
                           >
                             {tech}
                           </span>
@@ -784,7 +784,7 @@ const ProjectDetailPage = () => {
                     <h2 className="text-2xl font-bold text-white mb-4">AI Insights</h2>
                     {project.ai_analysis ? (
                       <div className="space-y-4">
-                        <div className="bg-gray-800/50 rounded-xl p-6">
+                        <div className="bg-gray-800/50 rounded-none p-6">
                           <h3 className="text-lg font-semibold text-white mb-2">Overall Score</h3>
                           <div className="flex items-center gap-4">
                             <div className="text-4xl font-bold text-blue-400">
@@ -797,7 +797,7 @@ const ProjectDetailPage = () => {
                         </div>
                         
                         {project.ai_analysis.insights && (
-                          <div className="bg-gray-800/50 rounded-xl p-6">
+                          <div className="bg-gray-800/50 rounded-none p-6">
                             <h3 className="text-lg font-semibold text-white mb-2">Key Insights</h3>
                             <p className="text-gray-300">{project.ai_analysis.insights}</p>
                           </div>
@@ -814,7 +814,7 @@ const ProjectDetailPage = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Purchase Card */}
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 sticky top-24">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 sticky top-24">
                 <div className="mb-6">
                   <div className="text-sm text-gray-400 mb-1">Sale Price</div>
                   <div className="flex items-baseline gap-2">
@@ -877,7 +877,7 @@ const ProjectDetailPage = () => {
                   {isOwner ? (
                     <motion.button
                       onClick={() => navigate(`/projects/edit/${projectId}`)}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -887,7 +887,7 @@ const ProjectDetailPage = () => {
                   ) : project.is_for_sale ? (
                     <>
                       {project.is_on_hold === 1 ? (
-                        <div className="w-full px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center mb-4">
+                        <div className="w-full px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-none text-center mb-4">
                           <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Under Negotiation</p>
                           <p className="text-gray-400 text-xs text-balance">This project is currently on hold as the owner is in active discussions with a potential buyer.</p>
                         </div>
@@ -896,7 +896,7 @@ const ProjectDetailPage = () => {
                           <motion.button
                             onClick={handleBuyNowClick}
                             disabled={isBuyButtonLoading || purchaseInitiated}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isBuyButtonLoading ? 1 : 1.02 }}
                             whileTap={{ scale: isBuyButtonLoading ? 1 : 0.98 }}
                           >
@@ -910,7 +910,7 @@ const ProjectDetailPage = () => {
                           <motion.button
                             onClick={() => setShowInterestModal(true)}
                             disabled={isOfferButtonLoading}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isOfferButtonLoading ? 1 : 1.02 }}
                             whileTap={{ scale: isOfferButtonLoading ? 1 : 0.98 }}
                           >
@@ -927,7 +927,7 @@ const ProjectDetailPage = () => {
                   ) : (
                     <button
                       disabled
-                      className="w-full px-6 py-3 bg-gray-700 text-gray-400 rounded-xl font-medium cursor-not-allowed"
+                      className="w-full px-6 py-3 bg-gray-700 text-gray-400 rounded-none font-medium cursor-not-allowed"
                     >
                       Not Available for Purchase
                     </button>
@@ -940,7 +940,7 @@ const ProjectDetailPage = () => {
                         href={project.github_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -954,7 +954,7 @@ const ProjectDetailPage = () => {
                         href={`https://${project.domain}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -983,11 +983,11 @@ const ProjectDetailPage = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.12] rounded-2xl p-8 max-w-md w-full shadow-2xl"
+                className="bg-gray-900 border border-white/[0.12] rounded-none p-8 max-w-md w-full shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-yellow-500/20 rounded-none flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle className="w-8 h-8 text-yellow-400" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Confirm Purchase</h2>
@@ -996,7 +996,7 @@ const ProjectDetailPage = () => {
                   </p>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                <div className="bg-gray-800/50 rounded-none p-4 mb-6">
                   <div className="flex items-start gap-3">
                     <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <div className="text-sm text-gray-300">
@@ -1013,7 +1013,7 @@ const ProjectDetailPage = () => {
                 <div className="flex gap-4">
                   <motion.button
                     onClick={() => setShowConfirmationModal(false)}
-                    className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200"
+                    className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -1021,7 +1021,7 @@ const ProjectDetailPage = () => {
                   </motion.button>
                   <motion.button
                     onClick={handleConfirmPurchase}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -1047,7 +1047,7 @@ const ProjectDetailPage = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.12] rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                className="bg-gray-900 border border-white/[0.12] rounded-none p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-6">
@@ -1056,7 +1056,7 @@ const ProjectDetailPage = () => {
                     <button
                       type="button"
                       onClick={forceCloseModal}
-                      className="p-2 hover:bg-red-600 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative bg-gray-800"
+                      className="p-2 hover:bg-red-600 rounded-none transition-colors duration-200 text-gray-400 hover:text-white z-10 relative bg-gray-800"
                       style={{ pointerEvents: 'auto' }}
                       title="Close modal (or press ESC)"
                     >
@@ -1079,7 +1079,7 @@ const ProjectDetailPage = () => {
                       value={interestMessage}
                       onChange={handleMessageChange}
                       placeholder="Introduce yourself, your offer amount, and why you're interested in this project..."
-                      className={`w-full h-32 px-4 py-3 bg-gray-800 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-colors ${
+                      className={`w-full h-32 px-4 py-3 bg-gray-800 border rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-colors ${
                         validationErrors.message 
                           ? 'border-red-500 focus:border-red-500' 
                           : 'border-gray-700 focus:border-blue-500'
@@ -1100,7 +1100,7 @@ const ProjectDetailPage = () => {
                     <label className="block text-sm font-medium text-gray-300 mb-4">
                       Commitments (all required) <span className="text-red-400">*</span>
                     </label>
-                    <div className={`space-y-3 p-4 rounded-xl border ${validationErrors.commitments ? 'border-red-500 bg-red-500/5' : 'border-gray-700'}`}>
+                    <div className={`space-y-3 p-4 rounded-none border ${validationErrors.commitments ? 'border-red-500 bg-red-500/5' : 'border-gray-700'}`}>
                       {[
                         { id: 'funds_ready', text: 'I have the funds available for this purchase.' },
                         { id: 'respect_process', text: 'I understand this is a negotiation and the seller may decline.' },
@@ -1130,7 +1130,7 @@ const ProjectDetailPage = () => {
                       type="button"
                       onClick={forceCloseModal}
                       disabled={isSubmitting}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 disabled:opacity-50"
+                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -1138,7 +1138,7 @@ const ProjectDetailPage = () => {
                       type="button"
                       onClick={handleInterestSubmit}
                       disabled={isSubmitting}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <>
@@ -1173,7 +1173,7 @@ const ProjectDetailPage = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.08] rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-gray-900 border border-white/[0.08] rounded-none p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -1181,7 +1181,7 @@ const ProjectDetailPage = () => {
                   <motion.button
                     type="button"
                     onClick={forceCloseModal}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors duration-200 text-gray-400 hover:text-white z-10 relative"
+                    className="p-2 hover:bg-gray-800 rounded-none transition-colors duration-200 text-gray-400 hover:text-white z-10 relative"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     style={{ pointerEvents: 'auto' }}
@@ -1192,7 +1192,7 @@ const ProjectDetailPage = () => {
 
                 <div className="space-y-6">
                   {/* Purchase Summary */}
-                  <div className="bg-gray-800/30 rounded-xl p-6">
+                  <div className="bg-gray-800/30 rounded-none p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Purchase Summary</h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
@@ -1230,7 +1230,7 @@ const ProjectDetailPage = () => {
 
                   {/* Error Display */}
                   {purchaseError && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-none p-4">
                       <div className="flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                         <div>
@@ -1247,7 +1247,7 @@ const ProjectDetailPage = () => {
                   )}
 
                   {/* Security Notice */}
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-none p-4">
                     <div className="flex items-start gap-3">
                       <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div>
@@ -1264,7 +1264,7 @@ const ProjectDetailPage = () => {
                       type="button"
                       onClick={forceCloseModal}
                       disabled={paymentProcessing}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200 disabled:opacity-50"
+                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 disabled:opacity-50"
                       whileHover={{ scale: paymentProcessing ? 1 : 1.02 }}
                       whileTap={{ scale: paymentProcessing ? 1 : 0.98 }}
                     >
@@ -1273,7 +1273,7 @@ const ProjectDetailPage = () => {
                     <motion.button
                       onClick={handlePurchase}
                       disabled={!selectedPaymentMethod || paymentProcessing}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
                       whileHover={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 1.02 }}
                       whileTap={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 0.98 }}
                     >

@@ -53,7 +53,7 @@ const LoginPage = () => {
   };
 
     return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-black p-8">
       {/* Centered Login Form */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -89,7 +89,7 @@ const LoginPage = () => {
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                                             placeholder="boring@email.com"
                   required
                 />
@@ -110,7 +110,7 @@ const LoginPage = () => {
                                                 type={showPassword ? 'text' : 'password'}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                                                 placeholder="Your Password"
                   required
                 />
@@ -144,11 +144,11 @@ const LoginPage = () => {
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-gray-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-gray-600 rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-none animate-spin" />
                   <span>Signing in...</span>
                 </>
               ) : (

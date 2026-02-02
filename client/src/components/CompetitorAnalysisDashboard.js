@@ -256,14 +256,14 @@ const CompetitorAnalysisDashboard = ({ className }) => {
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="px-3 py-1 bg-green-600/20 border border-green-500/30 rounded-full text-green-300 text-sm">
+          <div className="px-3 py-1 bg-green-600/20 border border-green-500/30 rounded-none text-green-300 text-sm">
             Market Leader Potential
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 bg-gray-900/50 p-1 rounded-xl">
+      <div className="flex items-center gap-1 bg-gray-900/50 p-1 rounded-none">
         {tabs.map((tab) => {
           const Icon = tab.icon
           return (
@@ -271,7 +271,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200",
+                "flex items-center gap-2 px-4 py-2 rounded-none transition-colors duration-200",
                 activeTab === tab.id
                   ? "bg-white text-white"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -303,7 +303,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={cn(
-                      "p-6 rounded-2xl border transition-all duration-200 cursor-pointer",
+                      "p-6 rounded-none border transition-all duration-200 cursor-pointer",
                       key === 'sidebuilds' 
                         ? "bg-white/10 border-white/30 ring-2 ring-white/20"
                         : "bg-gray-900/50 border-white/10 hover:border-white/20"
@@ -324,9 +324,9 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                           <span className="text-gray-400">Market Share</span>
                           <span className="text-white">{competitor.marketShare}%</span>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="w-full bg-gray-800 rounded-none h-1.5">
                           <div 
-                            className={cn("h-1.5 rounded-full", getColorClasses(competitor.color).replace('text-', 'bg-'))}
+                            className={cn("h-1.5 rounded-none", getColorClasses(competitor.color).replace('text-', 'bg-'))}
                             style={{ width: `${competitor.marketShare}%` }}
                           />
                         </div>
@@ -355,7 +355,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               </div>
 
               {/* Detailed Comparison */}
-              <div className="bg-gray-900/30 border border-white/10 rounded-2xl p-6">
+              <div className="bg-gray-900/30 border border-white/10 rounded-none p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Detailed Comparison</h3>
                 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -393,7 +393,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                 <h3 className="text-lg font-semibold text-white">Our Competitive Advantages</h3>
                 <button
                   onClick={() => setShowAdvantages(!showAdvantages)}
-                  className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg text-sm text-gray-300 hover:text-white"
+                  className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-none text-sm text-gray-300 hover:text-white"
                 >
                   <Eye className="w-4 h-4" />
                   {showAdvantages ? 'Hide Details' : 'Show Details'}
@@ -409,10 +409,10 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors duration-200"
+                      className="bg-gray-900/50 border border-white/10 rounded-none p-6 hover:border-white/20 transition-colors duration-200"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="p-2 bg-white/20 rounded-lg">
+                        <div className="p-2 bg-white/20 rounded-none">
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         
@@ -420,7 +420,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-medium text-white">{advantage.title}</h4>
                             <span className={cn(
-                              "px-2 py-0.5 rounded-full text-xs",
+                              "px-2 py-0.5 rounded-none text-xs",
                               advantage.impact === 'High' ? "bg-green-600/20 text-green-400" :
                               advantage.impact === 'Medium' ? "bg-yellow-600/20 text-yellow-400" :
                               "bg-gray-600/20 text-gray-400"
@@ -477,11 +477,11 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-900/50 border border-white/10 rounded-2xl p-6"
+                    className="bg-gray-900/50 border border-white/10 rounded-none p-6"
                   >
                     <div className="flex items-start gap-4">
                       <div className={cn(
-                        "p-2 rounded-lg",
+                        "p-2 rounded-none",
                         gap.opportunity === 'Huge' ? "bg-green-600/20" :
                         gap.opportunity === 'Very High' ? "bg-blue-600/20" :
                         gap.opportunity === 'High' ? "bg-white/20" :
@@ -500,7 +500,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-medium text-white">{gap.title}</h4>
                           <span className={cn(
-                            "px-2 py-0.5 rounded-full text-xs",
+                            "px-2 py-0.5 rounded-none text-xs",
                             gap.opportunity === 'Huge' ? "bg-green-600/20 text-green-400" :
                             gap.opportunity === 'Very High' ? "bg-blue-600/20 text-blue-400" :
                             gap.opportunity === 'High' ? "bg-white/20 text-white" :
@@ -529,7 +529,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               </div>
 
               {/* Market Opportunity Summary */}
-              <div className="bg-gradient-to-br from-gray-600/10 to-blue-600/10 border border-white/50/20 rounded-2xl p-6">
+              <div className="bg-gradient-to-br from-gray-600/10 to-blue-600/10 border border-white/50/20 rounded-none p-6">
                 <h4 className="text-lg font-semibold text-white mb-3">Total Market Opportunity</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -603,7 +603,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.2 }}
                     className={cn(
-                      "border border-white/10 rounded-2xl p-6",
+                      "border border-white/10 rounded-none p-6",
                       phase.color === 'gray' ? "bg-white/5" :
                       phase.color === 'blue' ? "bg-blue-600/5" :
                       "bg-green-600/5"
@@ -611,7 +611,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                   >
                     <div className="flex items-start gap-4">
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold",
+                        "w-12 h-12 rounded-none flex items-center justify-center text-white font-bold",
                         phase.color === 'gray' ? "bg-white" :
                         phase.color === 'blue' ? "bg-blue-600" :
                         "bg-green-600"

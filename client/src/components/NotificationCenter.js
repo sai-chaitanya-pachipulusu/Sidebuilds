@@ -142,7 +142,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
 
         <div className="flex items-start gap-3">
           {/* Icon */}
-          <div className={`p-2 bg-${color}-500/10 border border-${color}-500/20 rounded-lg flex-shrink-0`}>
+          <div className={`p-2 bg-${color}-500/10 border border-${color}-500/20 rounded-none flex-shrink-0`}>
             <IconComponent className={`w-4 h-4 text-${color}-400`} />
           </div>
 
@@ -164,7 +164,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                   </span>
                   
                   {notification.priority && notification.priority !== 'low' && (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`px-2 py-0.5 rounded-none text-xs font-medium ${
                       notification.priority === 'high' 
                         ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                         : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
@@ -174,7 +174,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                   )}
                   
                   {notification.amount && (
-                    <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full text-xs font-medium">
+                    <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-none text-xs font-medium">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'USD',
@@ -231,7 +231,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
       {/* Notification Bell */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200"
+        className="relative p-2 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-none transition-all duration-200"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -242,7 +242,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center px-1"
+            className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs font-medium rounded-none flex items-center justify-center px-1"
           >
             {unreadCount > 99 ? '99+' : unreadCount}
           </motion.div>
@@ -267,7 +267,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className="absolute right-0 top-full mt-2 w-96 bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-96 bg-gray-900 border border-white/[0.08] rounded-none shadow-2xl z-50 overflow-hidden"
             >
               {/* Header */}
               <div className="p-4 border-b border-white/[0.08]">
@@ -317,7 +317,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-none text-white text-xs focus:border-blue-500 focus:outline-none"
                 >
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>

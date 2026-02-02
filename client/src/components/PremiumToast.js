@@ -63,7 +63,7 @@ const PremiumToast = ({
           className={`
             fixed top-4 right-4 z-50 max-w-sm w-full
             ${colorScheme.bg} ${colorScheme.border} ${colorScheme.text}
-            border backdrop-blur-lg rounded-xl shadow-2xl
+            border backdrop-blur-lg rounded-none shadow-2xl
             flex items-start gap-3 p-4
           `}
         >

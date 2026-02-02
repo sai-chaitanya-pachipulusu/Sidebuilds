@@ -792,4 +792,18 @@ export const sendPurchaseRequestMessage = async (requestId, content) => {
 };
 // --- End Purchase Request Message API Calls ---
 
+// --- Public API Calls (No Auth Required) ---
+
+export const getUserCount = async () => {
+    try {
+        const response = await apiClient.get('/public/user-count');
+        return response.data.count;
+    } catch (error) {
+        console.error('Error fetching user count:', error);
+        return 0; // Return 0 as fallback
+    }
+};
+
+// --- End Public API Calls ---
+
 export default apiClient; // Ensure apiClient is the default export

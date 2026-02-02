@@ -119,7 +119,7 @@ const SearchAnalyticsPanel = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("bg-gray-900/50 border border-white/10 rounded-xl overflow-hidden", className)}
+      className={cn("bg-gray-900/50 border border-white/10 rounded-none overflow-hidden", className)}
     >
       {/* Header */}
       <button
@@ -132,7 +132,7 @@ const SearchAnalyticsPanel = ({
           {performanceMetrics && (
             <div className="flex items-center gap-2">
               <div className={cn(
-                "w-2 h-2 rounded-full",
+                "w-2 h-2 rounded-none",
                 performanceMetrics.speed === 'Fast' ? 'bg-green-400' :
                 performanceMetrics.speed === 'Good' ? 'bg-yellow-400' : 'bg-red-400'
               )} />
@@ -168,7 +168,7 @@ const SearchAnalyticsPanel = ({
               {/* Quick Metrics */}
               {performanceMetrics && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="text-center p-3 bg-gray-800/30 rounded-lg">
+                  <div className="text-center p-3 bg-gray-800/30 rounded-none">
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Activity className="w-4 h-4 text-green-400" />
                       <span className="text-lg font-bold text-white">
@@ -178,7 +178,7 @@ const SearchAnalyticsPanel = ({
                     <div className="text-xs text-gray-500">Cache Efficiency</div>
                   </div>
                   
-                  <div className="text-center p-3 bg-gray-800/30 rounded-lg">
+                  <div className="text-center p-3 bg-gray-800/30 rounded-none">
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Clock className="w-4 h-4 text-blue-400" />
                       <span className="text-lg font-bold text-white">
@@ -188,7 +188,7 @@ const SearchAnalyticsPanel = ({
                     <div className="text-xs text-gray-500">Response Time</div>
                   </div>
                   
-                  <div className="text-center p-3 bg-gray-800/30 rounded-lg">
+                  <div className="text-center p-3 bg-gray-800/30 rounded-none">
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Target className="w-4 h-4 text-white" />
                       <span className="text-lg font-bold text-white">
@@ -198,7 +198,7 @@ const SearchAnalyticsPanel = ({
                     <div className="text-xs text-gray-500">Results Found</div>
                   </div>
                   
-                  <div className="text-center p-3 bg-gray-800/30 rounded-lg">
+                  <div className="text-center p-3 bg-gray-800/30 rounded-none">
                     <div className="flex items-center justify-center gap-1 mb-1">
                       <Brain className="w-4 h-4 text-gray-300" />
                       <span className="text-lg font-bold text-white">
@@ -287,7 +287,7 @@ const SearchAnalyticsPanel = ({
                     {popularTerms.map(({ term, count }, index) => (
                       <div
                         key={term}
-                        className="px-3 py-1.5 bg-gray-800/50 rounded-full flex items-center gap-2"
+                        className="px-3 py-1.5 bg-gray-800/50 rounded-none flex items-center gap-2"
                       >
                         <span className="text-sm text-gray-300">{term}</span>
                         <span className="text-xs text-white font-medium">×{count}</span>
@@ -338,9 +338,9 @@ const SearchAnalyticsPanel = ({
                               <div key={category} className="flex items-center justify-between text-xs">
                                 <span className="text-gray-400 capitalize">{category}</span>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-16 h-1 bg-gray-800 rounded-full overflow-hidden">
+                                  <div className="w-16 h-1 bg-gray-800 rounded-none overflow-hidden">
                                     <div 
-                                      className="h-full bg-gray-400 rounded-full"
+                                      className="h-full bg-gray-400 rounded-none"
                                       style={{ width: `${percentage}%` }}
                                     />
                                   </div>
@@ -356,7 +356,7 @@ const SearchAnalyticsPanel = ({
               )}
 
               {/* Performance Tips */}
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-none p-3">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-blue-300">
@@ -375,7 +375,7 @@ const SearchAnalyticsPanel = ({
 
               {loading && (
                 <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/40"></div>
+                  <div className="animate-spin rounded-none h-6 w-6 border-b-2 border-white/40"></div>
                 </div>
               )}
             </div>

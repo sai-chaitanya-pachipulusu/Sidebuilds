@@ -419,7 +419,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                     variants={itemVariants}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-6 bg-gray-800/50 rounded-lg space-y-6 border border-gray-700"
+                                    className="p-6 bg-gray-800/50 rounded-none space-y-6 border border-gray-700"
                                 >
                                     <h3 className="text-lg font-semibold text-white">Sale Details</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -458,7 +458,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: 'auto' }}
                                             exit={{ opacity: 0, height: 0 }}
-                                            className="p-6 bg-gray-800/30 rounded-lg border border-gray-700"
+                                            className="p-6 bg-gray-800/30 rounded-none border border-gray-700"
                                         >
                                             <p className="text-sm text-gray-400 mb-4">
                                                 Upload source code (ZIP), documentation (PDF), screenshots, or other project assets. 

@@ -413,7 +413,7 @@ const RealTimeNotifications = ({ className }) => {
       <button
         onClick={() => setShowNotifications(!showNotifications)}
         className={cn(
-          "relative p-2 bg-gray-900/50 border border-white/10 rounded-xl hover:border-white/20 transition-colors duration-200",
+          "relative p-2 bg-gray-900/50 border border-white/10 rounded-none hover:border-white/20 transition-colors duration-200",
           socketStatus === 'connected' ? "ring-1 ring-green-500/20" : socketStatus === 'error' ? "ring-1 ring-red-500/20" : ""
         )}
         title={`Notifications (${socketStatus})`}
@@ -426,18 +426,18 @@ const RealTimeNotifications = ({ className }) => {
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-2 h-2 bg-green-400 rounded-full"
+              className="w-2 h-2 bg-green-400 rounded-none"
             />
           )}
           {socketStatus === 'connecting' && (
             <motion.div
               animate={{ opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1, repeat: Infinity }}
-              className="w-2 h-2 bg-yellow-400 rounded-full"
+              className="w-2 h-2 bg-yellow-400 rounded-none"
             />
           )}
           {socketStatus === 'error' && (
-            <div className="w-2 h-2 bg-red-400 rounded-full" />
+            <div className="w-2 h-2 bg-red-400 rounded-none" />
           )}
         </div>
         
@@ -445,7 +445,7 @@ const RealTimeNotifications = ({ className }) => {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-none flex items-center justify-center"
           >
             <span className="text-xs text-white font-medium">
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -461,7 +461,7 @@ const RealTimeNotifications = ({ className }) => {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-2 w-96 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50"
+            className="absolute top-full right-0 mt-2 w-96 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-none shadow-2xl z-50"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/10">
@@ -470,7 +470,7 @@ const RealTimeNotifications = ({ className }) => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-white/5 rounded-none transition-colors"
                   >
                     {soundEnabled ? 
                       <Volume2 className="w-4 h-4 text-gray-400" /> :
@@ -479,7 +479,7 @@ const RealTimeNotifications = ({ className }) => {
                   </button>
                   <button
                     onClick={() => setShowNotifications(false)}
-                    className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-white/5 rounded-none transition-colors"
                   >
                     <X className="w-4 h-4 text-gray-400" />
                   </button>
@@ -508,7 +508,7 @@ const RealTimeNotifications = ({ className }) => {
                           key={option.id}
                           onClick={() => setFilter(option.id)}
                           className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors duration-200 whitespace-nowrap",
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs transition-colors duration-200 whitespace-nowrap",
                             filter === option.id
                               ? "bg-white/10 text-white"
                               : "text-gray-400 hover:text-white hover:bg-white/5"
@@ -517,7 +517,7 @@ const RealTimeNotifications = ({ className }) => {
                           <Icon className="w-3 h-3" />
                           <span>{option.name}</span>
                           {option.count > 0 && (
-                            <span className="px-1 bg-gray-700 rounded-full text-xs">
+                            <span className="px-1 bg-gray-700 rounded-none text-xs">
                               {option.count}
                             </span>
                           )}
@@ -560,7 +560,7 @@ const RealTimeNotifications = ({ className }) => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className={cn(
-                          "p-3 rounded-xl transition-all duration-200 group cursor-pointer",
+                          "p-3 rounded-none transition-all duration-200 group cursor-pointer",
                           notification.read 
                             ? "bg-gray-800/30 hover:bg-gray-800/50" 
                             : "bg-gray-800/70 hover:bg-gray-800/90"
@@ -568,7 +568,7 @@ const RealTimeNotifications = ({ className }) => {
                         onClick={() => markAsRead(notification.id)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={cn("p-1.5 rounded-lg", colorClasses)}>
+                          <div className={cn("p-1.5 rounded-none", colorClasses)}>
                             <Icon className="w-4 h-4" />
                           </div>
                           
@@ -586,13 +586,13 @@ const RealTimeNotifications = ({ className }) => {
                               </span>
                               
                               {notification.priority === 'high' && (
-                                <span className="px-1.5 py-0.5 bg-red-600/20 text-red-400 text-xs rounded-full">
+                                <span className="px-1.5 py-0.5 bg-red-600/20 text-red-400 text-xs rounded-none">
                                   Urgent
                                 </span>
                               )}
                               
                               {notification.actionable && (
-                                <span className="px-1.5 py-0.5 bg-blue-600/20 text-blue-400 text-xs rounded-full">
+                                <span className="px-1.5 py-0.5 bg-blue-600/20 text-blue-400 text-xs rounded-none">
                                   Action needed
                                 </span>
                               )}
@@ -670,7 +670,7 @@ const RealTimeNotifications = ({ className }) => {
               </div>
               
               {connectionError && (
-                <div className="mt-2 p-2 bg-red-600/20 border border-red-500/30 rounded-lg">
+                <div className="mt-2 p-2 bg-red-600/20 border border-red-500/30 rounded-none">
                   <p className="text-xs text-red-300">{connectionError}</p>
                 </div>
               )}
@@ -685,7 +685,7 @@ const RealTimeNotifications = ({ className }) => {
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-2 h-2 bg-green-400 rounded-full"
+            className="w-2 h-2 bg-green-400 rounded-none"
           />
         </div>
       )}

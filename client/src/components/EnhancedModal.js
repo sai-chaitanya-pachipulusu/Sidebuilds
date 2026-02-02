@@ -119,7 +119,7 @@ const EnhancedModal = ({
             ref={modalRef}
             className={`
               relative w-full ${sizes[size]} max-h-[90vh] overflow-hidden
-              bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl
+              bg-gray-900 border border-gray-700 rounded-none shadow-2xl
               ${className}
             `}
             variants={modalVariants}
@@ -145,7 +145,7 @@ const EnhancedModal = ({
                 
                 {showCloseButton && (
                   <motion.button
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-none transition-colors"
                     onClick={onClose}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

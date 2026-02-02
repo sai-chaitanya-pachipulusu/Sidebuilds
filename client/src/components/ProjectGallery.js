@@ -64,7 +64,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
 
   if (galleryItems.length === 0) {
     return (
-      <div className="bg-gray-900/30 border border-white/10 rounded-2xl p-12 text-center">
+      <div className="bg-gray-900/30 border border-white/10 rounded-none p-12 text-center">
         <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
         <h3 className="text-lg font-medium text-gray-400 mb-2">No media available</h3>
         <p className="text-gray-500">Screenshots and demos will appear here when uploaded.</p>
@@ -76,7 +76,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
     <div className="space-y-4">
       {/* Main Gallery */}
       <div className="relative group">
-        <div className="relative aspect-video bg-gray-900/50 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="relative aspect-video bg-gray-900/50 border border-white/10 rounded-none overflow-hidden">
           {galleryItems[selectedIndex]?.type === 'image' ? (
             <img
               src={galleryItems[selectedIndex].url}
@@ -101,13 +101,13 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
               <>
                 <button
                   onClick={() => navigateGallery('prev')}
-                  className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200"
+                  className="p-2 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                   onClick={() => navigateGallery('next')}
-                  className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200"
+                  className="p-2 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
@@ -119,13 +119,13 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
           <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
               onClick={() => openLightbox(selectedIndex)}
-              className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200"
+              className="p-2 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
             <button
               onClick={handleShare}
-              className="p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200"
+              className="p-2 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200"
             >
               <Share2 className="w-4 h-4" />
             </button>
@@ -133,7 +133,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
 
           {/* Media Type Indicator */}
           <div className="absolute bottom-4 left-4">
-            <div className="flex items-center gap-2 px-3 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs">
+            <div className="flex items-center gap-2 px-3 py-1 bg-black/50 backdrop-blur-sm rounded-none text-white text-xs">
               {galleryItems[selectedIndex]?.type === 'video' ? (
                 <>
                   <PlayCircle className="w-3 h-3" />
@@ -151,7 +151,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
           {/* Gallery Counter */}
           {galleryItems.length > 1 && (
             <div className="absolute bottom-4 right-4">
-              <div className="px-3 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs">
+              <div className="px-3 py-1 bg-black/50 backdrop-blur-sm rounded-none text-white text-xs">
                 {selectedIndex + 1} of {galleryItems.length}
               </div>
             </div>
@@ -192,7 +192,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
       {/* Device Preview Toggle */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">View as:</span>
-        <div className="flex items-center gap-1 p-1 bg-gray-900/50 rounded-lg">
+        <div className="flex items-center gap-1 p-1 bg-gray-900/50 rounded-none">
           {[
             { id: 'desktop', icon: Monitor, name: 'Desktop' },
             { id: 'tablet', icon: Monitor, name: 'Tablet' },
@@ -248,13 +248,13 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
                 <>
                   <button
                     onClick={() => navigateGallery('prev')}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200 z-10"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200 z-10"
                   >
                     <ChevronLeft className="w-6 h-6" />
                   </button>
                   <button
                     onClick={() => navigateGallery('next')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors duration-200 z-10"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 backdrop-blur-sm rounded-none text-white hover:bg-black/70 transition-colors duration-200 z-10"
                   >
                     <ChevronRight className="w-6 h-6" />
                   </button>
@@ -267,12 +267,12 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
                   <img
                     src={galleryItems[selectedIndex].url}
                     alt={galleryItems[selectedIndex].title}
-                    className="max-h-full max-w-full object-contain rounded-lg"
+                    className="max-h-full max-w-full object-contain rounded-none"
                   />
                 ) : (
                   <video
                     src={galleryItems[selectedIndex].url}
-                    className="max-h-full max-w-full object-contain rounded-lg"
+                    className="max-h-full max-w-full object-contain rounded-none"
                     controls
                     autoPlay
                   />
@@ -280,7 +280,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
 
                 {/* Info Bar */}
                 <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center justify-between p-3 bg-black/70 backdrop-blur-sm rounded-lg text-white">
+                  <div className="flex items-center justify-between p-3 bg-black/70 backdrop-blur-sm rounded-none text-white">
                     <div>
                       <h3 className="font-medium">{galleryItems[selectedIndex]?.title}</h3>
                       <p className="text-sm text-gray-300">{selectedIndex + 1} of {galleryItems.length}</p>
@@ -288,13 +288,13 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={handleShare}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+                        className="p-2 hover:bg-white/10 rounded-none transition-colors duration-200"
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => window.open(galleryItems[selectedIndex].url, '_blank')}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+                        className="p-2 hover:bg-white/10 rounded-none transition-colors duration-200"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </button>

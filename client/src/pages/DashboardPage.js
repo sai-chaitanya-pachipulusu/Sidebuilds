@@ -288,7 +288,7 @@ const DashboardPage = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`spotlight-card rounded-2xl p-6 transition-all duration-300 group cursor-pointer hover:shadow-premium-lg`}
+        className={`spotlight-card rounded-none p-6 transition-all duration-300 group cursor-pointer hover:shadow-premium-lg`}
         onClick={onClick}
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -300,11 +300,11 @@ const DashboardPage = () => {
       >
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
-            <div className={`p-3 rounded-xl ${colorClasses.bg} ${colorClasses.border} border shadow-inner`}>
+            <div className={`p-3 rounded-none ${colorClasses.bg} ${colorClasses.border} border shadow-inner`}>
               <Icon className={`w-6 h-6 ${colorClasses.icon}`} />
             </div>
             {trend && (
-              <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium border ${
+              <div className={`flex items-center space-x-1 px-2 py-1 rounded-none text-xs font-medium border ${
                 trendUp
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                   : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
@@ -349,13 +349,13 @@ const DashboardPage = () => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.1 }}
-        className="glass-card hover:glass-card-hover flex items-start space-x-4 p-4 rounded-xl cursor-pointer group"
+        className="glass-card hover:glass-card-hover flex items-start space-x-4 p-4 rounded-none cursor-pointer group"
         onClick={() => {
           console.log('Activity item clicked:', activity);
           handleActivityClick(activity);
         }}
       >
-        <div className={`p-2 rounded-lg ${
+        <div className={`p-2 rounded-none ${
             activity.type === 'purchase' || activity.type === 'sale' ? 'bg-white/10 text-white' :
             activity.type === 'interest' ? 'bg-white/10 text-white' :
             'bg-gray-800 text-gray-400'
@@ -366,11 +366,11 @@ const DashboardPage = () => {
           <p className="text-sm text-gray-200 leading-relaxed font-medium">{activity.message}</p>
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mt-1.5">
             <span className="text-xs text-gray-500 flex items-center gap-1">
-              <div className="w-1 h-1 rounded-full bg-gray-500" />
+              <div className="w-1 h-1 rounded-none bg-gray-500" />
               {new Date(activity.time).toLocaleDateString()}
             </span>
             {activity.status && (
-              <span className={`text-xs px-2 py-0.5 rounded-full border ${
+              <span className={`text-xs px-2 py-0.5 rounded-none border ${
                 getStatusColor(activity.status) === 'text-green-400' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                 getStatusColor(activity.status) === 'text-yellow-400' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
                 'bg-white/10 border-white/20 text-white'
@@ -410,7 +410,7 @@ const DashboardPage = () => {
             </div>
             <motion.button
               onClick={() => navigate('/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 shadow-lg shadow-white/20 border border-white/20"
+              className="flex items-center space-x-2 px-6 py-3 bg-white text-black rounded-none font-medium hover:bg-gray-200 transition-all duration-200 shadow-lg shadow-white/20 border border-white/20"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -466,7 +466,7 @@ const DashboardPage = () => {
 
         {/* Additional Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="glass-card p-4 rounded-xl">
+          <div className="glass-card p-4 rounded-none">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.textViews || stats.totalViews}</div>
@@ -475,7 +475,7 @@ const DashboardPage = () => {
               <Eye className="w-8 h-8 text-gray-300/50" />
             </div>
           </div>
-          <div className="glass-card p-4 rounded-xl">
+          <div className="glass-card p-4 rounded-none">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.averageViews}</div>
@@ -484,7 +484,7 @@ const DashboardPage = () => {
               <TrendingUp className="w-8 h-8 text-emerald-500/50" />
             </div>
           </div>
-          <div className="glass-card p-4 rounded-xl">
+          <div className="glass-card p-4 rounded-none">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.interestReceived}</div>
@@ -493,7 +493,7 @@ const DashboardPage = () => {
               <Users className="w-8 h-8 text-gray-300/50" />
             </div>
           </div>
-          <div className="glass-card p-4 rounded-xl">
+          <div className="glass-card p-4 rounded-none">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.purchasesMade}</div>
@@ -554,8 +554,8 @@ const DashboardPage = () => {
               ))}
             </div>
           ) : (
-            <div className="spotlight-card rounded-2xl p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-white/5">
+            <div className="spotlight-card rounded-none p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-none bg-gray-800/50 flex items-center justify-center border border-white/5">
                 <Package className="w-8 h-8 text-gray-500" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">No projects started yet</h3>
@@ -591,13 +591,13 @@ const DashboardPage = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
+                  className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-none p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
                   onClick={() => handleActivityClick(activity)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-2 h-2 rounded-full ${
+                        <div className={`w-2 h-2 rounded-none ${
                           activity.status === 'unread' ? 'bg-white' : 'bg-gray-600'
                         }`} />
                         <h4 className="font-medium text-white">{activity.title}</h4>
@@ -613,7 +613,7 @@ const DashboardPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-lg">
+            <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-none">
               <Bell className="w-12 h-12 text-gray-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-white mb-2">No recent activity</h3>
               <p className="text-gray-400">Activity will appear here when you have notifications</p>

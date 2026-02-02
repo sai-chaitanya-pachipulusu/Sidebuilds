@@ -353,13 +353,13 @@ const AIProjectScoring = ({ project, className }) => {
                   transition={{ type: "spring", duration: 0.6 }}
                   className="relative inline-block"
                 >
-                  <div className="w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-700 flex items-center justify-center relative overflow-hidden">
+                  <div className="w-32 h-32 rounded-none bg-gray-800 border-4 border-gray-700 flex items-center justify-center relative overflow-hidden">
                     <motion.div
                       initial={{ pathLength: 0 }}
                       animate={{ pathLength: score / 100 }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
                       className={cn(
-                        "absolute inset-0 rounded-full border-4 border-transparent",
+                        "absolute inset-0 rounded-none border-4 border-transparent",
                         `bg-gradient-to-r ${getScoreGradient(score)}`
                       )}
                       style={{
@@ -407,7 +407,7 @@ const AIProjectScoring = ({ project, className }) => {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-center gap-3"
                     >
-                      <div className="p-1.5 bg-gray-800 rounded-lg">
+                      <div className="p-1.5 bg-gray-800 rounded-none">
                         <Icon className="w-4 h-4 text-gray-400" />
                       </div>
                       
@@ -418,13 +418,13 @@ const AIProjectScoring = ({ project, className }) => {
                             {Math.round(value)}
                           </span>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-1.5 mb-1">
+                        <div className="w-full bg-gray-800 rounded-none h-1.5 mb-1">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${value}%` }}
                             transition={{ duration: 1, delay: index * 0.1 }}
                             className={cn(
-                              "h-1.5 rounded-full bg-gradient-to-r",
+                              "h-1.5 rounded-none bg-gradient-to-r",
                               getScoreGradient(value)
                             )}
                           />
@@ -447,7 +447,7 @@ const AIProjectScoring = ({ project, className }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-gray-900/50 border border-white/10 rounded-2xl p-6"
+            className="bg-gray-900/50 border border-white/10 rounded-none p-6"
           >
             <div className="flex items-center gap-2 mb-4">
               <Zap className="w-5 h-5 text-yellow-400" />
@@ -461,10 +461,10 @@ const AIProjectScoring = ({ project, className }) => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg"
+                  className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-none"
                 >
                   <div className={cn(
-                    "p-1.5 rounded-lg",
+                    "p-1.5 rounded-none",
                     rec.priority === 'high' ? "bg-red-600/20" : "bg-yellow-600/20"
                   )}>
                     {rec.priority === 'high' ? 
@@ -477,7 +477,7 @@ const AIProjectScoring = ({ project, className }) => {
                     <p className="text-sm text-white mb-1">{rec.text}</p>
                     <div className="flex items-center gap-2">
                       <span className={cn(
-                        "text-xs px-2 py-1 rounded-full",
+                        "text-xs px-2 py-1 rounded-none",
                         rec.priority === 'high' ? "bg-red-600/20 text-red-300" : "bg-yellow-600/20 text-yellow-300"
                       )}>
                         {rec.priority === 'high' ? 'High Priority' : 'Medium Priority'}

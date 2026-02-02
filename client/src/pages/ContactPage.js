@@ -159,7 +159,7 @@ const ContactPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none mb-6">
               <MessageSquare className="w-4 h-4 text-white" />
               <span className="text-sm text-gray-300">Contact Us</span>
             </div>
@@ -186,7 +186,7 @@ const ContactPage = () => {
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
               <h2 className="text-2xl font-bold text-white mb-6">Send us a message</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -200,7 +200,7 @@ const ContactPage = () => {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Your name"
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.name ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -219,7 +219,7 @@ const ContactPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="your@email.com"
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.email ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -236,7 +236,7 @@ const ContactPage = () => {
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-none text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 ${
                       errors.subject ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   >
@@ -261,7 +261,7 @@ const ContactPage = () => {
                     onChange={handleChange}
                     placeholder="Tell us more..."
                     rows={6}
-                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 resize-none ${
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 resize-none ${
                       errors.message ? 'border-red-500' : 'border-gray-700 hover:border-gray-600'
                     }`}
                   />
@@ -275,11 +275,11 @@ const ContactPage = () => {
                   disabled={isSubmitting}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-none animate-spin" />
                       Sending...
                     </>
                   ) : (
@@ -307,10 +307,10 @@ const ContactPage = () => {
                 return (
                   <div
                     key={index}
-                    className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-200 group"
+                    className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-200 group"
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-2xl ${info.color} bg-current/10`}>
+                      <div className={`p-3 rounded-none ${info.color} bg-current/10`}>
                         <Icon className={`w-6 h-6 ${info.color}`} />
                       </div>
                       <div className="flex-1">
@@ -329,7 +329,7 @@ const ContactPage = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6"
+              className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6"
             >
               <div className="flex items-center gap-3 mb-6">
                 <AlertCircle className="w-5 h-5 text-white" />
@@ -338,10 +338,10 @@ const ContactPage = () => {
               
               <div className="space-y-3">
                 {quickFAQs.map((faq, index) => (
-                  <div key={index} className="border border-gray-800 rounded-xl">
+                  <div key={index} className="border border-gray-800 rounded-none">
                     <button
                       onClick={() => toggleFAQ(index)}
-                      className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors duration-200 rounded-xl"
+                      className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-800/50 transition-colors duration-200 rounded-none"
                     >
                       <span className="font-medium text-white">{faq.question}</span>
                       {expandedFAQ === index ? (
@@ -401,9 +401,9 @@ const ContactPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 text-center hover:border-white/[0.12] transition-all duration-200 group"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 text-center hover:border-white/[0.12] transition-all duration-200 group"
               >
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${item.color} bg-current/10`}>
+                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-none mb-4 ${item.color} bg-current/10`}>
                   <Icon className={`w-6 h-6 ${item.color}`} />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-gray-300 transition-colors duration-200">

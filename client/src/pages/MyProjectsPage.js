@@ -107,14 +107,14 @@ const MyProjectsPage = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
+        className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
       >
         {/* Background gradient on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-gray-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Project Image */}
-          <div className="aspect-video rounded-xl overflow-hidden bg-gray-800">
+          <div className="aspect-video rounded-none overflow-hidden bg-gray-800">
             <img 
               src={project.cover_image_url || 'https://via.placeholder.com/400x225?text=Project+Image'} 
               alt={project.name}
@@ -132,13 +132,13 @@ const MyProjectsPage = () => {
                 {project.description}
               </p>
             </div>
-            <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 ml-3`}>
+            <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 ml-3`}>
               {project.stage}
             </div>
           </div>
 
           {/* Metrics */}
-          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/20 rounded-lg">
+          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/20 rounded-none">
             <div className="text-center">
               <div className="text-sm font-bold text-white">
                 {project.view_count || 0}
@@ -161,7 +161,7 @@ const MyProjectsPage = () => {
 
           {/* On Hold Status */}
           {project.is_on_hold === 1 && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-none p-2 text-center">
               <span className="text-red-400 text-xs font-bold uppercase tracking-wider">On Hold / Under Negotiation</span>
             </div>
           )}
@@ -176,7 +176,7 @@ const MyProjectsPage = () => {
           <div className="flex gap-2 pt-4 border-t border-white/[0.08]">
             <motion.button
               onClick={() => navigate(`/projects/${project.project_id}`)}
-              className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -186,7 +186,7 @@ const MyProjectsPage = () => {
             
             <motion.button
               onClick={() => handleToggleHold(project.project_id)}
-              className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+              className={`flex-1 px-4 py-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                 project.is_on_hold 
                   ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' 
                   : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
@@ -201,7 +201,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-lg hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -220,11 +220,11 @@ const MyProjectsPage = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group"
+        className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group"
       >
         <div className="flex items-center gap-6">
           {/* Project Image */}
-          <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
+          <div className="w-20 h-20 rounded-none overflow-hidden bg-gray-800 flex-shrink-0">
             <img 
               src={project.cover_image_url || 'https://via.placeholder.com/80x80?text=Project'} 
               alt={project.name}
@@ -239,11 +239,11 @@ const MyProjectsPage = () => {
                 {project.name}
               </h3>
               <div className="flex items-center gap-2">
-                <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 flex-shrink-0`}>
+                <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 flex-shrink-0`}>
                   {project.stage}
                 </div>
                 {project.is_on_hold === 1 && (
-                  <div className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                  <div className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-none text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
                     On Hold
                   </div>
                 )}
@@ -274,7 +274,7 @@ const MyProjectsPage = () => {
           <div className="flex gap-2 flex-shrink-0">
             <motion.button
               onClick={() => navigate(`/projects/${project.project_id}`)}
-              className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 flex items-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -284,7 +284,7 @@ const MyProjectsPage = () => {
             
             <motion.button
               onClick={() => handleToggleHold(project.project_id)}
-              className={`p-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+              className={`p-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                 project.is_on_hold 
                   ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' 
                   : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
@@ -298,7 +298,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-lg hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -318,16 +318,16 @@ const MyProjectsPage = () => {
           <div className="space-y-8">
             <div className="flex justify-between items-center">
               <div className="space-y-2">
-                <div className="h-8 bg-gray-800 rounded-lg animate-pulse w-48"></div>
-                <div className="h-4 bg-gray-800 rounded-lg animate-pulse w-64"></div>
+                <div className="h-8 bg-gray-800 rounded-none animate-pulse w-48"></div>
+                <div className="h-4 bg-gray-800 rounded-none animate-pulse w-64"></div>
               </div>
-              <div className="h-10 bg-gray-800 rounded-lg animate-pulse w-32"></div>
+              <div className="h-10 bg-gray-800 rounded-none animate-pulse w-32"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-900/50 rounded-2xl p-6 animate-pulse">
+                <div key={i} className="bg-gray-900/50 rounded-none p-6 animate-pulse">
                   <div className="space-y-4">
-                    <div className="aspect-video bg-gray-800 rounded-xl"></div>
+                    <div className="aspect-video bg-gray-800 rounded-none"></div>
                     <div className="h-6 bg-gray-800 rounded"></div>
                     <div className="h-4 bg-gray-800 rounded w-3/4"></div>
                     <div className="flex gap-2">
@@ -371,7 +371,7 @@ const MyProjectsPage = () => {
               
               <motion.button
                 onClick={() => navigate('/create')}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -382,9 +382,9 @@ const MyProjectsPage = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-white/10/10 rounded-xl">
+                  <div className="p-3 bg-white/10/10 rounded-none">
                     <Target className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -394,9 +394,9 @@ const MyProjectsPage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-green-500/10 rounded-xl">
+                  <div className="p-3 bg-green-500/10 rounded-none">
                     <TrendingUp className="w-6 h-6 text-green-400" />
                   </div>
                   <div>
@@ -408,9 +408,9 @@ const MyProjectsPage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-500/10 rounded-xl">
+                  <div className="p-3 bg-blue-500/10 rounded-none">
                     <Eye className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
@@ -422,9 +422,9 @@ const MyProjectsPage = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+              <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-yellow-500/10 rounded-xl">
+                  <div className="p-3 bg-yellow-500/10 rounded-none">
                     <DollarSign className="w-6 h-6 text-yellow-400" />
                   </div>
                   <div>
@@ -438,7 +438,7 @@ const MyProjectsPage = () => {
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -448,7 +448,7 @@ const MyProjectsPage = () => {
                     placeholder="Search your projects..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   />
                 </div>
                 
@@ -457,7 +457,7 @@ const MyProjectsPage = () => {
                   <select
                     value={stageFilter}
                     onChange={(e) => setStageFilter(e.target.value)}
-                    className="px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:border-blue-500 focus:outline-none"
+                    className="px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">All Stages</option>
                     <option value="idea">Idea</option>
@@ -468,10 +468,10 @@ const MyProjectsPage = () => {
                     <option value="on_hold">On Hold</option>
                   </select>
                   
-                  <div className="flex items-center gap-1 bg-gray-800/50 rounded-xl p-1">
+                  <div className="flex items-center gap-1 bg-gray-800/50 rounded-none p-1">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-colors duration-200 ${
+                      className={`p-2 rounded-none transition-colors duration-200 ${
                         viewMode === 'grid' 
                           ? 'bg-blue-600 text-white' 
                           : 'text-gray-400 hover:text-white'
@@ -481,7 +481,7 @@ const MyProjectsPage = () => {
                     </button>
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-colors duration-200 ${
+                      className={`p-2 rounded-none transition-colors duration-200 ${
                         viewMode === 'list' 
                           ? 'bg-blue-600 text-white' 
                           : 'text-gray-400 hover:text-white'
@@ -524,7 +524,7 @@ const MyProjectsPage = () => {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-12">
+                  <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-12">
                     <Sparkles className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                     <h3 className="text-2xl font-semibold text-white mb-2">
                       {searchTerm || stageFilter ? 'No matching projects' : 'No projects yet'}
@@ -538,7 +538,7 @@ const MyProjectsPage = () => {
                     {!searchTerm && !stageFilter && (
                       <motion.button
                         onClick={() => navigate('/create')}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium flex items-center gap-2 mx-auto hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center gap-2 mx-auto hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >

@@ -277,7 +277,7 @@ const FileUploader = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="flex items-center gap-4 p-4 bg-gray-900/50 border border-white/10 rounded-xl hover:border-white/20 transition-colors duration-200"
+                    className="flex items-center gap-4 p-4 bg-gray-900/50 border border-white/10 rounded-none hover:border-white/20 transition-colors duration-200"
                   >
                     {/* File Preview/Icon */}
                     <div className="flex-shrink-0">
@@ -285,10 +285,10 @@ const FileUploader = ({
                         <img
                           src={file.preview}
                           alt={file.name}
-                          className="w-12 h-12 object-cover rounded-lg"
+                          className="w-12 h-12 object-cover rounded-none"
                         />
                       ) : (
-                        <div className={cn("p-2 rounded-lg", colorClasses)}>
+                        <div className={cn("p-2 rounded-none", colorClasses)}>
                           <Icon className="w-8 h-8" />
                         </div>
                       )}
@@ -376,7 +376,7 @@ const FileUploader = ({
                 }
               })
             }}
-            className="px-6 py-2 bg-white text-white rounded-lg hover:bg-white-700 transition-colors duration-200"
+            className="px-6 py-2 bg-white text-white rounded-none hover:bg-white-700 transition-colors duration-200"
           >
             Upload All Files
           </button>

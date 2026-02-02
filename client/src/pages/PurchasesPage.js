@@ -39,7 +39,7 @@ const Modal = ({ isOpen, onClose, title, children, error }) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-gray-900 border border-white/[0.1] rounded-xl p-6 max-w-md w-full shadow-2xl"
+        className="bg-gray-900 border border-white/[0.1] rounded-none p-6 max-w-md w-full shadow-2xl"
       >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">{title}</h3>
@@ -48,7 +48,7 @@ const Modal = ({ isOpen, onClose, title, children, error }) => {
           </button>
         </div>
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-none">
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
@@ -60,10 +60,10 @@ const Modal = ({ isOpen, onClose, title, children, error }) => {
 
 // Skeleton Card Component for loading state
 const PurchaseCardSkeleton = () => (
-  <div className="bg-gray-900/30 rounded-xl border border-white/[0.05] p-6 animate-pulse">
+  <div className="bg-gray-900/30 rounded-none border border-white/[0.05] p-6 animate-pulse">
     <div className="flex items-start justify-between mb-4">
       <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-gray-800 rounded-xl" />
+        <div className="w-12 h-12 bg-gray-800 rounded-none" />
         <div className="space-y-2">
           <div className="h-5 bg-gray-800 rounded w-48" />
           <div className="h-4 bg-gray-800 rounded w-32" />
@@ -93,7 +93,7 @@ const EmptyState = ({ onBrowse }) => (
     animate={{ opacity: 1, y: 0 }}
     className="text-center py-16 px-4"
   >
-    <div className="w-24 h-24 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+    <div className="w-24 h-24 bg-gray-800/50 rounded-none flex items-center justify-center mx-auto mb-6">
       <ShoppingBag className="w-12 h-12 text-gray-500" />
     </div>
     <h3 className="text-xl font-semibold text-white mb-2">No purchases yet</h3>
@@ -114,7 +114,7 @@ const ErrorState = ({ error, onRetry }) => (
     animate={{ opacity: 1, y: 0 }}
     className="text-center py-16 px-4"
   >
-    <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+    <div className="w-24 h-24 bg-red-500/10 rounded-none flex items-center justify-center mx-auto mb-6">
       <AlertTriangle className="w-12 h-12 text-red-400" />
     </div>
     <h3 className="text-xl font-semibold text-white mb-2">Failed to load purchases</h3>
@@ -186,11 +186,11 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-gray-900/30 rounded-xl border border-white/[0.05] p-6 hover:border-white/[0.1] transition-colors"
+      className="bg-gray-900/30 rounded-none border border-white/[0.05] p-6 hover:border-white/[0.1] transition-colors"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-blue-600 rounded-none flex items-center justify-center">
             <Package className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -234,7 +234,7 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
       </div>
 
       {purchase.buyer_intro_message && (
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-white/[0.05] mb-4">
+        <div className="bg-gray-800/50 rounded-none p-4 border border-white/[0.05] mb-4">
           <h4 className="text-sm font-medium text-gray-300 mb-2">Message</h4>
           <p className="text-sm text-gray-400 leading-relaxed">{purchase.buyer_intro_message}</p>
         </div>
@@ -668,7 +668,7 @@ const PurchasesPage = () => {
         error={disputeError}
       >
         <div className="space-y-4">
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-none p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
               <div>
@@ -687,7 +687,7 @@ const PurchasesPage = () => {
           </p>
           
           <textarea
-            className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 min-h-[100px] resize-none"
+            className="w-full bg-black/50 border border-white/10 rounded-none p-3 text-white focus:outline-none focus:border-blue-500 min-h-[100px] resize-none"
             placeholder="Describe the issue in detail..."
             value={disputeReason}
             onChange={(e) => setDisputeReason(e.target.value)}

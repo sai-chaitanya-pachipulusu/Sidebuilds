@@ -33,7 +33,7 @@ const TransactionDetailPage = () => {
         fetchTransactionDetails();
     }, [transactionId]);
 
-    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>;
+    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-none h-12 w-12 border-b-2 border-blue-500"></div></div>;
     if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
     if (!transaction) return <div className="text-center py-10 text-gray-400">Transaction not found.</div>;
 
@@ -58,7 +58,7 @@ const TransactionDetailPage = () => {
                 <Card className="bg-gray-900/50 border-gray-700">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-3xl">Transaction Details</CardTitle>
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${statusInfo.color} bg-opacity-10`}>
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-none text-sm ${statusInfo.color} bg-opacity-10`}>
                             <statusInfo.icon className="h-4 w-4" />
                             <span>{statusInfo.label}</span>
                         </div>

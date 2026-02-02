@@ -166,7 +166,7 @@ const PaymentMethodSelector = ({
 
   if (loading) {
     return (
-      <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-gray-300 mr-3" />
           <span className="text-gray-400">Loading payment methods...</span>
@@ -176,7 +176,7 @@ const PaymentMethodSelector = ({
   }
 
   return (
-    <div className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 ${className}`}>
+    <div className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 ${className}`}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
@@ -187,7 +187,7 @@ const PaymentMethodSelector = ({
       </div>
 
       {/* Amount Display */}
-      <div className="bg-gray-800/30 rounded-xl p-4 mb-6">
+      <div className="bg-gray-800/30 rounded-none p-4 mb-6">
         <div className="text-center">
           <div className="text-3xl font-bold text-white mb-1">
             {formatAmount(amount, currency)}
@@ -218,7 +218,7 @@ const PaymentMethodSelector = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl bg-gradient-to-r ${method.color}`}>
+                  <div className={`p-3 rounded-none bg-gradient-to-r ${method.color}`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                   
@@ -226,7 +226,7 @@ const PaymentMethodSelector = ({
                     <div className="flex items-center gap-2">
                       <h5 className="text-white font-semibold">{method.name}</h5>
                       {method.popularity > 90 && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 rounded-full">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 rounded-none">
                           <Star className="w-3 h-3 text-yellow-400" />
                           <span className="text-yellow-400 text-xs font-medium">Popular</span>
                         </div>
@@ -272,7 +272,7 @@ const PaymentMethodSelector = ({
       </div>
 
       {/* Security Info */}
-      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
+      <div className="bg-green-500/10 border border-green-500/20 rounded-none p-4 mb-6">
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-green-400 mt-0.5" />
           <div>

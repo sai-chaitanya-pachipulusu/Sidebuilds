@@ -357,14 +357,14 @@ const MarketplacePage = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
+        className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
           featured ? 'ring-2 ring-blue-500/20' : ''
         }`}
       >
         {/* Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-gray-600 rounded-none text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -374,7 +374,7 @@ const MarketplacePage = () => {
         {/* On Hold / Under Negotiation Badge */}
         {project.is_on_hold === 1 && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-wider shadow-lg border border-red-400/30 flex items-center gap-1.5 animate-pulse">
+            <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md rounded-none text-white text-[10px] font-bold uppercase tracking-wider shadow-lg border border-red-400/30 flex items-center gap-1.5 animate-pulse">
               <Clock4 className="w-3 h-3" />
               On Hold
             </div>
@@ -385,7 +385,7 @@ const MarketplacePage = () => {
         <div className="absolute top-4 right-4 z-20">
           <motion.button
             onClick={() => toggleWishlist(project.project_id)}
-            className="p-2 bg-gray-800/80 backdrop-blur-sm rounded-full hover:bg-gray-700/80 transition-colors duration-200"
+            className="p-2 bg-gray-800/80 backdrop-blur-sm rounded-none hover:bg-gray-700/80 transition-colors duration-200"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -419,7 +419,7 @@ const MarketplacePage = () => {
           </div>
 
           {/* Metrics Row */}
-          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-lg">
+          <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-none">
             <div className="text-center">
               <div className="text-lg font-bold text-white">
                 {project.monthly_revenue ? formatPrice(project.monthly_revenue) : '$0'}
@@ -443,7 +443,7 @@ const MarketplacePage = () => {
 
           {/* Stage and Status */}
           <div className="flex items-center justify-between">
-            <div className={`px-3 py-1 rounded-lg text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
+            <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
               {project.stage}
             </div>
             <div className="flex items-center space-x-1 text-xs text-gray-500">
@@ -456,12 +456,12 @@ const MarketplacePage = () => {
           {project.tech_stack && typeof project.tech_stack === 'string' && project.tech_stack.trim() && (
             <div className="flex flex-wrap gap-2">
               {project.tech_stack.split(',').slice(0, 4).map((tech, index) => (
-                <span key={index} className="px-2 py-1 bg-gray-800/50 text-gray-300 text-xs rounded-lg border border-gray-700">
+                <span key={index} className="px-2 py-1 bg-gray-800/50 text-gray-300 text-xs rounded-none border border-gray-700">
                   {tech.trim()}
                 </span>
               ))}
               {project.tech_stack.split(',').length > 4 && (
-                <span className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-lg border border-gray-700">
+                <span className="px-2 py-1 bg-gray-800/50 text-gray-400 text-xs rounded-none border border-gray-700">
                   +{project.tech_stack.split(',').length - 4} more
                 </span>
               )}
@@ -469,7 +469,7 @@ const MarketplacePage = () => {
           )}
 
           {/* Financial Metrics */}
-          <div className="bg-gray-800/20 rounded-lg p-3 space-y-2">
+          <div className="bg-gray-800/20 rounded-none p-3 space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Sale Price</span>
               <span className="text-white font-bold">{formatPrice(project.sale_price)}</span>
@@ -494,7 +494,7 @@ const MarketplacePage = () => {
               <motion.button
                 disabled={project.is_on_hold === 1}
                 onClick={() => handleQuickPurchase(project)}
-                className={`w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                className={`w-full px-4 py-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                   project.is_on_hold === 1
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                     : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
@@ -510,7 +510,7 @@ const MarketplacePage = () => {
             <div className="flex items-center gap-2">
               <motion.button
                 onClick={() => navigate(`/projects/${project.project_id}`)}
-                className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -522,7 +522,7 @@ const MarketplacePage = () => {
                 <motion.button
                   disabled={project.is_on_hold === 1}
                   onClick={() => handleShowInterest(project.project_id)}
-                  className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
+                  className={`flex-1 px-4 py-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                     project.is_on_hold === 1
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                       : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
@@ -551,20 +551,20 @@ const MarketplacePage = () => {
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-none blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-none blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <div className="text-center space-y-4 sm:space-y-6">
           {/* Badge */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-none backdrop-blur-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-green-400 rounded-none animate-pulse" />
             <span className="text-sm text-blue-200">Live marketplace with {projects.length} projects</span>
           </motion.div>
 
@@ -632,7 +632,7 @@ const MarketplacePage = () => {
               placeholder="Search projects, technologies, or keywords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-16 sm:pr-4 py-3 sm:py-4 bg-gray-900/50 border border-gray-700 rounded-xl sm:rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-sm sm:text-base"
+              className="w-full pl-12 pr-16 sm:pr-4 py-3 sm:py-4 bg-gray-900/50 border border-gray-700 rounded-none sm:rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 text-sm sm:text-base"
             />
             <div className="absolute right-4 top-1/2 transform -translate-y-1/2 hidden sm:flex items-center gap-2">
               <kbd className="px-2 py-1 bg-gray-800 text-gray-400 text-xs rounded border">⌘</kbd>
@@ -650,7 +650,7 @@ const MarketplacePage = () => {
                   <motion.button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-none sm:rounded-none text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
                         : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
@@ -667,7 +667,7 @@ const MarketplacePage = () => {
 
             <div className="flex items-center gap-2 sm:gap-3">
               {/* View Mode Toggle */}
-              <div className="hidden sm:flex items-center bg-gray-800/50 rounded-lg p-1">
+              <div className="hidden sm:flex items-center bg-gray-800/50 rounded-none p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-md transition-colors ${
@@ -691,7 +691,7 @@ const MarketplacePage = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-gray-800/50 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-6 sm:pr-8"
+                  className="appearance-none bg-gray-800/50 border border-gray-700 rounded-none px-3 sm:px-4 py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-6 sm:pr-8"
                 >
                   <option value="newest">Newest First</option>
                   <option value="price-low">Price: Low to High</option>
@@ -706,7 +706,7 @@ const MarketplacePage = () => {
               {/* Advanced Filters Button */}
               <motion.button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-all duration-200 ${
+                className={`hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 rounded-none text-xs sm:text-sm font-medium border transition-all duration-200 ${
                   showAdvancedFilters
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-600'
@@ -721,7 +721,7 @@ const MarketplacePage = () => {
               {/* Mobile Filter Button */}
               <motion.button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`sm:hidden p-2 rounded-lg border transition-all duration-200 ${
+                className={`sm:hidden p-2 rounded-none border transition-all duration-200 ${
                   showAdvancedFilters
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-600'
@@ -743,7 +743,7 @@ const MarketplacePage = () => {
                 <motion.button
                   key={category.id}
                   onClick={() => updateFilter('category', category.id)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-none text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? 'bg-gray-800 text-white border border-gray-600'
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
@@ -755,7 +755,7 @@ const MarketplacePage = () => {
                   <span className="hidden sm:inline">{category.name}</span>
                   <span className="sm:hidden">{category.name.split(' ')[0]}</span>
                   {category.count > 0 && (
-                    <span className="px-1.5 py-0.5 bg-gray-700 text-gray-300 text-xs rounded-full">
+                    <span className="px-1.5 py-0.5 bg-gray-700 text-gray-300 text-xs rounded-none">
                       {category.count}
                     </span>
                   )}
@@ -771,7 +771,7 @@ const MarketplacePage = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-gray-900/50 rounded-2xl border border-gray-700 p-6"
+                className="bg-gray-900/50 rounded-none border border-gray-700 p-6"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   
@@ -781,7 +781,7 @@ const MarketplacePage = () => {
                     <select
                       value={filters.stage || ''}
                       onChange={(e) => updateFilter('stage', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-none px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       <option value="">All Stages</option>
                       <option value="idea">Idea</option>
@@ -797,7 +797,7 @@ const MarketplacePage = () => {
                     <select
                       value={filters.priceRange || ''}
                       onChange={(e) => updateFilter('priceRange', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-none px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       <option value="">All Prices</option>
                       <option value="under-10k">Under $10k</option>
@@ -819,7 +819,7 @@ const MarketplacePage = () => {
                         step="1000"
                         value={filters.revenueRange?.[1] || 100000}
                         onChange={(e) => updateFilter('revenueRange', [0, parseInt(e.target.value)])}
-                        className="flex-1 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="flex-1 h-2 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600"
                       />
                       <span className="text-xs text-gray-400">$100k+</span>
                     </div>
@@ -833,7 +833,7 @@ const MarketplacePage = () => {
                 <div className="flex justify-end mt-4">
                   <motion.button
                     onClick={clearFilters}
-                    className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded-none transition-colors"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -880,7 +880,7 @@ const MarketplacePage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 mb-8"
+            className="bg-red-500/10 border border-red-500/20 rounded-none p-6 mb-8"
           >
             <p className="text-red-400">{error}</p>
           </motion.div>
@@ -948,7 +948,7 @@ const MarketplacePage = () => {
                 >
                   <button
                     onClick={loadMoreResults}
-                    className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
+                    className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-none transition-colors duration-200 flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Load More Projects ({searchResults.length - batchedResults.length} remaining)
@@ -979,7 +979,7 @@ const MarketplacePage = () => {
               {isFiltered && (
                 <motion.button
                   onClick={clearFilters}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-colors duration-200"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -1005,14 +1005,14 @@ const MarketplacePage = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-gray-900 border border-white/[0.08] rounded-2xl p-4 sm:p-6 md:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto mx-4"
+              className="bg-gray-900 border border-white/[0.08] rounded-none p-4 sm:p-6 md:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto mx-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Quick Purchase</h2>
                 <button
                   onClick={() => setShowQuickPurchaseModal(false)}
-                  className="p-2 min-w-[44px] min-h-[44px] hover:bg-gray-800 rounded-lg transition-colors duration-200"
+                  className="p-2 min-w-[44px] min-h-[44px] hover:bg-gray-800 rounded-none transition-colors duration-200"
                 >
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
@@ -1020,7 +1020,7 @@ const MarketplacePage = () => {
 
               <div className="space-y-4 sm:space-y-6">
                 {/* Project Summary */}
-                <div className="bg-gray-800/30 rounded-xl p-4 sm:p-6">
+                <div className="bg-gray-800/30 rounded-none p-4 sm:p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="flex-1">
                       <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{selectedProject.name}</h3>
@@ -1029,13 +1029,13 @@ const MarketplacePage = () => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
-                    <div className="text-center p-2 sm:p-3 bg-gray-800/50 rounded-lg">
+                    <div className="text-center p-2 sm:p-3 bg-gray-800/50 rounded-none">
                       <div className="text-sm sm:text-lg font-bold text-white">
                         {selectedProject.monthly_revenue ? formatPrice(selectedProject.monthly_revenue) : '$0'}
                       </div>
                       <div className="text-xs text-gray-500">Monthly Revenue</div>
                     </div>
-                    <div className="text-center p-2 sm:p-3 bg-gray-800/50 rounded-lg">
+                    <div className="text-center p-2 sm:p-3 bg-gray-800/50 rounded-none">
                       <div className="text-sm sm:text-lg font-bold text-white">
                         {selectedProject.view_count || 0}
                       </div>
@@ -1062,7 +1062,7 @@ const MarketplacePage = () => {
                 </div>
 
                 {/* Quick Purchase Benefits */}
-                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                <div className="bg-green-500/10 border border-green-500/20 rounded-none p-4">
                   <h4 className="text-green-300 font-medium mb-2">✨ Quick Purchase Benefits</h4>
                   <ul className="space-y-1 text-green-300 text-sm">
                     <li>• Instant access after payment confirmation</li>
@@ -1073,7 +1073,7 @@ const MarketplacePage = () => {
                 </div>
 
                 {/* Security Notice */}
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-none p-4">
                   <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <div>
@@ -1088,19 +1088,19 @@ const MarketplacePage = () => {
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                   <button
                     onClick={() => setShowQuickPurchaseModal(false)}
-                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-xl transition-colors duration-200"
+                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <motion.button
                     onClick={handlePurchase}
                     disabled={!selectedPaymentMethod || paymentProcessing}
-                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {paymentProcessing ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-none h-4 w-4 border-b-2 border-white"></div>
                     ) : (
                       <>
                         <Zap className="w-4 h-4" />

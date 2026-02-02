@@ -76,7 +76,7 @@ const EnhancedButton = ({
       
       {/* Hover effect overlay */}
       <motion.div
-        className="absolute inset-0 bg-white/10 rounded-lg opacity-0 pointer-events-none"
+        className="absolute inset-0 bg-white/10 rounded-none opacity-0 pointer-events-none"
         whileHover={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
       />

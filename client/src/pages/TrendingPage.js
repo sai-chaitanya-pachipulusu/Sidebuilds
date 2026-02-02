@@ -26,14 +26,14 @@ const TrendingPage = () => {
         fetchTrending();
     }, []);
 
-    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>;
+    if (loading) return <div className="flex justify-center items-center h-screen bg-black"><div className="animate-spin rounded-none h-12 w-12 border-b-2 border-blue-500"></div></div>;
 
     return (
         <div className="min-h-screen bg-black text-white p-8">
             <SEO title="Trending Projects" description="Discover the most popular and fastest-growing projects on SideBuilds." />
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <div className="inline-block p-4 bg-white/10/10 rounded-2xl border border-white/50/20 mb-4">
+                    <div className="inline-block p-4 bg-white/10/10 rounded-none border border-white/50/20 mb-4">
                         <Flame className="w-12 h-12 mx-auto text-white" />
                     </div>
                     <h1 className="text-5xl font-bold">Trending Projects</h1>

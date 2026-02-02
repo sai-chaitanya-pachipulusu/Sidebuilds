@@ -56,7 +56,7 @@ const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) =
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Connect with Stripe">
             <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-none">
                     <h2 className="text-lg font-semibold text-white">Sell your projects securely</h2>
                     <StripeLogo />
                 </div>
@@ -70,7 +70,7 @@ const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) =
                 </p>
 
                 {status && (
-                    <div className="p-4 bg-gray-800/50 rounded-lg space-y-3">
+                    <div className="p-4 bg-gray-800/50 rounded-none space-y-3">
                         <h3 className="font-semibold text-white">Your Account Status:</h3>
                         <StatusItem 
                             icon={status.isOnboardingComplete ? CheckCircle : AlertTriangle} 

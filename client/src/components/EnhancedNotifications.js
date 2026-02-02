@@ -184,7 +184,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
             onClick={handleRefresh}
             disabled={isRefreshing}
             className={cn(
-              "p-3 bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200",
+              "p-3 bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200",
               isRefreshing && "animate-spin"
             )}
           >
@@ -193,7 +193,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
 
           <button
             onClick={() => setShowActions(!showActions)}
-            className="flex items-center gap-2 px-4 py-3 bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200"
+            className="flex items-center gap-2 px-4 py-3 bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200"
           >
             <MoreHorizontal className="w-5 h-5" />
             <span>Actions</span>
@@ -220,7 +220,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
               key={type.id}
               onClick={() => setFilter(type.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap",
+                "flex items-center gap-2 px-4 py-2 rounded-none text-sm font-medium transition-colors duration-200 whitespace-nowrap",
                 filter === type.id
                   ? "bg-white/20 text-gray-300 border border-white/50/30"
                   : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
@@ -230,7 +230,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
               <span>{type.name}</span>
               {type.count > 0 && (
                 <span className={cn(
-                  "px-2 py-0.5 text-xs rounded-full",
+                  "px-2 py-0.5 text-xs rounded-none",
                   filter === type.id
                     ? "bg-white/10 text-white"
                     : "bg-gray-700 text-gray-300"
@@ -250,7 +250,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex items-center justify-between p-4 bg-gray-900/30 border border-white/10 rounded-xl"
+            className="flex items-center justify-between p-4 bg-gray-900/30 border border-white/10 rounded-none"
           >
             <div className="flex items-center gap-4">
               <button
@@ -307,7 +307,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    "flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 cursor-pointer group",
+                    "flex items-start gap-4 p-4 rounded-none border transition-all duration-200 cursor-pointer group",
                     !notification.is_read
                       ? "bg-gray-900/50 border-white/10 hover:border-white/20"
                       : "bg-gray-800/30 border-white/5 hover:border-white/10",
@@ -329,7 +329,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
 
                   {/* Icon */}
                   <div className={cn(
-                    "flex-shrink-0 p-2 rounded-lg border",
+                    "flex-shrink-0 p-2 rounded-none border",
                     colorClasses
                   )}>
                     <Icon className="w-5 h-5" />
@@ -381,7 +381,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
 
                   {/* Unread Indicator */}
                   {!notification.is_read && (
-                    <div className="flex-shrink-0 w-2 h-2 bg-white/10 rounded-full mt-2" />
+                    <div className="flex-shrink-0 w-2 h-2 bg-white/10 rounded-none mt-2" />
                   )}
                 </motion.div>
               )
@@ -393,7 +393,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
       {/* Load More */}
       {filteredNotifications.length >= 20 && (
         <div className="text-center">
-          <button className="px-6 py-3 bg-gray-900/50 border border-white/10 rounded-xl text-white hover:border-white/20 transition-colors duration-200">
+          <button className="px-6 py-3 bg-gray-900/50 border border-white/10 rounded-none text-white hover:border-white/20 transition-colors duration-200">
             Load More Notifications
           </button>
         </div>

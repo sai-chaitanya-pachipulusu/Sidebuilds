@@ -68,7 +68,7 @@ const ProjectTransferPage = () => {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-4 rounded-lg border border-gray-700 p-4">
+                            <div className="space-y-4 rounded-none border border-gray-700 p-4">
                                 <h3 className="font-semibold text-white">Asset Confirmation Checklist</h3>
                                 {assetList.map(asset => (
                                     <div key={asset.id} className="flex items-start space-x-3">

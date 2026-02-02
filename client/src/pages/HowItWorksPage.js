@@ -163,7 +163,7 @@ const HowItWorksPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none mb-6">
                 <Star className="w-4 h-4 text-white" />
                 <span className="text-sm text-gray-300">How It Works</span>
               </div>
@@ -191,7 +191,7 @@ const HowItWorksPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-none mb-6">
                     <Users className="w-4 h-4 text-blue-400" />
                     <span className="text-sm text-blue-300">For Buyers</span>
                   </div>
@@ -215,10 +215,10 @@ const HowItWorksPage = () => {
                     >
                       <div className="flex flex-col items-center space-y-4">
                         <div className="relative">
-                          <div className={`w-20 h-20 bg-gradient-to-br ${getStepColor(step.color)} rounded-2xl flex items-center justify-center border border-white/[0.08] shadow-lg`}>
+                          <div className={`w-20 h-20 bg-gradient-to-br ${getStepColor(step.color)} rounded-none flex items-center justify-center border border-white/[0.08] shadow-lg`}>
                             <Icon className="w-8 h-8 text-white" />
                           </div>
-                          <div className={`absolute -top-2 -right-2 w-8 h-8 bg-gray-900 border-2 border-gray-700 rounded-full flex items-center justify-center text-sm font-bold ${getNumberColor(step.color)}`}>
+                          <div className={`absolute -top-2 -right-2 w-8 h-8 bg-gray-900 border-2 border-gray-700 rounded-none flex items-center justify-center text-sm font-bold ${getNumberColor(step.color)}`}>
                             {step.number}
                           </div>
                         </div>
@@ -247,7 +247,7 @@ const HowItWorksPage = () => {
               >
                 <Link
                   to="/marketplace"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-blue-500/25"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-blue-500/25"
                 >
                   Browse Projects
                   <ArrowRight className="w-5 h-5" />
@@ -265,7 +265,7 @@ const HowItWorksPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full mb-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-none mb-6">
                     <TrendingUp className="w-4 h-4 text-green-400" />
                     <span className="text-sm text-green-300">For Sellers</span>
                   </div>
@@ -289,10 +289,10 @@ const HowItWorksPage = () => {
                     >
                       <div className="flex flex-col items-center space-y-4">
                         <div className="relative">
-                          <div className={`w-20 h-20 bg-gradient-to-br ${getStepColor(step.color)} rounded-2xl flex items-center justify-center border border-white/[0.08] shadow-lg`}>
+                          <div className={`w-20 h-20 bg-gradient-to-br ${getStepColor(step.color)} rounded-none flex items-center justify-center border border-white/[0.08] shadow-lg`}>
                             <Icon className="w-8 h-8 text-white" />
                           </div>
-                          <div className={`absolute -top-2 -right-2 w-8 h-8 bg-gray-900 border-2 border-gray-700 rounded-full flex items-center justify-center text-sm font-bold ${getNumberColor(step.color)}`}>
+                          <div className={`absolute -top-2 -right-2 w-8 h-8 bg-gray-900 border-2 border-gray-700 rounded-none flex items-center justify-center text-sm font-bold ${getNumberColor(step.color)}`}>
                             {step.number}
                           </div>
                         </div>
@@ -321,7 +321,7 @@ const HowItWorksPage = () => {
               >
                 <Link
                   to="/create"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/25"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/25"
                 >
                   List Your Project
                   <ArrowRight className="w-5 h-5" />
@@ -356,9 +356,9 @@ const HowItWorksPage = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center hover:border-white/[0.12] hover:scale-105 transition-all duration-200 group"
+                      className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 text-center hover:border-white/[0.12] hover:scale-105 transition-all duration-200 group"
                     >
-                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${feature.color} bg-current/10`}>
+                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-none mb-6 ${feature.color} bg-current/10`}>
                         <Icon className={`w-8 h-8 ${feature.color}`} />
                       </div>
                       <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-gray-300 transition-colors duration-200">
@@ -377,13 +377,13 @@ const HowItWorksPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="bg-gray-900 rounded-3xl border border-white/10 p-12 overflow-hidden relative"
+                  className="bg-gray-900 rounded-none border border-white/10 p-12 overflow-hidden relative"
               >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10/10 rounded-full filter blur-3xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10/10 rounded-none filter blur-3xl pointer-events-none" />
                   
                   <div className="grid md:grid-cols-2 gap-16 items-center">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-sm font-medium mb-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-none text-sm font-medium mb-6">
                             <Shield className="w-4 h-4" />
                             Secure Escrow System
                         </div>
@@ -395,21 +395,21 @@ const HowItWorksPage = () => {
                             
                             <ol className="space-y-4">
                                 <li className="flex gap-4">
-                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">1</div>
+                                    <div className="flex-none w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">1</div>
                                     <div>
                                         <h4 className="text-white font-semibold">Funds Secured</h4>
                                         <p className="text-sm">Buyer deposits funds into our secure escrow vault. Seller sees proof of funds but cannot access them yet.</p>
                                     </div>
                                 </li>
                                 <li className="flex gap-4">
-                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">2</div>
+                                    <div className="flex-none w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">2</div>
                                     <div>
                                         <h4 className="text-white font-semibold">Asset Handover</h4>
                                         <p className="text-sm">Seller transfers domains, GitHub repositories, and API keys via our dedicated secure transfer dashboard.</p>
                                     </div>
                                 </li>
                                 <li className="flex gap-4">
-                                    <div className="flex-none w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">3</div>
+                                    <div className="flex-none w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center text-white font-bold border border-gray-700">3</div>
                                     <div>
                                         <h4 className="text-white font-semibold">Verification & Release</h4>
                                         <p className="text-sm">Buyer reviews the assets. Once confirmed, funds are instantly released to the seller's Stripe account.</p>
@@ -420,10 +420,10 @@ const HowItWorksPage = () => {
                     </div>
                     <div className="relative">
                         {/* Abstract visual representation of transfer */}
-                        <div className="relative z-10 bg-black/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+                        <div className="relative z-10 bg-black/50 border border-white/10 rounded-none p-6 backdrop-blur-xl">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-white/10/20 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-none bg-white/10/20 flex items-center justify-center">
                                         <UserCheck className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
@@ -432,12 +432,12 @@ const HowItWorksPage = () => {
                                     </div>
                                 </div>
                                 <div className="h-px flex-1 bg-gradient-to-r from-white/50/50 to-blue-500/50 mx-4 relative">
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black border border-green-500 rounded-full flex items-center justify-center z-10">
+                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black border border-green-500 rounded-none flex items-center justify-center z-10">
                                         <Shield className="w-4 h-4 text-green-500" />
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                    <div className="w-10 h-10 rounded-none bg-blue-500/20 flex items-center justify-center">
                                         <Users className="w-5 h-5 text-blue-400" />
                                     </div>
                                      <div>
@@ -446,7 +446,7 @@ const HowItWorksPage = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-4 flex items-center gap-3">
+                            <div className="bg-green-900/20 border border-green-500/20 rounded-none p-4 flex items-center gap-3">
                                 <CheckCircle className="w-5 h-5 text-green-400" />
                                 <span className="text-green-400 font-medium">Escrow Secured: $5,000.00</span>
                             </div>
@@ -466,7 +466,7 @@ const HowItWorksPage = () => {
               className="mt-20"
             >
               <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-none mb-6">
                   <Package className="w-4 h-4 text-green-400" />
                   <span className="text-sm text-green-300">What You Can Sell</span>
                 </div>
@@ -510,7 +510,7 @@ const HowItWorksPage = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * index }}
-                    className="bg-gray-900/50 border border-white/[0.08] rounded-2xl p-6 hover:border-green-500/30 transition-all duration-300"
+                    className="bg-gray-900/50 border border-white/[0.08] rounded-none p-6 hover:border-green-500/30 transition-all duration-300"
                   >
                     <div className="text-4xl mb-4">{item.emoji}</div>
                     <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
@@ -529,7 +529,7 @@ const HowItWorksPage = () => {
               className="mt-20"
             >
               <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-none mb-6">
                   <DollarSign className="w-4 h-4 text-white" />
                   <span className="text-sm text-gray-300">Secure Payments</span>
                 </div>
@@ -540,9 +540,9 @@ const HowItWorksPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* For Buyers */}
-                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border border-blue-500/20 rounded-2xl p-8">
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border border-blue-500/20 rounded-none p-8">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-blue-500/20 rounded-xl">
+                    <div className="p-3 bg-blue-500/20 rounded-none">
                       <Users className="w-6 h-6 text-blue-400" />
                     </div>
                     <h3 className="text-2xl font-bold text-white">For Buyers</h3>
@@ -573,9 +573,9 @@ const HowItWorksPage = () => {
                 </div>
 
                 {/* For Sellers */}
-                <div className="bg-gradient-to-br from-gray-900/30 to-gray-800/10 border border-white/50/20 rounded-2xl p-8">
+                <div className="bg-gradient-to-br from-gray-900/30 to-gray-800/10 border border-white/50/20 rounded-none p-8">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-white/10/20 rounded-xl">
+                    <div className="p-3 bg-white/10/20 rounded-none">
                       <DollarSign className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-2xl font-bold text-white">For Sellers</h3>
@@ -612,7 +612,7 @@ const HowItWorksPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-none p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Ready to Get Started?
@@ -627,7 +627,7 @@ const HowItWorksPage = () => {
                 >
                   <Link
                     to="/register"
-                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                   >
                     Create Account
                   </Link>
@@ -638,7 +638,7 @@ const HowItWorksPage = () => {
                 >
                   <Link
                     to="/marketplace"
-                    className="px-8 py-4 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+                    className="px-8 py-4 bg-gray-800 text-white rounded-none font-medium hover:bg-gray-700 border border-gray-700 hover:border-gray-600 transition-all duration-200"
                   >
                     Explore Projects
                   </Link>

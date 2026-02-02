@@ -143,10 +143,9 @@ const RegisterPage = () => {
   };
 
     return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-black">
       {/* Left Panel - Feature Showcase */}
-      <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-blue-600/20 via-gray-600/20 to-orange-600/20 p-12 items-center justify-center">
-        <div className="absolute inset-0 bg-black/50" />
+      <div className="hidden lg:flex flex-1 relative bg-black p-12 items-center justify-center">
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -176,7 +175,7 @@ const RegisterPage = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 + index * 0.1 }}
-                className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20"
+                className="bg-white/10 backdrop-blur-sm rounded-none p-4 border border-white/20"
               >
                 <p className="text-2xl font-bold mb-1">{stat.value}</p>
                 <p className="text-sm text-gray-400">{stat.label}</p>
@@ -212,28 +211,27 @@ const RegisterPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
-            className="mt-8 p-5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
+            className="mt-8 p-5 bg-white/5 rounded-none border border-white/10"
           >
-            <p className="text-sm text-gray-300 mb-2">
-              * These metrics are aspirational and subject to increase as we expand. 
-              They will never be exact figures—just our north star.
+            <p className="text-sm text-gray-400 mb-4 italic">
+              These metrics are aspirational and subject to increase as we expand. They will never be exact figures—just our north star.
             </p>
             
-            <p className="text-base text-white font-medium mb-4">
-              You are our <span className="text-gray-300 font-bold">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
+            <p className="text-lg text-white font-bold mb-4">
+              You are our <span className="text-yellow-400 font-black">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
             </p>
             
-            <div className="space-y-2 text-sm text-gray-300">
-              <div className="flex items-center gap-2">
-                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+            <div className="space-y-3 text-sm text-gray-300">
+              <div className="flex items-start gap-2">
+                <Star className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <span>Side effects include: uncontrollable shipping, midnight coding, and aggressive high-fiving</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+              <div className="flex items-start gap-2">
+                <Star className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <span>Warning: May cause spontaneous "I'll just build it myself" syndrome</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+              <div className="flex items-start gap-2">
+                <Star className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <span>Not responsible for sudden urges to quit your 9-5 and become a full-time maker</span>
               </div>
             </div>
@@ -242,7 +240,7 @@ const RegisterPage = () => {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-black">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -278,7 +276,7 @@ const RegisterPage = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="John Cena"
                   required
                 />
@@ -295,7 +293,7 @@ const RegisterPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="youcant@seeme.com"
                   required
                 />
@@ -312,7 +310,7 @@ const RegisterPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                                                 placeholder="Be it a strong one"
                   required
                 />
@@ -329,7 +327,7 @@ const RegisterPage = () => {
               {formData.password && (
                 <div className="mt-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-gray-800 rounded-none overflow-hidden">
                       <div 
                         className={`h-full transition-all duration-300 ${getPasswordStrengthColor()}`}
                         style={{ width: `${passwordStrength * 25}%` }}
@@ -351,7 +349,7 @@ const RegisterPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                   placeholder="Confirm it's strong"
                   required
                 />
@@ -398,11 +396,11 @@ const RegisterPage = () => {
               disabled={isLoading || !agreedToTerms}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-gray-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-gray-600 rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-none animate-spin" />
                   <span>Creating account...</span>
                 </>
               ) : (
@@ -415,7 +413,7 @@ const RegisterPage = () => {
                             </form>
 
           {/* Additional Info */}
-          <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+          <div className="mt-8 p-4 bg-gray-900/50 rounded-none border border-gray-800">
             <p className="text-xs text-gray-400 text-center">
               🔒 Your information is secure and will never be shared with third parties.
             </p>

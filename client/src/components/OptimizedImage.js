@@ -313,7 +313,7 @@ const OptimizedImage = ({ src, alt, className, ...props }) => {
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {loading && (
-        <div className="absolute inset-0 bg-gray-200/20 animate-pulse rounded-lg" />
+        <div className="absolute inset-0 bg-gray-200/20 animate-pulse rounded-none" />
       )}
       
       <img

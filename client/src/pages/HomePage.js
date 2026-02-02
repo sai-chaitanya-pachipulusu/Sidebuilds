@@ -110,7 +110,7 @@ const HeroSection = memo(() => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
             >
-              Marketplace for production-ready apps.<br/>
+              Marketplace for projects at every stage — from raw ideas to production-ready apps.<br/>
               No fluff. Just code.
             </motion.p>
           </div>

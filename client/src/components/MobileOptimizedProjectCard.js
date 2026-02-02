@@ -82,7 +82,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
 
   return (
     <motion.div
-      className="project-card-mobile bg-gray-900/50 backdrop-blur-xl border border-gray-800/50 rounded-2xl overflow-hidden"
+      className="project-card-mobile bg-gray-900/50 backdrop-blur-xl border border-gray-800/50 rounded-none overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02, y: -4 }}
@@ -112,7 +112,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
         {/* Quick actions overlay */}
         <div className="absolute top-3 right-3 flex gap-2">
           <motion.button
-            className={`p-2 rounded-full backdrop-blur-md ${
+            className={`p-2 rounded-none backdrop-blur-md ${
               isLiked 
                 ? 'bg-red-500/80 text-white' 
                 : 'bg-black/40 text-gray-300 hover:bg-black/60'
@@ -135,7 +135,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
 
         {/* Price overlay */}
         <div className="absolute bottom-3 left-3">
-          <div className="bg-black/60 backdrop-blur-md rounded-lg px-3 py-1.5">
+          <div className="bg-black/60 backdrop-blur-md rounded-none px-3 py-1.5">
             <div className="text-white font-bold text-lg">
               {formatPrice(project.sale_price)}
             </div>
