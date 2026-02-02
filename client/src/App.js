@@ -75,7 +75,7 @@ const AppContent = () => {
       <div 
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[600px] pointer-events-none z-40"
         style={{
-          background: 'rgba(0, 0, 0, 0.99)',
+          background: 'rgba(0, 0, 0, 0.08)',
         }}
       />
       
