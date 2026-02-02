@@ -169,7 +169,7 @@ const ProfilePage = () => {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-gray-600 flex items-center justify-center text-white text-4xl font-bold">
                     {user.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   {user.verified && (
@@ -184,7 +184,7 @@ const ProfilePage = () => {
                   <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                     <h1 className="text-3xl font-bold text-white">{user.username}</h1>
                     {user.role === 'premium' && (
-                      <div className="px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium">
+                      <div className="px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm font-medium">
                         Pro
                       </div>
                     )}
@@ -225,7 +225,7 @@ const ProfilePage = () => {
                 {/* Follow Button (if viewing someone else's profile) */}
                 {currentUser && currentUser.id !== user.id && (
                   <motion.button
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -239,8 +239,8 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-purple-500/10 rounded-xl">
-                    <Package className="w-6 h-6 text-purple-400" />
+                  <div className="p-3 bg-white/10 rounded-xl">
+                    <Package className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-white">{activeProjects.length}</div>

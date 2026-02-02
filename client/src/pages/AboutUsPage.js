@@ -86,8 +86,8 @@ const AboutUsPage = () => {
       icon: Zap,
       title: 'Innovation',
       description: 'Constantly improving to make project transfers seamless',
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
+      color: 'text-white',
+      bgColor: 'bg-white/10/10',
     },
   ];
 
@@ -129,7 +129,7 @@ const AboutUsPage = () => {
       label: 'Success Rate', 
       value: stats.successRate,
       icon: Award,
-      color: 'text-purple-400'
+      color: 'text-white'
     },
     { 
       label: 'Avg Response Time', 
@@ -155,8 +155,8 @@ const AboutUsPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="relative bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10 border-b border-white/[0.08] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-transparent to-blue-600/5" />
+        <div className="relative bg-gradient-to-br from-gray-600/10 via-blue-600/10 to-gray-600/10 border-b border-white/[0.08] overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-600/5 via-transparent to-blue-600/5" />
           
           <div className="relative max-w-7xl mx-auto px-4 py-20 text-center">
             <motion.div
@@ -164,14 +164,14 @@ const AboutUsPage = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-12"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
-                <Heart className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">The Vibe Engineering Revolution</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+                <Heart className="w-4 h-4 text-white" />
+                <span className="text-sm text-gray-300">The Vibe Engineering Revolution</span>
               </div>
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
                 Home for{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-gray-400 to-blue-400 bg-clip-text text-transparent">
                   Vibe Engineered Apps
                 </span>
                 {' '}& Finished Ideas
@@ -189,7 +189,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/marketplace"
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25 flex items-center gap-2"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25 flex items-center gap-2"
                   >
                     Explore Marketplace
                     <ArrowRight className="w-5 h-5" />
@@ -225,10 +225,10 @@ const AboutUsPage = () => {
                   <p className="text-lg text-gray-400 max-w-3xl mx-auto">
                     SideBuilds was born from a simple observation: the rise of 
                     <span className="inline-flex items-center gap-1 mx-1 align-baseline">
-                      <strong className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Vibe</strong>
+                      <strong className="bg-gradient-to-r from-gray-400 to-gray-400 bg-clip-text text-transparent">Vibe</strong>
                       <span className="relative inline-block">
                         <span className="line-through decoration-white/50 decoration-2 text-white/40">Coding</span>
-                        <span className="absolute -top-[60%] left-0 font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Engineering</span>
+                        <span className="absolute -top-[60%] left-0 font-bold bg-gradient-to-r from-gray-400 to-gray-400 bg-clip-text text-transparent">Engineering</span>
                       </span>
                     </span>
                     has unleashed a wave of creativity, but makers lacked a trusted platform to trade these 
@@ -258,7 +258,7 @@ const AboutUsPage = () => {
                         transition={{ delay: 0.3 + i * 0.1 }}
                         className="flex items-center gap-3"
                       >
-                        <Target className="w-5 h-5 text-purple-400" />
+                        <Target className="w-5 h-5 text-white" />
                         <span className="text-gray-300">{item}</span>
                       </motion.div>
                     ))}
@@ -271,7 +271,7 @@ const AboutUsPage = () => {
                   transition={{ delay: 0.4 }}
                   className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center"
                 >
-                  <Globe className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+                  <Globe className="w-16 h-16 text-white mx-auto mb-4" />
                   <h3 className="text-2xl font-bold text-white mb-2">Global Reach</h3>
                   <p className="text-gray-400">
                     Connecting makers and entrepreneurs from over 50 countries worldwide
@@ -288,7 +288,7 @@ const AboutUsPage = () => {
                 transition={{ duration: 0.5 }}
                 className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 hover:border-white/[0.12] transition-all duration-200"
               >
-                <Target className="w-12 h-12 text-purple-400 mb-6" />
+                <Target className="w-12 h-12 text-white mb-6" />
                 <h3 className="text-2xl font-bold text-white mb-4">Our Mission</h3>
                 <p className="text-gray-400 leading-relaxed">
                   To democratize the buying and selling of digital projects by providing 
@@ -340,7 +340,7 @@ const AboutUsPage = () => {
                       <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 ${value.bgColor}`}>
                         <Icon className={`w-6 h-6 ${value.color}`} />
                       </div>
-                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-200">
+                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-gray-300 transition-colors duration-200">
                         {value.title}
                       </h3>
                       <p className="text-gray-400 text-sm leading-relaxed">
@@ -374,11 +374,11 @@ const AboutUsPage = () => {
                     transition={{ delay: index * 0.1 }}
                     className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8 text-center hover:border-white/[0.12] transition-all duration-200 max-w-sm"
                   >
-                    <div className="w-24 h-24 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-24 h-24 bg-gradient-to-r from-gray-600 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                    <p className="text-purple-400 text-sm mb-3">{member.role}</p>
+                    <p className="text-white text-sm mb-3">{member.role}</p>
                     <p className="text-gray-400 text-sm mb-6">{member.bio}</p>
                     <div className="flex justify-center space-x-4">
                       {member.social.linkedin && (
@@ -388,7 +388,7 @@ const AboutUsPage = () => {
                         <Twitter className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
                       )}
                       {member.social.github && (
-                        <Github className="w-5 h-5 text-gray-400 hover:text-purple-400 cursor-pointer transition-colors duration-200" />
+                        <Github className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors duration-200" />
                       )}
                     </div>
                   </motion.div>
@@ -447,14 +447,14 @@ const AboutUsPage = () => {
                       className="relative flex items-center"
                     >
                       <div className={`flex-1 ${milestone.side === 'left' ? 'pr-8 text-right' : 'opacity-0'}`}>
-                        <div className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium mb-2">
+                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-full text-sm font-medium mb-2">
                           {milestone.year}
                         </div>
                         <p className="text-white">{milestone.event}</p>
                       </div>
-                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-purple-500 rounded-full border-4 border-black" />
+                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white/10 rounded-full border-4 border-black" />
                       <div className={`flex-1 ${milestone.side === 'right' ? 'pl-8 text-left' : 'opacity-0'}`}>
-                        <div className="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium mb-2">
+                        <div className="inline-block px-3 py-1 bg-white/10/20 text-gray-300 rounded-full text-sm font-medium mb-2">
                           {milestone.year}
                         </div>
                         <p className="text-white">{milestone.event}</p>
@@ -469,7 +469,7 @@ const AboutUsPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-pink-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Join Our Growing Community
@@ -485,7 +485,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/register"
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                   >
                     Get Started
                   </Link>

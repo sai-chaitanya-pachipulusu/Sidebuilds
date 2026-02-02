@@ -67,7 +67,7 @@ const PageTransitionWrapper = ({
           exit={{ opacity: 0 }}
           transition={{ duration: duration * 1.5 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900/20 via-transparent to-blue-900/20" />
         </motion.div>
 
         {/* Page content */}

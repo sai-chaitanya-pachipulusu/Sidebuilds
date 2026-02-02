@@ -64,7 +64,7 @@ const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) =
                 <p className="text-gray-400">
                     We partner with Stripe to handle secure payments and payouts directly to your bank account. Connect your account to start selling.
                     <br />
-                    <span className="text-purple-400 text-sm mt-3 block italic">
+                    <span className="text-gray-400 text-sm mt-3 block italic">
                         Note: You must complete all Stripe verification steps (identity, bank account, etc.) before you can list projects for sale.
                     </span>
                 </p>

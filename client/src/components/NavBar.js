@@ -229,11 +229,10 @@ const NavBar = () => {
 
               {isAuthenticated ? (
                 <>
-                  {/* Create Button - Gradient with glow like Clerk */}
+                  {/* Create Button - Brutalist */}
                   <motion.button
                     onClick={() => navigate('/create')}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:brightness-110 transition-all duration-300"
-                    whileHover={{ scale: 1.02 }}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200"
                     whileTap={{ scale: 0.98 }}
                   >
                     <PlusCircle className="w-4 h-4" />
@@ -304,8 +303,8 @@ const NavBar = () => {
                       className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white/[0.05] transition-all duration-200"
                       whileTap={{ scale: 0.97 }}
                     >
-                      <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white/[0.1]">
-                        <span className="text-white text-xs font-medium">
+                      <div className="w-7 h-7 bg-white flex items-center justify-center">
+                        <span className="text-black text-xs font-bold">
                           {user?.username?.[0]?.toUpperCase() || 'U'}
                         </span>
                       </div>
@@ -324,8 +323,8 @@ const NavBar = () => {
                             {/* User info */}
                             <div className="p-3 border-b border-white/[0.06]">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-sm font-medium">
+                                <div className="w-8 h-8 bg-white flex items-center justify-center">
+                                  <span className="text-black text-sm font-bold">
                                     {user?.username?.[0]?.toUpperCase() || 'U'}
                                   </span>
                                 </div>
@@ -468,7 +467,7 @@ const NavBar = () => {
                       <Link
                         to="/create"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium no-underline"
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-black font-bold uppercase no-underline"
                       >
                         <PlusCircle className="w-5 h-5" />
                         Create Project
@@ -493,7 +492,7 @@ const NavBar = () => {
                       <Link
                         to="/register"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-center px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium no-underline"
+                        className="block text-center px-4 py-3 bg-white text-black font-bold uppercase no-underline"
                       >
                         Get started
                       </Link>

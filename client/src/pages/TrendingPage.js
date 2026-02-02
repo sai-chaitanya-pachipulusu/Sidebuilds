@@ -33,19 +33,19 @@ const TrendingPage = () => {
             <SEO title="Trending Projects" description="Discover the most popular and fastest-growing projects on SideBuilds." />
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <div className="inline-block p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 mb-4">
-                        <Flame className="w-12 h-12 mx-auto text-purple-400" />
+                    <div className="inline-block p-4 bg-white/10/10 rounded-2xl border border-white/50/20 mb-4">
+                        <Flame className="w-12 h-12 mx-auto text-white" />
                     </div>
                     <h1 className="text-5xl font-bold">Trending Projects</h1>
                     <p className="text-xl text-gray-400 mt-2">The hottest projects on the marketplace right now.</p>
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {projects.map((project, index) => (
-                        <Card key={project.project_id} className="bg-gray-900/50 border-gray-700 hover:border-purple-500/50 transition-all group flex flex-col">
+                        <Card key={project.project_id} className="bg-gray-900/50 border-gray-700 hover:border-white/50/50 transition-all group flex flex-col">
                             <CardHeader>
                                 <div className="flex justify-between items-start">
-                                    <CardTitle className="text-xl font-bold group-hover:text-purple-300 transition-colors">{project.name}</CardTitle>
-                                    <div className="text-2xl font-bold text-purple-400">#{index + 1}</div>
+                                    <CardTitle className="text-xl font-bold group-hover:text-gray-300 transition-colors">{project.name}</CardTitle>
+                                    <div className="text-2xl font-bold text-white">#{index + 1}</div>
                                 </div>
                                 <p className="text-sm text-gray-400">by {project.owner_username || 'Anonymous'}</p>
                             </CardHeader>

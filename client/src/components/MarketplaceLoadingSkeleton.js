@@ -210,7 +210,7 @@ export const SearchLoadingSkeleton = () => {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full"
+          className="w-5 h-5 border-2 border-white border-t-transparent"
         />
         <span className="text-gray-400">Searching projects...</span>
       </div>

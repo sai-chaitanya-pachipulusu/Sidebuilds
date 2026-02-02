@@ -68,7 +68,7 @@ const PageTransition = ({ children, className = '' }) => {
 
       {/* Route transition indicator */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-blue-500 z-50"
+        className="fixed top-0 left-0 right-0 h-1 bg-white z-50"
         initial={{ scaleX: 0, transformOrigin: 'left' }}
         animate={{ scaleX: 1 }}
         exit={{ scaleX: 0, transformOrigin: 'right' }}

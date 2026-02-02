@@ -124,12 +124,12 @@ const MarketplacePage = () => {
   // Enhanced categories with better organization - Chronicle/Linear inspired
   const categories = [
     { id: 'all', name: 'All Projects', icon: Globe, count: 0, color: 'text-gray-400' },
-    { id: 'saas', name: 'SaaS', icon: Zap, count: 0, color: 'text-purple-400' },
-    { id: 'ecommerce', name: 'E-commerce', icon: ShoppingBag, count: 0, color: 'text-green-400' },
-    { id: 'mobile', name: 'Mobile Apps', icon: Code, count: 0, color: 'text-blue-400' },
-    { id: 'ai', name: 'AI & ML', icon: Sparkles, count: 0, color: 'text-pink-400' },
-    { id: 'marketplace', name: 'Marketplace', icon: Users, count: 0, color: 'text-orange-400' },
-    { id: 'tools', name: 'Dev Tools', icon: Settings, count: 0, color: 'text-cyan-400' },
+    { id: 'saas', name: 'SaaS', icon: Zap, count: 0, color: 'text-gray-300' },
+    { id: 'ecommerce', name: 'E-commerce', icon: ShoppingBag, count: 0, color: 'text-gray-300' },
+    { id: 'mobile', name: 'Mobile Apps', icon: Code, count: 0, color: 'text-gray-300' },
+    { id: 'ai', name: 'AI & ML', icon: Sparkles, count: 0, color: 'text-gray-300' },
+    { id: 'marketplace', name: 'Marketplace', icon: Users, count: 0, color: 'text-gray-300' },
+    { id: 'tools', name: 'Dev Tools', icon: Settings, count: 0, color: 'text-gray-300' },
   ];
 
   // Enhanced tabs with modern styling
@@ -256,7 +256,7 @@ const MarketplacePage = () => {
     const stageColors = {
       'idea': 'gray',
       'planning': 'blue',
-      'mvp': 'purple',
+      'mvp': 'gray',
       'development': 'orange',
       'launched': 'green',
       'on_hold': 'red'
@@ -364,7 +364,7 @@ const MarketplacePage = () => {
         {/* Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -398,7 +398,7 @@ const MarketplacePage = () => {
         </div>
 
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-cyan-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-gray-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Header */}
@@ -478,7 +478,7 @@ const MarketplacePage = () => {
               <>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-sm">Breakeven</span>
-                  <span className="text-purple-400 text-sm">{monthsToBreakeven} months</span>
+                  <span className="text-white text-sm">{monthsToBreakeven} months</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-sm">Multiple</span>
@@ -525,7 +525,7 @@ const MarketplacePage = () => {
                   className={`flex-1 px-4 py-2 text-sm rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                     project.is_on_hold === 1
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                      : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
+                      : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
                   }`}
                   whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
                   whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
@@ -577,7 +577,7 @@ const MarketplacePage = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Discover{' '}
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
                 Premium
               </span>{' '}
               Projects

@@ -68,7 +68,7 @@ const getNotificationColor = (type) => {
       return 'text-blue-400';
     case 'purchase_request':
     case 'offer_received':
-      return 'text-purple-400';
+      return 'text-white';
     case 'warning':
       return 'text-yellow-400';
     case 'error':
@@ -302,14 +302,14 @@ const NotificationsPage = () => {
                       transition={{ delay: index * 0.05 }}
                       className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-2xl p-6 transition-all duration-200 group ${
                         !notification.is_read 
-                          ? 'border-purple-500/30 bg-purple-500/5' 
+                          ? 'border-white/50/30 bg-white/10/5' 
                           : 'border-white/[0.08] hover:border-white/[0.12]'
                       } ${notification.link ? 'cursor-pointer' : ''}`}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       {/* Unread indicator */}
                       {!notification.is_read && (
-                        <div className="absolute top-4 right-4 w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <div className="absolute top-4 right-4 w-2 h-2 bg-white/10 rounded-full"></div>
                       )}
 
                       <div className="flex items-start gap-4">
@@ -338,7 +338,7 @@ const NotificationsPage = () => {
                               <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
                                 notification.type === 'payment' ? 'bg-green-500/10 text-green-400' :
                                 notification.type === 'purchase' ? 'bg-blue-500/10 text-blue-400' :
-                                notification.type === 'offer' ? 'bg-purple-500/10 text-purple-400' :
+                                notification.type === 'offer' ? 'bg-white/10/10 text-white' :
                                 'bg-gray-500/10 text-gray-400'
                               }`}>
                                 {notification.type}

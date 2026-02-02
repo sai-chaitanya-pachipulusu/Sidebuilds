@@ -354,7 +354,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type a command or search..."
-                className="w-full pl-10 pr-4 py-3 min-h-[48px] bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200 text-sm sm:text-base"
+                className="w-full pl-10 pr-4 py-3 min-h-[48px] bg-black border border-white/20 text-white placeholder-gray-500 focus:border-white focus:outline-none transition-colors duration-200 text-sm sm:text-base"
               />
             </div>
 
@@ -364,10 +364,10 @@ const CommandPalette = ({ isOpen, onClose }) => {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap min-h-[44px] ${
+                  className={`px-2 sm:px-3 py-1.5 text-xs font-bold uppercase transition-all duration-200 flex items-center gap-1 sm:gap-1.5 whitespace-nowrap min-h-[44px] ${
                     category === cat.id
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      ? 'bg-white text-black'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <cat.icon className="w-3 h-3" />
@@ -388,10 +388,10 @@ const CommandPalette = ({ isOpen, onClose }) => {
                     <motion.button
                       key={command.id}
                       onClick={() => executeCommand(command)}
-                      className={`w-full px-3 sm:px-4 py-3 rounded-xl text-left transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[48px] ${
+                      className={`w-full px-3 sm:px-4 py-3 text-left transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[48px] ${
                         index === selectedIndex
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-200 hover:bg-gray-800'
+                          ? 'bg-white text-black'
+                          : 'text-gray-200 hover:bg-white/5'
                       }`}
                       onMouseEnter={() => setSelectedIndex(index)}
                       initial={{ opacity: 0, y: 10 }}
@@ -415,7 +415,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                         <p className="font-medium truncate text-sm sm:text-base">{command.title}</p>
                         <p className={`text-xs sm:text-sm truncate ${
                           index === selectedIndex
-                            ? 'text-purple-100'
+                            ? 'text-gray-600'
                             : 'text-gray-400'
                         }`}>
                           {command.subtitle}

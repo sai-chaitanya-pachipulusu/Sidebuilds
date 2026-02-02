@@ -132,12 +132,12 @@ const MarketplacePageEnhanced = () => {
   // Enhanced categories with better organization
   const categories = [
     { id: 'all', name: 'All Projects', icon: Globe, count: 0, color: 'text-gray-400' },
-    { id: 'saas', name: 'SaaS', icon: Zap, count: 0, color: 'text-purple-400' },
+    { id: 'saas', name: 'SaaS', icon: Zap, count: 0, color: 'text-white' },
     { id: 'ecommerce', name: 'E-commerce', icon: ShoppingBag, count: 0, color: 'text-green-400' },
     { id: 'mobile', name: 'Mobile Apps', icon: Code, count: 0, color: 'text-blue-400' },
-    { id: 'ai', name: 'AI & ML', icon: Brain, count: 0, color: 'text-pink-400' },
+    { id: 'ai', name: 'AI & ML', icon: Brain, count: 0, color: 'text-white' },
     { id: 'marketplace', name: 'Marketplace', icon: Users, count: 0, color: 'text-orange-400' },
-    { id: 'tools', name: 'Dev Tools', icon: Settings, count: 0, color: 'text-cyan-400' },
+    { id: 'tools', name: 'Dev Tools', icon: Settings, count: 0, color: 'text-gray-300' },
   ];
 
   // Enhanced tabs with modern styling
@@ -301,7 +301,7 @@ const MarketplacePageEnhanced = () => {
     const stageColors = {
       'idea': 'gray',
       'planning': 'blue',
-      'mvp': 'purple',
+      'mvp': 'gray',
       'development': 'orange',
       'launched': 'green',
       'on_hold': 'red'
@@ -387,13 +387,13 @@ const MarketplacePageEnhanced = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={`bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden ${
-          featured ? 'ring-2 ring-purple-500/20' : ''
+          featured ? 'ring-2 ring-white/50/20' : ''
         }`}
       >
         {/* Enhanced Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-gradient-to-r from-gray-600 to-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -411,7 +411,7 @@ const MarketplacePageEnhanced = () => {
         )}
 
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Enhanced Header */}
@@ -491,7 +491,7 @@ const MarketplacePageEnhanced = () => {
               <>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-sm">Breakeven</span>
-                  <span className="text-purple-400 text-sm">{monthsToBreakeven} months</span>
+                  <span className="text-white text-sm">{monthsToBreakeven} months</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-sm">Multiple</span>
@@ -538,7 +538,7 @@ const MarketplacePageEnhanced = () => {
               {!isOwnProject && (
                 <motion.button
                   onClick={() => handleShowInterest(project.project_id)}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-lg hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -563,7 +563,7 @@ const MarketplacePageEnhanced = () => {
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
       </div>
 
@@ -571,13 +571,13 @@ const MarketplacePageEnhanced = () => {
         <div className="text-center space-y-4 sm:space-y-6">
           {/* Enhanced Badge with search capabilities */}
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full backdrop-blur-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-sm text-purple-200 flex items-center gap-1">
+            <span className="text-sm text-white-200 flex items-center gap-1">
               Live marketplace with {projects.length} projects
               {searchCapabilities.fuzzySearch && (
                 <div className="flex items-center gap-1 ml-2">
@@ -597,7 +597,7 @@ const MarketplacePageEnhanced = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Discover{' '}
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
                 Premium
               </span>{' '}
               Projects
@@ -625,7 +625,7 @@ const MarketplacePageEnhanced = () => {
             ].map((stat, index) => (
               <div key={stat.label} className="text-center min-w-0 flex-1 sm:flex-initial">
                 <div className="flex items-center justify-center gap-2 text-xl sm:text-2xl font-bold text-white mb-1">
-                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   {stat.value}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-400">{stat.label}</div>

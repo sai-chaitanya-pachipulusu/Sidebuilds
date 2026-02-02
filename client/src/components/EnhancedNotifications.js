@@ -88,16 +88,16 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
       case 'terms_proposed_by_seller':
       case 'transfer_update':
       case 'info':
-        return 'text-blue-400 bg-blue-400/10 border-blue-400/20'
+        return 'text-gray-300 bg-white/10 border-white/20'
       case 'purchase_request':
       case 'offer_received':
-        return 'text-purple-400 bg-purple-400/10 border-purple-400/20'
+        return 'text-white bg-white/10 border-white/30'
       case 'warning':
-        return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
+        return 'text-gray-300 bg-white/10 border-white/20'
       case 'error':
-        return 'text-red-400 bg-red-400/10 border-red-400/20'
+        return 'text-white bg-white/10 border-white/30'
       default:
-        return 'text-gray-400 bg-gray-400/10 border-gray-400/20'
+        return 'text-gray-400 bg-white/10 border-white/20'
     }
   }
 
@@ -174,7 +174,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
             placeholder="Search notifications..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-900/50 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200"
+            className="w-full pl-12 pr-4 py-3 bg-black border border-white/20 text-white placeholder-gray-500 focus:border-white focus:outline-none transition-colors duration-200"
           />
         </div>
 
@@ -202,7 +202,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
           {notifications.filter(n => !n.is_read).length > 0 && (
             <button
               onClick={onMarkAllAsRead}
-              className="flex items-center gap-2 px-4 py-3 bg-purple-600/20 border border-purple-500/30 rounded-xl text-purple-300 hover:bg-purple-600/30 transition-colors duration-200"
+              className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/30 text-white hover:bg-white/20 transition-colors duration-200"
             >
               <CheckCheck className="w-5 h-5" />
               <span>Mark All Read</span>
@@ -222,7 +222,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap",
                 filter === type.id
-                  ? "bg-purple-600/20 text-purple-300 border border-purple-500/30"
+                  ? "bg-white/20 text-gray-300 border border-white/50/30"
                   : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
               )}
             >
@@ -232,7 +232,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
                 <span className={cn(
                   "px-2 py-0.5 text-xs rounded-full",
                   filter === type.id
-                    ? "bg-purple-500 text-white"
+                    ? "bg-white/10 text-white"
                     : "bg-gray-700 text-gray-300"
                 )}>
                   {type.count}
@@ -311,7 +311,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
                     !notification.is_read
                       ? "bg-gray-900/50 border-white/10 hover:border-white/20"
                       : "bg-gray-800/30 border-white/5 hover:border-white/10",
-                    isSelected && "ring-2 ring-purple-500/50 border-purple-500/30"
+                    isSelected && "ring-2 ring-white/50/50 border-white/50/30"
                   )}
                   onClick={() => handleSelectNotification(notification.notification_id)}
                 >
@@ -320,7 +320,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
                     <div className={cn(
                       "w-5 h-5 border-2 rounded-md flex items-center justify-center transition-all duration-200",
                       isSelected 
-                        ? "bg-purple-600 border-purple-600"
+                        ? "bg-white border-white/60"
                         : "border-gray-600 group-hover:border-gray-500"
                     )}>
                       {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -370,7 +370,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
                             e.stopPropagation()
                             window.location.href = notification.link
                           }}
-                          className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                          className="flex items-center gap-1 text-xs text-white hover:text-gray-300 transition-colors duration-200"
                         >
                           <span>View</span>
                           <ArrowRight className="w-3 h-3" />
@@ -381,7 +381,7 @@ const EnhancedNotifications = ({ notifications, onMarkAsRead, onMarkAllAsRead, o
 
                   {/* Unread Indicator */}
                   {!notification.is_read && (
-                    <div className="flex-shrink-0 w-2 h-2 bg-purple-500 rounded-full mt-2" />
+                    <div className="flex-shrink-0 w-2 h-2 bg-white/10 rounded-full mt-2" />
                   )}
                 </motion.div>
               )

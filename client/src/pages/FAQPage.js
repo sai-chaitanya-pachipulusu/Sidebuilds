@@ -142,21 +142,21 @@ const FAQPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
+        <div className="bg-gradient-to-br from-blue-600/10 via-gray-600/10 to-gray-600/10 border-b border-white/[0.08]">
           <div className="max-w-4xl mx-auto px-4 py-16 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-8"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
-                <HelpCircle className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">Support Center</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+                <HelpCircle className="w-4 h-4 text-white" />
+                <span className="text-sm text-gray-300">Support Center</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Frequently Asked{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
                   Questions
                 </span>
               </h1>
@@ -244,7 +244,7 @@ const FAQPage = () => {
                             <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
                               faq.category === 'general' ? 'bg-blue-500/10 text-blue-400' :
                               faq.category === 'selling' ? 'bg-green-500/10 text-green-400' :
-                              faq.category === 'buying' ? 'bg-purple-500/10 text-purple-400' :
+                              faq.category === 'buying' ? 'bg-white/10/10 text-white' :
                               faq.category === 'legal' ? 'bg-yellow-500/10 text-yellow-400' :
                               faq.category === 'security' ? 'bg-red-500/10 text-red-400' :
                               'bg-gray-500/10 text-gray-400'

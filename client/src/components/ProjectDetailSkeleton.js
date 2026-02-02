@@ -162,14 +162,14 @@ export const PaymentProcessingSkeleton = () => {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"
+          className="w-12 h-12 border-4 border-white border-t-transparent mx-auto mb-4"
         />
         <h3 className="text-xl font-semibold text-white mb-2">Processing Payment</h3>
         <p className="text-gray-400">Please wait while we create your secure checkout session...</p>
         <div className="mt-6 space-y-2">
           <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-purple-600 to-blue-600"
+              className="h-full bg-white"
               animate={{ x: ['-100%', '100%'] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             />

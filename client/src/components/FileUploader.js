@@ -45,12 +45,12 @@ const FileUploader = ({
 
   const getFileColor = (file) => {
     const type = file.type.toLowerCase()
-    if (type.startsWith('image/')) return 'text-green-400 bg-green-400/10'
-    if (type.startsWith('video/')) return 'text-blue-400 bg-blue-400/10'
-    if (type.includes('pdf')) return 'text-red-400 bg-red-400/10'
-    if (type.includes('text/') || type.includes('json') || type.includes('javascript')) return 'text-purple-400 bg-purple-400/10'
-    if (type.includes('zip') || type.includes('archive')) return 'text-orange-400 bg-orange-400/10'
-    return 'text-gray-400 bg-gray-400/10'
+    if (type.startsWith('image/')) return 'text-white bg-white/10'
+    if (type.startsWith('video/')) return 'text-gray-300 bg-white/10'
+    if (type.includes('pdf')) return 'text-gray-400 bg-white/10'
+    if (type.includes('text/') || type.includes('json') || type.includes('javascript')) return 'text-white bg-white/10'
+    if (type.includes('zip') || type.includes('archive')) return 'text-gray-400 bg-white/10'
+    return 'text-gray-400 bg-white/10'
   }
 
   const formatFileSize = (bytes) => {
@@ -190,9 +190,9 @@ const FileUploader = ({
       {/* Upload Area */}
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
+          "relative border-2 border-dashed p-8 text-center transition-all duration-200",
           dragActive
-            ? "border-purple-500 bg-purple-500/10"
+            ? "border-white bg-white/10"
             : "border-white/20 hover:border-white/40"
         )}
         onDragEnter={handleDrag}
@@ -211,12 +211,12 @@ const FileUploader = ({
 
         <div className="space-y-4">
           <div className={cn(
-            "w-16 h-16 mx-auto rounded-full flex items-center justify-center transition-colors duration-200",
-            dragActive ? "bg-purple-500/20" : "bg-gray-800"
+            "w-16 h-16 mx-auto flex items-center justify-center transition-colors duration-200",
+            dragActive ? "bg-white/20" : "bg-white/5"
           )}>
             <Upload className={cn(
               "w-8 h-8 transition-colors duration-200",
-              dragActive ? "text-purple-400" : "text-gray-400"
+              dragActive ? "text-white" : "text-gray-400"
             )} />
           </div>
 
@@ -238,7 +238,7 @@ const FileUploader = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+            className="px-6 py-2 bg-white text-black font-bold uppercase hover:bg-gray-200 transition-colors duration-200"
           >
             Select Files
           </button>
@@ -306,9 +306,9 @@ const FileUploader = ({
                             <span>Uploading...</span>
                             <span>{file.progress}%</span>
                           </div>
-                          <div className="w-full bg-gray-800 rounded-full h-1.5">
-                            <div 
-                              className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+                          <div className="w-full bg-white/10 h-1">
+                            <div
+                              className="bg-white h-1 transition-all duration-300"
                               style={{ width: `${file.progress}%` }}
                             />
                           </div>
@@ -329,7 +329,7 @@ const FileUploader = ({
                       )}
 
                       {file.status === 'uploading' && (
-                        <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
                       )}
 
                       {file.status === 'uploaded' && (
@@ -376,7 +376,7 @@ const FileUploader = ({
                 }
               })
             }}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+            className="px-6 py-2 bg-white text-white rounded-lg hover:bg-white-700 transition-colors duration-200"
           >
             Upload All Files
           </button>

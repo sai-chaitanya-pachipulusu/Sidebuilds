@@ -199,7 +199,7 @@ const MarketplacePageSimple = () => {
           onClick={() => handlePageChange(i)}
           className={`px-3 py-1 rounded ${
             i === currentPage
-              ? 'bg-purple-600 text-white'
+              ? 'bg-white text-white'
               : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
           }`}
         >
@@ -249,7 +249,7 @@ const MarketplacePageSimple = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/50 mx-auto mb-4"></div>
           <div className="text-white">Loading marketplace projects...</div>
         </div>
       </div>

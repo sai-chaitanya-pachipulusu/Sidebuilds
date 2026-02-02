@@ -52,7 +52,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="relative bg-gradient-to-r from-blue-900/90 to-cyan-900/90 border border-purple-500/20 rounded-2xl p-6 mb-6 overflow-hidden"
+      className="relative bg-black border border-white/20 p-6 mb-6 overflow-hidden"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
@@ -77,9 +77,9 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
       <div className="relative flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <CreditCard className="w-5 h-5 text-purple-400" />
-            </div>
+          <div className="p-2 bg-white/10">
+            <CreditCard className="w-5 h-5 text-white" />
+          </div>
             <h3 className="text-xl font-bold text-white">
               Connect Stripe to Start Selling
             </h3>
@@ -99,7 +99,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
               <Zap className="w-4 h-4" />
               <span>Instant payouts</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-purple-400">
+            <div className="flex items-center gap-2 text-sm text-white">
               <CreditCard className="w-4 h-4" />
               <span>Global payments</span>
             </div>
@@ -108,7 +108,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
 
         <motion.button
           onClick={onConnectClick}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium flex items-center gap-2 hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg"
+          className="px-6 py-3 bg-white text-black font-bold uppercase flex items-center gap-2 hover:bg-gray-200 transition-all duration-200"
           whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
         >

@@ -37,7 +37,7 @@ const PaymentMethodSelector = ({
       name: 'Stripe',
       description: 'Credit/Debit Cards, Apple Pay, Google Pay',
       icon: CreditCard,
-      color: 'from-purple-600 to-violet-600',
+      color: 'from-white to-gray-300',
       features: ['Instant Processing', 'Secure Payments', 'Buyer Protection'],
       fees: '2.9% + $0.30',
       processingTime: 'Instant',
@@ -168,7 +168,7 @@ const PaymentMethodSelector = ({
     return (
       <div className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-2xl p-8">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-purple-500 mr-3" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-300 mr-3" />
           <span className="text-gray-400">Loading payment methods...</span>
         </div>
       </div>
@@ -207,10 +207,10 @@ const PaymentMethodSelector = ({
           return (
             <motion.div
               key={method.id}
-              className={`relative p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+              className={`relative p-4 border-2 transition-all duration-200 cursor-pointer ${
                 isSelected
-                  ? 'border-purple-500 bg-purple-500/10'
-                  : 'border-gray-700 hover:border-gray-600 bg-gray-800/30'
+                  ? 'border-white bg-white/10'
+                  : 'border-white/20 hover:border-white/40 bg-black'
               }`}
               onClick={() => setSelectedMethod(method)}
               whileHover={{ scale: 1.02 }}
@@ -243,7 +243,7 @@ const PaymentMethodSelector = ({
                 
                 <div className="flex items-center gap-2">
                   {isSelected && (
-                    <CheckCircle className="w-5 h-5 text-purple-400" />
+                    <CheckCircle className="w-5 h-5 text-white" />
                   )}
                   <ChevronRight className="w-4 h-4 text-gray-500" />
                 </div>
@@ -288,7 +288,7 @@ const PaymentMethodSelector = ({
       <motion.button
         onClick={handlePayment}
         disabled={processing || !selectedMethod}
-        className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2"
+        className="w-full px-6 py-4 bg-white text-black font-bold uppercase disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-all duration-200 flex items-center justify-center gap-2"
         whileHover={{ scale: processing ? 1 : 1.02 }}
         whileTap={{ scale: processing ? 1 : 0.98 }}
       >

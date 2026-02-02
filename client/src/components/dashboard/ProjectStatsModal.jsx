@@ -30,7 +30,7 @@ const ProjectStatsModal = ({ isOpen, onClose, stats, projects }) => {
     switch (stage?.toLowerCase()) {
       case 'idea': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'planning': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-      case 'mvp': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'mvp': return 'bg-white/10 text-white border-white/20';
       case 'development': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
       case 'launched': return 'bg-green-500/10 text-green-400 border-green-500/20';
       default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
@@ -127,7 +127,7 @@ const ProjectStatsModal = ({ isOpen, onClose, stats, projects }) => {
                         className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/[0.05]"
                       >
                         <div className="flex items-center space-x-4 flex-1">
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center">
                             <BarChart3 className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">

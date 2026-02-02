@@ -161,7 +161,7 @@ class ProductionErrorBoundary extends React.Component {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-400">Error ID:</span>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm text-purple-400 font-mono">{errorId}</code>
+                    <code className="text-sm text-white font-mono">{errorId}</code>
                     <button
                       onClick={this.copyErrorDetails}
                       className="p-1 hover:bg-gray-700 rounded transition-colors"
@@ -202,7 +202,7 @@ class ProductionErrorBoundary extends React.Component {
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 <motion.button
                   onClick={this.handleRetry}
-                  className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-white hover:bg-gray-200 text-black font-bold uppercase transition-colors duration-200 flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -292,7 +292,7 @@ class ProductionErrorBoundary extends React.Component {
                   If this problem persists, please contact our support team with the error ID above.
                 </p>
                 <p className="mt-1">
-                  Email: <a href="mailto:support@sidebuilds.com" className="text-purple-400 hover:underline">
+                  Email: <a href="mailto:support@sidebuilds.com" className="text-white hover:underline">
                     support@sidebuilds.com
                   </a>
                 </p>

@@ -25,12 +25,12 @@ const TrustBadge = ({
   className = '' 
 }) => {
   const trustBadgeConfigs = {
-    // Core verification badges
+    // Core verification badges - monochrome
     identity_verified: {
       icon: Shield,
       label: 'ID Verified',
       description: 'Seller identity confirmed through document verification',
-      className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+      className: 'bg-white/10 text-white border-white/30',
       priority: 'high'
     },
     
@@ -38,7 +38,7 @@ const TrustBadge = ({
       icon: DollarSign,
       label: 'Revenue Verified',
       description: 'Monthly revenue confirmed through Stripe integration',
-      className: 'bg-green-500/10 text-green-400 border-green-500/30',
+      className: 'bg-white/10 text-white border-white/30',
       priority: 'high'
     },
     
@@ -46,7 +46,7 @@ const TrustBadge = ({
       icon: Code,
       label: 'Code Reviewed',
       description: 'Repository analyzed for quality and security standards',
-      className: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'medium'
     },
     
@@ -55,7 +55,7 @@ const TrustBadge = ({
       icon: Star,
       label: 'Trust Score',
       description: 'AI-calculated trustworthiness score based on multiple factors',
-      className: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-300 border-purple-400/30',
+      className: 'bg-white/10 text-white border-white/30',
       priority: 'high',
       dynamic: true
     },
@@ -65,7 +65,7 @@ const TrustBadge = ({
       icon: Award,
       label: 'Top Seller',
       description: 'Consistently high-performing seller with excellent ratings',
-      className: 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30',
+      className: 'bg-white/10 text-white border-white/30',
       priority: 'high'
     },
     
@@ -73,7 +73,7 @@ const TrustBadge = ({
       icon: Zap,
       label: 'Fast Response',
       description: 'Responds to messages within 2 hours on average',
-      className: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'medium'
     },
     
@@ -82,7 +82,7 @@ const TrustBadge = ({
       icon: Users,
       label: 'Community Favorite',
       description: 'Project highly rated by the SideBuilds community',
-      className: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'medium'
     },
     
@@ -90,7 +90,7 @@ const TrustBadge = ({
       icon: TrendingUp,
       label: 'Trending',
       description: 'High interest and activity in the past 7 days',
-      className: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'medium'
     },
     
@@ -99,7 +99,7 @@ const TrustBadge = ({
       icon: Check,
       label: 'High Quality',
       description: 'Meets premium quality standards for code and documentation',
-      className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'medium'
     },
     
@@ -107,7 +107,7 @@ const TrustBadge = ({
       icon: Eye,
       label: 'Popular',
       description: 'High view count and engagement metrics',
-      className: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+      className: 'bg-white/10 text-gray-300 border-white/20',
       priority: 'low'
     }
   };
@@ -193,7 +193,7 @@ const TrustBadge = ({
             repeatType: "loop"
           }}
           style={{
-            background: `radial-gradient(circle, ${config.className.includes('purple') ? 'rgba(147, 51, 234, 0.3)' :
+            background: `radial-gradient(circle, ${config.className.includes('gray') ? 'rgba(255, 255, 255, 0.3)' :
                         config.className.includes('green') ? 'rgba(34, 197, 94, 0.3)' :
                         config.className.includes('blue') ? 'rgba(59, 130, 246, 0.3)' :
                         'rgba(251, 191, 36, 0.3)'} 0%, transparent 70%)`
@@ -265,17 +265,17 @@ export const TrustScoreDisplay = ({
   variant = 'full' // 'full' | 'compact' | 'minimal'
 }) => {
   const getScoreColor = (score) => {
-    if (score >= 85) return 'text-green-400';
-    if (score >= 70) return 'text-yellow-400';
-    if (score >= 50) return 'text-orange-400';
-    return 'text-red-400';
+    if (score >= 85) return 'text-white';
+    if (score >= 70) return 'text-gray-300';
+    if (score >= 50) return 'text-gray-400';
+    return 'text-gray-500';
   };
 
   const getScoreGradient = (score) => {
-    if (score >= 85) return 'from-green-400 to-emerald-400';
-    if (score >= 70) return 'from-yellow-400 to-orange-400';
-    if (score >= 50) return 'from-orange-400 to-red-400';
-    return 'from-purple-600 to-violet-600';
+    if (score >= 85) return 'from-white to-gray-300';
+    if (score >= 70) return 'from-gray-300 to-gray-400';
+    if (score >= 50) return 'from-gray-400 to-gray-500';
+    return 'from-gray-500 to-gray-600';
   };
 
   if (variant === 'minimal') {

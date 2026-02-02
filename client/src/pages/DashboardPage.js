@@ -265,21 +265,21 @@ const DashboardPage = () => {
     }
   };
 
-  const StatCard = ({ icon: Icon, title, value, trend, trendUp, description, color = "purple", onClick }) => {
+  const StatCard = ({ icon: Icon, title, value, trend, trendUp, description, color = "gray", onClick }) => {
     // Simplified color mapping for the new premium theme
     const getColorClasses = (color) => {
       const colors = {
-        // Mapped back to include Purple as a distinct primary color
-        purple: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        // Monochrome color scheme
+        gray: { text: 'text-white', icon: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
         green: { text: 'text-emerald-400', icon: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
         red: { text: 'text-rose-400', icon: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-        blue: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-        indigo: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-        cyan: { text: 'text-purple-400', icon: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-        pink: { text: 'text-pink-400', icon: 'text-pink-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        blue: { text: 'text-white', icon: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
+        indigo: { text: 'text-white', icon: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
+        cyan: { text: 'text-white', icon: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
+        pink: { text: 'text-white', icon: 'text-white', bg: 'bg-white/10', border: 'border-white/20' },
         orange: { text: 'text-amber-400', icon: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' }
       };
-      return colors[color] || colors.purple;
+      return colors[color] || colors.gray;
     };
     
     const colorClasses = getColorClasses(color);
@@ -341,7 +341,7 @@ const DashboardPage = () => {
       if (status?.includes('completed')) return 'text-green-400';
       if (status?.includes('pending') || status?.includes('interest')) return 'text-yellow-400';
       if (status?.includes('declined') || status?.includes('withdrawn')) return 'text-red-400';
-      return 'text-purple-400';
+      return 'text-white';
     };
 
     return (
@@ -356,8 +356,8 @@ const DashboardPage = () => {
         }}
       >
         <div className={`p-2 rounded-lg ${
-            activity.type === 'purchase' || activity.type === 'sale' ? 'bg-purple-500/10 text-purple-400' :
-            activity.type === 'interest' ? 'bg-purple-500/10 text-purple-400' :
+            activity.type === 'purchase' || activity.type === 'sale' ? 'bg-white/10 text-white' :
+            activity.type === 'interest' ? 'bg-white/10 text-white' :
             'bg-gray-800 text-gray-400'
         }`}>
           {getActivityIcon(activity.type)}
@@ -373,7 +373,7 @@ const DashboardPage = () => {
               <span className={`text-xs px-2 py-0.5 rounded-full border ${
                 getStatusColor(activity.status) === 'text-green-400' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                 getStatusColor(activity.status) === 'text-yellow-400' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                'bg-white/10 border-white/20 text-white'
               }`}>
                 {activity.status.replace('_', ' ')}
               </span>
@@ -410,7 +410,7 @@ const DashboardPage = () => {
             </div>
             <motion.button
               onClick={() => navigate('/create')}
-              className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-500/20 border border-purple-500/20"
+              className="flex items-center space-x-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 shadow-lg shadow-white/20 border border-white/20"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -427,7 +427,7 @@ const DashboardPage = () => {
             title="Total Projects"
             value={stats.totalProjects}
             description="Active projects in your portfolio"
-            color="purple"
+            color="gray"
             onClick={() => navigate('/my-projects')}
             trend={stats.totalProjects > 0 ? '+' + stats.totalProjects : '0'}
             trendUp={true}
@@ -472,7 +472,7 @@ const DashboardPage = () => {
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.textViews || stats.totalViews}</div>
                 <div className="text-sm text-gray-400">Total Views</div>
               </div>
-              <Eye className="w-8 h-8 text-purple-500/50" />
+              <Eye className="w-8 h-8 text-gray-300/50" />
             </div>
           </div>
           <div className="glass-card p-4 rounded-xl">
@@ -490,7 +490,7 @@ const DashboardPage = () => {
                 <div className="text-2xl font-bold text-white tracking-tight">{stats.interestReceived}</div>
                 <div className="text-sm text-gray-400">Interests Received</div>
               </div>
-              <Users className="w-8 h-8 text-purple-500/50" />
+              <Users className="w-8 h-8 text-gray-300/50" />
             </div>
           </div>
           <div className="glass-card p-4 rounded-xl">
@@ -511,7 +511,7 @@ const DashboardPage = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/my-projects')}
-              className="text-purple-400 border-purple-400 hover:bg-purple-400 hover:text-white"
+              className="text-white border-white/40 hover:bg-gray-400 hover:text-white"
             >
               View All Projects
             </Button>
@@ -535,7 +535,7 @@ const DashboardPage = () => {
                     </div>
                     <div className={`px-2 py-1 rounded text-xs font-medium ${
                       project.status === 'launched' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      project.status === 'mvp' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                      project.status === 'mvp' ? 'bg-white/10 text-white border border-white/20' :
                       'bg-gray-500/10 text-gray-400 border border-gray-500/20'
                     }`}>
                       {project.status}
@@ -577,7 +577,7 @@ const DashboardPage = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/notifications')}
-              className="text-purple-400 border-purple-400 hover:bg-purple-400 hover:text-white"
+              className="text-white border-white hover:bg-white hover:text-black"
             >
               View All Notifications
             </Button>
@@ -598,7 +598,7 @@ const DashboardPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className={`w-2 h-2 rounded-full ${
-                          activity.status === 'unread' ? 'bg-purple-400' : 'bg-gray-600'
+                          activity.status === 'unread' ? 'bg-white' : 'bg-gray-600'
                         }`} />
                         <h4 className="font-medium text-white">{activity.title}</h4>
                       </div>

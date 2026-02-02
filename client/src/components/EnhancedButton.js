@@ -14,14 +14,14 @@ const EnhancedButton = ({
   className = '',
   ...props 
 }) => {
-  // Button variants
+  // Button variants - brutalist monochrome
   const variants = {
-    primary: 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-transparent',
+    primary: 'bg-white hover:bg-gray-200 text-black border-2 border-white',
     secondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 hover:border-gray-500',
-    outline: 'bg-transparent hover:bg-purple-600/10 text-purple-400 border border-purple-500/50 hover:border-purple-400',
-    ghost: 'bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white border-transparent',
-    danger: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-transparent',
-    success: 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white border-transparent'
+    outline: 'bg-transparent hover:bg-white/10 text-white border-2 border-white/50 hover:border-white',
+    ghost: 'bg-transparent hover:bg-white/5 text-gray-300 hover:text-white border-transparent',
+    danger: 'bg-white hover:bg-gray-200 text-black border-2 border-white',
+    success: 'bg-white hover:bg-gray-200 text-black border-2 border-white'
   };
 
   // Button sizes
@@ -34,9 +34,9 @@ const EnhancedButton = ({
 
   const baseClasses = `
     relative inline-flex items-center justify-center
-    font-medium rounded-lg
+    font-bold uppercase tracking-wider rounded-none
     transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-gray-900
+    focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black
     disabled:opacity-50 disabled:cursor-not-allowed
     ${variants[variant]}
     ${sizes[size]}

@@ -26,116 +26,84 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="relative bg-black/95 border-t border-gray-800/30">
-      {/* Main footer content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <footer className="bg-black border-t border-white/10">
+      <div className="max-w-6xl mx-auto px-6 py-16">
         
-        {/* Top section - inspired by antfood.com layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           
           {/* Brand section */}
-          <div className="lg:col-span-5">
+          <div>
             <div className="flex items-center gap-3 mb-6">
-              <Logo size={40} />
-              <span className="text-white font-bold text-xl tracking-tight">SideBuilds</span>
+              <Logo size={32} />
+              <span className="text-white font-bold text-lg uppercase tracking-tight">SideBuilds</span>
             </div>
-            <p className="text-gray-300 text-lg leading-relaxed mb-8 max-w-md">
-              The creative marketplace where side projects find their perfect match. Building the future, one project at a time.
+            <p className="text-gray-500 text-sm leading-relaxed font-mono">
+              Marketplace for side projects.<br/>No fluff. Just code.
             </p>
-            
-            {/* Contact info - antfood.com style */}
-            {/*<div className="space-y-3">
-              <div className="flex items-center gap-3 text-gray-400">
-                <FiMail className="w-4 h-4" />
-                <span className="text-sm">hello@sidebuilds.space</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-400">
-                <FiMapPin className="w-4 h-4" />
-                <span className="text-sm">San Francisco, CA</span>
-              </div>
-            </div>*/}
           </div>
 
           {/* Navigation sections */}
-          <div className="lg:col-span-4">
-            <div className="grid grid-cols-2 gap-8">
-              {Object.entries(footerSections).map(([category, links]) => (
-                <div key={category}>
-                  <h4 className="text-white font-medium text-sm uppercase tracking-wider mb-6">
-                    {category}
-                  </h4>
-                  <ul className="space-y-4">
-                    {links.map((link) => (
-                      <li key={link.label}>
-                        <Link
-                          to={link.to}
-                          className="text-gray-400 hover:text-white transition-colors duration-300 text-sm block"
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-8">
+            {Object.entries(footerSections).map(([category, links]) => (
+              <div key={category}>
+                <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-4">
+                  {category}
+                </h4>
+                <ul className="space-y-2">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        to={link.to}
+                        className="text-gray-500 hover:text-white transition-colors text-sm font-mono block"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          {/* Social & Status section */}
-          <div className="lg:col-span-3">
-            <h4 className="text-white font-medium text-sm uppercase tracking-wider mb-6">
+          {/* Social section */}
+          <div>
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-4">
               Connect
             </h4>
             
-            {/* Social links */}
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-2">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 border border-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-600 hover:bg-white/5 transition-all duration-300"
+                  className="w-10 h-10 border border-white/20 flex items-center justify-center text-gray-400 hover:text-white hover:border-white hover:bg-white/5 transition-all"
                   aria-label={social.label}
                 >
                   <social.icon className="w-4 h-4" />
                 </a>
               ))}
             </div>
-
-            {/* Status indicator */}
-            <div className="flex items-center gap-3 px-4 py-2 bg-gray-900/50 border border-gray-700/50 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-400 text-xs font-medium">All systems operational</span>
-            </div>
           </div>
         </div>
 
-        {/* Bottom section - selemen.liqium.com inspired */}
-        <div className="border-t border-gray-800/50 pt-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Bottom section */}
+        <div className="border-t border-white/10 pt-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             
-            {/* Copyright */}
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <div className="flex items-center gap-2 text-gray-600 text-xs font-mono">
               <span>© 2024 SideBuilds</span>
-              <span className="w-1 h-1 bg-gray-600 rounded-full" />
-              <span className="flex items-center gap-1">
-                Made with <Heart className="w-3 h-3 text-red-500" /> by makers
-              </span>
+              <span>/</span>
+              <span>v2.0.0</span>
             </div>
 
-            {/* Version & time */}
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span>v2.0.0</span>
-              <span className="w-1 h-1 bg-gray-600 rounded-full" />
-              <span>{new Date().getFullYear()}</span>
+            <div className="text-gray-600 text-xs font-mono">
+              Built by makers
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Subtle bottom accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-blue-600/30 to-transparent" />
     </footer>
   );
 };

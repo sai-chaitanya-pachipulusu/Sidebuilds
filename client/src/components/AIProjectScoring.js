@@ -298,12 +298,12 @@ const AIProjectScoring = ({ project, className }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-purple-600/10 to-blue-600/10 border border-purple-500/20 rounded-2xl p-6"
+        className="bg-white/5 border border-white/20 p-6"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-600/20 rounded-lg">
-              <Brain className="w-5 h-5 text-purple-400" />
+            <div className="p-2 bg-white/10">
+              <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-semibold text-white">AI Project Score</h3>
@@ -312,8 +312,8 @@ const AIProjectScoring = ({ project, className }) => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-xs text-purple-300 bg-purple-600/20 px-2 py-1 rounded-full">
+            <Sparkles className="w-4 h-4 text-white" />
+            <span className="text-xs text-white bg-white/10 px-2 py-1">
               AI Powered
             </span>
           </div>
@@ -331,7 +331,7 @@ const AIProjectScoring = ({ project, className }) => {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="w-12 h-12 border-3 border-purple-600 border-t-transparent rounded-full mb-4"
+                className="w-12 h-12 border-3 border-white border-t-transparent mb-4"
               />
               <p className="text-white font-medium mb-2">AI Analysis in Progress...</p>
               <p className="text-gray-400 text-sm text-center">

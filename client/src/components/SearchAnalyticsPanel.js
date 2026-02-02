@@ -127,7 +127,7 @@ const SearchAnalyticsPanel = ({
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/30 transition-colors duration-200"
       >
         <div className="flex items-center gap-3">
-          <BarChart3 className="w-5 h-5 text-purple-400" />
+          <BarChart3 className="w-5 h-5 text-white" />
           <span className="font-medium text-gray-200">Search Analytics</span>
           {performanceMetrics && (
             <div className="flex items-center gap-2">
@@ -190,7 +190,7 @@ const SearchAnalyticsPanel = ({
                   
                   <div className="text-center p-3 bg-gray-800/30 rounded-lg">
                     <div className="flex items-center justify-center gap-1 mb-1">
-                      <Target className="w-4 h-4 text-purple-400" />
+                      <Target className="w-4 h-4 text-white" />
                       <span className="text-lg font-bold text-white">
                         {filteredResults.length}
                       </span>
@@ -200,7 +200,7 @@ const SearchAnalyticsPanel = ({
                   
                   <div className="text-center p-3 bg-gray-800/30 rounded-lg">
                     <div className="flex items-center justify-center gap-1 mb-1">
-                      <Brain className="w-4 h-4 text-pink-400" />
+                      <Brain className="w-4 h-4 text-gray-300" />
                       <span className="text-lg font-bold text-white">
                         {searchMetrics?.semanticMatches || 0}
                       </span>
@@ -290,7 +290,7 @@ const SearchAnalyticsPanel = ({
                         className="px-3 py-1.5 bg-gray-800/50 rounded-full flex items-center gap-2"
                       >
                         <span className="text-sm text-gray-300">{term}</span>
-                        <span className="text-xs text-purple-400 font-medium">×{count}</span>
+                        <span className="text-xs text-white font-medium">×{count}</span>
                       </div>
                     ))}
                   </div>
@@ -340,7 +340,7 @@ const SearchAnalyticsPanel = ({
                                 <div className="flex items-center gap-2">
                                   <div className="w-16 h-1 bg-gray-800 rounded-full overflow-hidden">
                                     <div 
-                                      className="h-full bg-purple-400 rounded-full"
+                                      className="h-full bg-gray-400 rounded-full"
                                       style={{ width: `${percentage}%` }}
                                     />
                                   </div>
@@ -375,7 +375,7 @@ const SearchAnalyticsPanel = ({
 
               {loading && (
                 <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/40"></div>
                 </div>
               )}
             </div>

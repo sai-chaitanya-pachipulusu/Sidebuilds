@@ -43,13 +43,13 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
 
   const getStageColor = (stage) => {
     const colors = {
-      idea: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      planning: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      mvp: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-      development: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      launched: 'bg-green-500/20 text-green-300 border-green-500/30',
-      scaling: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-      mature: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+      idea: 'bg-white/10 text-gray-400 border-white/20',
+      planning: 'bg-white/10 text-gray-400 border-white/20',
+      mvp: 'bg-white/10 text-white border-white/30',
+      development: 'bg-white/10 text-gray-400 border-white/20',
+      launched: 'bg-white/10 text-white border-white/30',
+      scaling: 'bg-white/10 text-white border-white/30',
+      mature: 'bg-white/10 text-white border-white/30'
     };
     return colors[stage] || colors.idea;
   };
@@ -93,7 +93,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
       {/* Header with thumbnail and quick actions */}
       <div className="relative">
         {project.thumbnail_url ? (
-          <div className="project-image h-48 bg-gradient-to-br from-purple-900/20 to-blue-900/20 relative overflow-hidden">
+          <div className="project-image h-48 bg-white/5 relative overflow-hidden">
             <img 
               src={project.thumbnail_url} 
               alt={project.name}
@@ -103,7 +103,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
         ) : (
-          <div className="project-image h-48 bg-gradient-to-br from-purple-900/20 to-blue-900/20 flex items-center justify-center relative">
+          <div className="project-image h-48 bg-white/5 flex items-center justify-center relative">
             <Code className="w-16 h-16 text-gray-400" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
@@ -223,7 +223,7 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
         {/* Action buttons */}
         <div className="flex gap-2 pt-2">
           <Button
-            className="button-mobile flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
+            className="button-mobile flex-1 bg-white text-black font-bold uppercase hover:bg-gray-200 border-0"
             onClick={handleInterest}
           >
             <span>Show Interest</span>

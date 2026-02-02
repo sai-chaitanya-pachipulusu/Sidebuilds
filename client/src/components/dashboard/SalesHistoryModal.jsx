@@ -164,7 +164,7 @@ const SalesHistoryModal = ({ isOpen, onClose, userId }) => {
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-600 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center">
                             <Package className="w-5 h-5 text-white" />
                           </div>
                           <div>
@@ -177,7 +177,7 @@ const SalesHistoryModal = ({ isOpen, onClose, userId }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-green-400">{formatPrice(sale.amount)}</p>
-                          <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mt-1">
+                          <Badge className="bg-white/10 text-white border-white/20 mt-1">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             {sale.status}
                           </Badge>
@@ -194,8 +194,8 @@ const SalesHistoryModal = ({ isOpen, onClose, userId }) => {
                           <Badge
                             className={
                               sale.transfer_status === 'completed'
-                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                ? 'bg-white/10 text-white border-white/20'
+                                : 'bg-white/10 text-white border-white/20'
                             }
                           >
                             {sale.transfer_status}
@@ -204,10 +204,10 @@ const SalesHistoryModal = ({ isOpen, onClose, userId }) => {
                       </div>
 
                       <div className="flex justify-end space-x-2 mt-4">
-                        <Button size="sm" variant="outline" className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10">
+                        <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
                           View Details
                         </Button>
-                        <Button size="sm" variant="outline" className="border-purple-500/20 text-purple-400 hover:bg-purple-500/10">
+                        <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
                           Download Receipt
                         </Button>
                       </div>

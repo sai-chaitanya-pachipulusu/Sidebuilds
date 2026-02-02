@@ -107,7 +107,7 @@ const PortfolioValueModal = ({ isOpen, onClose, stats, projects }) => {
                         className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/[0.05]"
                       >
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center">
                             <Package className="w-6 h-6 text-white" />
                           </div>
                           <div>

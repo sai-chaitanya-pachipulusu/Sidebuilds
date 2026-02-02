@@ -93,13 +93,13 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
   // Enhanced categories with better organization
   const categories = [
     { id: 'all', name: 'All Categories', icon: Globe, count: 0, color: 'text-gray-400' },
-    { id: 'saas', name: 'SaaS & Web Apps', icon: Zap, count: 0, color: 'text-purple-400' },
-    { id: 'ecommerce', name: 'E-commerce', icon: Briefcase, count: 0, color: 'text-green-400' },
-    { id: 'mobile', name: 'Mobile Apps', icon: Smartphone, count: 0, color: 'text-blue-400' },
-    { id: 'ai', name: 'AI & ML', icon: Brain, count: 0, color: 'text-pink-400' },
-    { id: 'tools', name: 'Developer Tools', icon: Code, count: 0, color: 'text-cyan-400' },
+    { id: 'saas', name: 'SaaS & Web Apps', icon: Zap, count: 0, color: 'text-gray-300' },
+    { id: 'ecommerce', name: 'E-commerce', icon: Briefcase, count: 0, color: 'text-gray-300' },
+    { id: 'mobile', name: 'Mobile Apps', icon: Smartphone, count: 0, color: 'text-gray-300' },
+    { id: 'ai', name: 'AI & ML', icon: Brain, count: 0, color: 'text-gray-300' },
+    { id: 'tools', name: 'Developer Tools', icon: Code, count: 0, color: 'text-gray-300' },
     { id: 'games', name: 'Games', icon: Target, count: 0, color: 'text-orange-400' },
-    { id: 'content', name: 'Content & Media', icon: Monitor, count: 0, color: 'text-yellow-400' }
+    { id: 'content', name: 'Content & Media', icon: Monitor, count: 0, color: 'text-gray-300' }
   ]
 
   // Enhanced tech stacks with categories
@@ -113,14 +113,14 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
     { id: 'django', name: 'Django', color: 'bg-green-700', category: 'backend' },
     { id: 'fastapi', name: 'FastAPI', color: 'bg-green-600', category: 'backend' },
     { id: 'rails', name: 'Ruby on Rails', color: 'bg-red-600', category: 'backend' },
-    { id: 'php', name: 'PHP', color: 'bg-purple-600', category: 'backend' },
+    { id: 'php', name: 'PHP', color: 'bg-gray-600', category: 'backend' },
     { id: 'laravel', name: 'Laravel', color: 'bg-red-500', category: 'backend' },
     { id: 'nextjs', name: 'Next.js', color: 'bg-gray-800', category: 'fullstack' },
     { id: 'nuxtjs', name: 'Nuxt.js', color: 'bg-green-600', category: 'fullstack' },
     { id: 'flutter', name: 'Flutter', color: 'bg-blue-400', category: 'mobile' },
     { id: 'reactnative', name: 'React Native', color: 'bg-blue-600', category: 'mobile' },
     { id: 'swift', name: 'Swift', color: 'bg-orange-500', category: 'mobile' },
-    { id: 'kotlin', name: 'Kotlin', color: 'bg-purple-500', category: 'mobile' },
+    { id: 'kotlin', name: 'Kotlin', color: 'bg-gray-500', category: 'mobile' },
     { id: 'mongodb', name: 'MongoDB', color: 'bg-green-500', category: 'database' },
     { id: 'postgresql', name: 'PostgreSQL', color: 'bg-blue-600', category: 'database' },
     { id: 'mysql', name: 'MySQL', color: 'bg-blue-500', category: 'database' },
@@ -523,7 +523,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           {isSearching && (
-            <Loader2 className="absolute left-12 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400 animate-spin" />
+            <Loader2 className="absolute left-12 top-1/2 -translate-y-1/2 w-4 h-4 text-white animate-spin" />
           )}
           <input
             ref={searchInputRef}
@@ -544,7 +544,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 }
               }, 150)
             }}
-            className="w-full pl-12 pr-20 py-4 bg-gray-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors duration-200 text-lg"
+            className="w-full pl-12 pr-20 py-4 bg-gray-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors duration-200 text-lg"
           />
           
           {/* Search Actions */}
@@ -566,7 +566,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
               className={cn(
                 "p-2 rounded-lg transition-colors duration-200",
                 showAdvancedFilters
-                  ? "bg-purple-600/20 text-purple-400"
+                  ? "bg-white/20 text-white"
                   : "hover:bg-gray-700 text-gray-400"
               )}
             >
@@ -595,7 +595,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors duration-200",
                       selectedSuggestionIndex === index
-                        ? "bg-purple-600/20 border border-purple-500/30"
+                        ? "bg-white/20 border border-white/50/30"
                         : "hover:bg-white/5"
                     )}
                     initial={{ opacity: 0, x: -10 }}
@@ -604,7 +604,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                   >
                     <Icon className={cn(
                       "w-4 h-4",
-                      suggestion.type === 'category' && 'text-purple-400',
+                      suggestion.type === 'category' && 'text-white',
                       suggestion.type === 'tech' && 'text-blue-400',
                       suggestion.type === 'project' && 'text-green-400',
                       suggestion.type === 'history' && 'text-gray-500'
@@ -618,7 +618,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                       </div>
                     </div>
                     {suggestion.score && (
-                      <div className="text-xs text-purple-400 font-medium">
+                      <div className="text-xs text-white font-medium">
                         {Math.round(suggestion.score * 100)}% match
                       </div>
                     )}
@@ -641,7 +641,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors duration-200",
                 filters.category === category.id
-                  ? "bg-purple-600/20 text-purple-300 border border-purple-500/30"
+                  ? "bg-white/10 text-white border border-white/20"
                   : "bg-gray-900/30 text-gray-400 hover:text-white hover:bg-gray-800/50"
               )}
             >
@@ -738,7 +738,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                               className={cn(
                                 "px-3 py-1 rounded-full text-xs transition-all duration-200 border",
                                 filters.techStack.includes(tech.id)
-                                  ? "bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-600/25"
+                                  ? "bg-white text-black border-white shadow-lg shadow-white/25"
                                   : "bg-gray-800/50 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white hover:border-gray-600"
                               )}
                             >
@@ -787,7 +787,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                           ...prev, 
                           priceRange: [parseInt(e.target.value), prev.priceRange[1]] 
                         }))}
-                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gray-600"
                       />
                     </div>
                     <div className="flex-1">
@@ -802,7 +802,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                           ...prev, 
                           priceRange: [prev.priceRange[0], parseInt(e.target.value)] 
                         }))}
-                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-gray-600"
                       />
                     </div>
                   </div>
@@ -820,7 +820,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                         className={cn(
                           "px-2 py-1 rounded text-xs transition-colors duration-200",
                           filters.priceRange[0] === range[0] && filters.priceRange[1] === range[1]
-                            ? "bg-purple-600 text-white"
+                            ? "bg-white text-white"
                             : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
                         )}
                       >
@@ -847,7 +847,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 )}
                 {debouncedSearchTerm && (
                   <div className="flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-400" />
+                    <Brain className="w-4 h-4 text-white" />
                     AI-enhanced search
                   </div>
                 )}
@@ -866,7 +866,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 </button>
                 <button
                   onClick={saveCurrentSearch}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-300 hover:bg-purple-600/30 transition-colors duration-200"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-lg text-gray-300 hover:bg-white/30 transition-colors duration-200"
                 >
                   <Bookmark className="w-4 h-4" />
                   <span>Save Search</span>
@@ -893,7 +893,7 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <BookmarkCheck className="w-4 h-4 text-purple-400" />
+                <BookmarkCheck className="w-4 h-4 text-white" />
                 <div className="text-left">
                   <div className="text-sm text-white font-medium">{search.name}</div>
                   <div className="text-xs text-gray-500">

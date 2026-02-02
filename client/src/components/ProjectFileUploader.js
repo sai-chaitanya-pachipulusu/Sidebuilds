@@ -76,7 +76,7 @@ const ProjectFileUploader = ({
     const type = (file.type || file.file_type || '').toLowerCase()
     if (type.startsWith('image/')) return 'text-green-400 bg-green-400/10 border-green-400/20'
     if (type.includes('pdf')) return 'text-red-400 bg-red-400/10 border-red-400/20'
-    if (type.includes('text/') || type.includes('json') || type.includes('javascript') || type.includes('code')) return 'text-purple-400 bg-purple-400/10 border-purple-400/20'
+    if (type.includes('text/') || type.includes('json') || type.includes('javascript') || type.includes('code')) return 'text-white bg-gray-400/10 border-white/40/20'
     if (type.includes('zip') || type.includes('archive')) return 'text-orange-400 bg-orange-400/10 border-orange-400/20'
     return 'text-gray-400 bg-gray-400/10 border-gray-400/20'
   }
@@ -312,7 +312,7 @@ const ProjectFileUploader = ({
         className={cn(
           "relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
           dragActive
-            ? "border-purple-500 bg-purple-500/10"
+            ? "border-white bg-white/10"
             : "border-gray-600 hover:border-gray-500 bg-gray-900/30"
         )}
         onDragEnter={handleDrag}
@@ -333,11 +333,11 @@ const ProjectFileUploader = ({
         <div className="space-y-4">
           <div className={cn(
             "w-16 h-16 mx-auto rounded-full flex items-center justify-center transition-colors duration-200",
-            dragActive ? "bg-purple-500/20" : "bg-gray-800"
+            dragActive ? "bg-white/20" : "bg-gray-800"
           )}>
             <Upload className={cn(
               "w-8 h-8 transition-colors duration-200",
-              dragActive ? "text-purple-400" : "text-gray-400"
+              dragActive ? "text-white" : "text-gray-400"
             )} />
           </div>
 
@@ -445,7 +445,7 @@ const ProjectFileUploader = ({
                           </div>
                           <div className="w-full bg-gray-800 rounded-full h-1.5">
                             <div 
-                              className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+                              className="bg-white h-1.5 rounded-full transition-all duration-300"
                               style={{ width: `${file.progress}%` }}
                             />
                           </div>
@@ -472,7 +472,7 @@ const ProjectFileUploader = ({
                       )}
 
                       {file.status === 'uploading' && (
-                        <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
                       )}
 
                       {file.status === 'uploaded' && (
@@ -505,7 +505,7 @@ const ProjectFileUploader = ({
               <Button
                 onClick={uploadFiles}
                 disabled={uploading}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-white hover:bg-white-700"
               >
                 {uploading ? (
                   <>

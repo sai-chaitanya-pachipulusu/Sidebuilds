@@ -266,17 +266,17 @@ const RealTimeNotifications = ({ className }) => {
   }
 
   const getNotificationColor = (type, priority) => {
-    if (priority === 'high') return 'text-red-400 bg-red-400/10'
+    if (priority === 'high') return 'text-white bg-white/10'
     
     const colors = {
-      interest: 'text-pink-400 bg-pink-400/10',
-      sale: 'text-green-400 bg-green-400/10',
-      message: 'text-blue-400 bg-blue-400/10',
-      view: 'text-purple-400 bg-purple-400/10',
-      market_update: 'text-yellow-400 bg-yellow-400/10',
-      feature: 'text-orange-400 bg-orange-400/10'
+      interest: 'text-gray-300 bg-white/10',
+      sale: 'text-white bg-white/10',
+      message: 'text-gray-300 bg-white/10',
+      view: 'text-gray-400 bg-white/10',
+      market_update: 'text-gray-300 bg-white/10',
+      feature: 'text-gray-300 bg-white/10'
     }
-    return colors[type] || 'text-gray-400 bg-gray-400/10'
+    return colors[type] || 'text-gray-400 bg-white/10'
   }
 
   const addNotification = useCallback((notification) => {
@@ -495,7 +495,7 @@ const RealTimeNotifications = ({ className }) => {
                     placeholder="Search notifications..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-gray-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400 text-sm focus:border-purple-500 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-black border border-white/20 text-white placeholder-gray-500 text-sm focus:border-white focus:outline-none"
                   />
                 </div>
 
@@ -510,7 +510,7 @@ const RealTimeNotifications = ({ className }) => {
                           className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors duration-200 whitespace-nowrap",
                             filter === option.id
-                              ? "bg-purple-600/20 text-purple-300"
+                              ? "bg-white/10 text-white"
                               : "text-gray-400 hover:text-white hover:bg-white/5"
                           )}
                         >

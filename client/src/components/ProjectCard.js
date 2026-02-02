@@ -53,11 +53,11 @@ const formatNumber = (num) => {
 const getStageColor = (stage) => {
   const stageColors = {
     'idea': 'bg-gray-600',
-    'planning': 'bg-blue-600',
-    'mvp': 'bg-purple-600',
-    'development': 'bg-orange-600',
-    'launched': 'bg-green-600',
-    'on_hold': 'bg-red-600'
+    'planning': 'bg-gray-500',
+    'mvp': 'bg-white',
+    'development': 'bg-gray-400',
+    'launched': 'bg-white',
+    'on_hold': 'bg-gray-700'
   };
   return stageColors[stage?.toLowerCase()] || 'bg-gray-600';
 };
@@ -162,37 +162,32 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
-  // Enhanced status mappings with modern styling
+  // Status mappings - brutalist monochrome
   const statusConfig = {
-    idea: { 
-      label: 'Concept', 
-      color: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
-      gradient: 'from-gray-400 to-gray-600',
-      icon: Zap 
+    idea: {
+      label: 'Concept',
+      color: 'bg-white/5 text-gray-400 border-white/10',
+      icon: Zap
     },
-    development: { 
-      label: 'Building', 
-      color: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-      gradient: 'from-blue-400 to-blue-600',
-      icon: Code 
+    development: {
+      label: 'Building',
+      color: 'bg-white/5 text-gray-400 border-white/10',
+      icon: Code
     },
-    mvp: { 
-      label: 'MVP', 
-      color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-      gradient: 'from-purple-400 to-purple-600',
-      icon: Activity 
+    mvp: {
+      label: 'MVP',
+      color: 'bg-white/10 text-white border-white/20',
+      icon: Activity
     },
-    launched: { 
-      label: 'Live', 
-      color: 'bg-green-500/10 text-green-400 border-green-500/30',
-      gradient: 'from-green-400 to-green-600',
-      icon: Globe 
+    launched: {
+      label: 'Live',
+      color: 'bg-white/10 text-white border-white/20',
+      icon: Globe
     },
-    mature: { 
-      label: 'Proven', 
-      color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-      gradient: 'from-purple-400 to-blue-500',
-      icon: Award 
+    mature: {
+      label: 'Proven',
+      color: 'bg-white/10 text-white border-white/20',
+      icon: Award
     },
   };
 
@@ -244,10 +239,10 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
             }}
           />
           
-          {/* Gradient border on hover - Linear inspired */}
+          {/* Border on hover */}
           <motion.div
-            className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-purple-600 rounded-2xl opacity-0 blur-sm"
-            animate={{ opacity: isHovered ? 0.5 : 0 }}
+            className="absolute -inset-0.5 bg-white/20 opacity-0"
+            animate={{ opacity: isHovered ? 1 : 0 }}
             transition={{ duration: 0.3 }}
           />
           
@@ -314,14 +309,14 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       setIsBookmarked(!isBookmarked);
                     }}
                     className={`w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${
-                      isBookmarked 
-                        ? 'bg-purple-500/30 border-purple-500/50' 
+                      isBookmarked
+                        ? 'bg-white/20 border-white/40'
                         : 'bg-black/30 border-white/10 hover:bg-white/10'
                     } border`}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-purple-400 fill-purple-400' : 'text-white/70'}`} />
+                    <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-white fill-white' : 'text-white/70'}`} />
                   </motion.button>
                 </div>
               </div>
@@ -331,8 +326,8 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                 <div className="absolute bottom-3 right-3">
                   <div className="relative">
                     <AIScoreRing score={project.ai_score || project.overall_score} size={44} />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                      <Sparkles className="w-2.5 h-2.5 text-white" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white flex items-center justify-center">
+                      <Sparkles className="w-2.5 h-2.5 text-black" />
                     </div>
                   </div>
                 </div>
@@ -350,7 +345,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                   >
                     <Link to={`/projects/${project.project_id}`}>
                       <motion.button
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-500 transition-colors"
+                        className="px-4 py-2 bg-white text-black text-sm font-bold uppercase flex items-center gap-2 hover:bg-gray-200 transition-colors"
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.1 }}

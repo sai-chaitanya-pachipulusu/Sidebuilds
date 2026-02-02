@@ -87,7 +87,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
     sidebuilds: {
       name: 'SideBuilds',
       logo: '🚀',
-      color: 'purple',
+      color: 'gray',
       focus: 'AI-powered side projects ($5K-$100K)',
       strengths: [
         'AI-native architecture',
@@ -232,11 +232,11 @@ const CompetitorAnalysisDashboard = ({ className }) => {
     const colors = {
       blue: type === 'text' ? 'text-blue-400' : 'bg-blue-400/10 border-blue-400/20',
       green: type === 'text' ? 'text-green-400' : 'bg-green-400/10 border-green-400/20',
-      purple: type === 'text' ? 'text-purple-400' : 'bg-purple-400/10 border-purple-400/20',
+      gray: type === 'text' ? 'text-white' : 'bg-white/10 border-white/20',
       red: type === 'text' ? 'text-red-400' : 'bg-red-400/10 border-red-400/20',
       yellow: type === 'text' ? 'text-yellow-400' : 'bg-yellow-400/10 border-yellow-400/20'
     }
-    return colors[color] || colors.purple
+    return colors[color] || colors.gray
   }
 
   const tabs = [
@@ -273,7 +273,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200",
                 activeTab === tab.id
-                  ? "bg-purple-600 text-white"
+                  ? "bg-white text-white"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               )}
             >
@@ -305,7 +305,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     className={cn(
                       "p-6 rounded-2xl border transition-all duration-200 cursor-pointer",
                       key === 'sidebuilds' 
-                        ? "bg-purple-600/10 border-purple-500/30 ring-2 ring-purple-500/20" 
+                        ? "bg-white/10 border-white/30 ring-2 ring-white/20"
                         : "bg-gray-900/50 border-white/10 hover:border-white/20"
                     )}
                     onClick={() => setSelectedCompetitor(key)}
@@ -412,8 +412,8 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                       className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors duration-200"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="p-2 bg-purple-600/20 rounded-lg">
-                          <Icon className="w-5 h-5 text-purple-400" />
+                        <div className="p-2 bg-white/20 rounded-lg">
+                          <Icon className="w-5 h-5 text-white" />
                         </div>
                         
                         <div className="flex-1">
@@ -484,14 +484,14 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                         "p-2 rounded-lg",
                         gap.opportunity === 'Huge' ? "bg-green-600/20" :
                         gap.opportunity === 'Very High' ? "bg-blue-600/20" :
-                        gap.opportunity === 'High' ? "bg-purple-600/20" :
+                        gap.opportunity === 'High' ? "bg-white/20" :
                         "bg-yellow-600/20"
                       )}>
                         <Target className={cn(
                           "w-5 h-5",
                           gap.opportunity === 'Huge' ? "text-green-400" :
                           gap.opportunity === 'Very High' ? "text-blue-400" :
-                          gap.opportunity === 'High' ? "text-purple-400" :
+                          gap.opportunity === 'High' ? "text-white" :
                           "text-yellow-400"
                         )} />
                       </div>
@@ -503,7 +503,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                             "px-2 py-0.5 rounded-full text-xs",
                             gap.opportunity === 'Huge' ? "bg-green-600/20 text-green-400" :
                             gap.opportunity === 'Very High' ? "bg-blue-600/20 text-blue-400" :
-                            gap.opportunity === 'High' ? "bg-purple-600/20 text-purple-400" :
+                            gap.opportunity === 'High' ? "bg-white/20 text-white" :
                             "bg-yellow-600/20 text-yellow-400"
                           )}>
                             {gap.opportunity}
@@ -529,11 +529,11 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               </div>
 
               {/* Market Opportunity Summary */}
-              <div className="bg-gradient-to-br from-purple-600/10 to-blue-600/10 border border-purple-500/20 rounded-2xl p-6">
+              <div className="bg-gradient-to-br from-gray-600/10 to-blue-600/10 border border-white/50/20 rounded-2xl p-6">
                 <h4 className="text-lg font-semibold text-white mb-3">Total Market Opportunity</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-400">$2.3B</div>
+                    <div className="text-2xl font-bold text-white">$2.3B</div>
                     <div className="text-sm text-gray-400">Underserved Market</div>
                   </div>
                   <div className="text-center">
@@ -564,7 +564,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     phase: 'Phase 1: Foundation',
                     timeframe: 'Month 1-3',
                     focus: 'Core platform + AI features',
-                    color: 'purple',
+                    color: 'gray',
                     features: [
                       'AI-powered project scoring',
                       'Mobile-responsive design',
@@ -604,7 +604,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     transition={{ delay: index * 0.2 }}
                     className={cn(
                       "border border-white/10 rounded-2xl p-6",
-                      phase.color === 'purple' ? "bg-purple-600/5" :
+                      phase.color === 'gray' ? "bg-white/5" :
                       phase.color === 'blue' ? "bg-blue-600/5" :
                       "bg-green-600/5"
                     )}
@@ -612,7 +612,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                     <div className="flex items-start gap-4">
                       <div className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold",
-                        phase.color === 'purple' ? "bg-purple-600" :
+                        phase.color === 'gray' ? "bg-white" :
                         phase.color === 'blue' ? "bg-blue-600" :
                         "bg-green-600"
                       )}>
@@ -634,7 +634,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
                             <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
                               <CheckCircle className={cn(
                                 "w-4 h-4",
-                                phase.color === 'purple' ? "text-purple-400" :
+                                phase.color === 'gray' ? "text-white" :
                                 phase.color === 'blue' ? "text-blue-400" :
                                 "text-green-400"
                               )} />

@@ -551,7 +551,7 @@ const PurchasesPage = () => {
               </Button>
             </div>
             <h1 className="text-3xl font-bold text-white flex items-center space-x-2">
-              <ShoppingBag className="w-8 h-8 text-purple-400" />
+              <ShoppingBag className="w-8 h-8 text-white" />
               <span>My Purchases</span>
             </h1>
           </div>
@@ -585,7 +585,7 @@ const PurchasesPage = () => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center space-x-2">
-                <ShoppingBag className="w-8 h-8 text-purple-400" />
+                <ShoppingBag className="w-8 h-8 text-white" />
                 <span>My Purchases</span>
               </h1>
               <p className="text-gray-400 text-lg mt-2">

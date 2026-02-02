@@ -33,7 +33,7 @@ const HowItWorksPage = () => {
       icon: MessageCircle,
       title: 'Request to Purchase',
       description: 'Express interest in a project. The seller will review your request and may accept or decline.',
-      color: 'purple',
+      color: 'gray',
     },
     {
       number: 3,
@@ -71,14 +71,14 @@ const HowItWorksPage = () => {
       icon: UserCheck,
       title: 'Review Requests',
       description: 'Receive purchase requests from interested buyers. Review and accept or decline based on your criteria.',
-      color: 'pink',
+      color: 'gray',
     },
     {
       number: 3,
       icon: TrendingUp,
       title: 'Get Paid',
       description: 'Once buyer completes payment, funds are processed through Stripe (minus 5% platform fee).',
-      color: 'cyan',
+      color: 'gray',
     },
     {
       number: 4,
@@ -113,36 +113,36 @@ const HowItWorksPage = () => {
       icon: Users,
       title: 'Trust System',
       description: 'Build reputation with reviews and ratings from successful transactions.',
-      color: 'text-purple-400',
+      color: 'text-white',
     },
   ];
 
   const getStepColor = (color) => {
     const colors = {
-      blue: 'from-blue-600 to-blue-800',
-      purple: 'from-purple-600 to-purple-800',
+      blue: 'from-gray-600 to-gray-800',
+      gray: 'from-gray-600 to-gray-800',
       green: 'from-green-600 to-green-800',
       orange: 'from-orange-600 to-orange-800',
       emerald: 'from-emerald-600 to-emerald-800',
-      teal: 'from-teal-600 to-teal-800',
-      pink: 'from-pink-600 to-pink-800',
-      cyan: 'from-cyan-600 to-cyan-800',
-      yellow: 'from-yellow-600 to-yellow-800',
+      teal: 'from-gray-600 to-gray-800',
+      gray: 'from-gray-600 to-gray-800',
+      gray: 'from-gray-600 to-gray-800',
+      yellow: 'from-gray-600 to-gray-800',
     };
     return colors[color] || 'from-gray-600 to-gray-800';
   };
 
   const getNumberColor = (color) => {
     const colors = {
-      blue: 'text-blue-400',
-      purple: 'text-purple-400',
-      green: 'text-green-400',
+      blue: 'text-white',
+      gray: 'text-white',
+      green: 'text-white',
       orange: 'text-orange-400',
       emerald: 'text-emerald-400',
-      teal: 'text-teal-400',
-      pink: 'text-pink-400',
-      cyan: 'text-cyan-400',
-      yellow: 'text-yellow-400',
+      teal: 'text-white',
+      gray: 'text-white',
+      gray: 'text-gray-300',
+      yellow: 'text-white',
     };
     return colors[color] || 'text-gray-400';
   };
@@ -156,21 +156,21 @@ const HowItWorksPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-cyan-600/10 to-purple-600/10 border-b border-white/[0.08]">
+        <div className="bg-gradient-to-br from-blue-600/10 via-gray-600/10 to-gray-600/10 border-b border-white/[0.08]">
           <div className="max-w-7xl mx-auto px-4 py-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
-                <Star className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">How It Works</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+                <Star className="w-4 h-4 text-white" />
+                <span className="text-sm text-gray-300">How It Works</span>
               </div>
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 How{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
                   SideBuilds Works
                 </span>
               </h1>
@@ -247,7 +247,7 @@ const HowItWorksPage = () => {
               >
                 <Link
                   to="/marketplace"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-blue-500/25"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200 shadow-lg shadow-blue-500/25"
                 >
                   Browse Projects
                   <ArrowRight className="w-5 h-5" />
@@ -361,7 +361,7 @@ const HowItWorksPage = () => {
                       <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${feature.color} bg-current/10`}>
                         <Icon className={`w-8 h-8 ${feature.color}`} />
                       </div>
-                      <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-cyan-300 transition-colors duration-200">
+                      <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-gray-300 transition-colors duration-200">
                         {feature.title}
                       </h3>
                       <p className="text-gray-400 leading-relaxed">
@@ -379,7 +379,7 @@ const HowItWorksPage = () => {
                   viewport={{ once: true }}
                   className="bg-gray-900 rounded-3xl border border-white/10 p-12 overflow-hidden relative"
               >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full filter blur-3xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10/10 rounded-full filter blur-3xl pointer-events-none" />
                   
                   <div className="grid md:grid-cols-2 gap-16 items-center">
                     <div>
@@ -423,15 +423,15 @@ const HowItWorksPage = () => {
                         <div className="relative z-10 bg-black/50 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                        <UserCheck className="w-5 h-5 text-purple-400" />
+                                    <div className="w-10 h-10 rounded-full bg-white/10/20 flex items-center justify-center">
+                                        <UserCheck className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
                                         <div className="h-2 w-20 bg-gray-700 rounded mb-1" />
                                         <div className="h-2 w-12 bg-gray-800 rounded" />
                                     </div>
                                 </div>
-                                <div className="h-px flex-1 bg-gradient-to-r from-purple-500/50 to-blue-500/50 mx-4 relative">
+                                <div className="h-px flex-1 bg-gradient-to-r from-white/50/50 to-blue-500/50 mx-4 relative">
                                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black border border-green-500 rounded-full flex items-center justify-center z-10">
                                         <Shield className="w-4 h-4 text-green-500" />
                                     </div>
@@ -451,7 +451,7 @@ const HowItWorksPage = () => {
                                 <span className="text-green-400 font-medium">Escrow Secured: $5,000.00</span>
                             </div>
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 filter blur-2xl transform scale-110 -z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/50/10 to-blue-500/10 filter blur-2xl transform scale-110 -z-10" />
                     </div>
                   </div>
               </motion.div>
@@ -529,9 +529,9 @@ const HowItWorksPage = () => {
               className="mt-20"
             >
               <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-6">
-                  <DollarSign className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-purple-300">Secure Payments</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10/10 border border-white/50/20 rounded-full mb-6">
+                  <DollarSign className="w-4 h-4 text-white" />
+                  <span className="text-sm text-gray-300">Secure Payments</span>
                 </div>
                 <h2 className="text-3xl font-bold text-white mb-4">
                   How Payments Work
@@ -573,10 +573,10 @@ const HowItWorksPage = () => {
                 </div>
 
                 {/* For Sellers */}
-                <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/10 border border-purple-500/20 rounded-2xl p-8">
+                <div className="bg-gradient-to-br from-gray-900/30 to-gray-800/10 border border-white/50/20 rounded-2xl p-8">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-purple-500/20 rounded-xl">
-                      <DollarSign className="w-6 h-6 text-purple-400" />
+                    <div className="p-3 bg-white/10/20 rounded-xl">
+                      <DollarSign className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-2xl font-bold text-white">For Sellers</h3>
                   </div>
@@ -612,7 +612,7 @@ const HowItWorksPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
+              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-2xl p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Ready to Get Started?
@@ -627,7 +627,7 @@ const HowItWorksPage = () => {
                 >
                   <Link
                     to="/register"
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-xl font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                   >
                     Create Account
                   </Link>

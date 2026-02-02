@@ -365,12 +365,12 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group"
+      className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 hover:border-white/30 transition-all duration-300 cursor-pointer group"
     >
       {/* Project Image & Tags */}
       <div className="relative mb-4">
         <div className="w-full h-32 bg-gray-800 rounded-lg overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-white/10 to-gray-600/20 flex items-center justify-center">
             <div className="text-gray-500">Project Preview</div>
           </div>
         </div>
@@ -386,7 +386,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
         )}
         
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-1.5 bg-black/60 rounded-full backdrop-blur-sm text-white hover:bg-purple-600/60">
+          <button className="p-1.5 bg-black/60 rounded-full backdrop-blur-sm text-white hover:bg-white/20">
             <Bookmark className="w-4 h-4" />
           </button>
         </div>
@@ -395,7 +395,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
       {/* Project Info */}
       <div className="space-y-3">
         <div>
-          <h3 className="font-semibold text-white mb-1 group-hover:text-purple-300 transition-colors">
+          <h3 className="font-semibold text-white mb-1 group-hover:text-gray-300 transition-colors">
             {project.title}
           </h3>
           <p className="text-sm text-gray-400 line-clamp-2">
@@ -428,7 +428,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
         {/* AI Reasons (for personalized recs) */}
         {project.reasons && (
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-purple-400">
+            <div className="flex items-center gap-2 text-xs text-white">
               <Brain className="w-3 h-3" />
               <span>AI Insights</span>
             </div>
@@ -460,7 +460,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
         )}
 
         {/* Action Button */}
-        <button className="w-full mt-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+        <button className="w-full mt-4 py-2 bg-white hover:bg-gray-200 text-black rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
           <Eye className="w-4 h-4" />
           View Details
         </button>
@@ -473,8 +473,8 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-600/20 rounded-lg">
-            <Brain className="w-6 h-6 text-purple-400" />
+          <div className="p-2 bg-white/10 rounded-lg">
+          <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Smart Recommendations</h2>
@@ -529,11 +529,11 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-purple-600/10 border border-purple-500/20 rounded-xl p-4"
+            className="bg-white/5 border border-white/10 rounded-xl p-4"
           >
             <div className="text-sm font-medium text-white mb-2">Market Size</div>
-            <div className="text-2xl font-bold text-purple-400">{insights.marketSize}</div>
-            <div className="text-xs text-purple-300">Active buyers</div>
+            <div className="text-2xl font-bold text-white">{insights.marketSize}</div>
+            <div className="text-xs text-gray-400">Active buyers</div>
           </motion.div>
         </div>
       )}
@@ -549,7 +549,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
                 activeTab === tab.id
-                  ? "bg-purple-600 text-white"
+                  ? "bg-white text-black"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               )}
             >
@@ -583,7 +583,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-3 border-purple-600 border-t-transparent rounded-full mb-4"
+              className="w-12 h-12 border-3 border-white/60 border-t-transparent rounded-full mb-4"
             />
             <h3 className="text-lg font-semibold text-white mb-2">AI Analysis in Progress</h3>
             <p className="text-gray-400 text-center max-w-md">

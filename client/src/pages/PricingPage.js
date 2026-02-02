@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, ArrowRight, Star, Rocket, Crown } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -37,7 +37,7 @@ const PricingPage = () => {
         'Buyer verification badge'
       ],
       icon: Star,
-      color: 'purple',
+      color: 'gray',
       popular: true
     },
     {
@@ -75,7 +75,7 @@ const PricingPage = () => {
       
       <div className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-cyan-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-gray-900/20" />
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 pt-24 pb-12">
           {/* Header */}
@@ -132,7 +132,7 @@ const PricingPage = () => {
                 key={plan.name}
                 className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-2xl p-8 ${
                   plan.popular 
-                    ? 'border-purple-500 shadow-purple-500/25 shadow-2xl' 
+                    ? 'border-white shadow-white/25 shadow-2xl'
                     : 'border-gray-700'
                 }`}
                 initial={{ opacity: 0, y: 40 }}
@@ -141,14 +141,14 @@ const PricingPage = () => {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                    <span className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium">
                       Most Popular
                     </span>
                   </div>
                 )}
 
                 <div className="text-center mb-8">
-                  <plan.icon className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+                  <plan.icon className="w-12 h-12 mx-auto mb-4 text-white" />
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <p className="text-gray-400 mb-4">{plan.description}</p>
                   
@@ -163,7 +163,7 @@ const PricingPage = () => {
                   
                   <button className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     plan.popular 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      ? 'bg-white hover:bg-gray-200 text-black'
                       : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
                   }`}>
                     Get Started

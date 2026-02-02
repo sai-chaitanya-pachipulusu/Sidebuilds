@@ -1,23 +1,18 @@
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-// Dynamic helper function to get stage color based on real-time project status
-const getStageColor = (stage, projectMetrics) => {
-  // Dynamic color assignment based on project performance
-  if (projectMetrics?.revenue > 1000) return 'green'; // High revenue = green
-  if (projectMetrics?.views > 500) return 'blue'; // High engagement = blue
-  if (projectMetrics?.growth > 20) return 'purple'; // High growth = purple
-  
+// Helper function to get stage color - monochrome
+const getStageColor = (stage) => {
   const stageColors = {
     'idea': 'gray',
-    'planning': 'blue',
-    'mvp': 'purple',
-    'development': 'orange',
-    'launched': 'green',
-    'on_hold': 'red',
-    'scaling': 'emerald',
-    'profitable': 'green',
-    'viral': 'purple'
+    'planning': 'gray',
+    'mvp': 'white',
+    'development': 'gray',
+    'launched': 'white',
+    'on_hold': 'gray',
+    'scaling': 'white',
+    'profitable': 'white',
+    'viral': 'white'
   };
   return stageColors[stage?.toLowerCase()] || 'gray';
 };
@@ -37,7 +32,7 @@ const ProjectTable = ({ projects, loading, error }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
         <span className="ml-2 text-gray-300">Loading projects...</span>
       </div>
     );
@@ -105,14 +100,10 @@ const ProjectTable = ({ projects, loading, error }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    project.stage === 'launched' 
-                      ? 'bg-green-900/50 text-green-200 border border-green-500/30'
-                      : project.stage === 'development'
-                      ? 'bg-orange-900/50 text-orange-200 border border-orange-500/30'
-                      : project.stage === 'mvp'
-                      ? 'bg-purple-900/50 text-purple-200 border border-purple-500/30'
-                      : 'bg-gray-900/50 text-gray-200 border border-gray-500/30'
+                  <span className={`inline-flex px-2 py-1 text-xs font-bold uppercase ${
+                    project.stage === 'launched' || project.stage === 'mvp' || project.stage === 'scaling'
+                      ? 'bg-white text-black'
+                      : 'bg-white/10 text-gray-300 border border-white/20'
                   }`}>
                     {project.stage || 'Unknown'}
                   </span>
@@ -129,9 +120,9 @@ const ProjectTable = ({ projects, loading, error }) => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <RouterLink
                     to={`/projects/${project.project_id}`}
-                    className="text-purple-400 hover:text-purple-300 transition-colors"
+                    className="text-white hover:text-gray-300 transition-colors font-mono"
                   >
-                    View Details
+                    View →
                   </RouterLink>
                 </td>
               </tr>

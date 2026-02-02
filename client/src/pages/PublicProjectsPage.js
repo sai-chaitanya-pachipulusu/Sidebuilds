@@ -24,7 +24,7 @@ const getStageColor = (stage) => {
     const stageColors = {
         'idea': { label: 'Idea', color: 'bg-gray-500/10 text-gray-400 border-gray-500/30' },
         'planning': { label: 'Planning', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-        'mvp': { label: 'MVP', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
+        'mvp': { label: 'MVP', color: 'bg-white/10/10 text-white border-white/50/30' },
         'development': { label: 'Development', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
         'launched': { label: 'Launched', color: 'bg-green-500/10 text-green-400 border-green-500/30' },
         'on_hold': { label: 'On Hold', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
@@ -137,7 +137,7 @@ const PublicProjectsPage = () => {
                                     </div>
                                 </div>
                                 <CardHeader>
-                                    <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">{project.name}</h3>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-white transition-colors">{project.name}</h3>
                                     <p className="text-sm text-gray-400">by {project.owner_username || 'Anonymous'}</p>
                                 </CardHeader>
                                 <CardContent className="flex-grow flex flex-col">

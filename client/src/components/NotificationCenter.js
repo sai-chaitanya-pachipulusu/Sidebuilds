@@ -54,15 +54,15 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
     const colorMap = {
       payment: 'green',
       purchase: 'blue',
-      offer: 'purple',
+      offer: 'gray',
       view: 'gray',
-      message: 'purple',
-      system: 'cyan',
+      message: 'gray',
+      system: 'gray',
       achievement: 'yellow',
       security: 'red',
       revenue: 'emerald',
       milestone: 'orange',
-      promotion: 'pink',
+      promotion: 'gray',
       success: 'green',
       warning: 'yellow',
       error: 'red',
@@ -129,15 +129,15 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
-        className={`p-4 border border-white/[0.08] rounded-xl transition-all duration-200 group relative ${
-          notification.read 
-            ? 'bg-gray-900/30' 
-            : 'bg-gray-800/50 border-purple-500/20'
+        className={`p-4 border border-white/[0.08] transition-all duration-200 group relative ${
+          notification.read
+            ? 'bg-black/30'
+            : 'bg-white/5 border-white/20'
         } hover:border-white/[0.12]`}
       >
         {/* Unread indicator */}
         {!notification.read && (
-          <div className="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full"></div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-white"></div>
         )}
 
         <div className="flex items-start gap-3">
@@ -212,7 +212,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
             {notification.actionUrl && (
               <motion.a
                 href={notification.actionUrl}
-                className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 rounded-lg text-xs font-medium transition-colors duration-200"
+                className="inline-flex items-center gap-1 mt-3 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs font-bold uppercase transition-colors duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -277,7 +277,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllAsRead}
-                        className="text-xs text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                        className="text-xs text-white hover:text-gray-300 transition-colors duration-200"
                       >
                         Mark all read
                       </button>
@@ -302,10 +302,10 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
                     <button
                       key={filterOption.id}
                       onClick={() => setFilter(filterOption.id)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200 ${
+                      className={`px-3 py-1 text-xs font-bold uppercase transition-colors duration-200 ${
                         filter === filterOption.id
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                          ? 'bg-white text-black'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       {filterOption.name}

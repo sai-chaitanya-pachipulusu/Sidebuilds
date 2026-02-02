@@ -27,17 +27,17 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
       title: "Welcome to SideBuilds",
       description: "The operating system for modern makers. Let us show you around in 60 seconds.",
       icon: Sparkles,
-      gradient: "from-purple-500 to-pink-500",
+      gradient: "from-white to-gray-300",
       animation: (
-        <motion.div 
+        <motion.div
           className="w-32 h-32 relative"
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-20 blur-xl" />
-          <div className="absolute inset-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-40" />
-          <div className="absolute inset-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="absolute inset-0 bg-white opacity-10 blur-xl" />
+          <div className="absolute inset-4 bg-white opacity-20" />
+          <div className="absolute inset-8 bg-white flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-black" />
           </div>
         </motion.div>
       )
@@ -47,7 +47,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
       title: "Browse the Marketplace",
       description: "Discover verified side projects, SaaS apps, and digital products. Filter by revenue, tech stack, and price to find your perfect match.",
       icon: Search,
-      gradient: "from-blue-500 to-cyan-500",
+      gradient: "from-blue-500 to-white/50",
       features: [
         "AI-powered search",
         "Revenue verification",
@@ -83,7 +83,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
       title: "You're All Set!",
       description: "Start exploring the marketplace or list your first project. Join thousands of makers building their dreams.",
       icon: CheckCircle,
-      gradient: "from-purple-500 to-pink-500",
+      gradient: "from-white to-gray-300",
       cta: true
     }
   ];
@@ -231,7 +231,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         onClose();
                         window.location.href = '/marketplace';
                       }}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-opacity"
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-white/50 to-gray-500 text-white font-semibold hover:opacity-90 transition-opacity"
                     >
                       Explore Marketplace
                     </button>

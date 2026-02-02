@@ -243,15 +243,15 @@ function ProfileSettingsPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm mb-6"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10/10 border border-white/50/20 backdrop-blur-sm mb-6"
               >
-                <Settings className="w-4 h-4 text-purple-400" />
-                <span className="text-sm text-purple-300">Account Settings</span>
+                <Settings className="w-4 h-4 text-white" />
+                <span className="text-sm text-gray-300">Account Settings</span>
               </motion.div>
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Profile &{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
                   Settings
                 </span>
               </h1>
@@ -434,7 +434,7 @@ function ProfileSettingsPage() {
                       <motion.button
                         type="submit"
                         disabled={saveLoading}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -460,7 +460,7 @@ function ProfileSettingsPage() {
                     
                     {isStripeLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-purple-500 mr-3" />
+                        <Loader2 className="w-6 h-6 animate-spin text-gray-300 mr-3" />
                         <span className="text-gray-400">Loading Stripe status...</span>
                       </div>
                     ) : (
@@ -526,7 +526,7 @@ function ProfileSettingsPage() {
                               className={`w-full px-6 py-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 stripeStatus.isOnboardingComplete
                                   ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
-                                  : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
+                                  : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
                               }`}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
@@ -567,7 +567,7 @@ function ProfileSettingsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 bg-gray-800/30 rounded-xl">
                           <div className="flex items-center gap-3 mb-2">
-                            <Shield className="w-5 h-5 text-purple-400" />
+                            <Shield className="w-5 h-5 text-white" />
                             <h4 className="text-white font-medium">Two-Factor Auth</h4>
                           </div>
                           <p className="text-gray-400 text-sm">Add an extra layer of security to your account.</p>

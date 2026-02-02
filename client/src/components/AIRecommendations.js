@@ -183,7 +183,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
     switch (type) {
       case 'project_match': return 'text-green-400 bg-green-400/10'
       case 'pricing_optimization': return 'text-blue-400 bg-blue-400/10'
-      case 'market_trend': return 'text-purple-400 bg-purple-400/10'
+      case 'market_trend': return 'text-white bg-white/10'
       case 'buyer_intent': return 'text-orange-400 bg-orange-400/10'
       default: return 'text-gray-400 bg-gray-400/10'
     }
@@ -207,8 +207,8 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-600/20 rounded-xl">
-            <Sparkles className="w-6 h-6 text-purple-400" />
+          <div className="p-2 bg-white/10 rounded-xl">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-semibold text-white">AI Assistant</h2>
@@ -220,7 +220,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
           onClick={generateRecommendations}
           disabled={loading}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-300 hover:bg-purple-600/30 transition-colors duration-200",
+            "flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/50/30 rounded-lg text-gray-300 hover:bg-white/30 transition-colors duration-200",
             loading && "animate-pulse"
           )}
         >
@@ -240,7 +240,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
               className={cn(
                 "flex items-center gap-2 px-4 py-3 border-b-2 transition-colors duration-200",
                 activeTab === tab.id
-                  ? "border-purple-500 text-purple-300"
+                  ? "border-white/50 text-gray-300"
                   : "border-transparent text-gray-400 hover:text-white"
               )}
             >
@@ -266,8 +266,8 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
             exit={{ opacity: 0 }}
             className="text-center py-12"
           >
-            <div className="w-16 h-16 mx-auto mb-4 bg-purple-600/20 rounded-full flex items-center justify-center">
-              <Brain className="w-8 h-8 text-purple-400 animate-pulse" />
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center">
+              <Brain className="w-8 h-8 text-white animate-pulse" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2">AI is thinking...</h3>
             <p className="text-gray-400">Analyzing your projects and market data</p>
@@ -329,7 +329,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
                                 <span>Match: {rec.project.matchScore}%</span>
                               </div>
                             </div>
-                            <button className="p-2 bg-purple-600/20 rounded-lg text-purple-400 hover:bg-purple-600/30">
+                            <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30">
                               <Eye className="w-4 h-4" />
                             </button>
                           </div>
@@ -351,7 +351,7 @@ const AIRecommendations = ({ userProjects, userInterests, marketplaceProjects })
 
                       {/* Actions */}
                       <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white text-white rounded-lg hover:bg-white-700 transition-colors duration-200">
                           <span>Take Action</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>

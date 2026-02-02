@@ -56,8 +56,8 @@ const StatsSection = ({ stats }) => {
               transition={{ delay: index * 0.1 }}
             >
               <div className="flex justify-center mb-4">
-                <div className="p-3 bg-purple-500/10 rounded-xl">
-                  <item.icon className="w-8 h-8 text-purple-400" />
+                <div className="p-3 bg-white/10 rounded-xl">
+                  <item.icon className="w-8 h-8 text-white" />
                 </div>
               </div>
               <h3 className="text-4xl font-bold text-white mb-2">

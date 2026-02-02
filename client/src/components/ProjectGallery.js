@@ -167,9 +167,9 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
               key={index}
               onClick={() => setSelectedIndex(index)}
               className={cn(
-                "relative flex-shrink-0 w-20 h-12 rounded-lg overflow-hidden border-2 transition-all duration-200",
-                index === selectedIndex 
-                  ? "border-purple-500 scale-105" 
+                "relative flex-shrink-0 w-20 h-12 overflow-hidden border-2 transition-all duration-200",
+                index === selectedIndex
+                  ? "border-white scale-105"
                   : "border-white/20 hover:border-white/40"
               )}
             >
@@ -204,9 +204,9 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
                 key={device.id}
                 onClick={() => setViewMode(device.id)}
                 className={cn(
-                  "p-2 rounded-md transition-colors duration-200",
-                  viewMode === device.id 
-                    ? "bg-purple-600 text-white" 
+                  "p-2 transition-colors duration-200",
+                  viewMode === device.id
+                    ? "bg-white text-black"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
                 title={device.name}
