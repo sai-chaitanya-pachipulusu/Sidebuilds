@@ -297,17 +297,17 @@ const MarketplacePageEnhanced = () => {
     }).format(price);
   };
 
-  // Professional muted color palette for project stages
-  const getStageColor = (stage) => {
+  // Professional muted color palette for project stages - returns full class names
+  const getStageColorClasses = (stage) => {
     const stageColors = {
-      'idea': 'slate',
-      'planning': 'indigo',
-      'mvp': 'amber',
-      'development': 'teal',
-      'launched': 'emerald',
-      'on_hold': 'stone'
+      'idea': 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+      'planning': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+      'mvp': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      'development': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+      'launched': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      'on_hold': 'bg-stone-500/10 text-stone-400 border-stone-500/20'
     };
-    return stageColors[stage?.toLowerCase()] || 'slate';
+    return stageColors[stage?.toLowerCase()] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   };
 
   const handleShowInterest = async (projectId) => {
@@ -457,7 +457,7 @@ const MarketplacePageEnhanced = () => {
 
           {/* Stage and Status */}
           <div className="flex items-center justify-between">
-            <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${getStageColor(project.stage)}-500/10 text-${getStageColor(project.stage)}-400 border border-${getStageColor(project.stage)}-500/20`}>
+            <div className={`px-3 py-1 rounded-none text-xs font-medium ${getStageColorClasses(project.stage)}`}>
               {project.stage}
             </div>
             <div className="flex items-center space-x-1 text-xs text-gray-500">

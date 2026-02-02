@@ -72,14 +72,14 @@ const DashboardPage = () => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [salesModalOpen, setSalesModalOpen] = useState(false);
 
-  // Use real-time dashboard sync and actually CONSUME the data
+  // Use real-time dashboard sync with optimized settings
   const { 
     data: syncData, 
     loading: syncLoading
   } = useDashboardSync({
-    refreshInterval: 60000, 
-    enableRealTime: true,
-    cacheData: false // Force fresh fetch on mount issues
+    refreshInterval: 120000, // Increased to 2 minutes to reduce polling
+    enableRealTime: false, // Disabled to improve performance
+    cacheData: true // Enable caching for faster loads
   });
 
   // Update effect for syncData
@@ -107,24 +107,39 @@ const DashboardPage = () => {
     }
   };
 
-  // Initial Fetch Effect - Acts as immediate fallback while sync hook initializes
+  // Initial Fetch Effect - Optimized for faster loading
   useEffect(() => {
     console.log('Dashboard useEffect triggered, user:', user);
+    
+    // Set a maximum loading time to prevent infinite loading
+    const maxLoadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('[Dashboard] Max loading timeout reached, forcing loading state to false');
+        setLoading(false);
+      }
+    }, 5000); // 5 second max loading time
+    
     const fetchDashboardData = async () => {
       if (!user) {
         console.log('No user found, returning early');
+        setLoading(false);
         return;
       }
       
       try {
         console.log('Starting dashboard initial fetch...');
 
-        // Fetch comprehensive dashboard data
+        // Fetch comprehensive dashboard data with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
         const dashboardResponse = await fetch('/api/dashboard', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          },
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!dashboardResponse.ok) {
           throw new Error('Failed to fetch dashboard data');
@@ -139,72 +154,71 @@ const DashboardPage = () => {
         setRecentProjects(dashboardData.recentProjects || []);
         setLoading(false);
         
-        // Show a brief debug toast in development
-        if (process.env.NODE_ENV !== 'production') {
-          const toast = require('react-hot-toast').default;
-          // toast.success(`Dashboard data synced: ${s.totalProjects || 0} projects found.`, { id: 'dashboard-debug' });
-        }
-        
-        // Also fetch additional data for notifications and detailed project info
-        try {
-          const [
-            projectsData,
-            sellerRequestsData,
-            buyerRequestsData,
-            notificationsData
-          ] = await Promise.all([
-            getProjects().catch(e => { console.error('getProjects failed', e); return []; }),
-            getSellerPurchaseRequests().catch(e => { console.error('getSellerPurchaseRequests failed', e); return []; }),
-            getBuyerPurchaseRequests().catch(e => { console.error('getBuyerPurchaseRequests failed', e); return []; }),
-            getNotifications().catch(e => { console.error('getNotifications failed', e); return []; })
-          ]);
-
-
-          console.log('[Dashboard] Additional data fetched:', {
-            projectsCount: projectsData?.length,
-            sellerReqCount: sellerRequestsData?.length,
-            buyerReqCount: buyerRequestsData?.length
-          });
-
-          // Keep the additional data for modals and detailed views
-          setProjects(projectsData || []);
-          setNotifications(notificationsData || []);
-          
-          // Create activity feed from requests
-          const sellerActivities = (sellerRequestsData || []).slice(0, 3).map(req => ({
-            type: 'interest',
-            message: `New interest received for "${req.project_name || 'Project'}"`,
-            time: req.created_at,
-            status: req.status
-          }));
-  
-          const buyerActivities = (buyerRequestsData || []).slice(0, 2).map(req => ({
-            type: 'purchase',
-            message: `Purchase request for "${req.project_name || 'Project'}"`,
-            time: req.created_at,
-            status: req.status
-          }));
-  
-          const activities = [...sellerActivities, ...buyerActivities]
-            .sort((a, b) => new Date(b.time) - new Date(a.time))
-            .slice(0, 5);
-  
-          if (activities.length > 0) {
-            setRecentActivity(activities);
-          }
-        } catch (dataErr) {
-          console.error('Error fetching supplementary dashboard data:', dataErr);
-        }
+        // Fetch additional data in background (non-blocking)
+        fetchAdditionalData();
 
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
-        // Do NOT set loading(false) on error. 
-        // Let the loading screen persist so the user doesn't see empty 0 values.
-        // The useDashboardSync hook will retry and eventually populate the data.
+        // Set loading to false on error to prevent infinite loading
+        setLoading(false);
+      }
+    };
+    
+    // Fetch additional data separately to not block main dashboard render
+    const fetchAdditionalData = async () => {
+      try {
+        const [
+          projectsData,
+          sellerRequestsData,
+          buyerRequestsData,
+          notificationsData
+        ] = await Promise.all([
+          getProjects().catch(e => { console.error('getProjects failed', e); return []; }),
+          getSellerPurchaseRequests().catch(e => { console.error('getSellerPurchaseRequests failed', e); return []; }),
+          getBuyerPurchaseRequests().catch(e => { console.error('getBuyerPurchaseRequests failed', e); return []; }),
+          getNotifications().catch(e => { console.error('getNotifications failed', e); return []; })
+        ]);
+
+        console.log('[Dashboard] Additional data fetched:', {
+          projectsCount: projectsData?.length,
+          sellerReqCount: sellerRequestsData?.length,
+          buyerReqCount: buyerRequestsData?.length
+        });
+
+        // Keep the additional data for modals and detailed views
+        setProjects(projectsData || []);
+        setNotifications(notificationsData || []);
+        
+        // Create activity feed from requests
+        const sellerActivities = (sellerRequestsData || []).slice(0, 3).map(req => ({
+          type: 'interest',
+          message: `New interest received for "${req.project_name || 'Project'}"`,
+          time: req.created_at,
+          status: req.status
+        }));
+
+        const buyerActivities = (buyerRequestsData || []).slice(0, 2).map(req => ({
+          type: 'purchase',
+          message: `Purchase request for "${req.project_name || 'Project'}"`,
+          time: req.created_at,
+          status: req.status
+        }));
+
+        const activities = [...sellerActivities, ...buyerActivities]
+          .sort((a, b) => new Date(b.time) - new Date(a.time))
+          .slice(0, 5);
+
+        if (activities.length > 0) {
+          setRecentActivity(activities);
+        }
+      } catch (dataErr) {
+        console.error('Error fetching supplementary dashboard data:', dataErr);
       }
     };
     
     fetchDashboardData();
+    
+    return () => clearTimeout(maxLoadingTimeout);
   }, [user]);
 
   const formatPrice = (price) =>

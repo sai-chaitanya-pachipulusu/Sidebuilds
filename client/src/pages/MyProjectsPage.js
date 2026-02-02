@@ -57,17 +57,17 @@ const MyProjectsPage = () => {
     fetchProjects();
   }, [user]);
 
-  // Professional muted color palette for project stages
-  const getStageColor = (stage) => {
+  // Professional muted color palette for project stages - returns full class names
+  const getStageColorClasses = (stage) => {
     const stageColors = {
-      'idea': 'slate',
-      'planning': 'indigo',
-      'mvp': 'amber',
-      'development': 'teal',
-      'launched': 'emerald',
-      'on_hold': 'stone'
+      'idea': 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+      'planning': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+      'mvp': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      'development': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+      'launched': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      'on_hold': 'bg-stone-500/10 text-stone-400 border-stone-500/20'
     };
-    return stageColors[stage?.toLowerCase()] || 'slate';
+    return stageColors[stage?.toLowerCase()] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   };
 
   const filteredProjects = projects.filter(project => {
@@ -102,7 +102,6 @@ const MyProjectsPage = () => {
   };
 
   const ProjectCard = ({ project }) => {
-    const stageColor = getStageColor(project.stage);
     
     return (
       <motion.div
@@ -133,7 +132,7 @@ const MyProjectsPage = () => {
                 {project.description}
               </p>
             </div>
-            <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 ml-3`}>
+            <div className={`px-3 py-1 rounded-none text-xs font-medium ${getStageColorClasses(project.stage)} ml-3`}>
               {project.stage}
             </div>
           </div>
@@ -215,7 +214,6 @@ const MyProjectsPage = () => {
   };
 
   const ProjectListItem = ({ project }) => {
-    const stageColor = getStageColor(project.stage);
     
     return (
       <motion.div
@@ -240,7 +238,7 @@ const MyProjectsPage = () => {
                 {project.name}
               </h3>
               <div className="flex items-center gap-2">
-                <div className={`px-3 py-1 rounded-none text-xs font-medium bg-${stageColor}-500/10 text-${stageColor}-400 border border-${stageColor}-500/20 flex-shrink-0`}>
+                <div className={`px-3 py-1 rounded-none text-xs font-medium ${getStageColorClasses(project.stage)} flex-shrink-0`}>
                   {project.stage}
                 </div>
                 {project.is_on_hold === 1 && (

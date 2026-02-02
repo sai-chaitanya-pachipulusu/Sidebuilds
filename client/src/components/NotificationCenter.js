@@ -50,25 +50,25 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
     return iconMap[type] || Bell;
   };
 
-  const getNotificationColor = (type) => {
+  const getNotificationColorClasses = (type) => {
     const colorMap = {
-      payment: 'green',
-      purchase: 'blue',
-      offer: 'gray',
-      view: 'gray',
-      message: 'gray',
-      system: 'gray',
-      achievement: 'yellow',
-      security: 'red',
-      revenue: 'emerald',
-      milestone: 'orange',
-      promotion: 'gray',
-      success: 'green',
-      warning: 'yellow',
-      error: 'red',
-      info: 'blue'
+      payment: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      purchase: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+      offer: 'bg-gray-500/10 border-gray-500/20 text-gray-400',
+      view: 'bg-gray-500/10 border-gray-500/20 text-gray-400',
+      message: 'bg-gray-500/10 border-gray-500/20 text-gray-400',
+      system: 'bg-gray-500/10 border-gray-500/20 text-gray-400',
+      achievement: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+      security: 'bg-red-500/10 border-red-500/20 text-red-400',
+      revenue: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      milestone: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
+      promotion: 'bg-gray-500/10 border-gray-500/20 text-gray-400',
+      success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+      warning: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+      error: 'bg-red-500/10 border-red-500/20 text-red-400',
+      info: 'bg-blue-500/10 border-blue-500/20 text-blue-400'
     };
-    return colorMap[type] || 'gray';
+    return colorMap[type] || 'bg-gray-500/10 border-gray-500/20 text-gray-400';
   };
 
   const filteredNotifications = notifications
@@ -122,7 +122,7 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
 
   const NotificationItem = ({ notification }) => {
     const IconComponent = getNotificationIcon(notification.type);
-    const color = getNotificationColor(notification.type);
+    const colorClasses = getNotificationColorClasses(notification.type);
 
     return (
       <motion.div
@@ -142,8 +142,8 @@ const NotificationCenter = ({ notifications = [], onMarkAsRead, onMarkAllAsRead,
 
         <div className="flex items-start gap-3">
           {/* Icon */}
-          <div className={`p-2 bg-${color}-500/10 border border-${color}-500/20 rounded-none flex-shrink-0`}>
-            <IconComponent className={`w-4 h-4 text-${color}-400`} />
+          <div className={`p-2 ${colorClasses} rounded-none flex-shrink-0`}>
+            <IconComponent className="w-4 h-4" />
           </div>
 
           {/* Content */}
