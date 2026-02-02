@@ -27,34 +27,39 @@ const HowItWorksPage = () => {
       title: 'Browse Projects',
       description: 'Explore our marketplace of verified side projects. Filter by tech stack, revenue, and price.',
       color: 'blue',
+      bgColor: 'bg-slate-600',
     },
     {
       number: 2,
       icon: MessageCircle,
       title: 'Request to Purchase',
       description: 'Express interest in a project. The seller will review your request and may accept or decline.',
-      color: 'gray',
+      color: 'indigo',
+      bgColor: 'bg-slate-700',
     },
     {
       number: 3,
       icon: DollarSign,
       title: 'Secure Payment',
       description: 'Once accepted, complete payment through Stripe. Your funds are held securely until transfer is complete.',
-      color: 'green',
+      color: 'olive',
+      bgColor: 'bg-olive-600',
     },
     {
       number: 4,
       icon: Package,
       title: 'Receive Assets',
       description: 'Get all project assets including code, domains, and documentation through our secure transfer process.',
-      color: 'orange',
+      color: 'amber',
+      bgColor: 'bg-amber-600',
     },
     {
       number: 5,
       icon: Check,
       title: 'Confirm & Launch',
       description: 'Verify all assets are received, then confirm to complete the purchase. You now own the project!',
-      color: 'emerald',
+      color: 'teal',
+      bgColor: 'bg-teal-600',
     },
   ];
 
@@ -64,35 +69,40 @@ const HowItWorksPage = () => {
       icon: Edit3,
       title: 'List Your Project',
       description: 'Create a detailed listing with tech stack, revenue data, and pricing. Connect Stripe to receive payments.',
-      color: 'teal',
+      color: 'slate',
+      bgColor: 'bg-slate-600',
     },
     {
       number: 2,
       icon: UserCheck,
       title: 'Review Requests',
       description: 'Receive purchase requests from interested buyers. Review and accept or decline based on your criteria.',
-      color: 'gray',
+      color: 'stone',
+      bgColor: 'bg-stone-600',
     },
     {
       number: 3,
       icon: TrendingUp,
       title: 'Get Paid',
       description: 'Once buyer completes payment, funds are processed through Stripe (minus 5% platform fee).',
-      color: 'gray',
+      color: 'warm',
+      bgColor: 'bg-stone-700',
     },
     {
       number: 4,
       icon: Zap,
       title: 'Transfer Assets',
       description: 'Use our transfer page to securely hand over all project assets to the buyer.',
-      color: 'yellow',
+      color: 'coral',
+      bgColor: 'bg-stone-600',
     },
     {
       number: 5,
       icon: CheckCircle,
       title: 'Complete Sale',
       description: 'Once buyer confirms receipt, the sale is complete and you receive your payout.',
-      color: 'green',
+      color: 'sage',
+      bgColor: 'bg-teal-700',
     },
   ];
 
@@ -117,34 +127,37 @@ const HowItWorksPage = () => {
     },
   ];
 
+  // Professional muted color palette for steps
   const getStepColor = (color) => {
     const colors = {
-      blue: 'from-gray-600 to-gray-800',
-      gray: 'from-gray-600 to-gray-800',
-      green: 'from-green-600 to-green-800',
-      orange: 'from-orange-600 to-orange-800',
-      emerald: 'from-emerald-600 to-emerald-800',
-      teal: 'from-gray-600 to-gray-800',
-      gray: 'from-gray-600 to-gray-800',
-      gray: 'from-gray-600 to-gray-800',
-      yellow: 'from-gray-600 to-gray-800',
+      blue: 'from-slate-500 to-slate-700',
+      indigo: 'from-slate-600 to-slate-800',
+      olive: 'from-stone-500 to-stone-700',
+      amber: 'from-amber-600 to-amber-800',
+      teal: 'from-teal-600 to-teal-800',
+      slate: 'from-slate-500 to-slate-700',
+      stone: 'from-stone-600 to-stone-800',
+      warm: 'from-stone-500 to-stone-700',
+      coral: 'from-orange-700 to-orange-900',
+      sage: 'from-teal-700 to-teal-900',
     };
-    return colors[color] || 'from-gray-600 to-gray-800';
+    return colors[color] || 'from-slate-600 to-slate-800';
   };
 
   const getNumberColor = (color) => {
     const colors = {
-      blue: 'text-white',
-      gray: 'text-white',
-      green: 'text-white',
-      orange: 'text-orange-400',
-      emerald: 'text-emerald-400',
-      teal: 'text-white',
-      gray: 'text-white',
-      gray: 'text-gray-300',
-      yellow: 'text-white',
+      blue: 'text-slate-200',
+      indigo: 'text-slate-300',
+      olive: 'text-stone-200',
+      amber: 'text-amber-200',
+      teal: 'text-teal-200',
+      slate: 'text-slate-200',
+      stone: 'text-stone-200',
+      warm: 'text-stone-200',
+      coral: 'text-orange-200',
+      sage: 'text-teal-200',
     };
-    return colors[color] || 'text-gray-400';
+    return colors[color] || 'text-slate-300';
   };
 
   return (

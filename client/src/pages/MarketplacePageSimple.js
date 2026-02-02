@@ -40,6 +40,9 @@ const MarketplacePageSimple = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Projects state
+  const [projects, setProjects] = useState([]);
+  
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');

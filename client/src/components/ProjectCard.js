@@ -50,16 +50,17 @@ const formatNumber = (num) => {
   return num.toString();
 };
 
+// Professional muted color palette for project stages
 const getStageColor = (stage) => {
   const stageColors = {
-    'idea': 'bg-gray-600',
-    'planning': 'bg-gray-500',
-    'mvp': 'bg-white',
-    'development': 'bg-gray-400',
-    'launched': 'bg-white',
-    'on_hold': 'bg-gray-700'
+    'idea': 'bg-slate-600',
+    'planning': 'bg-indigo-600',
+    'mvp': 'bg-amber-600',
+    'development': 'bg-teal-600',
+    'launched': 'bg-emerald-600',
+    'on_hold': 'bg-stone-600'
   };
-  return stageColors[stage?.toLowerCase()] || 'bg-gray-600';
+  return stageColors[stage?.toLowerCase()] || 'bg-slate-600';
 };
 
 // AI Score Ring Component
@@ -162,32 +163,49 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
-  // Status mappings - brutalist monochrome
+  // Status mappings - professional muted color palette
   const statusConfig = {
     idea: {
       label: 'Concept',
-      color: 'bg-white/5 text-gray-400 border-white/10',
+      color: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+      gradient: 'from-slate-900 to-slate-800',
       icon: Zap
+    },
+    planning: {
+      label: 'Planning',
+      color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+      gradient: 'from-indigo-900 to-slate-900',
+      icon: Calendar
     },
     development: {
       label: 'Building',
-      color: 'bg-white/5 text-gray-400 border-white/10',
+      color: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
+      gradient: 'from-teal-900 to-slate-900',
       icon: Code
     },
     mvp: {
       label: 'MVP',
-      color: 'bg-white/10 text-white border-white/20',
+      color: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      gradient: 'from-amber-900 to-slate-900',
       icon: Activity
     },
     launched: {
       label: 'Live',
-      color: 'bg-white/10 text-white border-white/20',
+      color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      gradient: 'from-emerald-900 to-slate-900',
       icon: Globe
     },
     mature: {
       label: 'Proven',
-      color: 'bg-white/10 text-white border-white/20',
+      color: 'bg-emerald-600/15 text-emerald-200 border-emerald-500/30',
+      gradient: 'from-emerald-950 to-slate-900',
       icon: Award
+    },
+    on_hold: {
+      label: 'On Hold',
+      color: 'bg-stone-500/15 text-stone-300 border-stone-500/30',
+      gradient: 'from-stone-900 to-slate-900',
+      icon: Clock
     },
   };
 

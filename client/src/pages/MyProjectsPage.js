@@ -57,16 +57,17 @@ const MyProjectsPage = () => {
     fetchProjects();
   }, [user]);
 
+  // Professional muted color palette for project stages
   const getStageColor = (stage) => {
     const stageColors = {
-      'idea': 'gray',
-      'planning': 'blue',
-      'mvp': 'gray',
-      'development': 'orange',
-      'launched': 'green',
-      'on_hold': 'red'
+      'idea': 'slate',
+      'planning': 'indigo',
+      'mvp': 'amber',
+      'development': 'teal',
+      'launched': 'emerald',
+      'on_hold': 'stone'
     };
-    return stageColors[stage?.toLowerCase()] || 'gray';
+    return stageColors[stage?.toLowerCase()] || 'slate';
   };
 
   const filteredProjects = projects.filter(project => {

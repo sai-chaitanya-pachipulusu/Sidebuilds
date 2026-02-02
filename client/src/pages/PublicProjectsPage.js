@@ -20,14 +20,15 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } }
 };
 
+// Professional muted color palette for project stages
 const getStageColor = (stage) => {
     const stageColors = {
-        'idea': { label: 'Idea', color: 'bg-gray-500/10 text-gray-400 border-gray-500/30' },
-        'planning': { label: 'Planning', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-        'mvp': { label: 'MVP', color: 'bg-white/10/10 text-white border-white/50/30' },
-        'development': { label: 'Development', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
-        'launched': { label: 'Launched', color: 'bg-green-500/10 text-green-400 border-green-500/30' },
-        'on_hold': { label: 'On Hold', color: 'bg-red-500/10 text-red-400 border-red-500/30' }
+        'idea': { label: 'Idea', color: 'bg-slate-500/15 text-slate-300 border-slate-500/30' },
+        'planning': { label: 'Planning', color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30' },
+        'mvp': { label: 'MVP', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+        'development': { label: 'Development', color: 'bg-teal-500/15 text-teal-300 border-teal-500/30' },
+        'launched': { label: 'Launched', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+        'on_hold': { label: 'On Hold', color: 'bg-stone-500/15 text-stone-300 border-stone-500/30' }
     };
     return stageColors[stage?.toLowerCase()] || stageColors.idea;
 };
