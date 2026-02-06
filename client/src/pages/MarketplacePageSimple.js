@@ -8,8 +8,7 @@ import { Button } from '../shadcn/ui/button';
 import { Label } from '../shadcn/ui/label';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../hooks/useDebounce';
-import { useOptimizedSearch } from '../hooks/useOptimizedSearch';
-import { apiCache, CACHE_TTL, CACHE_TAGS } from '../utils/apiCache';
+import { apiCache, CACHE_TTL } from '../utils/apiCache';
 
 // Use the enhanced ProjectCard component - memoized for performance
 const MemoizedProjectCard = memo(({ project }) => {
@@ -61,10 +60,8 @@ const MarketplacePageSimple = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch projects with pagination and caching - FIX: Wrap in useRef to prevent recreation
-  const fetchProjectsRef = useRef();
-  
-  fetchProjectsRef.current = async (page = 1) => {
+  // Fetch projects with pagination and caching - FIXED: stable function reference
+  const fetchProjects = useCallback(async (page = 1) => {
     const cacheKey = `marketplace:page:${page}:sort:${sortBy}`;
     
     try {
@@ -126,30 +123,36 @@ const MarketplacePageSimple = () => {
     } finally {
       setLoading(false);
     }
-  };
-  
-  // Stable callback that calls the ref
-  const fetchProjects = useCallback((page = 1) => {
-    return fetchProjectsRef.current(page);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy]); // Only depend on sortBy, not on loading state
 
-  // Initial fetch - FIX: Remove fetchProjects from dependency array to prevent infinite loop
+  // Initial fetch - FIXED: Only depend on currentPage and sortBy
   useEffect(() => {
     fetchProjects(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]); // Only re-fetch when page changes, not when fetchProjects function reference changes
+  }, [currentPage, sortBy, fetchProjects]);
 
-  // Client-side filtering with optimized search
-  const { filteredItems: filteredProjects, isSearching } = useOptimizedSearch(
-    projects,
-    {},
-    {
-      searchKeys: ['name', 'description', 'tech_stack', 'category'],
-      debounceMs: 150,
-      enableIndexing: true,
-      minSearchLength: 1
+  // Client-side filtering with search - FIXED: useMemo instead of external hook
+  const filteredProjects = useMemo(() => {
+    let results = [...projects];
+    
+    // Apply text search
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 1) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      results = results.filter(project => {
+        const name = project.name?.toLowerCase() || '';
+        const desc = project.description?.toLowerCase() || '';
+        const tech = project.tech_stack?.toLowerCase() || '';
+        const category = project.category?.toLowerCase() || '';
+        
+        return name.includes(searchLower) || 
+               desc.includes(searchLower) || 
+               tech.includes(searchLower) ||
+               category.includes(searchLower);
+      });
     }
-  );
+    
+    return results;
+  }, [projects, debouncedSearchTerm]);
 
   // Apply additional filters
   const fullyFilteredProjects = useMemo(() => {
@@ -295,11 +298,6 @@ const MarketplacePageSimple = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
               />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-none h-4 w-4 border-b-2 border-blue-500"></div>
-                </div>
-              )}
             </div>
             <select
               value={sortBy}
