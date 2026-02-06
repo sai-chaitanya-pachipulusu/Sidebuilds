@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { getMarketplaceProjects } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -61,8 +61,10 @@ const MarketplacePageSimple = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch projects with pagination and caching
-  const fetchProjects = useCallback(async (page = 1) => {
+  // Fetch projects with pagination and caching - FIX: Wrap in useRef to prevent recreation
+  const fetchProjectsRef = useRef();
+  
+  fetchProjectsRef.current = async (page = 1) => {
     const cacheKey = `marketplace:page:${page}:sort:${sortBy}`;
     
     try {
@@ -124,12 +126,18 @@ const MarketplacePageSimple = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortBy]);
+  };
+  
+  // Stable callback that calls the ref
+  const fetchProjects = useCallback((page = 1) => {
+    return fetchProjectsRef.current(page);
+  }, []);
 
-  // Initial fetch
+  // Initial fetch - FIX: Remove fetchProjects from dependency array to prevent infinite loop
   useEffect(() => {
     fetchProjects(currentPage);
-  }, [fetchProjects, currentPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]); // Only re-fetch when page changes, not when fetchProjects function reference changes
 
   // Client-side filtering with optimized search
   const { filteredItems: filteredProjects, isSearching } = useOptimizedSearch(
