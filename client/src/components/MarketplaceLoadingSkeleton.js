@@ -1,9 +1,138 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 
+// Individual project card skeleton
+const ProjectCardSkeleton = memo(() => {
+  return (
+    <motion.div
+      initial={{ opacity: 0.7 }}
+      animate={{ opacity: [0.7, 1, 0.7] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-none p-6 space-y-4"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-6 bg-gray-800 rounded-none w-48 animate-pulse" />
+            <div className="h-4 bg-gray-800 rounded-none w-12 animate-pulse" />
+          </div>
+          <div className="h-4 bg-gray-800 rounded-none w-32 animate-pulse" />
+        </div>
+        <div className="text-right space-y-1">
+          <div className="h-8 bg-gray-800 rounded-none w-20 animate-pulse" />
+          <div className="h-3 bg-gray-800 rounded-none w-16 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-800 rounded-none w-full animate-pulse" />
+        <div className="h-4 bg-gray-800 rounded-none w-3/4 animate-pulse" />
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-none">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="text-center space-y-2">
+            <div className="h-5 bg-gray-800 rounded-none w-16 mx-auto animate-pulse" />
+            <div className="h-3 bg-gray-800 rounded-none w-12 mx-auto animate-pulse" />
+          </div>
+        ))}
+      </div>
+
+      {/* Tech stack */}
+      <div className="flex gap-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-6 bg-gray-800 rounded-none w-16 animate-pulse" />
+        ))}
+      </div>
+
+      {/* Financial info */}
+      <div className="bg-gray-800/20 rounded-none p-3 space-y-2">
+        <div className="flex justify-between">
+          <div className="h-4 bg-gray-800 rounded-none w-20 animate-pulse" />
+          <div className="h-4 bg-gray-800 rounded-none w-24 animate-pulse" />
+        </div>
+        <div className="flex justify-between">
+          <div className="h-4 bg-gray-800 rounded-none w-16 animate-pulse" />
+          <div className="h-4 bg-gray-800 rounded-none w-20 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="space-y-2 pt-4 border-t border-gray-800">
+        <div className="h-10 bg-gray-800 rounded-none w-full animate-pulse" />
+        <div className="flex gap-2">
+          <div className="h-10 bg-gray-800 rounded-none flex-1 animate-pulse" />
+          <div className="h-10 bg-gray-800 rounded-none flex-1 animate-pulse" />
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+// List view skeleton
+const ProjectListSkeleton = memo(() => {
+  return (
+    <motion.div
+      initial={{ opacity: 0.7 }}
+      animate={{ opacity: [0.7, 1, 0.7] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-none p-6"
+    >
+      <div className="flex items-center gap-6">
+        {/* Project info */}
+        <div className="flex-1 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-6 bg-gray-800 rounded-none w-64 animate-pulse" />
+            <div className="h-4 bg-gray-800 rounded-none w-16 animate-pulse" />
+            <div className="h-4 bg-gray-800 rounded-none w-12 animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-800 rounded-none w-full animate-pulse" />
+            <div className="h-4 bg-gray-800 rounded-none w-2/3 animate-pulse" />
+          </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-5 bg-gray-800 rounded-none w-12 animate-pulse" />
+            ))}
+          </div>
+        </div>
+
+        {/* Metrics */}
+        <div className="flex gap-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="text-center space-y-1">
+              <div className="h-5 bg-gray-800 rounded-none w-16 animate-pulse" />
+              <div className="h-3 bg-gray-800 rounded-none w-12 animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Price and actions */}
+        <div className="text-right space-y-3">
+          <div className="space-y-1">
+            <div className="h-8 bg-gray-800 rounded-none w-24 animate-pulse" />
+            <div className="h-3 bg-gray-800 rounded-none w-16 animate-pulse" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 bg-gray-800 rounded-none w-20 animate-pulse" />
+            <div className="h-9 bg-gray-800 rounded-none w-24 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
 // Production-ready skeleton components for marketplace loading states
-const MarketplaceLoadingSkeleton = ({ count = 9, viewMode = 'grid' }) => {
-  const skeletonItems = Array.from({ length: count }, (_, i) => i);
+const MarketplaceLoadingSkeleton = memo(({ count = 9, viewMode = 'grid' }) => {
+  // Memoize skeleton items to prevent re-creation on every render
+  const skeletonItems = useMemo(() => 
+    Array.from({ length: count }, (_, i) => i), 
+    [count]
+  );
 
   // Grid skeleton (default)
   if (viewMode === 'grid') {
@@ -75,135 +204,10 @@ const MarketplaceLoadingSkeleton = ({ count = 9, viewMode = 'grid' }) => {
       ))}
     </div>
   );
-};
-
-// Individual project card skeleton
-const ProjectCardSkeleton = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0.7 }}
-      animate={{ opacity: [0.7, 1, 0.7] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-none p-6 space-y-4"
-    >
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-6 bg-gray-800 rounded-none w-48 animate-pulse" />
-            <div className="h-4 bg-gray-800 rounded-none w-12 animate-pulse" />
-          </div>
-          <div className="h-4 bg-gray-800 rounded-none w-32 animate-pulse" />
-        </div>
-        <div className="text-right space-y-1">
-          <div className="h-8 bg-gray-800 rounded-none w-20 animate-pulse" />
-          <div className="h-3 bg-gray-800 rounded-none w-16 animate-pulse" />
-        </div>
-      </div>
-
-      {/* Description */}
-      <div className="space-y-2">
-        <div className="h-4 bg-gray-800 rounded-none w-full animate-pulse" />
-        <div className="h-4 bg-gray-800 rounded-none w-3/4 animate-pulse" />
-      </div>
-
-      {/* Metrics */}
-      <div className="grid grid-cols-3 gap-3 py-3 bg-gray-800/30 rounded-none">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="text-center space-y-2">
-            <div className="h-5 bg-gray-800 rounded-none w-16 mx-auto animate-pulse" />
-            <div className="h-3 bg-gray-800 rounded-none w-12 mx-auto animate-pulse" />
-          </div>
-        ))}
-      </div>
-
-      {/* Tech stack */}
-      <div className="flex gap-2">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-6 bg-gray-800 rounded-none w-16 animate-pulse" />
-        ))}
-      </div>
-
-      {/* Financial info */}
-      <div className="bg-gray-800/20 rounded-none p-3 space-y-2">
-        <div className="flex justify-between">
-          <div className="h-4 bg-gray-800 rounded-none w-20 animate-pulse" />
-          <div className="h-4 bg-gray-800 rounded-none w-24 animate-pulse" />
-        </div>
-        <div className="flex justify-between">
-          <div className="h-4 bg-gray-800 rounded-none w-16 animate-pulse" />
-          <div className="h-4 bg-gray-800 rounded-none w-20 animate-pulse" />
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="space-y-2 pt-4 border-t border-gray-800">
-        <div className="h-10 bg-gray-800 rounded-none w-full animate-pulse" />
-        <div className="flex gap-2">
-          <div className="h-10 bg-gray-800 rounded-none flex-1 animate-pulse" />
-          <div className="h-10 bg-gray-800 rounded-none flex-1 animate-pulse" />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// List view skeleton
-const ProjectListSkeleton = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0.7 }}
-      animate={{ opacity: [0.7, 1, 0.7] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-none p-6"
-    >
-      <div className="flex items-center gap-6">
-        {/* Project info */}
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="h-6 bg-gray-800 rounded-none w-64 animate-pulse" />
-            <div className="h-4 bg-gray-800 rounded-none w-16 animate-pulse" />
-            <div className="h-4 bg-gray-800 rounded-none w-12 animate-pulse" />
-          </div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-800 rounded-none w-full animate-pulse" />
-            <div className="h-4 bg-gray-800 rounded-none w-2/3 animate-pulse" />
-          </div>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-5 bg-gray-800 rounded-none w-12 animate-pulse" />
-            ))}
-          </div>
-        </div>
-
-        {/* Metrics */}
-        <div className="flex gap-8">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="text-center space-y-1">
-              <div className="h-5 bg-gray-800 rounded-none w-16 animate-pulse" />
-              <div className="h-3 bg-gray-800 rounded-none w-12 animate-pulse" />
-            </div>
-          ))}
-        </div>
-
-        {/* Price and actions */}
-        <div className="text-right space-y-3">
-          <div className="space-y-1">
-            <div className="h-8 bg-gray-800 rounded-none w-24 animate-pulse" />
-            <div className="h-3 bg-gray-800 rounded-none w-16 animate-pulse" />
-          </div>
-          <div className="flex gap-2">
-            <div className="h-9 bg-gray-800 rounded-none w-20 animate-pulse" />
-            <div className="h-9 bg-gray-800 rounded-none w-24 animate-pulse" />
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+});
 
 // Search loading skeleton
-export const SearchLoadingSkeleton = () => {
+export const SearchLoadingSkeleton = memo(() => {
   return (
     <div className="flex items-center justify-center py-8">
       <div className="flex items-center gap-3">
@@ -216,10 +220,10 @@ export const SearchLoadingSkeleton = () => {
       </div>
     </div>
   );
-};
+});
 
 // Performance metrics skeleton
-export const MetricsSkeleton = () => {
+export const MetricsSkeleton = memo(() => {
   return (
     <div className="flex items-center gap-4 text-xs text-gray-500">
       <div className="flex items-center gap-1">
@@ -236,10 +240,10 @@ export const MetricsSkeleton = () => {
       </div>
     </div>
   );
-};
+});
 
 // Load more button skeleton
-export const LoadMoreSkeleton = () => {
+export const LoadMoreSkeleton = memo(() => {
   return (
     <div className="flex justify-center py-8">
       <motion.div
@@ -249,6 +253,6 @@ export const LoadMoreSkeleton = () => {
       />
     </div>
   );
-};
+});
 
 export default MarketplaceLoadingSkeleton;
