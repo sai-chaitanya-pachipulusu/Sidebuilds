@@ -56,9 +56,9 @@
 
 /* Enhanced component styles */
 @layer components {
-  /* Button enhancements */
+  /* Button enhancements - Consistent with design system */
   .btn-primary {
-    @apply bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
   }
 
   .btn-secondary {
@@ -67,6 +67,58 @@
 
   .btn-ghost {
     @apply text-gray-400 hover:text-white hover:bg-gray-800/50 font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+  }
+  
+  /* Success Button */
+  .btn-success {
+    @apply bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  /* Danger Button */
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  /* Stage Badge Styles - Consistent across all components */
+  .badge-stage-idea {
+    @apply bg-slate-500/10 text-slate-400 border-slate-500/20;
+  }
+  
+  .badge-stage-planning {
+    @apply bg-indigo-500/10 text-indigo-400 border-indigo-500/20;
+  }
+  
+  .badge-stage-mvp {
+    @apply bg-amber-500/10 text-amber-400 border-amber-500/20;
+  }
+  
+  .badge-stage-development {
+    @apply bg-teal-500/10 text-teal-400 border-teal-500/20;
+  }
+  
+  .badge-stage-launched {
+    @apply bg-emerald-500/10 text-emerald-400 border-emerald-500/20;
+  }
+  
+  .badge-stage-onhold {
+    @apply bg-stone-500/10 text-stone-400 border-stone-500/20;
+  }
+  
+  /* Status Badge Styles */
+  .badge-status-success {
+    @apply bg-emerald-500/10 text-emerald-400 border-emerald-500/20;
+  }
+  
+  .badge-status-warning {
+    @apply bg-amber-500/10 text-amber-400 border-amber-500/20;
+  }
+  
+  .badge-status-error {
+    @apply bg-red-500/10 text-red-400 border-red-500/20;
+  }
+  
+  .badge-status-info {
+    @apply bg-blue-500/10 text-blue-400 border-blue-500/20;
   }
 
   /* Card enhancements */
@@ -450,6 +502,7 @@ a:focus {
 
 @layer base {
   :root {
+    /* Core Design System - Monochrome + Accent */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
@@ -478,12 +531,73 @@ a:focus {
     --spring-duration: 0.6s;
     --spring-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
-    /* Premium color palette - Purple Theme (solid color replacement) */
-    --purple-solid: #8b5cf6;
+    /* Semantic Color Palette - Consistent across app */
+    /* Primary Action - Blue */
+    --color-primary: #3b82f6;
+    --color-primary-light: #60a5fa;
+    --color-primary-dark: #2563eb;
+    
+    /* Success - Emerald */
+    --color-success: #10b981;
+    --color-success-light: #34d399;
+    --color-success-dark: #059669;
+    
+    /* Warning - Amber */
+    --color-warning: #f59e0b;
+    --color-warning-light: #fbbf24;
+    --color-warning-dark: #d97706;
+    
+    /* Error - Red */
+    --color-error: #ef4444;
+    --color-error-light: #f87171;
+    --color-error-dark: #dc2626;
+    
+    /* Info - Blue */
+    --color-info: #3b82f6;
+    --color-info-light: #60a5fa;
+    
+    /* Neutral Grays */
+    --color-gray-50: #fafafa;
+    --color-gray-100: #f4f4f5;
+    --color-gray-200: #e4e4e7;
+    --color-gray-300: #d4d4d8;
+    --color-gray-400: #a1a1aa;
+    --color-gray-500: #71717a;
+    --color-gray-600: #52525b;
+    --color-gray-700: #3f3f46;
+    --color-gray-800: #27272a;
+    --color-gray-900: #18181b;
+    
+    /* Glassmorphism */
     --glass-bg: rgba(5, 5, 5, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-hover: rgba(255, 255, 255, 0.05);
-    --spotlight-color: rgba(139, 92, 246, 0.15); /* Purple Glow */
+    --spotlight-color: rgba(59, 130, 246, 0.15); /* Blue Glow */
+    
+    /* Stage Colors - Consistent across all components */
+    --stage-idea-bg: rgba(100, 116, 139, 0.1);
+    --stage-idea-text: #94a3b8;
+    --stage-idea-border: rgba(100, 116, 139, 0.2);
+    
+    --stage-planning-bg: rgba(99, 102, 241, 0.1);
+    --stage-planning-text: #818cf8;
+    --stage-planning-border: rgba(99, 102, 241, 0.2);
+    
+    --stage-mvp-bg: rgba(245, 158, 11, 0.1);
+    --stage-mvp-text: #fbbf24;
+    --stage-mvp-border: rgba(245, 158, 11, 0.2);
+    
+    --stage-development-bg: rgba(20, 184, 166, 0.1);
+    --stage-development-text: #2dd4bf;
+    --stage-development-border: rgba(20, 184, 166, 0.2);
+    
+    --stage-launched-bg: rgba(16, 185, 129, 0.1);
+    --stage-launched-text: #34d399;
+    --stage-launched-border: rgba(16, 185, 129, 0.2);
+    
+    --stage-onhold-bg: rgba(120, 113, 108, 0.1);
+    --stage-onhold-text: #a8a29e;
+    --stage-onhold-border: rgba(120, 113, 108, 0.2);
   }
 
   .dark {

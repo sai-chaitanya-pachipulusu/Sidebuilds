@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -89,35 +89,29 @@ const DashboardPage = () => {
       if (syncData.stats) setStats(syncData.stats);
       if (syncData.recentProjects) setRecentProjects(syncData.recentProjects);
       // If the hook provides data, we can turn off our local loading state
-      if (loading) setLoading(false);
+      setLoading(false);
     }
-  }, [syncData, loading]);
+  }, [syncData]); // Removed loading from dependencies to prevent infinite re-renders
 
-  // Activity click handler
-  const handleActivityClick = (activity) => {
-    console.log('Activity clicked:', activity);
-    if (activity.type === 'interest' || activity.type === 'purchase_request') {
-      console.log('Opening interests modal from activity');
-      setInterestsModalOpen(true);
-    } else if (activity.type === 'sale' || activity.type === 'payment') {
-      console.log('Opening sales modal from activity');
-      setSalesModalOpen(true);
-    } else {
-      console.log('Unknown activity type:', activity.type);
-    }
-  };
+  // Separate effect to handle initial loading state
+  useEffect(() => {
+    // Set a maximum loading time to prevent infinite loading
+    const maxLoadingTimeout = setTimeout(() => {
+      setLoading((currentLoading) => {
+        if (currentLoading) {
+          console.log('[Dashboard] Max loading timeout reached, forcing loading state to false');
+          return false;
+        }
+        return currentLoading;
+      });
+    }, 5000); // 5 second max loading time
+    
+    return () => clearTimeout(maxLoadingTimeout);
+  }, []); // Only run once on mount
 
   // Initial Fetch Effect - Optimized for faster loading
   useEffect(() => {
     console.log('Dashboard useEffect triggered, user:', user);
-    
-    // Set a maximum loading time to prevent infinite loading
-    const maxLoadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.log('[Dashboard] Max loading timeout reached, forcing loading state to false');
-        setLoading(false);
-      }
-    }, 5000); // 5 second max loading time
     
     const fetchDashboardData = async () => {
       if (!user) {
@@ -217,9 +211,138 @@ const DashboardPage = () => {
     };
     
     fetchDashboardData();
+  }, [user]);
+
+  // Activity click handler
+  const handleActivityClick = (activity) => {
+    console.log('Activity clicked:', activity);
+    if (activity.type === 'interest' || activity.type === 'purchase_request') {
+      console.log('Opening interests modal from activity');
+      setInterestsModalOpen(true);
+    } else if (activity.type === 'sale' || activity.type === 'payment') {
+      console.log('Opening sales modal from activity');
+      setSalesModalOpen(true);
+    } else {
+      console.log('Unknown activity type:', activity.type);
+    }
+  };
+
+  // Fetch additional data separately to not block main dashboard render
+  const fetchAdditionalData = useCallback(async () => {
+    try {
+      const [
+        projectsData,
+        sellerRequestsData,
+        buyerRequestsData,
+        notificationsData
+      ] = await Promise.all([
+        getProjects().catch(e => { console.error('getProjects failed', e); return []; }),
+        getSellerPurchaseRequests().catch(e => { console.error('getSellerPurchaseRequests failed', e); return []; }),
+        getBuyerPurchaseRequests().catch(e => { console.error('getBuyerPurchaseRequests failed', e); return []; }),
+        getNotifications().catch(e => { console.error('getNotifications failed', e); return []; })
+      ]);
+
+      console.log('[Dashboard] Additional data fetched:', {
+        projectsCount: projectsData?.length,
+        sellerReqCount: sellerRequestsData?.length,
+        buyerReqCount: buyerRequestsData?.length
+      });
+
+      // Keep the additional data for modals and detailed views
+      setProjects(projectsData || []);
+      setNotifications(notificationsData || []);
+      
+      // Create activity feed from requests
+      const sellerActivities = (sellerRequestsData || []).slice(0, 3).map(req => ({
+        type: 'interest',
+        message: `New interest received for "${req.project_name || 'Project'}"`,
+        time: req.created_at,
+        status: req.status
+      }));
+
+      const buyerActivities = (buyerRequestsData || []).slice(0, 2).map(req => ({
+        type: 'purchase',
+        message: `Purchase request for "${req.project_name || 'Project'}"`,
+        time: req.created_at,
+        status: req.status
+      }));
+
+      const activities = [...sellerActivities, ...buyerActivities]
+        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .slice(0, 5);
+
+      if (activities.length > 0) {
+        setRecentActivity(activities);
+      }
+    } catch (dataErr) {
+      console.error('Error fetching supplementary dashboard data:', dataErr);
+    }
+  }, []);
+
+  // Initial Fetch Effect - Optimized for faster loading
+  useEffect(() => {
+    console.log('Dashboard useEffect triggered, user:', user);
+    
+    // Set a maximum loading time to prevent infinite loading
+    const maxLoadingTimeout = setTimeout(() => {
+      setLoading((currentLoading) => {
+        if (currentLoading) {
+          console.log('[Dashboard] Max loading timeout reached, forcing loading state to false');
+          return false;
+        }
+        return currentLoading;
+      });
+    }, 5000); // 5 second max loading time
+    
+    const fetchDashboardData = async () => {
+      if (!user) {
+        console.log('No user found, returning early');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        console.log('Starting dashboard initial fetch...');
+
+        // Fetch comprehensive dashboard data with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        const dashboardResponse = await fetch('/api/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!dashboardResponse.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const dashboardData = await dashboardResponse.json();
+        const s = dashboardData.stats || {};
+        console.log('[Dashboard] Raw stats received from API:', s);
+        
+        // Use the dashboard API data
+        setStats(s);
+        setRecentProjects(dashboardData.recentProjects || []);
+        setLoading(false);
+        
+        // Fetch additional data in background (non-blocking)
+        fetchAdditionalData();
+
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        // Set loading to false on error to prevent infinite loading
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
     
     return () => clearTimeout(maxLoadingTimeout);
-  }, [user]);
+  }, [user, fetchAdditionalData]);
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', {
