@@ -26,13 +26,9 @@ export const useOptimizedSearch = (
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState(initialFilters);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchMetrics, setSearchMetrics] = useState({
-    totalItems: 0,
-    filteredItems: 0,
-    searchTime: 0,
-    cacheHits: 0,
-    cacheMisses: 0
-  });
+  // Note: searchMetrics moved to ref to prevent infinite re-render loops
+  const [, forceUpdate] = useState({}); // Used to trigger updates when needed
+  const searchMetrics = searchMetricsRef.current;
 
   // Performance optimization refs
   const searchCache = useRef(new Map());
@@ -40,6 +36,13 @@ export const useOptimizedSearch = (
   const lastSearchTime = useRef(0);
   const searchWorker = useRef(null);
   const abortControllerRef = useRef(null);
+  const searchMetricsRef = useRef({
+    totalItems: 0,
+    filteredItems: 0,
+    searchTime: 0,
+    cacheHits: 0,
+    cacheMisses: 0
+  });
 
   // Debounced search term
   const debouncedSearchTerm = useDebounce(searchTerm, debounceMs, {
@@ -302,12 +305,16 @@ export const useOptimizedSearch = (
     cleanupCache();
 
     const searchTime = performance.now() - startTime;
-    setSearchMetrics(prev => ({
-      ...prev,
+    
+    // Use ref to avoid triggering re-renders from setSearchMetrics
+    // This prevents the infinite loop
+    searchMetricsRef.current = {
       searchTime,
       filteredItems: results.length,
-      totalItems: items.length
-    }));
+      totalItems: items.length,
+      cacheHits: searchMetrics.cacheHits,
+      cacheMisses: searchMetrics.cacheMisses
+    };
 
     return results;
   }, [
@@ -326,40 +333,28 @@ export const useOptimizedSearch = (
     calculateFuzzyScore
   ]);
 
-  // Build index when items change
+  // Build index when items change - use ref to prevent infinite loops
+  const itemsRef = useRef(items);
+  const hasBuiltIndex = useRef(false);
+  
   useEffect(() => {
-    if (enableIndexing) {
+    // Only rebuild index if items actually changed and indexing is enabled
+    if (enableIndexing && !hasBuiltIndex.current) {
       buildSearchIndex(items);
+      itemsRef.current = items;
+      hasBuiltIndex.current = true;
     }
   }, [items, enableIndexing, buildSearchIndex]);
 
-  // Perform search when debounced term or filters change
-  useEffect(() => {
-    // Cancel previous search
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    setIsSearching(true);
-    
-    // Use requestAnimationFrame for non-blocking search
-    requestAnimationFrame(() => {
-      performSearch(debouncedSearchTerm, filters);
-      setIsSearching(false);
-    });
-
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [debouncedSearchTerm, filters, performSearch]);
-
-  // Memoized filtered results
+  // Memoized filtered results - performs search only when dependencies change
   const filteredItems = useMemo(() => {
     return performSearch(debouncedSearchTerm, filters);
   }, [debouncedSearchTerm, filters, performSearch]);
+
+  // Update searching state when search is performed
+  useEffect(() => {
+    setIsSearching(false);
+  }, [filteredItems]);
 
   // Virtualization helpers
   const getVirtualizedItems = useCallback((scrollTop, containerHeight) => {
@@ -405,8 +400,8 @@ export const useOptimizedSearch = (
     // Results
     filteredItems,
     
-    // Metrics
-    searchMetrics,
+    // Metrics - return ref value to prevent re-renders
+    searchMetrics: searchMetricsRef.current,
     
     // Actions
     setSearchTerm: updateSearchTerm,
