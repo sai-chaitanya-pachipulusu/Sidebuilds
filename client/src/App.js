@@ -106,6 +106,9 @@ const AppContent = () => {
               <Route path="/contact" element={<ComponentErrorBoundary><ContactPage /></ComponentErrorBoundary>} />
               <Route path="/blog" element={<ComponentErrorBoundary><BlogPage /></ComponentErrorBoundary>} />
               <Route path="/terms" element={<ComponentErrorBoundary><TermsPage /></ComponentErrorBoundary>} />
+              <Route path="/public-projects" element={<ComponentErrorBoundary><PublicProjectsPage /></ComponentErrorBoundary>} />
+              <Route path="/trending" element={<ComponentErrorBoundary><TrendingPage /></ComponentErrorBoundary>} />
+              <Route path="/vibe-code" element={<ComponentErrorBoundary><VibeCodePage /></ComponentErrorBoundary>} />
               
               {/* Auth Pages */}
               <Route path="/login" element={<ComponentErrorBoundary><LoginPage /></ComponentErrorBoundary>} />

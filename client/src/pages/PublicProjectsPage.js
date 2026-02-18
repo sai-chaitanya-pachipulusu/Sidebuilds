@@ -71,7 +71,43 @@ const PublicProjectsPage = () => {
 
     useEffect(() => {
         let tempProjects = [...projects];
-        // ... filtering and sorting logic ...
+
+        // Apply search filter
+        if (searchTerm.trim()) {
+            const lower = searchTerm.toLowerCase();
+            tempProjects = tempProjects.filter(p =>
+                p.name?.toLowerCase().includes(lower) ||
+                p.description?.toLowerCase().includes(lower) ||
+                p.tech_stack?.toLowerCase().includes(lower) ||
+                p.owner_username?.toLowerCase().includes(lower)
+            );
+        }
+
+        // Apply category filter
+        if (categoryFilter !== 'all') {
+            tempProjects = tempProjects.filter(p =>
+                p.category?.toLowerCase() === categoryFilter.toLowerCase() ||
+                p.tech_stack?.toLowerCase().includes(categoryFilter.toLowerCase())
+            );
+        }
+
+        // Apply sorting
+        switch (sortBy) {
+            case 'popular':
+                tempProjects.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+                break;
+            case 'price_asc':
+                tempProjects.sort((a, b) => (a.sale_price || 0) - (b.sale_price || 0));
+                break;
+            case 'price_desc':
+                tempProjects.sort((a, b) => (b.sale_price || 0) - (a.sale_price || 0));
+                break;
+            case 'newest':
+            default:
+                tempProjects.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                break;
+        }
+
         setFilteredProjects(tempProjects);
     }, [searchTerm, categoryFilter, sortBy, projects]);
 

@@ -426,7 +426,8 @@ export const getPublicProjects = async () => {
     try {
         // Note: No token needed for this public endpoint
         const response = await apiClient.get('/public/projects'); 
-        return response.data;
+        // Handle both paginated response { data: [...] } and direct array
+        return response.data?.data || response.data || [];
     } catch (error) {
         // Return empty array to prevent UI from breaking
         return [];

@@ -15,10 +15,24 @@ import {
   Mail
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import toast from 'react-hot-toast';
 
 const BlogPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+
+  const handleNewsletterSubscribe = () => {
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    const subject = encodeURIComponent('Newsletter Subscription');
+    const body = encodeURIComponent(`Please subscribe ${newsletterEmail} to the SideBuilds newsletter.`);
+    window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+    toast.success('Opening your email client to subscribe!');
+    setNewsletterEmail('');
+  };
 
   const categories = [
     { value: 'all', label: 'All Posts', color: 'gray', icon: BookOpen },
@@ -363,11 +377,15 @@ const BlogPage = () => {
                 <input
                   type="email"
                   placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleNewsletterSubscribe()}
                   className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-colors duration-200"
                 />
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={handleNewsletterSubscribe}
                   className="px-8 py-3 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
                 >
                   Subscribe

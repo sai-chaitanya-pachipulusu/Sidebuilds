@@ -1,20 +1,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Linkedin, Heart, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { Github, Twitter, Linkedin, MessageCircle } from 'lucide-react';
 import Logo from './Logo';
 
 const Footer = () => {
   const footerSections = {
-    studio: [
+    platform: [
       { label: 'Marketplace', to: '/marketplace' },
       { label: 'How it Works', to: '/how-it-works' },
+      { label: 'Pricing', to: '/pricing' },
       { label: 'About', to: '/about' },
-      { label: 'Contact', to: '/contact' }
+      { label: 'Contact', to: '/contact' },
+      { label: 'Blog', to: '/blog' },
     ],
     legal: [
-      { label: 'Terms', to: '/terms' },
-      { label: 'Privacy', to: '/privacy' },
-      { label: 'Security', to: '/security' }
+      { label: 'Terms of Service', to: '/terms' },
+      { label: 'Privacy Policy', to: '/terms' },
+      { label: 'FAQ', to: '/faq' },
     ]
   };
 
@@ -85,6 +87,16 @@ const Footer = () => {
                 </a>
               ))}
             </div>
+
+            <div className="mt-6">
+              <p className="text-gray-600 text-xs font-mono uppercase tracking-wider mb-2">Support</p>
+              <a
+                href="mailto:support@sidebuilds.space"
+                className="text-gray-500 hover:text-white transition-colors text-xs font-mono"
+              >
+                support@sidebuilds.space
+              </a>
+            </div>
           </div>
         </div>
 
@@ -93,7 +105,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex items-center gap-2 text-gray-600 text-xs font-mono uppercase tracking-wider">
-              <span>© 2024 SideBuilds</span>
+              <span>© 2025 SideBuilds</span>
               <span>/</span>
               <span>v2.0.0</span>
             </div>

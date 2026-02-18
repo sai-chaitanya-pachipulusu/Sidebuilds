@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, ArrowRight, Star, Rocket, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 
 const PricingPage = () => {
   const [isAnnual, setIsAnnual] = useState(false);
+  const navigate = useNavigate();
 
   const plans = [
     {
@@ -161,7 +163,9 @@ const PricingPage = () => {
                     </span>
                   </div>
                   
-                  <button className={`w-full py-3 rounded-none font-semibold transition-all ${
+                  <button
+                    onClick={() => navigate('/register')}
+                    className={`w-full py-3 rounded-none font-semibold transition-all ${
                     plan.popular 
                       ? 'bg-white hover:bg-gray-200 text-black'
                       : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'

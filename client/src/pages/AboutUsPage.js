@@ -105,9 +105,9 @@ const AboutUsPage = () => {
       bio: 'ML Enthusiast & Serial Entrepreneur',
       avatar: null,
       social: {
-        linkedin: '#',
-        twitter: '#',
-        github: '#'
+        linkedin: 'https://linkedin.com/in/sai-chaitanya-pachipulusu',
+        twitter: 'https://twitter.com/sidebuilds',
+        github: 'https://github.com/sai-chaitanya-pachipulusu'
       }
     },
   ];
@@ -382,13 +382,19 @@ const AboutUsPage = () => {
                     <p className="text-gray-400 text-sm mb-6">{member.bio}</p>
                     <div className="flex justify-center space-x-4">
                       {member.social.linkedin && (
-                        <Linkedin className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                        <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer">
+                          <Linkedin className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                        </a>
                       )}
                       {member.social.twitter && (
-                        <Twitter className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                        <a href={member.social.twitter} target="_blank" rel="noopener noreferrer">
+                          <Twitter className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors duration-200" />
+                        </a>
                       )}
                       {member.social.github && (
-                        <Github className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors duration-200" />
+                        <a href={member.social.github} target="_blank" rel="noopener noreferrer">
+                          <Github className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer transition-colors duration-200" />
+                        </a>
                       )}
                     </div>
                   </motion.div>

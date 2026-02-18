@@ -14,9 +14,13 @@ const TrendingPage = () => {
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                const allProjects = await getMarketplaceProjects();
-                const sorted = allProjects.sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 12);
-                setProjects(sorted);
+                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
+                const response = await fetch(`${apiUrl}/public/marketplace?limit=20&sortBy=view_count&sortOrder=desc`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const allProjects = data?.data || [];
+                    setProjects(allProjects.slice(0, 12));
+                }
             } catch (error) {
                 console.error("Failed to fetch trending projects", error);
             } finally {

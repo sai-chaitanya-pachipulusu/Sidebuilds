@@ -262,12 +262,22 @@ const NavBar = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.96 }}
                           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                          className="absolute top-full right-0 mt-2 w-80 bg-[#0a0a0a] border border-white/[0.08] rounded-none shadow-2xl overflow-hidden z-50"
+                          className="absolute top-full right-0 mt-2 w-80 bg-[#0a0a0a] border border-white/[0.08] rounded-none shadow-2xl overflow-hidden z-[100]"
                         >
-                          <div className="p-4 border-b border-white/[0.06]">
-                            <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                            {unreadCount > 0 && (
-                              <p className="text-xs text-gray-500 mt-0.5">{unreadCount} unread</p>
+                          <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                              {unreadCount > 0 && (
+                                <p className="text-xs text-gray-500 mt-0.5">{unreadCount} unread</p>
+                              )}
+                            </div>
+                            {notifications.length > 0 && (
+                              <button
+                                onClick={() => navigate('/notifications')}
+                                className="text-xs text-gray-500 hover:text-white transition-colors font-mono"
+                              >
+                                View all
+                              </button>
                             )}
                           </div>
                           <div className="max-h-80 overflow-y-auto">
@@ -275,13 +285,18 @@ const NavBar = () => {
                               notifications.slice(0, 5).map((notification, index) => (
                                 <div
                                   key={index}
-                                  className="p-3 hover:bg-white/[0.03] transition-colors cursor-pointer border-b border-white/[0.04] last:border-0"
+                                  className="p-3 hover:bg-white/[0.03] transition-colors cursor-pointer border-b border-white/[0.04] last:border-0 flex items-start gap-2"
                                   onClick={() => handleNotificationClick(notification)}
                                 >
-                                  <p className="text-sm text-gray-300 leading-relaxed font-mono">{notification.message}</p>
-                                  <p className="text-xs text-gray-600 mt-1.5">
-                                    {new Date(notification.created_at).toLocaleDateString()}
-                                  </p>
+                                  {!notification.is_read && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                                  )}
+                                  <div className={!notification.is_read ? '' : 'ml-3.5'}>
+                                    <p className="text-sm text-gray-300 leading-relaxed font-mono">{notification.message}</p>
+                                    <p className="text-xs text-gray-600 mt-1.5">
+                                      {new Date(notification.created_at).toLocaleDateString()}
+                                    </p>
+                                  </div>
                                 </div>
                               ))
                             ) : (
@@ -291,6 +306,16 @@ const NavBar = () => {
                               </div>
                             )}
                           </div>
+                          {notifications.length > 0 && (
+                            <div className="border-t border-white/[0.06] p-3">
+                              <button
+                                onClick={() => { navigate('/notifications'); setIsNotificationOpen(false); }}
+                                className="w-full text-center text-xs text-gray-500 hover:text-white transition-colors font-mono uppercase tracking-wider py-1"
+                              >
+                                View All Notifications
+                              </button>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

@@ -130,19 +130,34 @@ const ContactPage = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Message sent! We'll get back to you as soon as possible.");
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
+    try {
+      // Try to send via API first
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
+      const response = await fetch(`${apiUrl}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
+      
+      if (response.ok) {
+        toast.success("Message sent! We'll get back to you within 24 hours.");
+      } else {
+        // Fallback: open mailto
+        const subject = encodeURIComponent(`[SideBuilds] ${formData.subject || 'Contact Form'}: ${formData.name}`);
+        const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
+        window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+        toast.success("Opening your email client to send the message.");
+      }
+    } catch (err) {
+      // Fallback: open mailto
+      const subject = encodeURIComponent(`[SideBuilds] ${formData.subject || 'Contact Form'}: ${formData.name}`);
+      const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
+      window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+      toast.success("Opening your email client to send the message.");
+    } finally {
+      setFormData({ name: '', email: '', subject: '', message: '' });
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const toggleFAQ = (index) => {
@@ -374,24 +389,27 @@ const ContactPage = () => {
           {[
             {
               icon: MessageSquare,
-              title: 'Live Chat',
-              description: 'Chat with our support team in real-time',
-              cta: 'Start Chat',
+              title: 'Community Discord',
+              description: 'Join our Discord community for real-time support and discussions',
+              cta: 'Join Discord',
               color: 'text-green-400',
+              action: () => window.open('https://discord.gg/sidebuilds', '_blank'),
             },
             {
               icon: Phone,
-              title: 'Schedule a Call',
-              description: 'Book a call with our team for complex inquiries',
-              cta: 'Book Call',
+              title: 'Email Support',
+              description: 'Send us a detailed email for complex inquiries or partnership discussions',
+              cta: 'Send Email',
               color: 'text-blue-400',
+              action: () => window.open('mailto:support@sidebuilds.space?subject=Support%20Request', '_blank'),
             },
             {
               icon: Mail,
-              title: 'Newsletter',
-              description: 'Get updates and tips delivered to your inbox',
+              title: 'Stay Updated',
+              description: 'Get marketplace updates, new listings, and tips delivered to your inbox',
               cta: 'Subscribe',
               color: 'text-white',
+              action: () => window.open('mailto:support@sidebuilds.space?subject=Newsletter%20Subscription&body=Please%20add%20me%20to%20your%20newsletter!', '_blank'),
             },
           ].map((item, index) => {
             const Icon = item.icon;
@@ -401,7 +419,8 @@ const ContactPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
-                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 text-center hover:border-white/[0.12] transition-all duration-200 group"
+                className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 text-center hover:border-white/[0.12] transition-all duration-200 group cursor-pointer"
+                onClick={item.action}
               >
                 <div className={`inline-flex items-center justify-center w-12 h-12 rounded-none mb-4 ${item.color} bg-current/10`}>
                   <Icon className={`w-6 h-6 ${item.color}`} />
@@ -412,8 +431,11 @@ const ContactPage = () => {
                 <p className="text-gray-400 text-sm mb-4 leading-relaxed">
                   {item.description}
                 </p>
-                <button className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200">
-                  {item.cta}
+                <button
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200 underline"
+                  onClick={(e) => { e.stopPropagation(); item.action(); }}
+                >
+                  {item.cta} →
                 </button>
               </motion.div>
             );
