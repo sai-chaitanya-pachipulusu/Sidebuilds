@@ -479,8 +479,19 @@ export const getMarketplaceStats = async (forceRefresh = false) => {
   }
 };
 
-export const getMarketplaceProjects = async (forceRefresh = false) => {
-    const cacheKey = 'marketplace:projects';
+export const getMarketplaceProjects = async (options = {}) => {
+    // Support both old format (boolean forceRefresh) and new format (options object)
+    const isOptionsObject = typeof options === 'object' && options !== null;
+    const forceRefresh = isOptionsObject ? options.forceRefresh : options;
+    
+    const {
+        page = 1,
+        limit = 20,
+        sortBy = 'created_at',
+        sortOrder = 'desc'
+    } = isOptionsObject ? options : {};
+    
+    const cacheKey = `marketplace:projects:p${page}:l${limit}:s${sortBy}:o${sortOrder}`;
     
     // Check cache first unless forcing refresh
     if (!forceRefresh) {
@@ -489,16 +500,19 @@ export const getMarketplaceProjects = async (forceRefresh = false) => {
     }
     
     try {
-        const response = await apiClient.get('/public/marketplace');
+        const response = await apiClient.get('/public/marketplace', {
+            params: { page, limit, sortBy, sortOrder }
+        });
         
         // Cache the response
         apiCache.set(cacheKey, response.data, CACHE_TTL.MARKETPLACE);
         
         return response.data;
     } catch (error) {
-        return []; // Return empty array instead of throwing to avoid breaking UI
+        return { data: [], pagination: { page: 1, totalPages: 1, total: 0 } }; // Return proper structure instead of empty array
     }
 };
+
 
 // --- Health Check ---
 

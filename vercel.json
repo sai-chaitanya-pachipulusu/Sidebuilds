@@ -11,7 +11,7 @@
     },
     {
       "src": "/socket.io/(.*)",
-      "dest": "https://api.sidebuilds.space/socket.io/$1"
+      "dest": "https://api.sidebuilds.space/socket.io/$1" 
     },
     {
       "src": "/static/(.*)",
