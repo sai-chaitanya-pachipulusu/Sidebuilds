@@ -5,7 +5,22 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    // Return safe defaults if context is null (e.g., on public pages before auth loads)
+    if (!context) {
+        return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            login: () => {},
+            logout: () => {},
+            fetchUserProfile: () => Promise.resolve(null),
+        };
+    }
+    return context;
+};
 
 export const AuthProvider = ({ children }) => {
     const [authState, setAuthState] = useState({
