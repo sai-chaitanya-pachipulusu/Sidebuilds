@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
                 clearTimeout(timeoutId);
             } catch (error) {
                 // On any error during startup, clear auth state to prevent infinite loading
-                if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                if (error.name === 'AbortError' || error?.message?.includes('timeout')) {
                     logout();
                 } else if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                     logout();

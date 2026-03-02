@@ -52,3 +52,4 @@ server/scripts/test-*
 
 # Package lock backup
 package-lock.json.backup
+.vercel
