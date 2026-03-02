@@ -3,7 +3,6 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getProjects, getSellerPurchaseRequests, getBuyerPurchaseRequests, getNotifications } from '../services/api';
-import { useDashboardSync } from '../hooks/useRealTimeSync';
 import {
   //BarChart3,
   TrendingUp,
@@ -72,42 +71,6 @@ const DashboardPage = () => {
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [salesModalOpen, setSalesModalOpen] = useState(false);
 
-  // Use real-time dashboard sync with optimized settings
-  const { 
-    data: syncData, 
-    loading: syncLoading
-  } = useDashboardSync({
-    refreshInterval: 120000, // Increased to 2 minutes to reduce polling
-    enableRealTime: false, // Disabled to improve performance
-    cacheData: true // Enable caching for faster loads
-  });
-
-  // Update effect for syncData
-  useEffect(() => {
-    if (syncData) {
-      console.log('[Dashboard] Sync hook data received:', syncData);
-      if (syncData.stats) setStats(syncData.stats);
-      if (syncData.recentProjects) setRecentProjects(syncData.recentProjects);
-      // If the hook provides data, we can turn off our local loading state
-      setLoading(false);
-    }
-  }, [syncData]); // Removed loading from dependencies to prevent infinite re-renders
-
-  // Separate effect to handle initial loading state
-  useEffect(() => {
-    // Set a maximum loading time to prevent infinite loading
-    const maxLoadingTimeout = setTimeout(() => {
-      setLoading((currentLoading) => {
-        if (currentLoading) {
-          console.log('[Dashboard] Max loading timeout reached, forcing loading state to false');
-          return false;
-        }
-        return currentLoading;
-      });
-    }, 5000); // 5 second max loading time
-    
-    return () => clearTimeout(maxLoadingTimeout);
-  }, []); // Only run once on mount
 
   // Initial Fetch Effect - Optimized for faster loading
   useEffect(() => {

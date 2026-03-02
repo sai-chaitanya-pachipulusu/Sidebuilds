@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import {
   Eye,
@@ -124,6 +124,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const cardRef = useRef(null);
+  const navigate = useNavigate();
   
   // 3D tilt effect
   const mouseX = useMotionValue(0);
@@ -227,10 +228,11 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
   return (
     <motion.div
       ref={cardRef}
-      className={`group relative ${className}`}
+      className={`group relative ${className} cursor-pointer`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={() => navigate(`/projects/${project.project_id}`)}
       style={{
         perspective: 1000,
         transformStyle: 'preserve-3d',
@@ -323,6 +325,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                   {/* Bookmark button */}
                   <motion.button
                     onClick={(e) => {
+                      e.stopPropagation();
                       e.preventDefault();
                       setIsBookmarked(!isBookmarked);
                     }}
@@ -507,7 +510,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); }}
                     >
                       <Github className="w-3.5 h-3.5" />
                     </motion.a>
@@ -521,7 +524,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                       className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); }}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </motion.a>

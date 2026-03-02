@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     const connectUserSocket = useCallback((token, user) => {
-        if (token && user && user.id) {
+        if (token && user && (user.user_id || user.id)) {
             try {
                 const socket = initializeSocket(token);
                 
