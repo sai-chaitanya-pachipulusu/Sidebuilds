@@ -93,79 +93,53 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // Helper function to get user dashboard statistics
 async function getUserDashboardStats(userId) {
-    // try block removed to allow errors to propagate to the main route handler
+    // Single consolidated query — fewer DB round-trips, no user_id column bug
+    const statsResult = await db.query(
+        `SELECT
+            COUNT(p.project_id)                                      AS total_projects,
+            COALESCE(SUM(CASE WHEN p.is_for_sale THEN p.sale_price ELSE 0 END), 0) AS portfolio_value,
+            COALESCE(SUM(p.view_count), 0)                           AS total_views,
+            COALESCE(SUM(p.interest_count), 0)                       AS total_interest
+         FROM projects p
+         WHERE p.owner_id = $1`,
+        [userId]
+    );
 
-        // Get total projects count (check both owner_id and user_id for robustness)
-        const projectsResult = await db.query(
-            'SELECT COUNT(*) as count, ARRAY_AGG(project_id) as ids FROM projects WHERE owner_id = $1 OR user_id = $1',
-            [userId]
-        );
-        console.log(`[Dashboard] Found project IDs for user ${userId}:`, projectsResult.rows[0]?.ids);
+    const requestResult = await db.query(
+        `SELECT
+            COUNT(*) FILTER (WHERE seller_id = $1 AND status NOT IN (
+                'completed','seller_rejected','buyer_withdrew_interest','transfer_completed_buyer_confirmed'
+            ))                                                        AS active_offers,
+            COUNT(*) FILTER (WHERE seller_id = $1 AND status = 'completed')  AS completed_sales,
+            COUNT(*) FILTER (WHERE seller_id = $1)                   AS interest_received,
+            COUNT(*) FILTER (WHERE buyer_id  = $1 AND status = 'completed')  AS purchases_made,
+            COALESCE(SUM(CASE WHEN seller_id = $1 AND status = 'completed' THEN price ELSE 0 END), 0) AS total_revenue
+         FROM purchase_requests
+         WHERE seller_id = $1 OR buyer_id = $1`,
+        [userId]
+    );
 
-        // Get portfolio value
-        const portfolioResult = await db.query(
-            'SELECT COALESCE(SUM(sale_price), 0) as total FROM projects WHERE (owner_id = $1 OR user_id = $1) AND is_for_sale = true',
-            [userId]
-        );
+    const notifResult = await db.query(
+        `SELECT COUNT(*) AS unread FROM notifications WHERE user_id = $1 AND is_read = false`,
+        [userId]
+    );
 
-        // Get active offers (pending purchase requests where user is seller)
-        const offersResult = await db.query(
-            `SELECT COUNT(*) as count FROM purchase_requests WHERE seller_id = $1 AND status NOT IN ('completed', 'seller_rejected', 'buyer_withdrew_interest', 'transfer_completed_buyer_confirmed')`,
-            [userId]
-        );
-
-        // Get completed sales (completed purchase requests where user is seller)
-        const salesResult = await db.query(
-            `SELECT COUNT(*) as count FROM purchase_requests WHERE seller_id = $1 AND status = 'completed'`,
-            [userId]
-        );
-
-        // Get total views across all user projects
-        const viewsResult = await db.query(
-            'SELECT COALESCE(SUM(view_count), 0) as total FROM projects WHERE owner_id = $1 OR user_id = $1',
-            [userId]
-        );
-
-        // Get average views per project
-        const totalProjects = projectsResult.rows[0]?.count || 0;
-        const totalViews = viewsResult.rows[0]?.total || 0;
-        const averageViews = totalProjects > 0 ? Math.round(totalViews / totalProjects) : 0;
-
-        // Get interest received (purchase requests where user is seller)
-        const interestResult = await db.query(
-            'SELECT COUNT(*) as count FROM purchase_requests WHERE seller_id = $1',
-            [userId]
-        );
-
-        // Get purchases made (purchase requests where user is buyer)
-        const purchasesResult = await db.query(
-            `SELECT COUNT(*) as count FROM purchase_requests WHERE buyer_id = $1 AND status = 'completed'`,
-            [userId]
-        );
-
-        // Get total revenue (sum of completed sales)
-        const revenueResult = await db.query(
-            `SELECT COALESCE(SUM(price), 0) as total FROM purchase_requests WHERE (seller_id = $1) AND status = 'completed'`,
-            [userId]
-        );
-
-        // Get unread notifications count
-        const notificationsResult = await db.query(
-            'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND is_read = false',
-            [userId]
-        );
+    const s = statsResult.rows[0] || {};
+    const r = requestResult.rows[0] || {};
+    const totalProjects = Number(s.total_projects || 0);
+    const totalViews    = Number(s.total_views || 0);
 
     return {
-        totalProjects: Number(totalProjects),
-        portfolioValue: Number(portfolioResult.rows[0]?.total || 0),
-        activeOffers: Number(offersResult.rows[0]?.count || 0),
-        completedSales: Number(salesResult.rows[0]?.count || 0),
-        totalViews: Number(totalViews),
-        averageViews: Number(averageViews),
-        interestReceived: Number(interestResult.rows[0]?.count || 0),
-        purchasesMade: Number(purchasesResult.rows[0]?.count || 0),
-        totalRevenue: Number(revenueResult.rows[0]?.total || 0),
-        unreadNotifications: Number(notificationsResult.rows[0]?.count || 0)
+        totalProjects,
+        portfolioValue:       Number(s.portfolio_value || 0),
+        activeOffers:         Number(r.active_offers || 0),
+        completedSales:       Number(r.completed_sales || 0),
+        totalViews,
+        averageViews:         totalProjects > 0 ? Math.round(totalViews / totalProjects) : 0,
+        interestReceived:     Number(r.interest_received || 0),
+        purchasesMade:        Number(r.purchases_made || 0),
+        totalRevenue:         Number(r.total_revenue || 0),
+        unreadNotifications:  Number(notifResult.rows[0]?.unread || 0)
     };
 }
 
@@ -173,27 +147,28 @@ async function getUserDashboardStats(userId) {
 async function getUserRecentProjects(userId) {
     try {
         const result = await db.query(
-            `SELECT project_id as id, name, description, sale_price as price, stage as status, created_at
+            `SELECT project_id AS id, name, description, sale_price AS price, stage AS status, created_at
              FROM projects
-             WHERE owner_id = $1 OR user_id = $1
+             WHERE owner_id = $1
              ORDER BY created_at DESC
-             LIMIT 3`,
+             LIMIT 5`,
             [userId]
         );
-
-        return result.rows.map(project => ({
-            id: project.id,
-            name: project.name,
-            description: project.description || '',
-            price: project.price || 0,
-            status: project.status || 'draft',
-            created_at: project.created_at
+        return result.rows.map(p => ({
+            id: p.id,
+            project_id: p.id,
+            name: p.name,
+            description: p.description || '',
+            price: p.price || 0,
+            status: p.status || 'draft',
+            created_at: p.created_at
         }));
     } catch (error) {
         console.error('Error fetching recent projects:', error);
         return [];
     }
 }
+
 
 // Helper function to get user's recent activity
 async function getUserRecentActivity(userId) {

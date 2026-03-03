@@ -89,7 +89,7 @@ const DashboardPage = () => {
         // Use apiClient (has correct baseURL + auth token interceptor)
         const { default: apiClient } = await import('../services/api');
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s — give server time to respond
         
         const dashboardResponse = await apiClient.get('/dashboard', {
           signal: controller.signal
