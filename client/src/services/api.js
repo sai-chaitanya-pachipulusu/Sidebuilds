@@ -3,14 +3,50 @@ import apiCache, { CACHE_TTL, cachedFetch } from '../utils/apiCache';
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use consistent backend port (server runs on 5002)
     baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    // Add timeout to prevent hanging requests
-    timeout: 30000, // 30 seconds - allow for slow cold starts
+    headers: { 'Content-Type': 'application/json' },
+    timeout: 8000, // 8 seconds — fail fast, show clear error
 });
+
+// ── Slow-request warning (Render cold start UX) ───────────────────────────
+// If a request takes > 3s, show a toast so the user knows the server is waking up
+let slowRequestToast = null;
+apiClient.interceptors.request.use((config) => {
+    config._requestStart = Date.now();
+    config._slowTimer = setTimeout(() => {
+        // Dynamically import toast to avoid circular deps
+        import('react-hot-toast').then(({ default: toast }) => {
+            slowRequestToast = toast.loading(
+                '⏳ Server is starting up, please wait a moment...', 
+                { id: 'server-wakeup', duration: 20000 }
+            );
+        });
+    }, 3000);
+    return config;
+});
+apiClient.interceptors.response.use(
+    (response) => {
+        clearTimeout(response.config._slowTimer);
+        if (slowRequestToast) {
+            import('react-hot-toast').then(({ default: toast }) => {
+                toast.dismiss('server-wakeup');
+            });
+            slowRequestToast = null;
+        }
+        return response;
+    },
+    (error) => {
+        if (error.config?._slowTimer) clearTimeout(error.config._slowTimer);
+        if (slowRequestToast) {
+            import('react-hot-toast').then(({ default: toast }) => {
+                toast.dismiss('server-wakeup');
+            });
+            slowRequestToast = null;
+        }
+        return Promise.reject(error);
+    }
+);
+// ─────────────────────────────────────────────────────────────────────────
 
 // Debug function to check localStorage token - only runs in development
 const debugToken = () => {
@@ -42,29 +78,23 @@ window.clearAuthState = () => {
     window.location.reload();
 };
 
-// --- Interceptor to add JWT token to requests --- 
+// --- Interceptor to add JWT token to requests ---
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
-            // Basic validation: check if token has proper JWT format
             const parts = token.split('.');
             if (parts.length === 3) {
                 config.headers['Authorization'] = `Bearer ${token}`;
             } else {
+                // Bad token format — clear it silently, don't hard-redirect
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                // Optionally redirect to login or show notification
-                if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-                    window.location.href = '/login';
-                }
             }
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 // --- Response interceptor for error handling ---

@@ -368,6 +368,23 @@ app.get('/', (req, res) => {
     res.send('Side Project Tracker API is running!');
 });
 
+// ─── Keep-alive / health check endpoints ───────────────────────────────────
+// These are intentionally fast (no DB) so Render doesn't spin down
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        timestamp: Date.now(),
+        uptime: Math.floor(process.uptime())
+    });
+});
+
+app.get('/api/ping', (req, res) => {
+    res.status(200).json({ pong: true, ts: Date.now() });
+});
+// ───────────────────────────────────────────────────────────────────────────
+
+
+
 // Mount public routes (no auth needed)
 app.use('/api/public', require('./routes/public'));
 

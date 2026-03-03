@@ -8,7 +8,7 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import { startKeepAlive } from './utils/keepAlive';
 import ProductionErrorBoundary, { ComponentErrorBoundary } from './components/ProductionErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
@@ -48,8 +48,11 @@ const VibeCodePage = lazy(() => import('./pages/VibeCodePage'));
 const AppContent = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  // Add keyboard shortcuts and global event listeners
+  // Add keyboard shortcuts, global events, and start keep-alive
   useEffect(() => {
+    // Keep Render server awake — ping every 9 minutes silently
+    startKeepAlive();
+
     const handleKeyPress = (e) => {
       // Command Palette: Cmd/Ctrl + K
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
