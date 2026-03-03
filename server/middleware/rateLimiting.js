@@ -9,11 +9,7 @@ const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Use user's IP + endpoint for key
-  keyGenerator: (req) => {
-    return req.ip + req.path;
-  },
-  // Custom handler for rate limit exceeded
+  // Handler for rate limit exceeded
   handler: (req, res) => {
     console.log(`[RATE LIMIT] Auth rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
     res.status(429).json({
@@ -23,6 +19,7 @@ const authLimiter = rateLimit({
     });
   }
 });
+
 
 // More lenient for general API routes
 const apiLimiter = rateLimit({

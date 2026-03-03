@@ -933,36 +933,45 @@ const ProjectDetailPage = () => {
                     </button>
                   )}
                   
-                  {/* External Links */}
-                  <div className="flex gap-3">
-                    {isOwner && project.github_url && (
-                      <motion.a
-                        href={project.github_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Github className="w-4 h-4" />
-                        Code
-                      </motion.a>
-                    )}
-                    
-                    {project.domain && (
-                      <motion.a
-                        href={`https://${project.domain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Live
-                      </motion.a>
-                    )}
-                  </div>
+                  {/* External Links - visible to everyone */}
+                  {(() => {
+                    const rawDomain = project.domain || project.demo_url || '';
+                    const websiteUrl = rawDomain
+                      ? (rawDomain.startsWith('http') ? rawDomain : `https://${rawDomain}`)
+                      : null;
+                    return (
+                      <div className="flex gap-3">
+                        {project.github_url && (
+                          <motion.a
+                            href={project.github_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Github className="w-4 h-4" />
+                            Code
+                          </motion.a>
+                        )}
+                        
+                        {websiteUrl && (
+                          <motion.a
+                            href={websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-4 py-3 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            Visit Website
+                          </motion.a>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                 </div>
               </div>
             </div>

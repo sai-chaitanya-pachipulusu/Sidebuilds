@@ -86,29 +86,27 @@ const DashboardPage = () => {
       try {
         console.log('Starting dashboard initial fetch...');
 
-        // Fetch comprehensive dashboard data with timeout
+        // Use apiClient (has correct baseURL + auth token interceptor)
+        const { default: apiClient } = await import('../services/api');
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
         
-        const dashboardResponse = await fetch('/api/dashboard', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
+        const dashboardResponse = await apiClient.get('/dashboard', {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
 
-        if (!dashboardResponse.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
-        const dashboardData = await dashboardResponse.json();
+        const dashboardData = dashboardResponse.data;
         const s = dashboardData.stats || {};
         console.log('[Dashboard] Raw stats received from API:', s);
         
         // Use the dashboard API data
         setStats(s);
         setRecentProjects(dashboardData.recentProjects || []);
+        // Seed projects list immediately from dashboard data
+        if (dashboardData.recentProjects?.length > 0) {
+          setProjects(dashboardData.recentProjects);
+        }
         setLoading(false);
         
         // Fetch additional data in background (non-blocking)
@@ -116,10 +114,12 @@ const DashboardPage = () => {
 
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
-        // Set loading to false on error to prevent infinite loading
         setLoading(false);
+        // Still try to load projects even if dashboard stats fail
+        fetchAdditionalData();
       }
     };
+
     
     // Fetch additional data separately to not block main dashboard render
     const fetchAdditionalData = async () => {

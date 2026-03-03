@@ -1,332 +1,243 @@
 #!/usr/bin/env node
-
 /**
- * Development Start Script
- * Cleans ports first, then starts both frontend and backend servers
- * Ensures consistent port usage: Backend 5001, Frontend 3001
+ * dev-start.js
+ * Starts both the backend (port 5002) and frontend (port 3002) dev servers.
+ * Handles port conflicts gracefully.
  */
 
 const { spawn, exec } = require('child_process');
 const path = require('path');
-const fs = require('fs');
+const net = require('net');
 
-console.log('🚀 SideBuilds Development Environment Startup');
-console.log('============================================');
+const BACKEND_PORT = 5002;
+const FRONTEND_PORT = 3002;
 
-/**
- * Execute command and return promise
- */
-function executeCommand(command) {
-    return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject({ error, stdout, stderr });
-            } else {
-                resolve({ stdout, stderr });
+const serverDir = path.join(__dirname, 'server');
+const clientDir = path.join(__dirname, 'client');
+
+// ─────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────
+
+function log(prefix, msg) {
+    process.stdout.write(`${prefix} ${msg}\n`);
+}
+
+/** Check if a port is already in use */
+function isPortInUse(port) {
+    return new Promise((resolve) => {
+        const server = net.createServer();
+        server.once('error', () => resolve(true));
+        server.once('listening', () => { server.close(); resolve(false); });
+        server.listen(port, '127.0.0.1');
+    });
+}
+
+/** Kill whatever is listening on a port (Windows-safe, no shell string) */
+function killPort(port) {
+    return new Promise((resolve) => {
+        if (process.platform !== 'win32') {
+            exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, resolve);
+            return;
+        }
+        // Windows: use netstat to find PID, then taskkill
+        exec(`netstat -aon`, (err, stdout) => {
+            if (err || !stdout) return resolve();
+            const lines = stdout.split('\n');
+            const pids = new Set();
+            for (const line of lines) {
+                // Match lines like:  TCP    0.0.0.0:5002    ...    LISTENING    1234
+                if (line.includes(`:${port}`) && line.includes('LISTENING')) {
+                    const parts = line.trim().split(/\s+/);
+                    const pid = parts[parts.length - 1];
+                    if (pid && !isNaN(pid) && pid !== '0') pids.add(pid);
+                }
+            }
+            if (pids.size === 0) return resolve();
+            let done = 0;
+            for (const pid of pids) {
+                // taskkill args as array — no shell string, no space issues
+                const tk = spawn('taskkill', ['/F', '/PID', pid], { stdio: 'ignore' });
+                tk.on('close', () => { if (++done === pids.size) resolve(); });
+                tk.on('error', () => { if (++done === pids.size) resolve(); });
             }
         });
     });
 }
 
-/**
- * Run port cleanup script
- */
-async function cleanupPorts() {
-    console.log('\n🧹 Step 1: Cleaning up ports 5001 and 3001...');
-    
-    try {
-        const cleanupScript = path.join(__dirname, 'cleanup-ports.js');
-        
-        if (!fs.existsSync(cleanupScript)) {
-            throw new Error('Cleanup script not found. Please ensure cleanup-ports.js exists.');
-        }
-        
-        return new Promise((resolve, reject) => {
-            const cleanup = spawn('node', [cleanupScript], {
-                stdio: 'inherit',
-                shell: true
-            });
-            
-            cleanup.on('close', (code) => {
-                if (code === 0) {
-                    console.log('✅ Port cleanup completed successfully');
-                    resolve();
-                } else {
-                    console.log('⚠️  Port cleanup completed with warnings');
-                    // Continue anyway - ports might already be free
-                    resolve();
-                }
-            });
-            
-            cleanup.on('error', (error) => {
-                console.error('❌ Port cleanup failed:', error.message);
-                reject(error);
-            });
-        });
-    } catch (error) {
-        console.error('❌ Failed to run port cleanup:', error.message);
-        throw error;
+// ─────────────────────────────────────────────
+// Step 1: Free ports
+// ─────────────────────────────────────────────
+
+async function freePorts() {
+    log('🧹', 'Checking ports...');
+    const [backendBusy, frontendBusy] = await Promise.all([
+        isPortInUse(BACKEND_PORT),
+        isPortInUse(FRONTEND_PORT),
+    ]);
+
+    const promises = [];
+    if (backendBusy)  { log('  ⚡', `Port ${BACKEND_PORT} in use — killing...`);  promises.push(killPort(BACKEND_PORT)); }
+    if (frontendBusy) { log('  ⚡', `Port ${FRONTEND_PORT} in use — killing...`); promises.push(killPort(FRONTEND_PORT)); }
+    await Promise.all(promises);
+
+    if (backendBusy || frontendBusy) {
+        // Brief pause after kill before binding
+        await new Promise(r => setTimeout(r, 800));
     }
+    log('  ✅', 'Ports ready');
 }
 
-/**
- * Check if package.json exists in directory
- */
-function checkPackageJson(dir) {
-    const packagePath = path.join(dir, 'package.json');
-    return fs.existsSync(packagePath);
-}
+// ─────────────────────────────────────────────
+// Step 2: Start backend
+// ─────────────────────────────────────────────
 
-/**
- * Start backend server
- */
-async function startBackend() {
-    console.log('\n🔧 Step 2: Starting Backend Server (Port 5001)...');
-    
-    const serverDir = path.join(__dirname, 'server');
-    
-    if (!checkPackageJson(serverDir)) {
-        throw new Error('Server package.json not found. Run "npm install" in server directory.');
-    }
-    
+function startBackend() {
+    log('\n🔧', `Starting backend on port ${BACKEND_PORT}...`);
+
     return new Promise((resolve, reject) => {
-        const backend = spawn('npm', ['run', 'dev'], {
+        // Use array args — never a shell string
+        const proc = spawn('npm', ['run', 'dev'], {
             cwd: serverDir,
             stdio: 'pipe',
-            shell: true
+            shell: false,   // avoid shell=true with spaces in paths
+            // On Windows, npm is npm.cmd — handle gracefully
+            ...(process.platform === 'win32' && { shell: true }),
         });
-        
-        let startupComplete = false;
-        let startupTimeout;
-        
-        // Set timeout for startup detection
-        startupTimeout = setTimeout(() => {
-            if (!startupComplete) {
-                console.log('⏰ Backend startup timeout - continuing anyway');
-                startupComplete = true;
-                resolve(backend);
+
+        let resolved = false;
+        const timeout = setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                log('  ⏰', 'Backend timeout — assuming it started');
+                resolve(proc);
             }
-        }, 15000); // 15 second timeout
-        
-        backend.stdout.on('data', (data) => {
-            const output = data.toString();
-            process.stdout.write(`[BACKEND] ${output}`);
-            
-            // Look for successful startup indicators
-            if ((output.includes('Server running on port 5001') || 
-                 output.includes('listening on port 5001') ||
-                 output.includes('5001')) && !startupComplete) {
-                startupComplete = true;
-                clearTimeout(startupTimeout);
-                console.log('✅ Backend server started successfully on port 5001');
-                resolve(backend);
+        }, 20000);
+
+        proc.stdout.on('data', (d) => {
+            const s = d.toString();
+            process.stdout.write(`[SERVER] ${s}`);
+            if (!resolved && (s.includes(`port ${BACKEND_PORT}`) || s.includes('listening'))) {
+                resolved = true;
+                clearTimeout(timeout);
+                log('  ✅', `Backend running on http://localhost:${BACKEND_PORT}`);
+                resolve(proc);
             }
         });
-        
-        backend.stderr.on('data', (data) => {
-            const output = data.toString();
-            process.stderr.write(`[BACKEND ERROR] ${output}`);
-            
-            // Check for fatal errors
-            if (output.includes('EADDRINUSE') && output.includes('5001')) {
-                console.error('❌ Port 5001 is still in use. Please run cleanup-ports.js manually.');
-                if (!startupComplete) {
-                    startupComplete = true;
-                    clearTimeout(startupTimeout);
-                    reject(new Error('Backend port 5001 is in use'));
-                }
-            }
-        });
-        
-        backend.on('error', (error) => {
-            if (!startupComplete) {
-                startupComplete = true;
-                clearTimeout(startupTimeout);
-                console.error('❌ Failed to start backend:', error.message);
-                reject(error);
-            }
-        });
-        
-        backend.on('close', (code) => {
-            console.log(`🔴 Backend process exited with code ${code}`);
-        });
-        
-        // Give it a moment to start up
-        setTimeout(() => {
-            if (!startupComplete) {
-                console.log('⏳ Backend is starting up...');
-            }
-        }, 2000);
+
+        proc.stderr.on('data', (d) => process.stderr.write(`[SERVER ERR] ${d}`));
+        proc.on('error', (e) => { clearTimeout(timeout); if (!resolved) { resolved = true; reject(e); } });
+        proc.on('close', (code) => log('🔴', `Backend exited (${code})`));
     });
 }
 
-/**
- * Start frontend server
- */
-async function startFrontend() {
-    console.log('\n⚛️  Step 3: Starting Frontend Server (Port 3001)...');
-    
-    const clientDir = path.join(__dirname, 'client');
-    
-    if (!checkPackageJson(clientDir)) {
-        throw new Error('Client package.json not found. Run "npm install" in client directory.');
-    }
-    
+// ─────────────────────────────────────────────
+// Step 3: Start frontend
+// ─────────────────────────────────────────────
+
+function startFrontend() {
+    log('\n⚛️ ', `Starting frontend on port ${FRONTEND_PORT}...`);
+
     return new Promise((resolve, reject) => {
-        const frontend = spawn('npm', ['start'], {
+        const proc = spawn('npm', ['start'], {
             cwd: clientDir,
             stdio: 'pipe',
-            shell: true,
-            env: { ...process.env, PORT: '3001', BROWSER: 'none' }
+            shell: process.platform === 'win32',
+            env: {
+                ...process.env,
+                PORT: String(FRONTEND_PORT),
+                BROWSER: 'none',
+                CI: 'false',
+                FORCE_COLOR: '1',
+            },
         });
-        
-        let startupComplete = false;
-        let startupTimeout;
-        
-        // Set timeout for startup detection
-        startupTimeout = setTimeout(() => {
-            if (!startupComplete) {
-                console.log('⏰ Frontend startup timeout - continuing anyway');
-                startupComplete = true;
-                resolve(frontend);
+
+        let resolved = false;
+        const timeout = setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                log('  ⏰', 'Frontend timeout — assuming it started');
+                resolve(proc);
             }
-        }, 30000); // 30 second timeout for webpack
-        
-        frontend.stdout.on('data', (data) => {
-            const output = data.toString();
-            process.stdout.write(`[FRONTEND] ${output}`);
-            
-            // Look for successful startup indicators
-            if ((output.includes('webpack compiled') || 
-                 output.includes('Local:') ||
-                 output.includes('localhost:3001') ||
-                 output.includes('compiled successfully')) && !startupComplete) {
-                startupComplete = true;
-                clearTimeout(startupTimeout);
-                console.log('✅ Frontend server started successfully on port 3001');
-                resolve(frontend);
+        }, 60000);
+
+        proc.stdout.on('data', (d) => {
+            const s = d.toString();
+            process.stdout.write(`[CLIENT] ${s}`);
+            if (!resolved && (
+                s.includes('webpack compiled') ||
+                s.includes('compiled successfully') ||
+                s.includes(`localhost:${FRONTEND_PORT}`)
+            )) {
+                resolved = true;
+                clearTimeout(timeout);
+                log('  ✅', `Frontend running on http://localhost:${FRONTEND_PORT}`);
+                resolve(proc);
             }
-        });
-        
-        frontend.stderr.on('data', (data) => {
-            const output = data.toString();
-            process.stderr.write(`[FRONTEND ERROR] ${output}`);
-            
-            // Check for fatal errors
-            if (output.includes('EADDRINUSE') && output.includes('3001')) {
-                console.error('❌ Port 3001 is still in use. Please run cleanup-ports.js manually.');
-                if (!startupComplete) {
-                    startupComplete = true;
-                    clearTimeout(startupTimeout);
-                    reject(new Error('Frontend port 3001 is in use'));
-                }
+            // CRA asks "Something is running on port X, use Y?" — answer no and handle
+            if (s.includes('Something is already running')) {
+                resolved = true;
+                clearTimeout(timeout);
+                log('  ⚠️ ', `Port ${FRONTEND_PORT} still busy after cleanup. Kill it manually then retry.`);
+                proc.kill();
+                reject(new Error(`Port ${FRONTEND_PORT} busy`));
             }
         });
-        
-        frontend.on('error', (error) => {
-            if (!startupComplete) {
-                startupComplete = true;
-                clearTimeout(startupTimeout);
-                console.error('❌ Failed to start frontend:', error.message);
-                reject(error);
-            }
+
+        proc.stderr.on('data', (d) => process.stderr.write(`[CLIENT ERR] ${d}`));
+        proc.on('error', (e) => { clearTimeout(timeout); if (!resolved) { resolved = true; reject(e); } });
+        proc.on('close', (code) => {
+            log('🔴', `Frontend exited (${code})`);
         });
-        
-        frontend.on('close', (code) => {
-            console.log(`🔴 Frontend process exited with code ${code}`);
-        });
-        
-        // Give it a moment to start up
-        setTimeout(() => {
-            if (!startupComplete) {
-                console.log('⏳ Frontend is starting up (this can take 20-30 seconds)...');
-            }
-        }, 5000);
     });
 }
 
-/**
- * Display startup summary
- */
-function displaySummary() {
-    console.log('\n🎉 Development Environment Ready!');
-    console.log('=================================');
-    console.log('🔧 Backend API:  http://localhost:5001/api');
-    console.log('⚛️  Frontend UI:  http://localhost:3001');
-    console.log('');
-    console.log('📝 Notes:');
-    console.log('  • Backend and frontend will restart automatically on file changes');
-    console.log('  • Press Ctrl+C to stop both servers');
-    console.log('  • If ports conflict, run: node cleanup-ports.js');
-    console.log('');
-    console.log('🔧 Troubleshooting:');
-    console.log('  • Port issues: Run "node cleanup-ports.js" manually');
-    console.log('  • Missing deps: Run "npm install" in server/ and client/ directories');
-    console.log('  • Database issues: Check server/.env configuration');
-    console.log('');
+// ─────────────────────────────────────────────
+// Graceful shutdown
+// ─────────────────────────────────────────────
+
+let backend = null;
+let frontend = null;
+
+function shutdown() {
+    log('\n🛑', 'Shutting down...');
+    if (backend) try { backend.kill('SIGTERM'); } catch (_) {}
+    if (frontend) try { frontend.kill('SIGTERM'); } catch (_) {}
+    setTimeout(() => process.exit(0), 1500);
 }
 
-/**
- * Handle graceful shutdown
- */
-let backendProcess = null;
-let frontendProcess = null;
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
-function gracefulShutdown() {
-    console.log('\n🛑 Shutting down development environment...');
-    
-    if (backendProcess) {
-        console.log('🔧 Stopping backend server...');
-        backendProcess.kill('SIGTERM');
-    }
-    
-    if (frontendProcess) {
-        console.log('⚛️  Stopping frontend server...');
-        frontendProcess.kill('SIGTERM');
-    }
-    
-    setTimeout(() => {
-        console.log('✅ Development environment stopped');
-        process.exit(0);
-    }, 2000);
-}
+// ─────────────────────────────────────────────
+// Main
+// ─────────────────────────────────────────────
 
-process.on('SIGINT', gracefulShutdown);
-process.on('SIGTERM', gracefulShutdown);
-
-/**
- * Main startup sequence
- */
 async function main() {
+    log('🚀', 'SideBuilds Dev Startup');
+    log('═══════════════════════', '');
+
     try {
-        // Step 1: Clean up ports
-        await cleanupPorts();
-        
-        // Step 2: Start backend
-        backendProcess = await startBackend();
-        
-        // Wait a moment for backend to fully initialize
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Step 3: Start frontend
-        frontendProcess = await startFrontend();
-        
-        // Display success message
-        displaySummary();
-        
-    } catch (error) {
-        console.error('\n💥 Failed to start development environment:');
-        console.error(error.message);
-        console.log('\n🔧 Troubleshooting steps:');
-        console.log('1. Run "node cleanup-ports.js" to free up ports');
-        console.log('2. Check if Node.js dependencies are installed');
-        console.log('3. Verify .env files are configured correctly');
-        console.log('4. Try running servers manually to see detailed error messages');
-        
-        gracefulShutdown();
-        process.exit(1);
+        await freePorts();
+
+        backend  = await startBackend();
+
+        // Give backend a moment to fully init before starting webpack
+        await new Promise(r => setTimeout(r, 2000));
+
+        frontend = await startFrontend();
+
+        log('\n🎉', 'Both servers running!');
+        log('   Backend : ', `http://localhost:${BACKEND_PORT}/api`);
+        log('   Frontend: ', `http://localhost:${FRONTEND_PORT}`);
+        log('\n   Press Ctrl+C to stop.\n', '');
+
+    } catch (err) {
+        log('\n💥', `Startup failed: ${err.message}`);
+        log('   Try:', 'npm run dev:server  (backend only)');
+        log('   Try:', 'npm run dev:client  (frontend only)');
+        shutdown();
     }
 }
 
-// Start the development environment
 main();

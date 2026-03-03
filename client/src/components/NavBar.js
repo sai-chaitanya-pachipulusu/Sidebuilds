@@ -195,7 +195,9 @@ const NavBar = () => {
             {/* Center Navigation - Pill container like Clerk/Linear */}
             <div className="hidden lg:flex items-center">
               <div className="flex items-center bg-white/[0.02] rounded-none px-1.5 py-1">
-                {navItems.map((item) => {
+                {navItems
+                  .filter(item => !item.requiresAuth || isAuthenticated)
+                  .map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
                     <Link
