@@ -283,27 +283,31 @@ export const createProject = async (projectData) => {
 };
 
 export const getProjectById = async (projectId) => {
+    // First try the public endpoint (no auth required, fast)
     try {
-        // For marketplace projects, try public endpoint first
-        try {
-            const publicResponse = await apiClient.get(`/public/projects/${projectId}`);
-            return publicResponse.data;
-        } catch (publicError) {
-            // If public fails, try private project (for owners)
-            if (publicError.response?.status === 404) {
-                try {
-                    const privateResponse = await apiClient.get(`/projects/${projectId}`);
-                    return privateResponse.data;
-                } catch (privateError) {
-                    throw new Error('Project not found or access denied');
-                }
-            }
-            throw publicError;
+        const response = await apiClient.get(`/public/projects/${projectId}`);
+        return response.data;
+    } catch (publicError) {
+        // Only fall back to private endpoint if:
+        // 1. It was a 404 (not a timeout or network error)
+        // 2. The user has a token (otherwise private will 401 too)
+        const is404 = publicError.response?.status === 404;
+        const hasToken = !!localStorage.getItem('token');
+
+        if (is404 && hasToken) {
+            const privateResponse = await apiClient.get(`/projects/${projectId}`);
+            return privateResponse.data;
         }
-    } catch (error) {
-        throw new Error(error.message || 'Failed to fetch project details');
+
+        if (is404) {
+            throw new Error('Project not found or not publicly listed.');
+        }
+
+        // Timeout or network error — surface it clearly
+        throw publicError;
     }
 };
+
 
 export const updateProject = async (projectId, projectData) => {
     try {

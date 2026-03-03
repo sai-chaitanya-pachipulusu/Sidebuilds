@@ -8,7 +8,7 @@ let status = 'disconnected'; // 'disconnected', 'connecting', 'connected', 'erro
 let currentToken = null;
 let heartbeatInterval = null;
 let reconnectAttempt = 0;
-let maxReconnectAttempts = 10;
+let maxReconnectAttempts = 3;  // 3 attempts max — don't block UX for minutes
 let reconnectDelay = 1000;
 let connectionQuality = 'unknown'; // 'excellent', 'good', 'poor', 'disconnected'
 let lastPingTime = null;
@@ -108,14 +108,12 @@ export const initializeSocket = (token) => {
   
   // Enhanced socket configuration
   socket = io(SOCKET_URL, {
-    // Connection settings
-    reconnectionAttempts: maxReconnectAttempts,
-    reconnectionDelay: reconnectDelay,
-    reconnectionDelayMax: 10000,
-    maxReconnectionAttempts: maxReconnectAttempts,
-    timeout: 10000,
+    reconnectionAttempts: 3,         // fail fast — don't retry for minutes
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 3000,      // max 3s between retries
+    maxReconnectionAttempts: 3,
+    timeout: 8000,                   // match our API timeout
     
-    // Authentication
     auth: {
       token: token,
       timestamp: Date.now(),
@@ -123,12 +121,10 @@ export const initializeSocket = (token) => {
       version: process.env.REACT_APP_VERSION || '1.0.0'
     },
     
-    // Transport optimization
     transports: ['websocket', 'polling'],
     upgrade: true,
     forceNew: true,
     
-    // Query parameters for debugging
     query: {
       client: 'web',
       version: process.env.REACT_APP_VERSION || '1.0.0'
