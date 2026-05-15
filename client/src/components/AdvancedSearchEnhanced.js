@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import ProductionErrorBoundary from '../components/ProductionErrorBoundary'
 import {
   Search,
   Filter,
@@ -516,11 +517,12 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
     setFilters(search.filters)
   }
 
-  return (
-    <div className={cn("space-y-6", className)}>
-      {/* Enhanced Main Search Bar */}
-      <div className="relative">
-        <div className="relative flex-1">
+   return (
+     <ProductionErrorBoundary>
+       <div className={cn("space-y-6", className)}>
+         {/* Enhanced Main Search Bar */}
+         <div className="relative">
+           <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           {isSearching && (
             <Loader2 className="absolute left-12 top-1/2 -translate-y-1/2 w-4 h-4 text-white animate-spin" />
@@ -912,10 +914,11 @@ const AdvancedSearchEnhanced = ({ projects, onFilteredResults, className }) => {
               </motion.button>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  )
+         </div>
+       )}
+     </div>
+   </ProductionErrorBoundary>
+ )
 }
 
 export default AdvancedSearchEnhanced
