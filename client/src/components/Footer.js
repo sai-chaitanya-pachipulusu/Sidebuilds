@@ -91,10 +91,10 @@ const Footer = () => {
             <div className="mt-6">
               <p className="text-gray-600 text-xs font-mono uppercase tracking-wider mb-2">Support</p>
               <a
-                href="mailto:support@sidebuilds.space"
+                href="mailto:support@sidebuilds.online"
                 className="text-gray-500 hover:text-white transition-colors text-xs font-mono"
               >
-                support@sidebuilds.space
+                support@sidebuilds.online
               </a>
             </div>
           </div>

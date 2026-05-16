@@ -3,7 +3,7 @@ import { useParams, Link as RouterLink, useLocation, useNavigate } from 'react-r
 import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
-import { getProjectById, expressInterestInProject } from '../services/api';
+import { getProjectById, expressInterestInProject, getDueDiligenceReport } from '../services/api';
 import PaymentService from '../services/paymentService';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import ProjectDetailSkeleton from '../components/ProjectDetailSkeleton';
@@ -68,6 +68,8 @@ const ProjectDetailPage = () => {
   const [isOfferButtonLoading, setIsOfferButtonLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [purchaseInitiated, setPurchaseInitiated] = useState(false);
+  const [dueDiligenceReport, setDueDiligenceReport] = useState(null);
+  const [isDueDiligenceLoading, setIsDueDiligenceLoading] = useState(false);
   
   // Abort controller for request cancellation
   const abortControllerRef = useRef(null);
@@ -101,6 +103,13 @@ const ProjectDetailPage = () => {
         }
         
         setProject(data);
+        setIsDueDiligenceLoading(true);
+        getDueDiligenceReport(projectId)
+          .then(setDueDiligenceReport)
+          .catch((reportError) => {
+            console.warn('Due diligence report unavailable:', reportError.message || reportError);
+          })
+          .finally(() => setIsDueDiligenceLoading(false));
       } catch (err) {
         if (err.name === 'AbortError') {
           console.log('Request was cancelled');
@@ -506,6 +515,10 @@ const ProjectDetailPage = () => {
   const monthlyRevenue = project.monthly_revenue || 0;
   const viewCount = project.view_count || 0;
   const yearsRunning = project.years_running || 0;
+  const healthScore = project.project_health_score || project.overall_score || project.ai_analysis?.overall_score;
+  const updatedDate = project.updated_at
+    ? new Date(project.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
 
   const formatPrice = (price) => {
     if (!price || price === 0) return '$0';
@@ -579,6 +592,18 @@ const ProjectDetailPage = () => {
                           Verified
                         </div>
                       )}
+                      {project.is_verified && (
+                        <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-none text-green-400 text-sm font-medium flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          Verified Seller
+                        </div>
+                      )}
+                      {healthScore && (
+                        <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-none text-blue-300 text-sm font-medium flex items-center gap-1">
+                          <Lightbulb className="w-3 h-3" />
+                          Health {Math.round(healthScore)}/100
+                        </div>
+                      )}
                       {project.is_featured && (
                         <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-none text-blue-400 text-sm font-medium flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
@@ -624,6 +649,12 @@ const ProjectDetailPage = () => {
                         <Calendar className="w-4 h-4" />
                         {yearsRunning} years running
                       </div>
+                      {updatedDate && (
+                        <div className="flex items-center gap-1">
+                          <Clock4 className="w-4 h-4" />
+                          Updated {updatedDate}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -806,6 +837,46 @@ const ProjectDetailPage = () => {
                     ) : (
                       <p className="text-gray-400">No AI analysis available for this project.</p>
                     )}
+
+                    <div className="bg-gray-800/50 rounded-none p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">AI Due Diligence Report</h3>
+                        {dueDiligenceReport?.source && (
+                          <span className="text-xs text-gray-500 uppercase tracking-wider">{dueDiligenceReport.source}</span>
+                        )}
+                      </div>
+
+                      {isDueDiligenceLoading ? (
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating buyer report...
+                        </div>
+                      ) : dueDiligenceReport ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            ['Strengths', dueDiligenceReport.strengths],
+                            ['Risks', dueDiligenceReport.risks],
+                            ['Questions to Ask', dueDiligenceReport.questions_to_ask_seller],
+                            ['Valuation Concerns', dueDiligenceReport.valuation_concerns],
+                            ['Transfer Checklist', dueDiligenceReport.transfer_checklist]
+                          ].map(([title, items]) => (
+                            <div key={title} className="border border-white/[0.08] p-4">
+                              <h4 className="text-sm font-semibold text-blue-300 mb-3">{title}</h4>
+                              <ul className="space-y-2 text-sm text-gray-300">
+                                {(items || []).map((item, index) => (
+                                  <li key={index} className="flex gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400">Due diligence report is not available right now.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -864,11 +935,31 @@ const ProjectDetailPage = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-gray-400">
                       <Star className="w-4 h-4" />
-                      <span>Rating</span>
+                      <span>Project Health</span>
                     </div>
                     <span className="text-white font-medium">
-                      {project.rating || 'N/A'}
+                      {healthScore ? `${Math.round(healthScore)}/100` : 'Pending'}
                     </span>
+                  </div>
+
+                  <div className="rounded-none border border-white/[0.08] bg-white/[0.03] p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Shield className="w-5 h-5 text-blue-300 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-semibold text-white">Buyer Protection</div>
+                        <p className="text-xs text-gray-400">
+                          Payments use Stripe checkout, purchase requests track transfer status, and buyers confirm receipt before the workflow is completed.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className={project.is_verified ? 'text-green-300' : 'text-gray-500'}>
+                        {project.is_verified ? 'Seller verified' : 'Seller not verified'}
+                      </div>
+                      <div className={project.revenue_verified ? 'text-green-300' : 'text-gray-500'}>
+                        {project.revenue_verified ? 'Revenue verified' : 'Revenue not verified'}
+                      </div>
+                    </div>
                   </div>
                 </div>
 

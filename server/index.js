@@ -15,6 +15,7 @@ let PORT = parseInt(process.env.PORT || '5002', 10);
 
 // Import database connection AFTER dotenv has been configured and logged
 const db = require('./db');
+const emailService = require('./services/emailService');
 
 // --- Middleware --- 
 const app = express();
@@ -23,11 +24,11 @@ const server = http.createServer(app); // Create HTTP server for Express app
 // Configure CORS based on environment
 const allowedOrigins = process.env.NODE_ENV === 'production' 
     ? [
-        'https://www.sidebuilds.space',
-        'https://sidebuilds.space'
+        'https://www.sidebuilds.online',
+        'https://sidebuilds.online'
       ]
     : [
-        'https://www.sidebuilds.space',
+        'https://www.sidebuilds.online',
         'http://localhost:3000', // Local client development
         'http://localhost:3001',  // Local client development (alternative port)
         'http://localhost:3002',  // Local client development (current port)
@@ -94,11 +95,11 @@ const authenticateSocket = (socket, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!decoded.user || !decoded.user.id) {
+        if (!decoded.user || (!decoded.user.id && !decoded.user.user_id)) {
             throw new Error('Invalid token payload');
         }
         
-        socket.userId = decoded.user.id;
+        socket.userId = decoded.user.user_id || decoded.user.id;
         socket.user = decoded.user;
         socket.isAuthenticated = true;
         
@@ -353,7 +354,12 @@ app.use(compression({
 const { apiLimiter, searchLimiter, uploadLimiter } = require('./middleware/rateLimiter');
 
 // Apply API rate limiting to all API routes
-app.use('/api/', apiLimiter);
+app.use('/api/', (req, res, next) => {
+    if (['/health', '/ready', '/status', '/ping'].includes(req.path)) {
+        return next();
+    }
+    return apiLimiter(req, res, next);
+});
 
 // Apply stricter rate limiting to search endpoints
 app.use('/api/projects/search', searchLimiter);
@@ -381,6 +387,45 @@ app.get('/api/health', (req, res) => {
 app.get('/api/ping', (req, res) => {
     res.status(200).json({ pong: true, ts: Date.now() });
 });
+
+app.get('/api/ready', async (req, res) => {
+    const connection = await db.checkConnection();
+    res.status(connection.ok ? 200 : 503).json({
+        status: connection.ok ? 'ready' : 'not_ready',
+        database: {
+            type: connection.type || 'unknown',
+            connected: Boolean(connection.ok),
+            message: connection.message
+        },
+        timestamp: Date.now()
+    });
+});
+
+app.get('/api/status', async (req, res) => {
+    try {
+        const database = await db.getDatabaseInfo();
+        res.status(database.healthy ? 200 : 503).json({
+            status: database.healthy ? 'ok' : 'degraded',
+            uptime: Math.floor(process.uptime()),
+            environment: process.env.NODE_ENV || 'development',
+            database,
+            email: emailService.getEmailStatus(),
+            timestamp: Date.now()
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'degraded',
+            uptime: Math.floor(process.uptime()),
+            environment: process.env.NODE_ENV || 'development',
+            database: {
+                type: 'unknown',
+                healthy: false,
+                message: error.message
+            },
+            timestamp: Date.now()
+        });
+    }
+});
 // ───────────────────────────────────────────────────────────────────────────
 
 
@@ -400,6 +445,9 @@ app.use('/api/auth', require('./routes/auth'));
 
 // Mount user profile routes
 app.use('/api/users', require('./routes/users'));
+
+// Mount admin routes
+app.use('/api/admin', require('./routes/admin'));
 
 // Mount project routes (protected by middleware within the file)
 app.use('/api/projects', require('./routes/projects')); 

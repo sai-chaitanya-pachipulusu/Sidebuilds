@@ -117,7 +117,7 @@ const FAQPage = () => {
     {
       category: 'general',
       question: 'How do I contact customer support?',
-      answer: 'You can reach our support team through the contact form on our website, email us directly at support@sidebuilds.space, or use the in-platform messaging system. We aim to respond to all inquiries within 24 hours during business days.'
+      answer: 'You can reach our support team through the contact form on our website, email us directly at support@sidebuilds.online, or use the in-platform messaging system. We aim to respond to all inquiries within 24 hours during business days.'
     }
   ];
 
@@ -327,7 +327,7 @@ const FAQPage = () => {
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <motion.a
-                    href="mailto:support@sidebuilds.space"
+                    href="mailto:support@sidebuilds.online"
                     className="flex items-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-none font-medium transition-all duration-200"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

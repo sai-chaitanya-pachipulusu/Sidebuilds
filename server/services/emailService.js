@@ -1,12 +1,43 @@
 const nodemailer = require('nodemailer');
 
+const requiredSmtpVars = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+
+const getEmailStatus = () => {
+  const missing = requiredSmtpVars.filter((key) => !process.env[key]);
+  const configured = missing.length === 0;
+
+  return {
+    provider: 'smtp',
+    configured,
+    missing,
+    from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.online>',
+    host: process.env.SMTP_HOST || null,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development'
+  };
+};
+
 // Create a transporter based on environment
 const createTransporter = () => {
-  if (process.env.NODE_ENV === 'production' && process.env.SMTP_HOST) {
+  const status = getEmailStatus();
+
+  if (process.env.NODE_ENV === 'production' && !status.configured) {
+    return {
+      sendMail: async () => {
+        throw new Error(`SMTP is not configured. Missing: ${status.missing.join(', ')}`);
+      },
+      verify: async () => {
+        throw new Error(`SMTP is not configured. Missing: ${status.missing.join(', ')}`);
+      }
+    };
+  }
+
+  if (status.configured) {
     // Production configuration
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
+      port: status.port,
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
@@ -17,7 +48,7 @@ const createTransporter = () => {
     // Development configuration - log to console
     return {
       sendMail: async (mailOptions) => {
-        console.log('📧 [DEV EMAIL] Would send email:');
+        console.log('[DEV EMAIL] Would send email:');
         console.log('To:', mailOptions.to);
         console.log('Subject:', mailOptions.subject);
         console.log('Text:', mailOptions.text);
@@ -151,16 +182,16 @@ const sendEmail = async (to, templateName, data) => {
     }
 
     const mailOptions = {
-      from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.space>',
+      from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.online>',
       to,
       ...template(data)
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully: ${templateName} to ${to}`);
+    console.log(`Email sent successfully: ${templateName} to ${to}`);
     return info;
   } catch (error) {
-    console.error(`❌ Failed to send email: ${templateName} to ${to}`, error);
+    console.error(`Failed to send email: ${templateName} to ${to}`, error);
     throw error;
   }
 };
@@ -195,13 +226,20 @@ const emailService = {
   // Generic send function for custom emails
   sendCustomEmail: async (to, subject, text, html) => {
     const mailOptions = {
-      from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.space>',
+      from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.online>',
       to,
       subject,
       text,
       html
     };
     return transporter.sendMail(mailOptions);
+  },
+
+  getEmailStatus,
+
+  verifyConnection: async () => {
+    await transporter.verify();
+    return getEmailStatus();
   }
 };
 

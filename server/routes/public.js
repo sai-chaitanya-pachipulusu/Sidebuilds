@@ -107,9 +107,12 @@ router.get('/marketplace',
                     u.is_verified,
                     u.verification_level,
                     u.avatar_url,
+                    false AS revenue_verified,
+                    false AS code_quality_verified,
                     ai.overall_score,
                     ai.estimated_value as ai_estimated_value,
-                    ai.confidence_score as ai_confidence
+                    ai.confidence_score as ai_confidence,
+                    ai.overall_score as project_health_score
                 FROM projects p 
                 JOIN users u ON p.owner_id = u.user_id 
                 LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id
@@ -160,9 +163,21 @@ router.get('/projects/:id',
                     CASE WHEN p.is_for_sale = true THEN p.contact_email ELSE NULL END AS contact_email,
                     CASE WHEN p.is_for_sale = true THEN p.contact_phone ELSE NULL END AS contact_phone,
                     CASE WHEN p.is_for_sale = true THEN p.payment_method ELSE NULL END AS contact_payment_method,
-                    p.updated_at, p.created_at, u.username AS owner_username, p.owner_id
+                    p.updated_at, p.created_at, u.username AS owner_username, p.owner_id,
+                    u.is_verified, u.verification_level, u.avatar_url,
+                    false AS revenue_verified,
+                    false AS code_quality_verified,
+                    false AS verified,
+                    ai.overall_score,
+                    ai.estimated_value AS ai_estimated_value,
+                    ai.confidence_score AS ai_confidence,
+                    ai.confidence_level,
+                    ai.insights,
+                    ai.recommendations,
+                    ai.risks
                  FROM projects p
                  JOIN users u ON p.owner_id = u.user_id
+                 LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id
                  WHERE p.project_id = $1 AND (p.is_public = true OR p.is_for_sale = true)`,
                 [projectId]
             );
@@ -191,6 +206,16 @@ router.get('/projects/:id',
 
             project.tech_stack = normalizeArray(project.tech_stack);
             project.tags = normalizeArray(project.tags);
+            project.project_health_score = project.overall_score || null;
+            project.ai_analysis = project.overall_score ? {
+                overall_score: project.overall_score,
+                estimated_value: project.ai_estimated_value,
+                confidence_score: project.ai_confidence,
+                confidence_level: project.confidence_level || 'medium',
+                insights: project.insights,
+                recommendations: project.recommendations,
+                risks: project.risks
+            } : null;
 
             res.json(project);
         } catch (err) {

@@ -689,6 +689,201 @@ router.post('/:requestId/reject',
     }
 );
 
+// --- Seller proposes negotiated terms ---
+router.put('/:requestId/seller-propose-terms',
+    authMiddleware,
+    [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
+    handleValidationErrors,
+    async (req, res) => {
+        const { requestId } = req.params;
+        const sellerId = req.user.user_id;
+        const { seller_proposal_message } = req.body;
+
+        try {
+            const result = await db.withTransaction(async (client) => {
+                const requestResult = await client.query(
+                    'SELECT * FROM purchase_requests WHERE id = $1 AND seller_id = $2 FOR UPDATE',
+                    [requestId, sellerId]
+                );
+
+                if (requestResult.rows.length === 0) {
+                    throw new Error('Request not found');
+                }
+
+                const request = requestResult.rows[0];
+                if (!['interest_expressed', 'seller_terms_proposed'].includes(request.status)) {
+                    throw new Error(`Invalid status: ${request.status}`);
+                }
+
+                await client.query(
+                    "UPDATE purchase_requests SET status = 'seller_terms_proposed', message = COALESCE($1, message), updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                    [seller_proposal_message || null, requestId]
+                );
+
+                const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
+                return updated.rows[0];
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error proposing seller terms:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ error: 'Purchase request not found or you are not the seller.' });
+            }
+            if (error.message.includes('Invalid status')) {
+                return res.status(400).json({ error: `Terms cannot be proposed. ${error.message}` });
+            }
+            res.status(500).json({ error: 'Failed to propose terms.' });
+        }
+    }
+);
+
+// --- Buyer accepts seller proposed terms ---
+router.put('/:requestId/buyer-accepts-terms',
+    authMiddleware,
+    [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
+    handleValidationErrors,
+    async (req, res) => {
+        const { requestId } = req.params;
+        const buyerId = req.user.user_id;
+
+        try {
+            const result = await db.withTransaction(async (client) => {
+                const requestResult = await client.query(
+                    'SELECT * FROM purchase_requests WHERE id = $1 AND buyer_id = $2 FOR UPDATE',
+                    [requestId, buyerId]
+                );
+
+                if (requestResult.rows.length === 0) {
+                    throw new Error('Request not found');
+                }
+
+                const request = requestResult.rows[0];
+                if (!['seller_terms_proposed', 'seller_accepted_pending_payment', 'interest_expressed'].includes(request.status)) {
+                    throw new Error(`Invalid status: ${request.status}`);
+                }
+
+                await client.query(
+                    "UPDATE purchase_requests SET status = 'agreement_reached_pending_payment', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+                    [requestId]
+                );
+
+                const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
+                return updated.rows[0];
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error accepting buyer terms:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ error: 'Purchase request not found or you are not the buyer.' });
+            }
+            if (error.message.includes('Invalid status')) {
+                return res.status(400).json({ error: `Terms cannot be accepted. ${error.message}` });
+            }
+            res.status(500).json({ error: 'Failed to accept terms.' });
+        }
+    }
+);
+
+// --- Buyer withdraws interest ---
+router.put('/:requestId/withdraw-interest',
+    authMiddleware,
+    [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
+    handleValidationErrors,
+    async (req, res) => {
+        const { requestId } = req.params;
+        const buyerId = req.user.user_id;
+        const { withdrawal_reason } = req.body;
+
+        try {
+            const result = await db.withTransaction(async (client) => {
+                const requestResult = await client.query(
+                    'SELECT * FROM purchase_requests WHERE id = $1 AND buyer_id = $2 FOR UPDATE',
+                    [requestId, buyerId]
+                );
+
+                if (requestResult.rows.length === 0) {
+                    throw new Error('Request not found');
+                }
+
+                const request = requestResult.rows[0];
+                if (['transfer_completed_buyer_confirmed', 'payment_completed_pending_transfer'].includes(request.status)) {
+                    throw new Error(`Invalid status: ${request.status}`);
+                }
+
+                await client.query(
+                    "UPDATE purchase_requests SET status = 'buyer_withdrew_interest', message = COALESCE($1, message), updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                    [withdrawal_reason || null, requestId]
+                );
+
+                const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
+                return updated.rows[0];
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error withdrawing buyer interest:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ error: 'Purchase request not found or you are not the buyer.' });
+            }
+            if (error.message.includes('Invalid status')) {
+                return res.status(400).json({ error: `Interest cannot be withdrawn. ${error.message}` });
+            }
+            res.status(500).json({ error: 'Failed to withdraw interest.' });
+        }
+    }
+);
+
+// --- Seller decline interest alias for newer client workflow ---
+router.put('/:requestId/decline-interest',
+    authMiddleware,
+    [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
+    handleValidationErrors,
+    async (req, res) => {
+        req.body.rejection_reason = req.body.decline_reason || req.body.rejection_reason;
+        const { requestId } = req.params;
+        const sellerId = req.user.user_id;
+
+        try {
+            const result = await db.withTransaction(async (client) => {
+                const requestResult = await client.query(
+                    'SELECT * FROM purchase_requests WHERE id = $1 AND seller_id = $2 FOR UPDATE',
+                    [requestId, sellerId]
+                );
+
+                if (requestResult.rows.length === 0) {
+                    throw new Error('Request not found');
+                }
+
+                const request = requestResult.rows[0];
+                if (!['interest_expressed', 'seller_terms_proposed'].includes(request.status)) {
+                    throw new Error(`Invalid status: ${request.status}`);
+                }
+
+                await client.query(
+                    "UPDATE purchase_requests SET status = 'seller_rejected', message = COALESCE($1, message), updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                    [req.body.rejection_reason || null, requestId]
+                );
+
+                const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
+                return updated.rows[0];
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error declining seller interest:', error);
+            if (error.message === 'Request not found') {
+                return res.status(404).json({ error: 'Purchase request not found or you are not the seller.' });
+            }
+            if (error.message.includes('Invalid status')) {
+                return res.status(400).json({ error: `Interest cannot be declined. ${error.message}` });
+            }
+            res.status(500).json({ error: 'Failed to decline interest.' });
+        }
+    }
+);
+
 // --- Buyer confirms asset transfer ---
 router.post('/:requestId/confirm-transfer', 
     authMiddleware,

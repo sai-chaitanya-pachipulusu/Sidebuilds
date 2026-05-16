@@ -1,67 +1,47 @@
 import axios from 'axios';
-import apiCache, { CACHE_TTL, cachedFetch } from '../utils/apiCache';
+// (Removed unused imports)
 
 // Create an axios instance
 const apiClient = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
-    headers: { 'Content-Type': 'application/json' },
-    timeout: 8000, // 8 seconds — fail fast, show clear error
-});
-
-// ── Slow-request warning (Render cold start UX) ───────────────────────────
-// If a request takes > 3s, show a toast so the user knows the server is waking up
-let slowRequestToast = null;
-apiClient.interceptors.request.use((config) => {
-    config._requestStart = Date.now();
-    config._slowTimer = setTimeout(() => {
-        // Dynamically import toast to avoid circular deps
-        import('react-hot-toast').then(({ default: toast }) => {
-            slowRequestToast = toast.loading(
-                '⏳ Server is starting up, please wait a moment...', 
-                { id: 'server-wakeup', duration: 20000 }
-            );
-        });
-    }, 3000);
-    return config;
-});
-apiClient.interceptors.response.use(
-    (response) => {
-        clearTimeout(response.config._slowTimer);
-        if (slowRequestToast) {
-            import('react-hot-toast').then(({ default: toast }) => {
-                toast.dismiss('server-wakeup');
-            });
-            slowRequestToast = null;
-        }
-        return response;
+    // Use consistent backend port (server runs on 5001)
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
+    headers: {
+        'Content-Type': 'application/json',
     },
-    (error) => {
-        if (error.config?._slowTimer) clearTimeout(error.config._slowTimer);
-        if (slowRequestToast) {
-            import('react-hot-toast').then(({ default: toast }) => {
-                toast.dismiss('server-wakeup');
-            });
-            slowRequestToast = null;
-        }
-        return Promise.reject(error);
-    }
-);
-// ─────────────────────────────────────────────────────────────────────────
+    // Add timeout to prevent hanging requests
+    timeout: 15000, // 15 seconds timeout for production
+});
 
-// Debug function to check localStorage token - only runs in development
+console.log('🌐 API Client configured with baseURL:', apiClient.defaults.baseURL);
+
+// Debug function to check localStorage token
 const debugToken = () => {
-    if (process.env.NODE_ENV === 'production') return;
-    
     const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    console.log('🔍 DEBUG TOKEN INFO:');
+    console.log('- Token exists:', !!token);
+    console.log('- Token length:', token?.length);
+    console.log('- Token starts with:', token?.substring(0, 50));
+    console.log('- User data:', user);
+    
     if (token) {
         try {
             // Try to decode JWT payload
             const parts = token.split('.');
-            if (parts.length !== 3) {
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                console.log('- Token payload:', payload);
+                console.log('- Token expires:', new Date(payload.exp * 1000));
+                console.log('- Token is expired:', Date.now() > payload.exp * 1000);
+            } else {
+                console.log('- Token format invalid: should have 3 parts, has', parts.length);
+                console.log('- This appears to be invalid credentials, clearing token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
         } catch (e) {
+            console.log('- Token decode error:', e.message);
+            console.log('- Clearing invalid token');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
         }
@@ -73,28 +53,42 @@ debugToken();
 
 // Export function to clear auth state (can be called from console)
 window.clearAuthState = () => {
+    console.log('🧹 Clearing authentication state...');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.reload();
 };
 
-// --- Interceptor to add JWT token to requests ---
+// Export debug function for console access
+window.debugToken = debugToken;
+
+// --- Interceptor to add JWT token to requests --- 
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
+            // Basic validation: check if token has proper JWT format
             const parts = token.split('.');
             if (parts.length === 3) {
                 config.headers['Authorization'] = `Bearer ${token}`;
+                console.log('🔑 Adding token to request:', config.url);
             } else {
-                // Bad token format — clear it silently, don't hard-redirect
+                console.log('⚠️ Invalid token format detected, clearing token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                // Optionally redirect to login or show notification
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+                    window.location.href = '/login';
+                }
             }
+        } else {
+            console.log('⚠️ No token found for request:', config.url);
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+        return Promise.reject(error);
+    }
 );
 
 // --- Response interceptor for error handling ---
@@ -121,12 +115,16 @@ apiClient.interceptors.response.use(
 
         // Handle unauthorized errors (401)
         if (error.response.status === 401) {
+            console.log('401 Unauthorized response:', error.response.data);
+
             // Check if token is expired and try to refresh
             if (error.response.data?.message?.includes('expired') ||
                 error.response.data?.message?.includes('Token expired')) {
 
                 const currentToken = localStorage.getItem('token');
                 if (currentToken && !error.config._retry) {
+                    console.log('Attempting token refresh...');
+
                     try {
                         // Try to refresh the token
                         const refreshResponse = await apiClient.post('/auth/refresh', {}, {
@@ -146,9 +144,12 @@ apiClient.interceptors.response.use(
                         error.config._retry = true;
                         error.config.headers['Authorization'] = `Bearer ${refreshResponse.data.token}`;
 
+                        console.log('Token refreshed successfully, retrying request...');
                         return apiClient(error.config);
 
                     } catch (refreshError) {
+                        console.log('Token refresh failed:', refreshError.response?.data?.message || refreshError.message);
+
                         // Clear auth state if refresh fails
                         localStorage.removeItem('token');
                         localStorage.removeItem('user');
@@ -183,11 +184,22 @@ apiClient.interceptors.response.use(
 
 // --- Authentication API Calls --- 
 
+const toApiError = (error, fallbackMessage) => {
+    const data = error.response?.data;
+    const message = data?.message || data?.error || error.message || fallbackMessage;
+    const normalizedError = new Error(message);
+    normalizedError.status = error.response?.status;
+    normalizedError.retryAfter = data?.retryAfter;
+    normalizedError.data = data;
+    return normalizedError;
+};
+
 export const registerUser = async (userData) => {
     try {
         const response = await apiClient.post('/auth/register', userData);
         return response.data; // Should contain { token, user }
     } catch (error) {
+        console.error('Registration API error:', error.response ? error.response.data : error.message);
         // Re-throw the error or return a specific error object
         throw error.response ? error.response.data : new Error('Registration failed');
     }
@@ -198,7 +210,28 @@ export const loginUser = async (credentials) => {
         const response = await apiClient.post('/auth/login', credentials);
         return response.data; // Should contain { token, user }
     } catch (error) {
+        console.error('Login API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Login failed');
+    }
+};
+
+export const requestPasswordReset = async (email) => {
+    try {
+        const response = await apiClient.post('/auth/forgot-password', { email });
+        return response.data;
+    } catch (error) {
+        console.error('Forgot password API error:', error.response ? error.response.data : error.message);
+        throw toApiError(error, 'Password reset request failed');
+    }
+};
+
+export const resetPassword = async ({ token, password }) => {
+    try {
+        const response = await apiClient.post('/auth/reset-password', { token, password });
+        return response.data;
+    } catch (error) {
+        console.error('Reset password API error:', error.response ? error.response.data : error.message);
+        throw toApiError(error, 'Password reset failed');
     }
 };
 
@@ -207,6 +240,7 @@ export const refreshToken = async () => {
         const response = await apiClient.post('/auth/refresh');
         return response.data; // Should contain { token, user }
     } catch (error) {
+        console.error('Token refresh API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Token refresh failed');
     }
 };
@@ -216,6 +250,7 @@ export const verifyToken = async () => {
         const response = await apiClient.post('/auth/verify');
         return response.data; // Should contain { valid: true/false, user }
     } catch (error) {
+        console.error('Token verification API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Token verification failed');
     }
 };
@@ -226,6 +261,7 @@ export const getUserProfile = async () => {
         const response = await apiClient.get('/users/profile');
         return response.data;
     } catch (error) {
+        console.error('Get User Profile API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to fetch user profile');
     }
 };
@@ -235,8 +271,30 @@ export const updateUserProfile = async (profileData) => {
         const response = await apiClient.put('/users/profile', profileData);
         return response.data; // Returns the updated profile
     } catch (error) {
+        console.error('Update User Profile API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to update user profile');
     }
+};
+
+// --- Admin API Calls ---
+export const getAdminStats = async () => {
+    const { data } = await apiClient.get('/admin/stats');
+    return data;
+};
+
+export const getAdminUsers = async () => {
+    const { data } = await apiClient.get('/admin/users');
+    return data;
+};
+
+export const getAdminProjects = async () => {
+    const { data } = await apiClient.get('/admin/projects');
+    return data;
+};
+
+export const getAdminTransactions = async () => {
+    const { data } = await apiClient.get('/admin/transactions');
+    return data;
 };
 
 // Get user profile by ID
@@ -261,9 +319,16 @@ export const getTransaction = async (transactionId) => {
 
 export const getProjects = async () => {
     try {
+        console.log('Fetching user projects');
         const response = await apiClient.get('/projects');
+        console.log(`Received ${response.data.length} user projects`);
         return response.data;
     } catch (error) {
+        console.error('Get Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        }
         // Return empty array to prevent UI from breaking
         return [];
     }
@@ -272,48 +337,50 @@ export const getProjects = async () => {
 export const createProject = async (projectData) => {
     try {
         const response = await apiClient.post('/projects', projectData);
-        
-        // Invalidate marketplace cache so new project appears
-        apiCache.invalidatePattern('marketplace');
-        
         return response.data; // Returns the newly created project
     } catch (error) {
+        console.error('Create Project API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to create project');
     }
 };
 
 export const getProjectById = async (projectId) => {
-    // First try the public endpoint (no auth required, fast)
     try {
-        const response = await apiClient.get(`/public/projects/${projectId}`);
-        return response.data;
-    } catch (publicError) {
-        // Only fall back to private endpoint if:
-        // 1. It was a 404 (not a timeout or network error)
-        // 2. The user has a token (otherwise private will 401 too)
-        const is404 = publicError.response?.status === 404;
-        const hasToken = !!localStorage.getItem('token');
-
-        if (is404 && hasToken) {
-            const privateResponse = await apiClient.get(`/projects/${projectId}`);
-            return privateResponse.data;
+        console.log(`Attempting to fetch project ID: ${projectId}`);
+        
+        // For marketplace projects, try public endpoint first
+        try {
+            const publicResponse = await apiClient.get(`/public/projects/${projectId}`);
+            console.log('Successfully fetched public project:', publicResponse.data);
+            return publicResponse.data;
+        } catch (publicError) {
+            console.log('Public project fetch failed, trying private:', publicError.response?.status);
+            
+            // If public fails, try private project (for owners)
+            if (publicError.response?.status === 404) {
+                try {
+                    const privateResponse = await apiClient.get(`/projects/${projectId}`);
+                    console.log('Successfully fetched private project:', privateResponse.data);
+                    return privateResponse.data;
+                } catch (privateError) {
+                    console.error('Both public and private project fetch failed');
+                    throw new Error('Project not found or access denied');
+                }
+            }
+            throw publicError;
         }
-
-        if (is404) {
-            throw new Error('Project not found or not publicly listed.');
-        }
-
-        // Timeout or network error — surface it clearly
-        throw publicError;
+    } catch (error) {
+        console.error('Get Project By ID API error:', error);
+        throw new Error(error.message || 'Failed to fetch project details');
     }
 };
-
 
 export const updateProject = async (projectId, projectData) => {
     try {
         const response = await apiClient.put(`/projects/${projectId}`, projectData);
         return response.data; // Returns the updated project
     } catch (error) {
+        console.error('Update Project API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to update project');
     }
 };
@@ -324,7 +391,18 @@ export const aiIdeaAssist = async ({ stage, category, prompt }) => {
         const response = await apiClient.post('/ai/idea-assist', { stage, category, prompt });
         return response.data; // { stage, template }
     } catch (error) {
+        console.error('AI Idea Assist API error:', error.response?.data || error.message);
         throw error.response?.data || new Error('Failed to generate stage template');
+    }
+};
+
+export const getDueDiligenceReport = async (projectId) => {
+    try {
+        const response = await apiClient.get(`/ai/due-diligence/${projectId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Due diligence report API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to generate due diligence report');
     }
 };
 
@@ -333,124 +411,8 @@ export const deleteProject = async (projectId) => {
         const response = await apiClient.delete(`/projects/${projectId}`);
         return response.data; // Returns { message: '...', projectId: ... }
     } catch (error) {
+        console.error('Delete Project API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to delete project');
-    }
-};
-
-export const toggleHoldProject = async (projectId) => {
-    try {
-        const response = await apiClient.patch(`/projects/${projectId}/toggle-hold`);
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to toggle hold status');
-    }
-};
-
-// --- Project Files API Calls ---
-
-/**
- * Upload files to a project
- * @param {string} projectId - The project ID
- * @param {FileList|Array} files - Files to upload
- * @param {Object} options - Upload options (description, is_public)
- * @returns {Promise} - Upload result with file metadata
- */
-export const uploadProjectFiles = async (projectId, files, options = {}) => {
-    try {
-        const formData = new FormData();
-        
-        // Append each file
-        if (files instanceof FileList) {
-            for (let i = 0; i < files.length; i++) {
-                formData.append('files', files[i]);
-            }
-        } else if (Array.isArray(files)) {
-            files.forEach(file => {
-                if (file.file instanceof File) {
-                    formData.append('files', file.file);
-                } else {
-                    formData.append('files', file);
-                }
-            });
-        }
-        
-        // Append options
-        if (options.description) {
-            formData.append('description', options.description);
-        }
-        if (options.is_public !== undefined) {
-            formData.append('is_public', options.is_public);
-        }
-        
-        const response = await apiClient.post(`/projects/${projectId}/files`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            },
-            onUploadProgress: options.onProgress || (() => {})
-        });
-        
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to upload files');
-    }
-};
-
-/**
- * Get all files for a project
- * @param {string} projectId - The project ID
- * @returns {Promise} - List of project files
- */
-export const getProjectFiles = async (projectId) => {
-    try {
-        const response = await apiClient.get(`/projects/${projectId}/files`);
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to fetch project files');
-    }
-};
-
-/**
- * Delete a project file
- * @param {string} projectId - The project ID
- * @param {string} fileId - The file ID to delete
- * @returns {Promise} - Deletion result
- */
-export const deleteProjectFile = async (projectId, fileId) => {
-    try {
-        const response = await apiClient.delete(`/projects/${projectId}/files/${fileId}`);
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to delete file');
-    }
-};
-
-/**
- * Get project file statistics
- * @param {string} projectId - The project ID
- * @returns {Promise} - File statistics
- */
-export const getProjectFileStats = async (projectId) => {
-    try {
-        const response = await apiClient.get(`/projects/${projectId}/files/stats`);
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to fetch file statistics');
-    }
-};
-
-/**
- * Download a file
- * @param {string} fileId - The file ID to download
- * @returns {Promise} - File blob
- */
-export const downloadFile = async (fileId) => {
-    try {
-        const response = await apiClient.get(`/files/download/${fileId}`, {
-            responseType: 'blob'
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : new Error('Failed to download file');
     }
 };
 
@@ -458,30 +420,28 @@ export const downloadFile = async (fileId) => {
 
 export const getPublicProjects = async () => {
     try {
+        console.log('Fetching public projects');
         // Note: No token needed for this public endpoint
         const response = await apiClient.get('/public/projects'); 
-        // Handle both paginated response { data: [...] } and direct array
-        return response.data?.data || response.data || [];
+        console.log(`Received ${response.data.length} public projects`);
+        return response.data;
     } catch (error) {
+        console.error('Get Public Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        }
         // Return empty array to prevent UI from breaking
         return [];
     }
 };
 
-// Fetch marketplace statistics (cached for 5 minutes)
-export const getMarketplaceStats = async (forceRefresh = false) => {
-  const cacheKey = 'marketplace:stats';
-  
-  // Check cache first unless forcing refresh
-  if (!forceRefresh) {
-    const cached = apiCache.get(cacheKey);
-    if (cached) return cached;
-  }
-  
+// Fetch marketplace statistics
+export const getMarketplaceStats = async () => {
   try {
     const response = await apiClient.get('/public/stats/marketplace');
     const data = response.data;
-    const stats = {
+    return {
       totalProjects: data.totalProjects || 0,
       activeListings: data.activeListings || 0,
       totalValue: data.totalValue || 0,
@@ -492,12 +452,8 @@ export const getMarketplaceStats = async (forceRefresh = false) => {
       completedSales: data.successfulSales || 0,
       avgValue: data.totalValue && data.successfulSales ? Math.floor(data.totalValue / data.successfulSales) : 0
     };
-    
-    // Cache for 5 minutes
-    apiCache.set(cacheKey, stats, CACHE_TTL.STATS);
-    
-    return stats;
   } catch (error) {
+    console.error('Error fetching marketplace stats:', error);
     // Return default stats to prevent UI from breaking
     return {
       projectsCount: 0,
@@ -513,54 +469,40 @@ export const getMarketplaceStats = async (forceRefresh = false) => {
   }
 };
 
-export const getMarketplaceProjects = async (options = {}) => {
-    // Support both old format (boolean forceRefresh) and new format (options object)
-    const isOptionsObject = typeof options === 'object' && options !== null;
-    const forceRefresh = isOptionsObject ? options.forceRefresh : options;
-    
-    const {
-        page = 1,
-        limit = 20,
-        sortBy = 'created_at',
-        sortOrder = 'desc'
-    } = isOptionsObject ? options : {};
-    
-    const cacheKey = `marketplace:projects:p${page}:l${limit}:s${sortBy}:o${sortOrder}`;
-    
-    // Check cache first unless forcing refresh
-    if (!forceRefresh) {
-        const cached = apiCache.get(cacheKey);
-        if (cached) return cached;
-    }
-    
+export const getMarketplaceProjects = async (params = {}) => {
     try {
-        const response = await apiClient.get('/public/marketplace', {
-            params: { page, limit, sortBy, sortOrder }
-        });
-        
-        // Cache the response
-        apiCache.set(cacheKey, response.data, CACHE_TTL.MARKETPLACE);
-        
+        console.log('Calling marketplace API endpoint');
+        const response = await apiClient.get('/public/marketplace', { params });
+        const count = Array.isArray(response.data) ? response.data.length : response.data?.data?.length || 0;
+        console.log('Marketplace API response received:', count, 'projects');
         return response.data;
     } catch (error) {
-        return { data: [], pagination: { page: 1, totalPages: 1, total: 0 } }; // Return proper structure instead of empty array
+        console.error('Get Marketplace Projects API error:', error);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+        } else if (error.request) {
+            console.error('No response received. Request:', error.request);
+        }
+        return []; // Return empty array instead of throwing to avoid breaking UI
     }
 };
-
 
 // --- Health Check ---
 
 export const checkApiHealth = async () => {
     try {
-        const response = await apiClient.get('/'); 
+        const response = await apiClient.get('/status');
         return response.data;
     } catch (error) {
+        console.error('API Health Check error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('API health check failed');
     }
 };
 
 // Payment API calls - DEPRECATED: Use createCheckoutSessionForPurchaseRequest instead
 export const createCheckoutSession = async (projectId) => {
+    console.warn('createCheckoutSession is deprecated. Use createCheckoutSessionForPurchaseRequest with purchase_request_id instead.');
     const response = await apiClient.post('/payments/create-checkout-session', { projectId });
     return response.data;
 };
@@ -581,6 +523,7 @@ export const getTransferStatus = async (projectId) => {
         const response = await apiClient.get(`/payments/transfers/${projectId}`);
         return response.data;
     } catch (error) {
+        console.error('Error fetching transfer status:', error);
         throw error.response?.data || error;
     }
 };
@@ -592,6 +535,7 @@ export const updateSellerTransferStatus = async (requestId, statusData) => {
         const response = await apiClient.put(`/purchase-requests/${requestId}/transfer-status`, statusData);
         return response.data;
     } catch (error) {
+        console.error('Error updating seller transfer status:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -602,6 +546,7 @@ export const getStripeAccountStatus = async () => {
         const response = await apiClient.get('/users/stripe-status');
         return response.data;
     } catch (error) {
+        console.error('Get Stripe Account Status API error:', error.response ? error.response.data : error.message);
         throw error.response ? error.response.data : new Error('Failed to fetch Stripe account status');
     }
 };
@@ -612,6 +557,7 @@ export const checkStripeOnboardingStatus = async () => {
         const response = await apiClient.get('/users/stripe-status');
         return response.data; // { isOnboardingComplete: boolean, needsAttention: boolean, accountId: string | null, arePayoutsEnabled: boolean }
     } catch (error) {
+        console.error('Check Stripe Onboarding Status API error:', error.response?.data || error.message);
         throw error.response?.data || new Error('Failed to check Stripe onboarding status.');
     }
 };
@@ -625,6 +571,7 @@ export const createStripeAccountLink = async () => {
         }
         return response.data;
     } catch (error) {
+        console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
         const defaultMessage = 'Failed to create or retrieve Stripe account link. Please try again.';
         throw new Error(error.response?.data?.error || error.message || defaultMessage);
     }
@@ -651,6 +598,7 @@ export const requestProjectPurchase = async (projectId, termsAgreedVersion) => {
         const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { terms_agreed_version: termsAgreedVersion });
         return response.data;
     } catch (error) {
+        console.error('Error requesting project purchase:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -661,6 +609,7 @@ export const getSellerPurchaseRequests = async () => {
         return response.data;
     } catch (error) {
         const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to fetch seller purchase requests.';
+        console.error('Error fetching seller purchase requests:', errorMessage, error.response?.data);
         throw new Error(errorMessage);
     }
 };
@@ -671,6 +620,7 @@ export const getBuyerPurchaseRequests = async () => {
         return response.data;
     } catch (error) {
         const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to fetch buyer purchase requests.';
+        console.error('Error fetching buyer purchase requests:', errorMessage, error.response?.data);
         throw new Error(errorMessage);
     }
 };
@@ -680,6 +630,7 @@ export const acceptPurchaseRequest = async (requestId, termsAgreedVersion) => {
         const response = await apiClient.post(`/purchase-requests/${requestId}/accept`, { terms_agreed_version: termsAgreedVersion });
         return response.data;
     } catch (error) {
+        console.error('Error accepting purchase request:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -689,6 +640,7 @@ export const rejectPurchaseRequest = async (requestId, rejectionReason) => {
         const response = await apiClient.post(`/purchase-requests/${requestId}/reject`, { rejection_reason: rejectionReason });
         return response.data;
     } catch (error) {
+        console.error('Error rejecting purchase request:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -698,6 +650,7 @@ export const confirmTransferReceived = async (requestId) => {
         const response = await apiClient.post(`/purchase-requests/${requestId}/confirm-transfer`);
         return response.data;
     } catch (error) {
+        console.error('Error confirming transfer received:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -710,6 +663,7 @@ export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId)
         const response = await apiClient.post('/payments/create-checkout-session', { purchase_request_id: purchaseRequestId });
         return response.data; // Should contain { url: checkoutSessionUrl, sessionId: ... }
     } catch (error) {
+        console.error('Error creating checkout session for purchase request:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -719,12 +673,19 @@ export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId)
 // Called by buyer to initiate interest with initial commitments
 export const expressInterestInProject = async (projectId, buyerInitialCommitments, buyerIntroMessage) => {
     try {
+        console.log('Sending interest request with data:', {
+            projectId,
+            buyerCommitments: buyerInitialCommitments,
+            buyerIntroMessage
+        });
+        
         const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { 
             buyerCommitments: buyerInitialCommitments,
             buyerIntroMessage: buyerIntroMessage
         });
         return response.data;
     } catch (error) {
+        console.error('Error expressing interest in project:', error.response?.data || error.message);
         // Throw the original error object so we can access status codes and error details
         if (error.response) {
             throw error; // Axios error with response
@@ -743,6 +704,7 @@ export const sellerProposeTerms = async (requestId, sellerCommitments, agreedTra
         });
         return response.data;
     } catch (error) {
+        console.error('Error for seller proposing terms:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -756,6 +718,7 @@ export const buyerAcceptsTerms = async (requestId, buyerFinalAgreement, buyerDig
         });
         return response.data;
     } catch (error) {
+        console.error('Error for buyer accepting terms:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -768,6 +731,7 @@ export const buyerWithdrawInterest = async (requestId, withdrawalReason) => {
         });
         return response.data;
     } catch (error) {
+        console.error('Error for buyer withdrawing interest:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -780,6 +744,7 @@ export const sellerDeclineInterest = async (requestId, declineReason) => {
         });
         return response.data;
     } catch (error) {
+        console.error('Error for seller declining interest:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -792,6 +757,7 @@ export const getNotifications = async () => {
         const response = await apiClient.get('/notifications');
         return response.data;
     } catch (error) {
+        console.error('Error fetching notifications:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -801,6 +767,7 @@ export const markNotificationAsRead = async (notificationId) => {
         const response = await apiClient.post(`/notifications/${notificationId}/mark-read`);
         return response.data;
     } catch (error) {
+        console.error(`Error marking notification ${notificationId} as read:`, error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -810,6 +777,7 @@ export const markAllNotificationsAsRead = async () => {
         const response = await apiClient.post('/notifications/mark-all-read');
         return response.data;
     } catch (error) {
+        console.error('Error marking all notifications as read:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -818,41 +786,31 @@ export const markAllNotificationsAsRead = async () => {
 // --- Purchase Request Message API Calls ---
 export const getPurchaseRequestMessages = async (requestId) => {
     if (!requestId) {
+        console.error('Error: requestId is required to fetch messages.');
         throw new Error('Request ID is required.');
     }
     try {
         const response = await apiClient.get(`/purchase-requests/${requestId}/messages`);
         return response.data; // Expected to be an array of message objects
     } catch (error) {
+        console.error(`Error fetching messages for request ${requestId}:`, error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
 
 export const sendPurchaseRequestMessage = async (requestId, content) => {
     if (!requestId || !content) {
+        console.error('Error: requestId and content are required to send a message.');
         throw new Error('Request ID and message content are required.');
     }
     try {
         const response = await apiClient.post(`/purchase-requests/${requestId}/messages`, { content });
         return response.data; // Expected to be the newly created message object
     } catch (error) {
+        console.error(`Error sending message for request ${requestId}:`, error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
 // --- End Purchase Request Message API Calls ---
-
-// --- Public API Calls (No Auth Required) ---
-
-export const getUserCount = async () => {
-    try {
-        const response = await apiClient.get('/public/user-count');
-        return response.data.count;
-    } catch (error) {
-        console.error('Error fetching user count:', error);
-        return 0; // Return 0 as fallback
-    }
-};
-
-// --- End Public API Calls ---
 
 export default apiClient; // Ensure apiClient is the default export

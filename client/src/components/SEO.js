@@ -27,7 +27,7 @@ const SEO = ({
   keywords = 'side projects, buy projects, sell projects, saas marketplace, project marketplace, verified projects, startup acquisition'
 }) => {
   const location = useLocation();
-  const siteUrl = 'https://sidebuilds.space';
+  const siteUrl = 'https://sidebuilds.online';
   const fullUrl = canonicalUrl || `${siteUrl}${location.pathname}`;
   const siteTitle = title ? `${title} | SideBuilds` : 'SideBuilds - Where Side Projects Find Their Next Chapter';
   

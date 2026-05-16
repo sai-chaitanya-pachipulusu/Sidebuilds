@@ -17,6 +17,129 @@ try {
   console.log('OpenAI not available, using fallback AI scoring');
 }
 
+const normalizeList = (value, fallback = []) => {
+  if (Array.isArray(value)) return value.slice(0, 6).map(String);
+  if (typeof value === 'string' && value.trim()) return [value.trim()];
+  return fallback;
+};
+
+const parseJsonResponse = (content) => {
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+    throw error;
+  }
+};
+
+const buildFallbackDueDiligenceReport = (project) => {
+  const hasRevenue = Number(project.monthly_revenue || 0) > 0;
+  const hasCode = Boolean(project.github_url);
+  const hasDemo = Boolean(project.demo_url || project.domain);
+  const price = Number(project.sale_price || 0);
+  const revenue = Number(project.monthly_revenue || 0);
+  const multiple = revenue > 0 && price > 0 ? (price / revenue).toFixed(1) : null;
+
+  return {
+    project_id: project.project_id,
+    generated_at: new Date().toISOString(),
+    source: openai ? 'openai_fallback' : 'deterministic_fallback',
+    strengths: [
+      hasDemo ? 'Public demo or domain is available for buyer review.' : 'Listing can still be evaluated from written materials, but a demo would improve confidence.',
+      hasCode ? 'Source repository is listed, enabling technical diligence.' : 'No repository is listed, so code review should be requested before payment.',
+      hasRevenue ? `Reported monthly revenue is $${revenue.toLocaleString()}.` : 'No monthly revenue is reported, which may suit earlier-stage buyers.'
+    ],
+    risks: [
+      !project.revenue_verified ? 'Revenue has not been independently verified on-platform.' : 'Revenue proof is present, but source documents should still be reviewed.',
+      !project.is_verified ? 'Seller identity is not marked verified yet.' : 'Seller is marked verified, reducing identity risk.',
+      !hasCode ? 'Technical quality cannot be confirmed without repository access.' : 'Repository access should be reviewed for maintainability and security.'
+    ],
+    questions_to_ask_seller: [
+      'What assets are included in the transfer, and what is excluded?',
+      'Can you provide revenue screenshots or Stripe/export evidence for the last 6 months?',
+      'What are the biggest technical risks or known bugs?',
+      'How much weekly maintenance does this project require?',
+      'Which accounts, domains, repositories, and credentials will be transferred?'
+    ],
+    valuation_concerns: [
+      multiple ? `Asking price is about ${multiple}x monthly revenue; compare this against churn, growth, and profit margin.` : 'No revenue multiple can be calculated from the available listing data.',
+      price > 0 && !hasRevenue ? 'A paid acquisition without revenue should be justified by assets, audience, code quality, or strategic value.' : 'Validate that reported revenue is recurring, transferable, and not one-off.'
+    ],
+    transfer_checklist: [
+      'Confirm repository ownership and invite buyer before final confirmation.',
+      'Transfer domain, DNS, hosting, analytics, and email accounts.',
+      'Rotate secrets, API keys, database passwords, and Stripe/webhook credentials.',
+      'Export operational documentation, deployment steps, and support history.',
+      'Confirm buyer has received all agreed assets before marking transfer complete.'
+    ]
+  };
+};
+
+const generateDueDiligenceReport = async (project) => {
+  const fallback = buildFallbackDueDiligenceReport(project);
+
+  if (!openai) {
+    return fallback;
+  }
+
+  try {
+    const prompt = `Generate buyer due diligence JSON for this project listing. Return ONLY JSON with keys: strengths, risks, questions_to_ask_seller, valuation_concerns, transfer_checklist.\n\nProject:\n${JSON.stringify(project, null, 2)}`;
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are a marketplace due diligence analyst for side-project acquisitions. Be practical, concise, and buyer-protective.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2
+    });
+
+    const parsed = parseJsonResponse(completion.choices[0].message.content);
+    return {
+      ...fallback,
+      source: 'openai',
+      strengths: normalizeList(parsed.strengths, fallback.strengths),
+      risks: normalizeList(parsed.risks, fallback.risks),
+      questions_to_ask_seller: normalizeList(parsed.questions_to_ask_seller, fallback.questions_to_ask_seller),
+      valuation_concerns: normalizeList(parsed.valuation_concerns, fallback.valuation_concerns),
+      transfer_checklist: normalizeList(parsed.transfer_checklist, fallback.transfer_checklist)
+    };
+  } catch (error) {
+    console.error('[AI] Due diligence report fallback used:', error.message);
+    return fallback;
+  }
+};
+
+// Buyer-facing due diligence report for public project listings
+router.get('/due-diligence/:projectId', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const result = await db.query(
+      `SELECT p.project_id, p.name, p.description, p.stage, p.category, p.domain,
+              p.demo_url, p.github_url, p.tech_stack, p.monthly_revenue, p.monthly_users,
+              p.growth_rate, p.sale_price, p.updated_at, p.created_at,
+              u.username AS owner_username, u.is_verified, u.verification_level,
+              false AS revenue_verified
+       FROM projects p
+       JOIN users u ON p.owner_id = u.user_id
+       WHERE p.project_id = ? AND (p.is_public = true OR p.is_for_sale = true)`,
+      [projectId]
+    );
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.status(404).json({ message: 'Project not found or not publicly accessible.' });
+    }
+
+    const report = await generateDueDiligenceReport(result.rows[0]);
+    res.json(report);
+  } catch (error) {
+    console.error('[AI] Due diligence report error:', error);
+    res.status(500).json({ message: 'Failed to generate due diligence report.' });
+  }
+});
+
 // Enhanced AI Project Scoring Endpoint
 router.post('/score-project', authMiddleware, async (req, res) => {
   try {

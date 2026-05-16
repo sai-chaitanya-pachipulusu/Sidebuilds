@@ -30,8 +30,8 @@ const getEnvironmentConfig = () => {
     },
     
     staging: {
-      API_URL: process.env.REACT_APP_API_URL || 'https://api-staging.sidebuilds.space',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api-staging.sidebuilds.space',
+      API_URL: process.env.REACT_APP_API_URL || 'https://api-staging.sidebuilds.online',
+      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api-staging.sidebuilds.online',
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: false,
       ENABLE_ANALYTICS: true,
@@ -56,8 +56,8 @@ const getEnvironmentConfig = () => {
     },
     
     production: {
-      API_URL: process.env.REACT_APP_API_URL || 'https://sidebuilds-api.onrender.com/api',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://sidebuilds-api.onrender.com',
+      API_URL: process.env.REACT_APP_API_URL || 'https://api.sidebuilds.online/api',
+      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api.sidebuilds.online',
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: false,
       ENABLE_ANALYTICS: true,

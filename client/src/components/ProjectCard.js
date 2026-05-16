@@ -50,6 +50,13 @@ const formatNumber = (num) => {
   return num.toString();
 };
 
+const formatUpdatedDate = (date) => {
+  if (!date) return null;
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 // Professional muted color palette for project stages
 const getStageColor = (stage) => {
   const stageColors = {
@@ -224,6 +231,8 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
   
   // Is trending (views above threshold)
   const isTrending = project.view_count > 100 || project.trending;
+  const healthScore = project.project_health_score || project.overall_score || project.ai_score;
+  const updatedDate = formatUpdatedDate(project.updated_at || project.created_at);
 
   return (
     <motion.div
@@ -417,6 +426,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                         ...(project.is_verified ? [{ type: 'identity_verified' }] : []),
                         ...(project.revenue_verified ? [{ type: 'revenue_verified' }] : []),
                         ...(project.code_quality_verified ? [{ type: 'code_reviewed' }] : []),
+                        ...(healthScore ? [{ type: 'trust_score', value: Math.round(healthScore) }] : []),
                       ]}
                       maxVisible={3}
                       variant="compact"
@@ -452,6 +462,17 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
               <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
                 {project.description}
               </p>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className={`flex items-center gap-1.5 px-2 py-1 border ${project.is_verified ? 'border-green-500/30 text-green-300 bg-green-500/10' : 'border-white/[0.08] text-gray-500 bg-white/[0.03]'}`}>
+                  <Shield className="w-3 h-3" />
+                  <span>{project.is_verified ? 'Verified seller' : 'Seller not verified'}</span>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2 py-1 border ${project.revenue_verified ? 'border-green-500/30 text-green-300 bg-green-500/10' : 'border-white/[0.08] text-gray-500 bg-white/[0.03]'}`}>
+                  <DollarSign className="w-3 h-3" />
+                  <span>{project.revenue_verified ? 'Revenue verified' : 'Revenue not verified'}</span>
+                </div>
+              </div>
               
               {/* Tech stack pills */}
               {techStack.length > 0 && (
@@ -492,10 +513,10 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     </div>
                   )}
                   
-                  {project.created_at && (
+                  {updatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-gray-500">
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>{new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</span>
+                      <span>Updated {updatedDate}</span>
                     </div>
                   )}
                 </div>

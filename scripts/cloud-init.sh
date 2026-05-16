@@ -17,7 +17,7 @@ DATABASE_URL=${DATABASE_URL}
 JWT_SECRET=${JWT_SECRET}
 PORT=${PORT:-5001}
 NODE_ENV=production
-CLIENT_URL=${CLIENT_URL:-https://sidebuilds.space}
+CLIENT_URL=${CLIENT_URL:-https://sidebuilds.online}
 STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-""}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-""}
 LOG_LEVEL=${LOG_LEVEL:-info}
@@ -25,7 +25,7 @@ EOF
 
 # For frontend
 cat > ./client/.env << EOF
-REACT_APP_API_URL=${API_URL:-https://api.sidebuilds.space/api}
+REACT_APP_API_URL=${API_URL:-https://api.sidebuilds.online/api}
 EOF
 
 echo "Environment files created successfully."

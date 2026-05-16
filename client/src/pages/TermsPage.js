@@ -62,7 +62,7 @@ function TermsPage() {
     },
     {
       title: '14. Contact Information',
-      content: 'If you have any questions about these Terms, please contact us at support@sidebuilds.space.'
+      content: 'If you have any questions about these Terms, please contact us at support@sidebuilds.online.'
     }
   ];
 
@@ -159,7 +159,7 @@ function TermsPage() {
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="mailto:support@sidebuilds.space"
+                href="mailto:support@sidebuilds.online"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-none font-medium hover:bg-blue-700 transition-colors duration-200"
               >
                 <Mail className="w-4 h-4" />

@@ -18,6 +18,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
                 github_username as github_profile_url,
                 twitter_handle as twitter_profile_url,
                 avatar_url, is_verified, verification_level,
+                is_admin,
                 total_projects_sold, total_projects_bought, total_revenue,
                 reputation_score, created_at, updated_at,
                 stripe_account_id, onboarding_complete, stripe_onboarding_complete

@@ -75,9 +75,9 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'https://www.sidebuilds.space',
-      'https://sidebuilds.space',
-      'https://app.sidebuilds.space',
+      'https://www.sidebuilds.online',
+      'https://sidebuilds.online',
+      'https://app.sidebuilds.online',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3002',

@@ -1,14 +1,38 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db'); // Adjust path as needed
 const { authLimiter } = require('../middleware/rateLimiting');
+const emailService = require('../services/emailService');
 
 console.log('AUTH_ROUTES: File loaded and router being configured.');
 
 const router = express.Router();
 const SALT_ROUNDS = 10; // Cost factor for bcrypt hashing
+const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
+
+const getClientUrl = () => {
+    return (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://sidebuilds.online').replace(/\/$/, '');
+};
+
+const hashResetToken = (token) => {
+    return crypto.createHash('sha256').update(token).digest('hex');
+};
+
+const ensurePasswordResetTable = async () => {
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token_hash TEXT NOT NULL UNIQUE,
+            expires_at TIMESTAMP NOT NULL,
+            used_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+};
 
 // Helper function to generate JWT token
 const generateToken = (user) => {
@@ -17,7 +41,8 @@ const generateToken = (user) => {
             user: {
                 user_id: user.user_id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                is_admin: Boolean(user.is_admin)
             }
         },
         process.env.JWT_SECRET,
@@ -55,22 +80,14 @@ router.post('/register', async (req, res) => {
     const finalUsername = username || email.split('@')[0];
 
     try {
-        console.log('Registration attempt for:', email, 'username:', finalUsername);
-        
         // Check if user already exists (by email or username)
         const userExists = await db.query(
-            'SELECT user_id, email, username FROM users WHERE email = ? OR username = ?',
+            'SELECT * FROM users WHERE email = ? OR username = ?',
             [email, finalUsername]
         );
 
-        if (userExists.rows && userExists.rows.length > 0) {
-            const existingUser = userExists.rows[0];
-            const conflictField = existingUser.email === email ? 'email' : 'username';
-            console.log('Registration blocked - user exists:', conflictField);
-            return res.status(409).json({ 
-                message: `An account with this ${conflictField} already exists.`,
-                field: conflictField 
-            });
+        if (userExists.rows.length > 0) {
+            return res.status(409).json({ message: 'Email or username already exists.' });
         }
 
         // Hash the password
@@ -78,29 +95,34 @@ router.post('/register', async (req, res) => {
 
         // Generate UUID for new user
         const userId = uuidv4();
-        console.log('Creating user with ID:', userId);
 
         // Insert new user into the database
-        await db.query(
+        const insertResult = await db.query(
             'INSERT INTO users (user_id, username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)',
             [userId, finalUsername, email, passwordHash, first_name || null, last_name || null]
         );
 
-        // Fetch the inserted user
+        // For SQLite, get the inserted user by user_id
         const newUser = await db.query(
-            'SELECT user_id, username, email, created_at FROM users WHERE user_id = ?',
+            'SELECT user_id, username, email, is_admin, created_at FROM users WHERE user_id = ?',
             [userId]
         );
 
         if (!newUser.rows || newUser.rows.length === 0) {
-            console.error('User insert succeeded but fetch failed for ID:', userId);
-            throw new Error('Failed to verify user account creation');
+            throw new Error('Failed to create user account');
         }
 
         const userData = newUser.rows[0];
-        console.log('User created successfully:', userData.email);
 
         // Generate JWT token
+        const tokenPayload = {
+            user: {
+                id: userData.user_id,
+                username: userData.username,
+                email: userData.email
+            }
+        };
+
         const token = generateToken(userData);
 
         // Respond with the token and user info (excluding password hash)
@@ -108,21 +130,8 @@ router.post('/register', async (req, res) => {
 
     } catch (err) {
         console.error("Registration error:", err.message);
-        console.error("Error stack:", err.stack);
-        
-        // Check for specific database errors
-        if (err.code === '23505' || err.message?.includes('UNIQUE constraint')) {
-            // Duplicate key violation
-            return res.status(409).json({ 
-                message: 'An account with this email or username already exists.',
-                error: 'duplicate_entry'
-            });
-        }
-        
-        res.status(500).json({ 
-            message: 'Server error during registration. Please try again.',
-            error: process.env.NODE_ENV !== 'production' ? err.message : undefined
-        });
+        console.error("Full error:", err);
+        res.status(500).json({ message: 'Server error during registration.', error: err.message });
     }
 });
 
@@ -143,7 +152,7 @@ router.post('/login', authLimiter, async (req, res) => {
     try {
         // Find user by email
         const userResult = await db.query(
-            'SELECT user_id, username, email, password_hash FROM users WHERE email = ?',
+            'SELECT user_id, username, email, password_hash, is_admin FROM users WHERE email = ?',
             [email]
         );
 
@@ -195,6 +204,128 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 });
 
+// --- Forgot Password Route ---
+// POST /api/auth/forgot-password
+router.post('/forgot-password', authLimiter, async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const genericMessage = 'If an account exists for that email, a password reset link has been sent.';
+
+    try {
+        await ensurePasswordResetTable();
+
+        const userResult = await db.query(
+            'SELECT user_id, email, username, first_name FROM users WHERE LOWER(email) = ?',
+            [normalizedEmail]
+        );
+
+        if (!userResult.rows || userResult.rows.length === 0) {
+            return res.json({ message: genericMessage });
+        }
+
+        const user = userResult.rows[0];
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashResetToken(rawToken);
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+
+        await db.query(
+            'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = ? AND used_at IS NULL',
+            [user.user_id]
+        );
+
+        await db.query(
+            'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
+            [user.user_id, tokenHash, expiresAt.toISOString()]
+        );
+
+        const resetUrl = `${getClientUrl()}/reset-password?token=${rawToken}`;
+        const displayName = user.first_name || user.username || 'there';
+
+        await emailService.sendCustomEmail(
+            user.email,
+            'Reset your SideBuilds password',
+            `Hi ${displayName},\n\nUse this link to reset your SideBuilds password. This link expires in ${PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.\n\nSideBuilds Team`,
+            `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #6366f1;">Reset your password</h2>
+                    <p>Hi ${displayName},</p>
+                    <p>Use the button below to reset your SideBuilds password. This link expires in ${PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes.</p>
+                    <p>
+                        <a href="${resetUrl}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Reset Password</a>
+                    </p>
+                    <p style="color: #6b7280; font-size: 14px;">If the button does not work, copy and paste this URL into your browser:<br>${resetUrl}</p>
+                    <p style="color: #6b7280; font-size: 14px;">If you did not request this, you can ignore this email.</p>
+                </div>
+            `
+        );
+
+        return res.json({ message: genericMessage });
+    } catch (err) {
+        console.error('Forgot password error:', err.message);
+        return res.status(500).json({ message: 'Server error while requesting password reset.' });
+    }
+});
+
+// --- Reset Password Route ---
+// POST /api/auth/reset-password
+router.post('/reset-password', authLimiter, async (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ message: 'Reset token and new password are required.' });
+    }
+
+    if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    }
+
+    try {
+        await ensurePasswordResetTable();
+
+        const tokenHash = hashResetToken(String(token));
+        const resetResult = await db.query(
+            `SELECT id, user_id, expires_at, used_at
+             FROM password_reset_tokens
+             WHERE token_hash = ?`,
+            [tokenHash]
+        );
+
+        if (!resetResult.rows || resetResult.rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid or expired reset link.' });
+        }
+
+        const resetToken = resetResult.rows[0];
+        const expiresAt = new Date(resetToken.expires_at);
+
+        if (resetToken.used_at || Number.isNaN(expiresAt.getTime()) || expiresAt <= new Date()) {
+            return res.status(400).json({ message: 'Invalid or expired reset link.' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+        await db.withTransaction(async (client) => {
+            await client.query(
+                'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+                [passwordHash, resetToken.user_id]
+            );
+            await client.query(
+                'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [resetToken.id]
+            );
+        });
+
+        return res.json({ message: 'Password reset successful. You can now log in.' });
+    } catch (err) {
+        console.error('Reset password error:', err.message);
+        return res.status(500).json({ message: 'Server error while resetting password.' });
+    }
+});
+
 // --- Token Refresh Route ---
 // POST /api/auth/refresh
 router.post('/refresh', authLimiter, async (req, res) => {
@@ -218,7 +349,7 @@ router.post('/refresh', authLimiter, async (req, res) => {
 
         // Get the user from database to ensure they still exist
         const userResult = await db.query(
-            'SELECT user_id, username, email FROM users WHERE user_id = ?',
+            'SELECT user_id, username, email, is_admin FROM users WHERE user_id = ?',
             [decoded.user.user_id]
         );
 
@@ -237,7 +368,8 @@ router.post('/refresh', authLimiter, async (req, res) => {
             user: {
                 user_id: user.user_id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                is_admin: Boolean(user.is_admin)
             }
         });
 
@@ -276,7 +408,7 @@ router.post('/verify', async (req, res) => {
 
         // Get the user from database to ensure they still exist
         const userResult = await db.query(
-            'SELECT user_id, username, email FROM users WHERE user_id = ?',
+            'SELECT user_id, username, email, is_admin FROM users WHERE user_id = ?',
             [decoded.user.user_id]
         );
 
@@ -292,7 +424,8 @@ router.post('/verify', async (req, res) => {
             user: {
                 user_id: user.user_id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                is_admin: Boolean(user.is_admin)
             }
         });
 
@@ -305,25 +438,6 @@ router.post('/verify', async (req, res) => {
             console.error('Token verification error:', error.message);
             return res.status(500).json({ valid: false, message: 'Server error during token verification.' });
         }
-    }
-});
-
-// --- Get Current User Route ---
-// GET /api/auth/me
-const authMiddleware = require('../middleware/authMiddleware');
-router.get('/me', authMiddleware, async (req, res) => {
-    try {
-        // The user is already attached to req by authMiddleware
-        const user = req.user;
-        
-        res.json({
-            user_id: user.user_id,
-            username: user.username,
-            email: user.email
-        });
-    } catch (error) {
-        console.error('Error getting current user:', error.message);
-        res.status(500).json({ message: 'Server error.' });
     }
 });
 

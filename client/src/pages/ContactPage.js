@@ -59,7 +59,7 @@ const ContactPage = () => {
     {
       icon: Mail,
       title: 'Email',
-      value: 'support@sidebuilds.space',
+      value: 'support@sidebuilds.online',
       description: 'We typically respond within 24 hours',
       color: 'text-blue-400',
     },
@@ -145,14 +145,14 @@ const ContactPage = () => {
         // Fallback: open mailto
         const subject = encodeURIComponent(`[SideBuilds] ${formData.subject || 'Contact Form'}: ${formData.name}`);
         const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
-        window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+        window.open(`mailto:support@sidebuilds.online?subject=${subject}&body=${body}`, '_blank');
         toast.success("Opening your email client to send the message.");
       }
     } catch (err) {
       // Fallback: open mailto
       const subject = encodeURIComponent(`[SideBuilds] ${formData.subject || 'Contact Form'}: ${formData.name}`);
       const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
-      window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+      window.open(`mailto:support@sidebuilds.online?subject=${subject}&body=${body}`, '_blank');
       toast.success("Opening your email client to send the message.");
     } finally {
       setFormData({ name: '', email: '', subject: '', message: '' });
@@ -401,7 +401,7 @@ const ContactPage = () => {
               description: 'Send us a detailed email for complex inquiries or partnership discussions',
               cta: 'Send Email',
               color: 'text-blue-400',
-              action: () => window.open('mailto:support@sidebuilds.space?subject=Support%20Request', '_blank'),
+              action: () => window.open('mailto:support@sidebuilds.online?subject=Support%20Request', '_blank'),
             },
             {
               icon: Mail,
@@ -409,7 +409,7 @@ const ContactPage = () => {
               description: 'Get marketplace updates, new listings, and tips delivered to your inbox',
               cta: 'Subscribe',
               color: 'text-white',
-              action: () => window.open('mailto:support@sidebuilds.space?subject=Newsletter%20Subscription&body=Please%20add%20me%20to%20your%20newsletter!', '_blank'),
+              action: () => window.open('mailto:support@sidebuilds.online?subject=Newsletter%20Subscription&body=Please%20add%20me%20to%20your%20newsletter!', '_blank'),
             },
           ].map((item, index) => {
             const Icon = item.icon;

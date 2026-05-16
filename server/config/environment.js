@@ -88,8 +88,8 @@ const getCorsConfig = () => {
   const baseOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://www.sidebuilds.space',
-    'https://sidebuilds.space'
+    'https://www.sidebuilds.online',
+    'https://sidebuilds.online'
   ];
 
   const configs = {
@@ -104,7 +104,7 @@ const getCorsConfig = () => {
     production: {
       origin: process.env.ALLOWED_ORIGINS ? 
         process.env.ALLOWED_ORIGINS.split(',') : 
-        ['https://www.sidebuilds.space', 'https://sidebuilds.space'],
+        ['https://www.sidebuilds.online', 'https://sidebuilds.online'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -170,7 +170,7 @@ const getEmailConfig = () => {
   const configs = {
     sendgrid: {
       apiKey: process.env.SENDGRID_API_KEY,
-      fromEmail: process.env.FROM_EMAIL || 'noreply@sidebuilds.space',
+      fromEmail: process.env.FROM_EMAIL || 'noreply@sidebuilds.online',
       templates: {
         welcome: process.env.WELCOME_TEMPLATE_ID,
         passwordReset: process.env.PASSWORD_RESET_TEMPLATE_ID,
@@ -187,7 +187,7 @@ const getEmailConfig = () => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       },
-      fromEmail: process.env.FROM_EMAIL || 'noreply@sidebuilds.space'
+      fromEmail: process.env.FROM_EMAIL || 'noreply@sidebuilds.online'
     }
   };
 
@@ -404,7 +404,7 @@ const getApiDocConfig = () => {
     description: 'API for SideBuilds marketplace platform',
     contact: {
       name: 'SideBuilds Support',
-      email: 'support@sidebuilds.space'
+      email: 'support@sidebuilds.online'
     },
     servers: [
       {
@@ -412,7 +412,7 @@ const getApiDocConfig = () => {
         description: 'Development server'
       },
       {
-        url: 'https://api.sidebuilds.space',
+        url: 'https://api.sidebuilds.online',
         description: 'Production server'
       }
     ]

@@ -141,7 +141,9 @@ const MarketplacePageSimple = () => {
       results = results.filter(project => {
         const name = project.name?.toLowerCase() || '';
         const desc = project.description?.toLowerCase() || '';
-        const tech = project.tech_stack?.toLowerCase() || '';
+        const tech = Array.isArray(project.tech_stack)
+          ? project.tech_stack.join(' ').toLowerCase()
+          : project.tech_stack?.toLowerCase() || '';
         const category = project.category?.toLowerCase() || '';
         
         return name.includes(searchLower) || 
@@ -160,7 +162,10 @@ const MarketplacePageSimple = () => {
       if (filters.stage && project.stage !== filters.stage) return false;
       if (filters.minPrice && (project.sale_price || 0) < parseInt(filters.minPrice)) return false;
       if (filters.maxPrice && (project.sale_price || 0) > parseInt(filters.maxPrice)) return false;
-      if (filters.techStack && !project.tech_stack?.toLowerCase().includes(filters.techStack.toLowerCase())) return false;
+      const techStack = Array.isArray(project.tech_stack)
+        ? project.tech_stack.join(' ').toLowerCase()
+        : project.tech_stack?.toLowerCase() || '';
+      if (filters.techStack && !techStack.includes(filters.techStack.toLowerCase())) return false;
       if (filters.category && project.category !== filters.category) return false;
       return true;
     });

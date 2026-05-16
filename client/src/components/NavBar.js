@@ -67,6 +67,7 @@ const NavBar = () => {
     { label: 'Purchase History', icon: ShoppingBag, path: '/dashboard?tab=purchases', description: 'View your bought projects' },
     { label: 'Earnings & Sales', icon: DollarSign, path: '/dashboard?tab=sales', description: 'Track your revenue & sales' },
     { type: 'divider' },
+    ...(user?.is_admin ? [{ label: 'Admin Dashboard', icon: Settings, path: '/admin', description: 'Platform operations' }, { type: 'divider' }] : []),
     { label: 'Account Settings', icon: Settings, path: '/profile-settings', description: 'Profile & preferences' },
     { label: 'Notifications', icon: Bell, path: '/notifications', description: 'Manage your alerts' },
     { type: 'divider' },

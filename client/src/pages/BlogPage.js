@@ -29,7 +29,7 @@ const BlogPage = () => {
     }
     const subject = encodeURIComponent('Newsletter Subscription');
     const body = encodeURIComponent(`Please subscribe ${newsletterEmail} to the SideBuilds newsletter.`);
-    window.open(`mailto:support@sidebuilds.space?subject=${subject}&body=${body}`, '_blank');
+    window.open(`mailto:support@sidebuilds.online?subject=${subject}&body=${body}`, '_blank');
     toast.success('Opening your email client to subscribe!');
     setNewsletterEmail('');
   };

@@ -8,7 +8,7 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-import { startKeepAlive } from './utils/keepAlive';
+import AnimatedBackground from './components/AnimatedBackground';
 import ProductionErrorBoundary, { ComponentErrorBoundary } from './components/ProductionErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
@@ -17,10 +17,10 @@ import './index.css';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePageSimple'));
-//const MarketplacePage = lazy(() => import('./pages/MarketplacePageEnhanced'));
-//const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
 const MyProjectsPage = lazy(() => import('./pages/MyProjectsPage'));
 const ProjectFormPage = lazy(() => import('./pages/ProjectFormPage'));
@@ -32,6 +32,8 @@ const StripeConnectCompletePage = lazy(() => import('./pages/StripeConnectComple
 const ProjectTransferPage = lazy(() => import('./pages/ProjectTransferPage'));
 const PublicProjectsPage = lazy(() => import('./pages/PublicProjectsPage'));
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
@@ -48,11 +50,8 @@ const VibeCodePage = lazy(() => import('./pages/VibeCodePage'));
 const AppContent = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  // Add keyboard shortcuts, global events, and start keep-alive
+  // Add keyboard shortcuts and global event listeners
   useEffect(() => {
-    // Keep Render server awake — ping every 9 minutes silently
-    startKeepAlive();
-
     const handleKeyPress = (e) => {
       // Command Palette: Cmd/Ctrl + K
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -61,30 +60,16 @@ const AppContent = () => {
       }
     };
 
-    const handleOpenCommandPalette = () => {
-      setIsCommandPaletteOpen(true);
-    };
-
     window.addEventListener('keydown', handleKeyPress);
-    window.addEventListener('openCommandPalette', handleOpenCommandPalette);
     
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
-      window.removeEventListener('openCommandPalette', handleOpenCommandPalette);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white overflow-x-hidden">
-      {/* Global top glow - simplified without gradient */}
-      <div 
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[600px] pointer-events-none z-40"
-        style={{
-          background: 'rgba(0, 0, 0, 0.08)',
-        }}
-      />
-      
-      {/* Remove AnimatedBackground - using cleaner approach */}
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      <AnimatedBackground variant="constellation" />
       <NavBar />
       
       {/* Enhanced Command Palette with state management */}
@@ -97,60 +82,52 @@ const AppContent = () => {
         <ComponentErrorBoundary fallback={<ElegantLoadingScreen />}>
           <Suspense fallback={<ElegantLoadingScreen />}>
             <Routes>
-              {/* ========== PUBLIC ROUTES - No login required ========== */}
-              
-              {/* Marketing Pages */}
-              <Route path="/" element={<ComponentErrorBoundary><HomePage /></ComponentErrorBoundary>} />
-              <Route path="/about" element={<ComponentErrorBoundary><AboutUsPage /></ComponentErrorBoundary>} />
-              <Route path="/how-it-works" element={<ComponentErrorBoundary><HowItWorksPage /></ComponentErrorBoundary>} />
-              <Route path="/pricing" element={<ComponentErrorBoundary><PricingPage /></ComponentErrorBoundary>} />
-              <Route path="/faq" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
-              <Route path="/help" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
-              <Route path="/contact" element={<ComponentErrorBoundary><ContactPage /></ComponentErrorBoundary>} />
-              <Route path="/blog" element={<ComponentErrorBoundary><BlogPage /></ComponentErrorBoundary>} />
-              <Route path="/terms" element={<ComponentErrorBoundary><TermsPage /></ComponentErrorBoundary>} />
-              <Route path="/public-projects" element={<ComponentErrorBoundary><PublicProjectsPage /></ComponentErrorBoundary>} />
-              <Route path="/trending" element={<ComponentErrorBoundary><TrendingPage /></ComponentErrorBoundary>} />
-              <Route path="/vibe-code" element={<ComponentErrorBoundary><VibeCodePage /></ComponentErrorBoundary>} />
-              
-              {/* Auth Pages */}
-              <Route path="/login" element={<ComponentErrorBoundary><LoginPage /></ComponentErrorBoundary>} />
-              <Route path="/register" element={<ComponentErrorBoundary><RegisterPage /></ComponentErrorBoundary>} />
-              <Route path="/verify" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
-              <Route path="/verify/:verificationCode" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
-              
+                      {/* Public Routes */}
+                      <Route path="/" element={<ComponentErrorBoundary><HomePage /></ComponentErrorBoundary>} />
+                      <Route path="/login" element={<ComponentErrorBoundary><LoginPage /></ComponentErrorBoundary>} />
+                      <Route path="/register" element={<ComponentErrorBoundary><RegisterPage /></ComponentErrorBoundary>} />
+                      <Route path="/forgot-password" element={<ComponentErrorBoundary><ForgotPasswordPage /></ComponentErrorBoundary>} />
+                      <Route path="/reset-password" element={<ComponentErrorBoundary><ResetPasswordPage /></ComponentErrorBoundary>} />
+                      <Route path="/marketplace" element={<ComponentErrorBoundary><MarketplacePage /></ComponentErrorBoundary>} />
+                      <Route path="/projects/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
+                      <Route path="/project/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
+                      <Route path="/public-projects" element={<ComponentErrorBoundary><PublicProjectsPage /></ComponentErrorBoundary>} />
+                      <Route path="/about" element={<ComponentErrorBoundary><AboutUsPage /></ComponentErrorBoundary>} />
+                      <Route path="/blog" element={<ComponentErrorBoundary><BlogPage /></ComponentErrorBoundary>} />
+                      <Route path="/contact" element={<ComponentErrorBoundary><ContactPage /></ComponentErrorBoundary>} />
+                      <Route path="/faq" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
+                      <Route path="/help" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
+                      <Route path="/how-it-works" element={<ComponentErrorBoundary><HowItWorksPage /></ComponentErrorBoundary>} />
+                      <Route path="/pricing" element={<ComponentErrorBoundary><PricingPage /></ComponentErrorBoundary>} />
+                      <Route path="/terms" element={<ComponentErrorBoundary><TermsPage /></ComponentErrorBoundary>} />
+                      <Route path="/trending" element={<ComponentErrorBoundary><TrendingPage /></ComponentErrorBoundary>} />
+                      <Route path="/verify" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
+                      <Route path="/verify/:verificationCode" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
+                      <Route path="/vibe-code" element={<ComponentErrorBoundary><VibeCodePage /></ComponentErrorBoundary>} />
+                      <Route path="/profile/:userId" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
+                      <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
 
+                      {/* Protected Routes */}
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/dashboard" element={<ComponentErrorBoundary><DashboardPage /></ComponentErrorBoundary>} />
+                        <Route path="/my-projects" element={<ComponentErrorBoundary><MyProjectsPage /></ComponentErrorBoundary>} />
+                        <Route path="/projects/new" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
+                        <Route path="/projects/edit/:id" element={<ComponentErrorBoundary><ProjectFormPage editMode={true} /></ComponentErrorBoundary>} />
+                        <Route path="/profile" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
+                        <Route path="/profile-settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
+                        <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
+                        <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
+                        <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
+                        <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />
+                        <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />
+                        <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
+                        <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />
+                        <Route path="/project-transfer" element={<ComponentErrorBoundary><ProjectTransferPage /></ComponentErrorBoundary>} />
+                      </Route>
 
-              {/* Browsing - Public access to browse marketplace and view projects */}
-              <Route path="/marketplace" element={<ComponentErrorBoundary><MarketplacePage /></ComponentErrorBoundary>} />
-              <Route path="/projects/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
-              <Route path="/project/:id" element={<ComponentErrorBoundary><ProjectDetailPage /></ComponentErrorBoundary>} />
-              <Route path="/profile/:userId" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
-
-              {/* ========== PROTECTED ROUTES - Login required ========== */}
-              <Route element={<ProtectedRoute />}>
-                {/* Dashboard & Projects Management */}
-                <Route path="/dashboard" element={<ComponentErrorBoundary><DashboardPage /></ComponentErrorBoundary>} />
-                <Route path="/my-projects" element={<ComponentErrorBoundary><MyProjectsPage /></ComponentErrorBoundary>} />
-                <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
-                <Route path="/projects/edit/:id" element={<ComponentErrorBoundary><ProjectFormPage editMode={true} /></ComponentErrorBoundary>} />
-                
-                {/* User Profile & Settings */}
-                <Route path="/profile" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
-                <Route path="/profile-settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
-                <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
-                <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
-                
-                {/* Purchases & Payments */}
-                <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
-                <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
-                <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />
-                <Route path="/project-transfer" element={<ComponentErrorBoundary><ProjectTransferPage /></ComponentErrorBoundary>} />
-              </Route>
-
-              {/* Catch-all 404 */}
-              <Route path="*" element={<ComponentErrorBoundary><NotFoundPage /></ComponentErrorBoundary>} />
-            </Routes>
+                      {/* Catch-all Not Found Route */}
+                      <Route path="*" element={<ComponentErrorBoundary><NotFoundPage /></ComponentErrorBoundary>} />
+              </Routes>
           </Suspense>
         </ComponentErrorBoundary>
       </main>
@@ -158,17 +135,16 @@ const AppContent = () => {
       
       {/* Enhanced Toast Notifications */}
       <Toaster 
-        position="top-center"
+        position="bottom-right"
         toastOptions={{
-          duration: 5000,
+          duration: 4000,
           style: {
-            background: '#1a1a1a',
+            background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
             color: '#fff',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
             boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
             backdropFilter: 'blur(10px)',
-            zIndex: 99999,
           },
           success: {
             iconTheme: {
