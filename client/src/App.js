@@ -8,7 +8,7 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ElegantLoadingScreen from './components/ElegantLoadingScreen';
 import ProtectedRoute from './components/ProtectedRoute';
-import AnimatedBackground from './components/AnimatedBackground';
+//import AnimatedBackground from './components/AnimatedBackground';
 import ProductionErrorBoundary, { ComponentErrorBoundary } from './components/ProductionErrorBoundary';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
@@ -68,7 +68,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      <AnimatedBackground variant="constellation" />
+      {/* <AnimatedBackground variant="constellation" /> */}
       <NavBar />
       
       {/* Enhanced Command Palette with state management */}
