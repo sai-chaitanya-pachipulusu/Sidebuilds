@@ -33,7 +33,6 @@ const ProjectTransferPage = lazy(() => import('./pages/ProjectTransferPage'));
 const PublicProjectsPage = lazy(() => import('./pages/PublicProjectsPage'));
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
-const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
@@ -118,7 +117,6 @@ const AppContent = () => {
                         <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
                         <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
-                        <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />
                         <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />
                         <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
                         <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />
