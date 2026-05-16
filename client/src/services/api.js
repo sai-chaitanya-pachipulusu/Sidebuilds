@@ -385,6 +385,54 @@ export const updateProject = async (projectId, projectData) => {
     }
 };
 
+export const toggleHoldProject = async (projectId) => {
+    try {
+        const response = await apiClient.patch(`/projects/${projectId}/toggle-hold`);
+        return response.data;
+    } catch (error) {
+        console.error('Toggle hold project API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to update project hold status');
+    }
+};
+
+export const uploadProjectFiles = async (projectId, files, options = {}) => {
+    try {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+        if (options.description) formData.append('description', options.description);
+        if (options.is_public !== undefined) formData.append('is_public', String(options.is_public));
+
+        const response = await apiClient.post(`/files/upload/${projectId}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: options.onProgress
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Upload project files API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to upload project files');
+    }
+};
+
+export const getProjectFiles = async (projectId) => {
+    try {
+        const response = await apiClient.get(`/files/project/${projectId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Get project files API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to fetch project files');
+    }
+};
+
+export const deleteProjectFile = async (projectId, fileId) => {
+    try {
+        const response = await apiClient.delete(`/files/${fileId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Delete project file API error:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to delete project file');
+    }
+};
+
 // --- AI API Calls ---
 export const aiIdeaAssist = async ({ stage, category, prompt }) => {
     try {
