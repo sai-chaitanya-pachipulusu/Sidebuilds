@@ -8,9 +8,8 @@ const emailService = require('../services/emailService');
 const { purchaseRequestLimiter } = require('../middleware/rateLimiting');
 const crypto = require('crypto');
 
-// In-memory store for idempotency keys (in production, use Redis)
-const idempotencyStore = new Map();
-const IDEMPOTENCY_KEY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+// DB-backed idempotency keys (survive restarts and multiple instances)
+const { checkKey: checkIdempotencyKey, storeKey: storeIdempotencyKey } = require('../services/idempotencyService');
 
 // Helper function to handle validation errors
 const handleValidationErrors = (req, res, next) => {
@@ -25,44 +24,6 @@ const handleValidationErrors = (req, res, next) => {
         });
     }
     next();
-};
-
-// Helper function to check idempotency key
-const checkIdempotencyKey = async (key, operation) => {
-    if (!key) return null;
-    
-    const stored = idempotencyStore.get(key);
-    if (stored) {
-        // Check if key is for the same operation
-        if (stored.operation === operation) {
-            // Check if key hasn't expired
-            if (Date.now() - stored.timestamp < IDEMPOTENCY_KEY_TTL) {
-                return stored.response;
-            }
-        }
-    }
-    return null;
-};
-
-// Helper function to store idempotency key
-const storeIdempotencyKey = (key, operation, response) => {
-    if (!key) return;
-    
-    idempotencyStore.set(key, {
-        operation,
-        response,
-        timestamp: Date.now()
-    });
-    
-    // Clean up old keys periodically
-    if (idempotencyStore.size > 10000) {
-        const now = Date.now();
-        for (const [k, v] of idempotencyStore.entries()) {
-            if (now - v.timestamp > IDEMPOTENCY_KEY_TTL) {
-                idempotencyStore.delete(k);
-            }
-        }
-    }
 };
 
 // Validation rules for interest expression
@@ -150,7 +111,7 @@ router.post('/projects/:projectId/request',
                 const existingRequestResult = await client.query(
                     `SELECT id, status FROM purchase_requests
                      WHERE project_id = $1 AND buyer_id = $2
-                     AND status NOT IN ('seller_rejected', 'buyer_withdrew_interest', 'transfer_completed_buyer_confirmed', 'payment_failed', 'aborted_project_unavailable')
+                     AND status NOT IN ('seller_rejected', 'buyer_withdrew_interest', 'transfer_completed_buyer_confirmed', 'payment_failed', 'aborted_project_unavailable', 'expired')
                      FOR UPDATE`,
                     [projectId, buyerId]
                 );
@@ -289,7 +250,7 @@ router.post('/projects/:projectId/initiate-checkout',
                 const existingRequestQuery = await client.query(
                     `SELECT id as request_id, status FROM purchase_requests 
                      WHERE project_id = $1 AND buyer_id = $2 
-                     AND status NOT IN ('transfer_completed_buyer_confirmed','seller_rejected','buyer_withdrew_interest','payment_failed','aborted_project_unavailable')
+                     AND status NOT IN ('transfer_completed_buyer_confirmed','seller_rejected','buyer_withdrew_interest','payment_failed','aborted_project_unavailable','expired')
                      FOR UPDATE`,
                     [projectId, buyerId]
                 );
@@ -403,7 +364,7 @@ router.post('/projects/:projectId/initiate-checkout',
                 return res.status(400).json({ error: 'System error: Buyer and seller cannot be the same.' });
             }
             
-            res.status(500).json({ error: 'Failed to initiate checkout process.', details: error.message });
+            res.status(500).json({ error: 'Failed to initiate checkout process.' });
         }
     }
 );
@@ -434,7 +395,7 @@ router.get('/seller', authMiddleware, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Error fetching seller purchase requests:', error);
-        res.status(500).json({ message: 'Failed to fetch seller purchase requests', details: error.message });
+        res.status(500).json({ message: 'Failed to fetch seller purchase requests' });
     }
 });
 
@@ -458,7 +419,11 @@ router.get('/buyer', authMiddleware, async (req, res) => {
                 pr.updated_at,
                 t.transaction_id,
                 t.transfer_completed,
-                t.escrow_status,
+                CASE
+                    WHEN t.escrow_released THEN 'released'
+                    WHEN t.transaction_id IS NOT NULL THEN 'held'
+                    ELSE NULL
+                END AS escrow_status,
                 t.status as transaction_status
             FROM purchase_requests pr
             JOIN projects p ON pr.project_id = p.project_id
@@ -479,10 +444,8 @@ router.get('/buyer', authMiddleware, async (req, res) => {
         res.json(mappedRows);
     } catch (error) {
         console.error('[PURCHASE REQUESTS] Error fetching buyer purchase requests:', error);
-        res.status(500).json({ 
-            message: 'Failed to fetch buyer purchase requests', 
-            details: error.message,
-            error_code: error.code || 'unknown'
+        res.status(500).json({
+            message: 'Failed to fetch buyer purchase requests'
         });
     }
 });
@@ -527,7 +490,7 @@ router.get('/:requestId',
             res.json(responseData);
         } catch (err) {
             console.error("Error fetching purchase request details for ID:", requestId, err);
-            res.status(500).json({ error: 'Failed to fetch purchase request details', details: err.message });
+            res.status(500).json({ error: 'Failed to fetch purchase request details' });
         }
     }
 );
@@ -550,7 +513,7 @@ router.post('/:requestId/accept',
         try {
             const result = await db.withTransaction(async (client) => {
                 const requestResult = await client.query(
-                    'SELECT pr.*, p.name as project_name FROM purchase_requests pr JOIN projects p ON pr.project_id = p.project_id WHERE pr.id = $1 AND pr.seller_id = $2 FOR UPDATE',
+                    'SELECT pr.*, p.name as project_name, p.sale_price as project_sale_price FROM purchase_requests pr JOIN projects p ON pr.project_id = p.project_id WHERE pr.id = $1 AND pr.seller_id = $2 FOR UPDATE',
                     [requestId, sellerId]
                 );
 
@@ -563,9 +526,17 @@ router.post('/:requestId/accept',
                     throw new Error(`Invalid status: ${request.status}`);
                 }
 
+                // Lock in the price at acceptance time. Interest-expressed requests
+                // are created without a price, so fall back to the project's sale
+                // price; without this, checkout later computes NaN and Stripe rejects.
+                const effectivePrice = parseFloat(request.price ?? request.project_sale_price);
+                if (!Number.isFinite(effectivePrice) || effectivePrice <= 0) {
+                    throw new Error('No valid price');
+                }
+
                 await client.query(
-                    "UPDATE purchase_requests SET status = 'seller_accepted_pending_payment', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-                    [requestId]
+                    "UPDATE purchase_requests SET status = 'seller_accepted_pending_payment', price = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+                    [requestId, effectivePrice]
                 );
 
                 const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
@@ -606,7 +577,10 @@ router.post('/:requestId/accept',
             if (error.message.includes('Invalid status')) {
                 return res.status(400).json({ error: `Request cannot be accepted. ${error.message}` });
             }
-            
+            if (error.message === 'No valid price') {
+                return res.status(400).json({ error: 'Set a sale price on the project before accepting this request.' });
+            }
+
             res.status(500).json({ error: 'Failed to accept purchase request.' });
         }
     }
@@ -750,7 +724,10 @@ router.put('/:requestId/buyer-accepts-terms',
         try {
             const result = await db.withTransaction(async (client) => {
                 const requestResult = await client.query(
-                    'SELECT * FROM purchase_requests WHERE id = $1 AND buyer_id = $2 FOR UPDATE',
+                    `SELECT pr.*, p.sale_price as project_sale_price
+                     FROM purchase_requests pr
+                     JOIN projects p ON pr.project_id = p.project_id
+                     WHERE pr.id = $1 AND pr.buyer_id = $2 FOR UPDATE`,
                     [requestId, buyerId]
                 );
 
@@ -759,13 +736,20 @@ router.put('/:requestId/buyer-accepts-terms',
                 }
 
                 const request = requestResult.rows[0];
-                if (!['seller_terms_proposed', 'seller_accepted_pending_payment', 'interest_expressed'].includes(request.status)) {
+                // Buyer can only accept terms the seller has actually proposed —
+                // never skip the seller's side of the negotiation.
+                if (request.status !== 'seller_terms_proposed') {
                     throw new Error(`Invalid status: ${request.status}`);
                 }
 
+                const effectivePrice = parseFloat(request.price ?? request.project_sale_price);
+                if (!Number.isFinite(effectivePrice) || effectivePrice <= 0) {
+                    throw new Error('No valid price');
+                }
+
                 await client.query(
-                    "UPDATE purchase_requests SET status = 'agreement_reached_pending_payment', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-                    [requestId]
+                    "UPDATE purchase_requests SET status = 'agreement_reached_pending_payment', price = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+                    [requestId, effectivePrice]
                 );
 
                 const updated = await client.query('SELECT *, id as request_id, price as accepted_price FROM purchase_requests WHERE id = $1', [requestId]);
@@ -780,6 +764,9 @@ router.put('/:requestId/buyer-accepts-terms',
             }
             if (error.message.includes('Invalid status')) {
                 return res.status(400).json({ error: `Terms cannot be accepted. ${error.message}` });
+            }
+            if (error.message === 'No valid price') {
+                return res.status(400).json({ error: 'This request has no agreed price yet. Ask the seller to set one.' });
             }
             res.status(500).json({ error: 'Failed to accept terms.' });
         }
@@ -977,7 +964,7 @@ router.post('/:requestId/confirm-transfer',
                 return res.status(400).json({ error: error.message });
             }
             
-            res.status(500).json({ error: 'Failed to confirm asset transfer.', details: error.message });
+            res.status(500).json({ error: 'Failed to confirm asset transfer.' });
         }
     }
 );

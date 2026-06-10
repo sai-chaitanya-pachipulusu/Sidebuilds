@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Create an axios instance
 const apiClient = axios.create({
-    // Use consistent backend port (server runs on 5001)
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
+    // Use consistent backend port (server runs on 5002)
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -12,36 +12,33 @@ const apiClient = axios.create({
     timeout: 15000, // 15 seconds timeout for production
 });
 
-console.log('🌐 API Client configured with baseURL:', apiClient.defaults.baseURL);
+const isDev = process.env.NODE_ENV === 'development';
 
-// Debug function to check localStorage token
+if (isDev) {
+    console.log('🌐 API Client configured with baseURL:', apiClient.defaults.baseURL);
+}
+
+// Validate the stored token format and clear it if malformed.
+// Never logs token contents outside development.
 const debugToken = () => {
     const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    console.log('🔍 DEBUG TOKEN INFO:');
-    console.log('- Token exists:', !!token);
-    console.log('- Token length:', token?.length);
-    console.log('- Token starts with:', token?.substring(0, 50));
-    console.log('- User data:', user);
-    
+
     if (token) {
         try {
-            // Try to decode JWT payload
             const parts = token.split('.');
             if (parts.length === 3) {
-                const payload = JSON.parse(atob(parts[1]));
-                console.log('- Token payload:', payload);
-                console.log('- Token expires:', new Date(payload.exp * 1000));
-                console.log('- Token is expired:', Date.now() > payload.exp * 1000);
+                if (isDev) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    console.log('🔍 Token expires:', new Date(payload.exp * 1000),
+                        '| expired:', Date.now() > payload.exp * 1000);
+                }
             } else {
-                console.log('- Token format invalid: should have 3 parts, has', parts.length);
-                console.log('- This appears to be invalid credentials, clearing token');
+                if (isDev) console.log('⚠️ Invalid token format, clearing token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
         } catch (e) {
-            console.log('- Token decode error:', e.message);
-            console.log('- Clearing invalid token');
+            if (isDev) console.log('⚠️ Token decode error, clearing token:', e.message);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
         }
@@ -71,9 +68,9 @@ apiClient.interceptors.request.use(
             const parts = token.split('.');
             if (parts.length === 3) {
                 config.headers['Authorization'] = `Bearer ${token}`;
-                console.log('🔑 Adding token to request:', config.url);
+                if (isDev) console.log('🔑 Adding token to request:', config.url);
             } else {
-                console.log('⚠️ Invalid token format detected, clearing token');
+                if (isDev) console.log('⚠️ Invalid token format detected, clearing token');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 // Optionally redirect to login or show notification
@@ -82,7 +79,7 @@ apiClient.interceptors.request.use(
                 }
             }
         } else {
-            console.log('⚠️ No token found for request:', config.url);
+            if (isDev) console.log('⚠️ No token found for request:', config.url);
         }
         return config;
     },
@@ -190,6 +187,7 @@ const toApiError = (error, fallbackMessage) => {
     const normalizedError = new Error(message);
     normalizedError.status = error.response?.status;
     normalizedError.retryAfter = data?.retryAfter;
+    normalizedError.code = data?.code;
     normalizedError.data = data;
     return normalizedError;
 };
@@ -860,5 +858,85 @@ export const sendPurchaseRequestMessage = async (requestId, content) => {
     }
 };
 // --- End Purchase Request Message API Calls ---
+
+// --- Saved Projects (Watchlist) ---
+export const getSavedProjects = async () => {
+    const response = await apiClient.get('/saves');
+    return response.data;
+};
+
+export const getSavedProjectIds = async () => {
+    const response = await apiClient.get('/saves/ids');
+    return response.data;
+};
+
+export const saveProject = async (projectId) => {
+    const response = await apiClient.post(`/saves/${projectId}`);
+    return response.data;
+};
+
+export const unsaveProject = async (projectId) => {
+    const response = await apiClient.delete(`/saves/${projectId}`);
+    return response.data;
+};
+
+// --- Reviews ---
+export const getSellerReviews = async (sellerId) => {
+    const response = await apiClient.get(`/reviews/seller/${sellerId}`);
+    return response.data; // { reviews, summary: { review_count, average_rating } }
+};
+
+export const getProjectReviews = async (projectId) => {
+    const response = await apiClient.get(`/reviews/project/${projectId}`);
+    return response.data;
+};
+
+export const createReview = async ({ project_id, rating, title, comment }) => {
+    const response = await apiClient.post('/reviews', { project_id, rating, title, comment });
+    return response.data;
+};
+
+// --- Project Q&A ---
+export const getProjectQuestions = async (projectId) => {
+    const response = await apiClient.get(`/questions/project/${projectId}`);
+    return response.data;
+};
+
+export const askProjectQuestion = async (projectId, question) => {
+    const response = await apiClient.post(`/questions/project/${projectId}`, { question });
+    return response.data;
+};
+
+export const answerProjectQuestion = async (questionId, answer) => {
+    const response = await apiClient.post(`/questions/${questionId}/answer`, { answer });
+    return response.data;
+};
+
+// --- Follows ---
+export const getFollowing = async () => {
+    const response = await apiClient.get('/follows/following');
+    return response.data;
+};
+
+export const getFollowStatus = async (userId) => {
+    const response = await apiClient.get(`/follows/status/${userId}`);
+    return response.data; // { follower_count, is_following }
+};
+
+export const followUser = async (userId) => {
+    const response = await apiClient.post(`/follows/${userId}`);
+    return response.data;
+};
+
+export const unfollowUser = async (userId) => {
+    const response = await apiClient.delete(`/follows/${userId}`);
+    return response.data;
+};
+
+// --- Trending ---
+export const getTrendingProjects = async (limit = 12) => {
+    const response = await apiClient.get(`/public/trending?limit=${limit}`);
+    return response.data; // { data: [...] }
+};
 
 export default apiClient; // Ensure apiClient is the default export

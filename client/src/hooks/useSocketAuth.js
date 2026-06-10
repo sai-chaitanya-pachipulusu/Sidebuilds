@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { initializeSocket, disconnectSocket, getCurrentSocketStatus, getTokenStatus, refreshAuthToken } from '../utils/socket';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 // Custom hook for managing Socket.IO authentication
 export const useSocketAuth = () => {
-  const { token, user, logout } = useContext(AuthContext);
+  const { token, user, logout } = useAuth();
   const [socketStatus, setSocketStatus] = useState(getCurrentSocketStatus());
   const [tokenStatus, setTokenStatus] = useState({ status: 'unknown' });
   const [isInitialized, setIsInitialized] = useState(false);

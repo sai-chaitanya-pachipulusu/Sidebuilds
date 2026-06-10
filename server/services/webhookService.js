@@ -187,16 +187,15 @@ class WebhookService {
                 [session.id, paymentIntentId, purchaseRequestId]
             );
 
-            // Log the transaction
-            const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Log the transaction. Funds start in escrow (escrow_released = false)
+            // until the buyer confirms transfer. transaction_id is a DB-generated UUID.
             await client.query(
                 `INSERT INTO project_transactions (
-                    transaction_id, project_id, buyer_id, seller_id, amount, 
-                    commission_amount, seller_amount, status, escrow_status, payment_method, 
+                    project_id, buyer_id, seller_id, amount,
+                    commission_amount, seller_amount, status, escrow_released, payment_method,
                     payment_id, stripe_payment_intent_id, stripe_session_id, created_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
                 [
-                    transactionId,
                     purchaseRequest.project_id,
                     purchaseRequest.buyer_id,
                     purchaseRequest.seller_id,
@@ -204,12 +203,32 @@ class WebhookService {
                     applicationFeeAmount,
                     netAmountToSeller,
                     'completed',
-                    session.metadata?.escrow_status || 'held', // Capture escrow status
+                    false,
                     charge.payment_method_details?.type || 'card',
                     charge.id,
                     paymentIntentId,
                     session.id
                 ]
+            );
+
+            // The project is sold: take it off the market so no one else can
+            // start or complete a checkout for it.
+            await client.query(
+                `UPDATE projects
+                 SET is_on_hold = true, updated_at = CURRENT_TIMESTAMP
+                 WHERE project_id = ?`,
+                [purchaseRequest.project_id]
+            );
+
+            // Abort every other buyer's pre-payment request for this project
+            await client.query(
+                `UPDATE purchase_requests
+                 SET status = 'aborted_project_unavailable', updated_at = CURRENT_TIMESTAMP
+                 WHERE project_id = ?
+                   AND id != ?
+                   AND status IN ('interest_expressed', 'seller_terms_proposed',
+                                  'seller_accepted_pending_payment', 'agreement_reached_pending_payment')`,
+                [purchaseRequest.project_id, purchaseRequestId]
             );
 
             // Send email notifications
@@ -430,7 +449,7 @@ class WebhookService {
         // Check database
         try {
             const result = await db.query(
-                'SELECT status FROM webhook_events WHERE event_id = ? AND status IN ("completed", "duplicate")',
+                `SELECT status FROM webhook_events WHERE event_id = ? AND status IN ('completed', 'duplicate')`,
                 [eventId]
             );
             return result.rows.length > 0;

@@ -21,15 +21,31 @@ const hashResetToken = (token) => {
     return crypto.createHash('sha256').update(token).digest('hex');
 };
 
+const isSqliteBackend = () => Boolean(db.db);
+
 const ensurePasswordResetTable = async () => {
+    if (isSqliteBackend()) {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                expires_at DATETIME NOT NULL,
+                used_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id)
+            )
+        `);
+        return;
+    }
     await db.query(`
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
             id SERIAL PRIMARY KEY,
             user_id TEXT NOT NULL,
             token_hash TEXT NOT NULL UNIQUE,
-            expires_at TIMESTAMP NOT NULL,
-            used_at TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            expires_at TIMESTAMPTZ NOT NULL,
+            used_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )
     `);
 };
@@ -67,7 +83,7 @@ const verifyToken = (token) => {
 
 // --- Registration Route --- 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
     console.log('AUTH_ROUTES: Reached /register handler');
     const { username, email, password, first_name, last_name } = req.body;
 
@@ -76,14 +92,24 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'Email and password are required.' });
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+        return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (String(password).length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     // Auto-generate username from email if not provided
-    const finalUsername = username || email.split('@')[0];
+    const finalUsername = username || normalizedEmail.split('@')[0];
 
     try {
         // Check if user already exists (by email or username)
         const userExists = await db.query(
-            'SELECT * FROM users WHERE email = ? OR username = ?',
-            [email, finalUsername]
+            'SELECT user_id FROM users WHERE LOWER(TRIM(email)) = ? OR username = ?',
+            [normalizedEmail, finalUsername]
         );
 
         if (userExists.rows.length > 0) {
@@ -99,7 +125,7 @@ router.post('/register', async (req, res) => {
         // Insert new user into the database
         const insertResult = await db.query(
             'INSERT INTO users (user_id, username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)',
-            [userId, finalUsername, email, passwordHash, first_name || null, last_name || null]
+            [userId, finalUsername, normalizedEmail, passwordHash, first_name || null, last_name || null]
         );
 
         // For SQLite, get the inserted user by user_id
@@ -131,7 +157,7 @@ router.post('/register', async (req, res) => {
     } catch (err) {
         console.error("Registration error:", err.message);
         console.error("Full error:", err);
-        res.status(500).json({ message: 'Server error during registration.', error: err.message });
+        res.status(500).json({ message: 'Server error during registration.' });
     }
 });
 
@@ -150,10 +176,10 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     try {
-        // Find user by email
+        // Find user by email (case-insensitive so legacy mixed-case emails still work)
         const userResult = await db.query(
-            'SELECT user_id, username, email, password_hash, is_admin FROM users WHERE email = ?',
-            [email]
+            'SELECT user_id, username, email, password_hash, is_admin FROM users WHERE LOWER(TRIM(email)) = ?',
+            [String(email).trim().toLowerCase()]
         );
 
         if (!userResult.rows || userResult.rows.length === 0) {
@@ -200,7 +226,7 @@ router.post('/login', authLimiter, async (req, res) => {
             detail: err.detail,
             hint: err.hint
         });
-        res.status(500).json({ message: 'Server error during login.', error: err.message });
+        res.status(500).json({ message: 'Server error during login.' });
     }
 });
 
@@ -217,10 +243,23 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     const genericMessage = 'If an account exists for that email, a password reset link has been sent.';
 
     try {
+        const emailStatus = emailService.getEmailStatus();
+        if (emailService.isDeployedBackend() && !emailStatus.configured) {
+            console.error(
+                '[AUTH] Forgot password blocked: SMTP not configured. Missing:',
+                emailStatus.missing.join(', ')
+            );
+            return res.status(503).json({
+                message:
+                    'Password reset email is not available because outgoing mail is not configured on the server. Add SMTP_HOST, SMTP_USER, and SMTP_PASS (and SMTP_FROM if needed) to your backend environment.',
+                code: 'EMAIL_NOT_CONFIGURED'
+            });
+        }
+
         await ensurePasswordResetTable();
 
         const userResult = await db.query(
-            'SELECT user_id, email, username, first_name FROM users WHERE LOWER(email) = ?',
+            'SELECT user_id, email, username, first_name FROM users WHERE LOWER(TRIM(email)) = ?',
             [normalizedEmail]
         );
 
@@ -233,24 +272,20 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
         const tokenHash = hashResetToken(rawToken);
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MINUTES * 60 * 1000);
 
-        await db.query(
-            'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = ? AND used_at IS NULL',
-            [user.user_id]
-        );
+        const resetUrl = `${getClientUrl()}/reset-password?token=${rawToken}`;
+        const displayName = user.first_name || user.username || 'there';
 
         await db.query(
             'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
             [user.user_id, tokenHash, expiresAt.toISOString()]
         );
 
-        const resetUrl = `${getClientUrl()}/reset-password?token=${rawToken}`;
-        const displayName = user.first_name || user.username || 'there';
-
-        await emailService.sendCustomEmail(
-            user.email,
-            'Reset your SideBuilds password',
-            `Hi ${displayName},\n\nUse this link to reset your SideBuilds password. This link expires in ${PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.\n\nSideBuilds Team`,
-            `
+        try {
+            await emailService.sendCustomEmail(
+                user.email,
+                'Reset your SideBuilds password',
+                `Hi ${displayName},\n\nUse this link to reset your SideBuilds password. This link expires in ${PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.\n\nSideBuilds Team`,
+                `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #6366f1;">Reset your password</h2>
                     <p>Hi ${displayName},</p>
@@ -262,7 +297,25 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
                     <p style="color: #6b7280; font-size: 14px;">If you did not request this, you can ignore this email.</p>
                 </div>
             `
-        );
+            );
+
+            await db.query(
+                'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE user_id = ? AND used_at IS NULL AND token_hash <> ?',
+                [user.user_id, tokenHash]
+            );
+        } catch (emailErr) {
+            console.error('Forgot password email error:', emailErr.message);
+            await db.query('DELETE FROM password_reset_tokens WHERE token_hash = ?', [tokenHash]);
+            const smtpConfigured = emailService.getEmailStatus().configured;
+            if (emailService.isDeployedBackend() && smtpConfigured) {
+                return res.status(503).json({
+                    message:
+                        'We could not send the reset email right now (mail server rejected the message). Try again shortly or contact support.',
+                    code: 'EMAIL_SEND_FAILED'
+                });
+            }
+            throw emailErr;
+        }
 
         return res.json({ message: genericMessage });
     } catch (err) {
@@ -344,13 +397,33 @@ router.post('/refresh', authLimiter, async (req, res) => {
             return res.status(401).json({ message: 'No token provided.' });
         }
 
-        // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Verify the token. Tokens expired within the grace window may still be
+        // refreshed so active users aren't forced to log in again every 24h;
+        // the signature is always verified either way.
+        const REFRESH_GRACE_MS = 72 * 60 * 60 * 1000;
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (verifyErr) {
+            if (verifyErr.name !== 'TokenExpiredError') {
+                throw verifyErr;
+            }
+            decoded = jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true });
+            const expiredAt = (decoded.exp || 0) * 1000;
+            if (!expiredAt || Date.now() - expiredAt > REFRESH_GRACE_MS) {
+                return res.status(401).json({ message: 'Token expired. Please log in again.' });
+            }
+        }
+
+        const tokenUserId = decoded.user?.user_id || decoded.user?.id;
+        if (!tokenUserId) {
+            return res.status(401).json({ message: 'Invalid token payload.' });
+        }
 
         // Get the user from database to ensure they still exist
         const userResult = await db.query(
             'SELECT user_id, username, email, is_admin FROM users WHERE user_id = ?',
-            [decoded.user.user_id]
+            [tokenUserId]
         );
 
         if (userResult.rows.length === 0) {

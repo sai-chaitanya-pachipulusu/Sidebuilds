@@ -40,7 +40,7 @@ class EnhancedSocketManager {
 
     this.setConnectionState('connecting');
     
-    const serverUrl = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5004';
+    const serverUrl = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5002';
     
     console.log('[Socket] Connecting to:', serverUrl);
     

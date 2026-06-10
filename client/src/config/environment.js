@@ -4,8 +4,8 @@ const getEnvironmentConfig = () => {
   
   const configs = {
     development: {
-      API_URL: process.env.REACT_APP_API_URL || 'http://localhost:5004',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:5004',
+      API_URL: process.env.REACT_APP_API_URL || 'http://localhost:5002',
+      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:5002',
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: true,
       ENABLE_ANALYTICS: false,

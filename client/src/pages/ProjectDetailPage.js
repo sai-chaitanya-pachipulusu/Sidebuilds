@@ -8,6 +8,8 @@ import PaymentService from '../services/paymentService';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import ProjectDetailSkeleton from '../components/ProjectDetailSkeleton';
 import ErrorBoundary from '../components/ErrorBoundary';
+import ProjectQA from '../components/ProjectQA';
+import ProjectReviews from '../components/ProjectReviews';
 import { 
   DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, 
   Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, 
@@ -1067,6 +1069,14 @@ const ProjectDetailPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Community: Q&A and verified-buyer reviews */}
+          {project && (
+            <div className="max-w-7xl mx-auto px-4 pb-16">
+              <ProjectQA projectId={projectId} ownerId={project.owner_id} />
+              <ProjectReviews projectId={projectId} />
+            </div>
+          )}
         </div>
 
         {/* Confirmation Modal */}

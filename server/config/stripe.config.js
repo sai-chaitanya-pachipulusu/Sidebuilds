@@ -1,8 +1,7 @@
 // Stripe configuration
 require('dotenv').config();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// Ensure Stripe keys are loaded
+// Validate keys before creating Stripe instance
 let stripeConfigValid = true;
 let configErrors = [];
 
@@ -11,6 +10,9 @@ if (!process.env.STRIPE_SECRET_KEY) {
   stripeConfigValid = false;
   configErrors.push("Missing STRIPE_SECRET_KEY");
 }
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+
 
 if (!process.env.STRIPE_PUBLISHABLE_KEY) {
   console.error("FATAL ERROR: Stripe publishable key is missing from .env file.");
@@ -47,10 +49,12 @@ const testStripeConnection = async () => {
 };
 
 // Don't block startup, but run the test
-testStripeConnection();
+testStripeConnection().catch(err => {
+  console.error('Stripe connection test unhandled error:', err.message);
+});
 
 // Commission rate as a percentage (5% by default)
-const COMMISSION_RATE = process.env.COMMISSION_RATE || 5;
+const COMMISSION_RATE = parseFloat(process.env.COMMISSION_RATE) || 5;
 
 // Stripe Connect account type
 const CONNECT_ACCOUNT_TYPE = process.env.CONNECT_ACCOUNT_TYPE || 'express';

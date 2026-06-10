@@ -32,6 +32,7 @@ const StripeConnectCompletePage = lazy(() => import('./pages/StripeConnectComple
 const ProjectTransferPage = lazy(() => import('./pages/ProjectTransferPage'));
 const PublicProjectsPage = lazy(() => import('./pages/PublicProjectsPage'));
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'));
+const SavedProjectsPage = lazy(() => import('./pages/SavedProjectsPage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
@@ -77,7 +78,7 @@ const AppContent = () => {
         onClose={() => setIsCommandPaletteOpen(false)} 
       />
       
-      <main className="relative z-10">
+      <main className="relative z-10 pt-16">
         <ComponentErrorBoundary fallback={<ElegantLoadingScreen />}>
           <Suspense fallback={<ElegantLoadingScreen />}>
             <Routes>
@@ -104,10 +105,10 @@ const AppContent = () => {
                       <Route path="/verify/:verificationCode" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
                       <Route path="/vibe-code" element={<ComponentErrorBoundary><VibeCodePage /></ComponentErrorBoundary>} />
                       <Route path="/profile/:userId" element={<ComponentErrorBoundary><ProfilePage /></ComponentErrorBoundary>} />
-                      <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
 
                       {/* Protected Routes */}
                       <Route element={<ProtectedRoute />}>
+                        <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
                         <Route path="/dashboard" element={<ComponentErrorBoundary><DashboardPage /></ComponentErrorBoundary>} />
                         <Route path="/my-projects" element={<ComponentErrorBoundary><MyProjectsPage /></ComponentErrorBoundary>} />
                         <Route path="/projects/new" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
@@ -117,6 +118,7 @@ const AppContent = () => {
                         <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
                         <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
+                        <Route path="/saved" element={<ComponentErrorBoundary><SavedProjectsPage /></ComponentErrorBoundary>} />
                         <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />
                         <Route path="/purchase/success" element={<ComponentErrorBoundary><PurchaseSuccessPage /></ComponentErrorBoundary>} />
                         <Route path="/stripe/connect/complete" element={<ComponentErrorBoundary><StripeConnectCompletePage /></ComponentErrorBoundary>} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useTransform, useScroll, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useScroll, useSpring } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications } from '../services/api';
 import Logo from './Logo';
@@ -40,11 +40,6 @@ const NavBar = () => {
 
   const scrollY = useMotionValue(0);
 
-  const navOpacity = useTransform(scrollY, [0, 50], [0.8, 0.95]);
-  const navBlur = useTransform(scrollY, [0, 50], [8, 20]);
-  const logoScale = useTransform(scrollY, [0, 100], [1, 0.9]);
-  const springConfig = { damping: 20, stiffness: 300, restDelta: 0.001 };
-
   // Scroll progress indicator
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -64,6 +59,7 @@ const NavBar = () => {
   // User menu items with enhanced marketplace-focused options
   const userMenuItems = [
     { label: 'My Projects', icon: Code2, path: '/my-projects', description: 'Manage your project listings' },
+    { label: 'Saved Projects', icon: ShoppingBag, path: '/saved', description: 'Your bookmarked listings' },
     { label: 'Purchase History', icon: ShoppingBag, path: '/dashboard?tab=purchases', description: 'View your bought projects' },
     { label: 'Earnings & Sales', icon: DollarSign, path: '/dashboard?tab=sales', description: 'Track your revenue & sales' },
     { type: 'divider' },
@@ -80,11 +76,12 @@ const NavBar = () => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       setIsScrolled(scrollPosition > 20);
+      scrollY.set(scrollPosition);
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [scrollY]);
 
   // Close mobile menu on route change
   useEffect(() => {

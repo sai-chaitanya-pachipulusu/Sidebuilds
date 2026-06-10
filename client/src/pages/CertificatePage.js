@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import SellerCertificate from '../components/SellerCertificate';
 import apiClient from '../services/api';
-import './CertificatePage.css';
 
 const CertificatePage = () => {
   const { certificateId } = useParams();
@@ -78,7 +76,28 @@ const CertificatePage = () => {
           </div>
         </div>
         
-        <SellerCertificate certificate={certificate} />
+        <div className="seller-certificate bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-purple-600">Certificate of Sale</h3>
+            <p className="text-gray-500 mt-2">SideBuilds Marketplace</p>
+          </div>
+          <div className="border-t-2 border-purple-200 pt-6">
+            <p className="text-lg mb-4">This certifies that a project was sold on the SideBuilds platform.</p>
+            {certificate && (
+              <div className="space-y-3">
+                <p><span className="font-semibold">Certificate ID:</span> {certificate.id || certificate.certificate_id}</p>
+                <p><span className="font-semibold">Project:</span> {certificate.project_name || certificate.project_title}</p>
+                <p><span className="font-semibold">Sold on:</span> {new Date(certificate.created_at || certificate.issued_at).toLocaleDateString()}</p>
+                {certificate.verification_code && (
+                  <p><span className="font-semibold">Verification Code:</span> {certificate.verification_code}</p>
+                )}
+              </div>
+            )}
+            <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-400">Verified on SideBuilds Platform</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

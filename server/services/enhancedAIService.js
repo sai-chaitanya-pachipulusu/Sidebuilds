@@ -481,7 +481,7 @@ Respond with valid JSON in this exact format:
   async storeAnalysis(projectId, analysis) {
     try {
       const query = `
-        INSERT INTO project_ai_analyses (
+        INSERT INTO ai_project_analysis (
           project_id, 
           overall_score, 
           confidence_level, 
@@ -489,10 +489,8 @@ Respond with valid JSON in this exact format:
           factor_scores,
           insights,
           recommendations,
-          risks,
-          analysis_type,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          risks
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (project_id) 
         DO UPDATE SET
           overall_score = EXCLUDED.overall_score,
@@ -502,8 +500,7 @@ Respond with valid JSON in this exact format:
           insights = EXCLUDED.insights,
           recommendations = EXCLUDED.recommendations,
           risks = EXCLUDED.risks,
-          analysis_type = EXCLUDED.analysis_type,
-          updated_at = CURRENT_TIMESTAMP
+          timestamp = CURRENT_TIMESTAMP
       `;
 
       await db.query(query, [
@@ -514,9 +511,7 @@ Respond with valid JSON in this exact format:
         JSON.stringify(analysis.factor_scores),
         JSON.stringify(analysis.insights),
         JSON.stringify(analysis.recommendations),
-        JSON.stringify(analysis.risks),
-        analysis.analysis_type,
-        new Date()
+        JSON.stringify(analysis.risks)
       ]);
 
       console.log(`[AI Service] Analysis stored for project ${projectId}`);
@@ -528,9 +523,8 @@ Respond with valid JSON in this exact format:
   async getStoredAnalysis(projectId) {
     try {
       const query = `
-        SELECT * FROM project_ai_analyses 
+        SELECT * FROM ai_project_analysis 
         WHERE project_id = $1 
-        ORDER BY updated_at DESC 
         LIMIT 1
       `;
       
@@ -546,8 +540,7 @@ Respond with valid JSON in this exact format:
           insights: row.insights,
           recommendations: row.recommendations,
           risks: row.risks,
-          analysis_type: row.analysis_type,
-          timestamp: row.updated_at
+          timestamp: row.timestamp
         };
       }
       

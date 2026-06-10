@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { getMarketplaceProjects } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,12 +9,11 @@ import { Label } from '../shadcn/ui/label';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiCache, CACHE_TTL } from '../utils/apiCache';
+import ProjectCard from '../components/ProjectCard';
 
-// Use the enhanced ProjectCard component - memoized for performance
-const MemoizedProjectCard = memo(({ project }) => {
-  const ProjectCard = require('../components/ProjectCard').default;
-  return <ProjectCard project={project} />;
-});
+const MemoizedProjectCard = memo(({ project }) => (
+  <ProjectCard project={project} />
+));
 
 // Virtualized list item renderer
 const VirtualizedProjectItem = memo(({ project, index, style }) => (

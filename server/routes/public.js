@@ -317,6 +317,43 @@ router.get('/marketplace/analytics',
     }
 );
 
+// --- Trending Projects (computed from real engagement) ---
+// GET /api/public/trending
+// Score = engagement (views + 5x interest) decayed by listing age, so new
+// projects with momentum outrank stale high-view ones.
+router.get('/trending',
+    cache(presets.medium),
+    async (req, res) => {
+        try {
+            const limit = Math.min(parseInt(req.query.limit) || 12, 50);
+
+            const result = await db.query(
+                `SELECT
+                    p.project_id, p.name, p.description, p.stage, p.category,
+                    p.sale_price, p.is_for_sale, p.is_on_hold, p.thumbnail_url,
+                    p.monthly_revenue, p.monthly_users, p.view_count, p.interest_count,
+                    p.created_at, p.owner_id, u.username AS owner_username,
+                    ROUND(
+                        (COALESCE(p.view_count, 0) + COALESCE(p.interest_count, 0) * 5)::numeric
+                        / POWER(GREATEST(EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400, 0) + 2, 1.2),
+                        2
+                    ) AS trending_score
+                 FROM projects p
+                 JOIN users u ON p.owner_id = u.user_id
+                 WHERE p.is_public = true
+                 ORDER BY trending_score DESC, p.created_at DESC
+                 LIMIT $1`,
+                [limit]
+            );
+
+            res.json({ data: result.rows });
+        } catch (err) {
+            console.error('[PUBLIC API] Get trending error:', err.message);
+            res.status(500).json({ error: 'Server error fetching trending projects' });
+        }
+    }
+);
+
 // --- Get User Count for Signup Page ---
 // GET /api/public/user-count
 router.get('/user-count',

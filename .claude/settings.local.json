@@ -31,7 +31,14 @@
       "Bash(PORT=5004 npm start)",
       "Bash(npm run build:*)",
       "Bash(/bashes)",
-      "Bash(set PORT=3003)"
+      "Bash(set PORT=3003)",
+      "PowerShell(Get-ChildItem -Recurse -File \"server\" -Exclude node_modules | Where-Object { $_.FullName -notmatch 'node_modules' } | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"$PWD\\\\\", ''\\) })",
+      "PowerShell($line = Select-String -Path \"C:\\\\Users\\\\siaic\\\\Desktop\\\\SideProject Tracker\\\\server\\\\.env\" -Pattern '^DATABASE_URL=' | Select-Object -First 1 -ExpandProperty Line; if \\($line -match '@\\([^:/]+\\):?\\(\\\\d+\\)?/\\(\\\\w+\\)'\\) { \"Host: $\\($Matches[1]\\)\"; \"Port: $\\($Matches[2]\\)\"; \"DB: $\\($Matches[3]\\)\" } else { \"pattern not matched\" })",
+      "Bash(cd \"/c/Users/siaic/Desktop/SideProject Tracker/server\" && tail -30 routes/public.js)",
+      "Bash(grep -iE \"create project|error|400\" /tmp/server-feat.log | grep -viE \"DB-POSTGRES|favicon\" | head -20)",
+      "Bash(grep -iE \"403|forbidden|stripe|onboard|verif\" /tmp/server-feat2.log | grep -viE \"DB-POSTGRES|secretKey|publishable\" | head -8)",
+      "Read(//c/c/Users/siaic/Desktop/SideProject Tracker/client/src/services/**)",
+      "Read(//c/c/Users/siaic/Desktop/SideProject Tracker/client/src/pages/**)"
     ],
     "deny": []
   }

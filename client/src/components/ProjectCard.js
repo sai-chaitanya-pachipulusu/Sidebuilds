@@ -27,6 +27,22 @@ import {
 } from 'lucide-react';
 import { Badge } from '../shadcn/ui/badge';
 import TrustBadge, { TrustBadgeGroup } from './TrustBadge';
+import { useAuth } from '../context/AuthContext';
+import { getSavedProjectIds, saveProject, unsaveProject } from '../services/api';
+
+// Session-level cache of the user's saved project ids so a grid of cards
+// costs one request, not one per card.
+let savedIdsPromise = null;
+const loadSavedIds = () => {
+  if (!savedIdsPromise) {
+    savedIdsPromise = getSavedProjectIds().catch(() => {
+      savedIdsPromise = null;
+      return [];
+    });
+  }
+  return savedIdsPromise;
+};
+const invalidateSavedIds = () => { savedIdsPromise = null; };
 
 // Helper functions
 const formatPrice = (price) => {
@@ -130,8 +146,50 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
   const [isMobile, setIsMobile] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [savePending, setSavePending] = useState(false);
   const cardRef = useRef(null);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  // Reflect the user's real saved state
+  React.useEffect(() => {
+    let cancelled = false;
+    if (isAuthenticated && project?.project_id) {
+      loadSavedIds().then((ids) => {
+        if (!cancelled && Array.isArray(ids)) {
+          setIsBookmarked(ids.includes(project.project_id));
+        }
+      });
+    }
+    return () => { cancelled = true; };
+  }, [isAuthenticated, project?.project_id]);
+
+  const handleToggleSave = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (savePending) return;
+
+    const next = !isBookmarked;
+    setIsBookmarked(next); // optimistic
+    setSavePending(true);
+    try {
+      if (next) {
+        await saveProject(project.project_id);
+      } else {
+        await unsaveProject(project.project_id);
+      }
+      invalidateSavedIds();
+    } catch (err) {
+      setIsBookmarked(!next); // roll back on failure
+    } finally {
+      setSavePending(false);
+    }
+  };
   
   // 3D tilt effect
   const mouseX = useMotionValue(0);
@@ -333,11 +391,8 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                   
                   {/* Bookmark button */}
                   <motion.button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setIsBookmarked(!isBookmarked);
-                    }}
+                    onClick={handleToggleSave}
+                    title={isBookmarked ? 'Remove from saved' : 'Save project'}
                     className={`w-8 h-8 rounded-none backdrop-blur-md flex items-center justify-center transition-colors ${
                       isBookmarked
                         ? 'bg-white/20 border-white/40'

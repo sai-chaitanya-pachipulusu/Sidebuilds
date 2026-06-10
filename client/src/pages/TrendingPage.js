@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMarketplaceProjects } from '../services/api';
+import { getTrendingProjects } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../shadcn/ui/card';
 import { Button } from '../shadcn/ui/button';
 import { Flame, ArrowRight, BarChart3, Eye } from 'lucide-react';
@@ -14,13 +14,9 @@ const TrendingPage = () => {
     useEffect(() => {
         const fetchTrending = async () => {
             try {
-                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
-                const response = await fetch(`${apiUrl}/public/marketplace?limit=20&sortBy=view_count&sortOrder=desc`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const allProjects = data?.data || [];
-                    setProjects(allProjects.slice(0, 12));
-                }
+                // Ranked server-side: engagement (views + interest) with recency decay
+                const data = await getTrendingProjects(12);
+                setProjects(data?.data || []);
             } catch (error) {
                 console.error("Failed to fetch trending projects", error);
             } finally {

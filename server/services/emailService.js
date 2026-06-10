@@ -2,6 +2,12 @@ const nodemailer = require('nodemailer');
 
 const requiredSmtpVars = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
 
+/** Hosted backend (Render, etc.): never fake-send mail when SMTP vars are absent. */
+const isDeployedBackend = () =>
+    process.env.NODE_ENV === 'production' ||
+    process.env.RENDER === 'true' ||
+    Boolean(process.env.RENDER_EXTERNAL_URL);
+
 const getEmailStatus = () => {
   const missing = requiredSmtpVars.filter((key) => !process.env[key]);
   const configured = missing.length === 0;
@@ -14,7 +20,7 @@ const getEmailStatus = () => {
     host: process.env.SMTP_HOST || null,
     port: Number(process.env.SMTP_PORT || 587),
     secure: process.env.SMTP_SECURE === 'true',
-    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development'
+    mode: isDeployedBackend() ? 'production' : 'development'
   };
 };
 
@@ -22,7 +28,7 @@ const getEmailStatus = () => {
 const createTransporter = () => {
   const status = getEmailStatus();
 
-  if (process.env.NODE_ENV === 'production' && !status.configured) {
+  if (isDeployedBackend() && !status.configured) {
     return {
       sendMail: async () => {
         throw new Error(`SMTP is not configured. Missing: ${status.missing.join(', ')}`);
@@ -61,7 +67,8 @@ const createTransporter = () => {
   }
 };
 
-const transporter = createTransporter();
+/** Fresh transporter per operation so SMTP env picks up reliably after deploy. */
+const getTransporter = () => createTransporter();
 
 // Email templates
 const emailTemplates = {
@@ -187,7 +194,7 @@ const sendEmail = async (to, templateName, data) => {
       ...template(data)
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await getTransporter().sendMail(mailOptions);
     console.log(`Email sent successfully: ${templateName} to ${to}`);
     return info;
   } catch (error) {
@@ -232,13 +239,14 @@ const emailService = {
       text,
       html
     };
-    return transporter.sendMail(mailOptions);
+    return getTransporter().sendMail(mailOptions);
   },
 
   getEmailStatus,
+  isDeployedBackend,
 
   verifyConnection: async () => {
-    await transporter.verify();
+    await getTransporter().verify();
     return getEmailStatus();
   }
 };

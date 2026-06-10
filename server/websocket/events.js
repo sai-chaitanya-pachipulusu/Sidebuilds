@@ -11,8 +11,9 @@ class WebSocketEvents {
   }
 
   setupEventHandlers() {
-    this.io.use(this.authenticateSocket.bind(this));
-    this.io.on('connection', this.handleConnection.bind(this));
+    // Auth is done in index.js — don't duplicate middleware/connection handlers
+    // Use registerAuthenticatedSocket() from index.js connection handler instead
+    console.log('[WebSocketEvents] Ready (auth handled by index.js)');
   }
 
   // Enhanced authenticate WebSocket connections with JWT refresh handling
@@ -76,7 +77,9 @@ class WebSocketEvents {
   }
 
   // Enhanced WebSocket connection handler with token refresh management
-  handleConnection(socket) {
+  registerAuthenticatedSocket(socket) {
+    // Skip if already registered
+    if (this.connectedUsers.has(socket.user?.id)) return;
     const userId = socket.user.id;
     const username = socket.user.username;
 

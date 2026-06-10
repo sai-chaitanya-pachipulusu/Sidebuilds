@@ -28,14 +28,8 @@ export const useOptimizedSearch = (
   const [isSearching, setIsSearching] = useState(false);
   // Note: searchMetrics moved to ref to prevent infinite re-render loops
   const [, forceUpdate] = useState({}); // Used to trigger updates when needed
-  const searchMetrics = searchMetricsRef.current;
 
-  // Performance optimization refs
-  const searchCache = useRef(new Map());
-  const searchIndex = useRef(new Map());
-  const lastSearchTime = useRef(0);
-  const searchWorker = useRef(null);
-  const abortControllerRef = useRef(null);
+  // Performance optimization refs (defined before first use)
   const searchMetricsRef = useRef({
     totalItems: 0,
     filteredItems: 0,
@@ -43,6 +37,12 @@ export const useOptimizedSearch = (
     cacheHits: 0,
     cacheMisses: 0
   });
+  const searchCache = useRef(new Map());
+  const searchIndex = useRef(new Map());
+  const lastSearchTime = useRef(0);
+  const searchWorker = useRef(null);
+  const abortControllerRef = useRef(null);
+  const searchMetrics = searchMetricsRef.current;
 
   // Debounced search term
   const debouncedSearchTerm = useDebounce(searchTerm, debounceMs, {
@@ -190,18 +190,18 @@ export const useOptimizedSearch = (
     const cached = searchCache.current.get(cacheKey);
     
     if (cached && Date.now() - cached.timestamp < 30000) { // 30 second cache
-      setSearchMetrics(prev => ({
-        ...prev,
-        cacheHits: prev.cacheHits + 1,
+      searchMetricsRef.current = {
+        ...searchMetricsRef.current,
+        cacheHits: (searchMetricsRef.current.cacheHits || 0) + 1,
         searchTime: performance.now() - startTime
-      }));
+      };
       return cached.results;
     }
 
-    setSearchMetrics(prev => ({
-      ...prev,
-      cacheMisses: prev.cacheMisses + 1
-    }));
+    searchMetricsRef.current = {
+      ...searchMetricsRef.current,
+      cacheMisses: (searchMetricsRef.current.cacheMisses || 0) + 1
+    };
 
     let results = [...items];
 

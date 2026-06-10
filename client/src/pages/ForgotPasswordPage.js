@@ -19,9 +19,13 @@ const ForgotPasswordPage = () => {
       setIsSubmitted(true);
       toast.success(response.message || 'If the account exists, a reset link has been sent.');
     } catch (error) {
-      const message = error.status === 429
-        ? `Too many reset attempts. Please try again later${error.retryAfter ? ` (${error.retryAfter})` : ''}.`
-        : error.message || 'Unable to send reset link. Please try again.';
+      const message =
+        error.status === 429
+          ? `Too many reset attempts. Please try again later${error.retryAfter ? ` (${error.retryAfter})` : ''}.`
+          : error.code === 'EMAIL_NOT_CONFIGURED' || error.code === 'EMAIL_SEND_FAILED'
+            ? error.message ||
+              'Password reset emails are unavailable. Check that the hosting provider has SMTP configured.'
+            : error.message || 'Unable to send reset link. Please try again.';
       toast.error(message);
     } finally {
       setIsLoading(false);

@@ -160,6 +160,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         fetchUserProfile,
+        refreshUserData: fetchUserProfile,
     };
 
     return (

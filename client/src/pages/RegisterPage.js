@@ -29,7 +29,8 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [userCount, setUserCount] = useState(0); // Will be fetched from API
+  const [userCount, setUserCount] = useState(null); // null = still loading
+  const [userCountError, setUserCountError] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -38,9 +39,14 @@ const RegisterPage = () => {
     const fetchUserCount = async () => {
       try {
         const response = await apiClient.get('/public/user-count');
-        setUserCount(response.data.count);
+        if (response && response.data && typeof response.data.count === 'number') {
+          setUserCount(response.data.count);
+        } else {
+          setUserCountError(true);
+        }
       } catch (error) {
-        console.log('Could not fetch user count');
+        console.warn('Could not fetch user count:', error?.message || error);
+        setUserCountError(true);
       }
     };
     fetchUserCount();
@@ -218,7 +224,13 @@ const RegisterPage = () => {
             </p>
             
             <p className="text-lg text-white font-bold mb-4">
-              You are our <span className="text-yellow-400 font-black">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!
+              {userCount === null ? (
+                <>Join thousands of makers — counting our community…</>
+              ) : userCountError ? (
+                <>Join our growing community of builders today!</>
+              ) : (
+                <>You are our <span className="text-yellow-400 font-black">{getOrdinalSuffix(userCount + 1)}</span> user. Welcome to the family!</>
+              )}
             </p>
             
             <div className="space-y-3 text-sm text-gray-300">

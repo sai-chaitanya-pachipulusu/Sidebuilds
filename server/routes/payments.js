@@ -18,9 +18,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
 const COMMISSION_RATE = process.env.COMMISSION_RATE || 5;
 
-// In-memory store for idempotency keys (in production, use Redis)
-const idempotencyStore = new Map();
-const IDEMPOTENCY_KEY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+// DB-backed idempotency keys (survive restarts and multiple instances)
+const { checkKey: checkIdempotencyKey, storeKey: storeIdempotencyKey } = require('../services/idempotencyService');
 
 // Helper function to handle validation errors
 const handleValidationErrors = (req, res, next) => {
@@ -35,42 +34,6 @@ const handleValidationErrors = (req, res, next) => {
         });
     }
     next();
-};
-
-// Helper function to check idempotency key
-const checkIdempotencyKey = async (key, operation) => {
-    if (!key) return null;
-    
-    const stored = idempotencyStore.get(key);
-    if (stored) {
-        if (stored.operation === operation) {
-            if (Date.now() - stored.timestamp < IDEMPOTENCY_KEY_TTL) {
-                return stored.response;
-            }
-        }
-    }
-    return null;
-};
-
-// Helper function to store idempotency key
-const storeIdempotencyKey = (key, operation, response) => {
-    if (!key) return;
-    
-    idempotencyStore.set(key, {
-        operation,
-        response,
-        timestamp: Date.now()
-    });
-    
-    // Clean up old keys periodically
-    if (idempotencyStore.size > 10000) {
-        const now = Date.now();
-        for (const [k, v] of idempotencyStore.entries()) {
-            if (now - v.timestamp > IDEMPOTENCY_KEY_TTL) {
-                idempotencyStore.delete(k);
-            }
-        }
-    }
 };
 
 // POST /api/payments/connect/create-account
@@ -268,9 +231,10 @@ router.post('/create-checkout-session',
                         pr.seller_id,
                         pr.status,
                         pr.price as accepted_price,
-                        p.name AS project_name, 
-                        p.description AS project_description, 
+                        p.name AS project_name,
+                        p.description AS project_description,
                         p.is_for_sale AS project_is_for_sale,
+                        p.is_on_hold AS project_is_on_hold,
                         s_user.user_id AS seller_id,
                         s_user.email AS seller_email, 
                         s_user.stripe_account_id AS seller_stripe_account_id
@@ -288,11 +252,12 @@ router.post('/create-checkout-session',
                 const purchaseRequest = requestQuery.rows[0];
                 const projectId = purchaseRequest.project_id;
 
-                if (purchaseRequest.status !== 'seller_accepted_pending_payment') {
+                const payableStatuses = ['seller_accepted_pending_payment', 'agreement_reached_pending_payment'];
+                if (!payableStatuses.includes(purchaseRequest.status)) {
                     throw new Error(`Payment cannot be processed. Status is: ${purchaseRequest.status}`);
                 }
 
-                if (!purchaseRequest.project_is_for_sale) {
+                if (!purchaseRequest.project_is_for_sale || purchaseRequest.project_is_on_hold) {
                     await client.query(
                         "UPDATE purchase_requests SET status = 'aborted_project_unavailable' WHERE id = $1",
                         [purchase_request_id]
@@ -310,6 +275,15 @@ router.post('/create-checkout-session',
 
             const purchaseRequest = result;
             const totalAmount = parseFloat(purchaseRequest.accepted_price);
+
+            // Never hand Stripe a NaN/zero/sub-minimum amount
+            if (!Number.isFinite(totalAmount) || totalAmount < 0.5) {
+                console.error(`[PAYMENTS] Invalid amount ${purchaseRequest.accepted_price} for purchase request ${purchase_request_id}`);
+                return res.status(400).json({
+                    error: 'This purchase request has no valid agreed price. Please contact the seller.'
+                });
+            }
+
             const commissionAmount = parseFloat(((totalAmount * COMMISSION_RATE) / 100).toFixed(2));
             
             const successUrl = `${CLIENT_URL}/purchase/success?purchase_request_id=${purchase_request_id}&session_id={CHECKOUT_SESSION_ID}`;

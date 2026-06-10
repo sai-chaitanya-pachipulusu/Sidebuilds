@@ -48,12 +48,17 @@ if (useSQLite) {
         total_revenue REAL DEFAULT 0,
         reputation_score REAL DEFAULT 0,
         stripe_account_id TEXT,
-        stripe_onboarding_complete INTEGER DEFAULT 0
+        stripe_customer_id TEXT,
+        onboarding_complete INTEGER DEFAULT 0,
+        payout_enabled INTEGER DEFAULT 0,
+        stripe_charges_enabled INTEGER DEFAULT 0,
+        stripe_details_submitted INTEGER DEFAULT 0
       )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS projects (
       project_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
+      owner_id TEXT NOT NULL,
+      owner_username TEXT,
       name TEXT NOT NULL,
       description TEXT,
       detailed_description TEXT,
@@ -69,6 +74,7 @@ if (useSQLite) {
       monthly_users INTEGER DEFAULT 0,
       growth_rate REAL DEFAULT 0,
       view_count INTEGER DEFAULT 0,
+      interest_count INTEGER DEFAULT 0,
       sale_price REAL,
       price_negotiable INTEGER DEFAULT 1,
       contact_email TEXT,
@@ -80,12 +86,13 @@ if (useSQLite) {
       is_for_sale INTEGER DEFAULT 0,
       featured INTEGER DEFAULT 0,
       verified INTEGER DEFAULT 0,
+      is_on_hold INTEGER DEFAULT 0,
       code_transferred INTEGER DEFAULT 0,
       domain_transferred INTEGER DEFAULT 0,
       assets_transferred INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(user_id)
+      FOREIGN KEY (owner_id) REFERENCES users(user_id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS purchase_requests (
@@ -99,11 +106,16 @@ if (useSQLite) {
       stripe_session_id TEXT,
       stripe_payment_intent_id TEXT,
       stripe_payout_id TEXT,
+      stripe_transfer_id TEXT,
       code_transferred INTEGER DEFAULT 0,
       domain_transferred INTEGER DEFAULT 0,
       assets_transferred INTEGER DEFAULT 0,
       transfer_notes TEXT,
       terms_agreed_version TEXT,
+      escrow_status TEXT DEFAULT 'not_started',
+      dispute_reason TEXT,
+      dispute_reported_at DATETIME,
+      dispute_reported_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects(project_id),
@@ -112,14 +124,18 @@ if (useSQLite) {
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
       type TEXT NOT NULL,
-      title TEXT NOT NULL,
+      title TEXT,
       message TEXT,
-      read INTEGER DEFAULT 0,
+      is_read INTEGER DEFAULT 0,
       link TEXT,
+      action_url TEXT,
       data TEXT,
+      related_project_id TEXT,
+      related_transaction_id TEXT,
+      priority INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(user_id)
     )`);
@@ -148,6 +164,20 @@ if (useSQLite) {
       FOREIGN KEY (project_id) REFERENCES projects(project_id)
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS purchase_request_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purchase_request_id INTEGER REFERENCES purchase_requests(id),
+      sender_id TEXT NOT NULL,
+      recipient_id TEXT,
+      content TEXT NOT NULL,
+      message_type TEXT DEFAULT 'general',
+      is_read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sender_id) REFERENCES users(user_id),
+      FOREIGN KEY (recipient_id) REFERENCES users(user_id)
+    )`);
+
       // Seed basic data
       db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
         if (!err && row.count === 0) {
@@ -174,13 +204,13 @@ if (useSQLite) {
           const project1Id = '550e8400-e29b-41d4-a716-446655440001';
           const project2Id = '550e8400-e29b-41d4-a716-446655440002';
 
-          db.run(`INSERT INTO projects (project_id, user_id, name, description, stage, is_public, is_for_sale, sale_price)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [project1Id, 'seller1', 'TaskFlow Pro', 'Advanced task management application', 'mvp', 1, 1, 5000]);
+          db.run(`INSERT INTO projects (project_id, owner_id, owner_username, name, description, stage, is_public, is_for_sale, sale_price)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [project1Id, 'seller1', 'seller1', 'TaskFlow Pro', 'Advanced task management application', 'mvp', 1, 1, 5000]);
 
-          db.run(`INSERT INTO projects (project_id, user_id, name, description, stage, is_public, is_for_sale, sale_price)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [project2Id, 'seller1', 'DevCollab', 'Developer collaboration platform', 'prototype', 1, 1, 3500]);
+          db.run(`INSERT INTO projects (project_id, owner_id, owner_username, name, description, stage, is_public, is_for_sale, sale_price)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [project2Id, 'seller1', 'seller1', 'DevCollab', 'Developer collaboration platform', 'prototype', 1, 1, 3500]);
 
           console.log('[SERVER/DB.JS] Test data seeded successfully');
           } catch (hashError) {
@@ -304,6 +334,8 @@ if (useSQLite) {
     }
   };
 
+  const getQueryStats = () => ({ total: 0, byType: {}, note: 'SQLite stats not tracked' });
+
   module.exports = {
     query,
     db,
@@ -324,10 +356,14 @@ if (useSQLite) {
         userCount: Number(users.rows?.[0]?.count || 0),
         projectCount: Number(projects.rows?.[0]?.count || 0)
       };
-    }
+    },
+    getQueryStats
   };
   return;
 }
+
+// --- PostgreSQL code path (only reached when useSQLite is false) ---
+
 // Configure connection pool with standard PostgreSQL settings
 const convertPlaceholders = (text = '') => {
     if (!text || typeof text !== 'string') return text;
@@ -379,8 +415,10 @@ const pool = new Pool({
     query_timeout: 10000 // Query timeout in ms (10s)
 });
 
-// Track connection state
-let isConnected = false;
+// Track connection state. Starts optimistic so queries issued before the
+// initial connection probe completes don't all pay the 1s "not connected"
+// penalty on cold starts; a real failure flips this to false immediately.
+let isConnected = true;
 let connectionRetries = 0;
 const MAX_CONNECTION_RETRIES = 10;
 
@@ -588,41 +626,24 @@ const withTransaction = async (callback) => {
     }
 };
 
-if (useSQLite) {
-  // Export SQLite interface
-  module.exports = {
-    query,
-    getClient: () => db, // Return the SQLite db instance
-    retry: () => true, // SQLite doesn't need retry logic like PostgreSQL
-    withTransaction: async (callback) => {
-      return new Promise((resolve, reject) => {
-        db.serialize(async () => {
-          try {
-            await query('BEGIN TRANSACTION');
-            const result = await callback(db);
-            await query('COMMIT');
-            resolve(result);
-          } catch (error) {
-            await query('ROLLBACK');
-            reject(error);
-          }
-        });
-      });
-    },
-    db, // Export SQLite db instance
-    isConnectionHealthy: () => true, // Assume SQLite is always healthy
-    checkConnection: async () => ({ connected: true })
-  };
-} else {
-  // Export PostgreSQL interface
-  module.exports = {
-    query,
-    getClient: () => pool.connect(),
-    retry,
-    withTransaction,
-    pool, // Export the pool itself if needed
-    isConnectionHealthy,
-    checkConnection,
-    getDatabaseInfo
-  };
-}
+// Query performance stats
+const queryStats = { total: 0, byType: {} };
+const getQueryStats = () => queryStats;
+
+// Export PostgreSQL interface
+module.exports = {
+  query: async (text, params) => {
+    queryStats.total++;
+    const type = text.trim().split(/\s+/)[0].toUpperCase() || 'OTHER';
+    queryStats.byType[type] = (queryStats.byType[type] || 0) + 1;
+    return query(text, params);
+  },
+  getClient: () => pool.connect(),
+  retry,
+  withTransaction,
+  pool,
+  isConnectionHealthy,
+  checkConnection,
+  getDatabaseInfo,
+  getQueryStats
+};

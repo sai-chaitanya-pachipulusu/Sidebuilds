@@ -16,10 +16,23 @@ let PORT = parseInt(process.env.PORT || '5002', 10);
 // Import database connection AFTER dotenv has been configured and logged
 const db = require('./db');
 const emailService = require('./services/emailService');
+const serverConfig = require('./config/environment');
 
-// --- Middleware --- 
+// --- Middleware ---
 const app = express();
 const server = http.createServer(app); // Create HTTP server for Express app
+
+// Behind Render/Vercel proxies: required so req.ip reflects the real client
+// for rate limiting and security logging
+app.set('trust proxy', 1);
+
+// Security headers (CSP is handled by the custom Stripe-aware middleware below)
+const helmet = require('helmet');
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false, // Stripe.js compatibility
+    crossOriginResourcePolicy: { policy: 'cross-origin' } // allow serving uploads to the client origin
+}));
 
 // Configure CORS based on environment
 const allowedOrigins = process.env.NODE_ENV === 'production' 
@@ -116,6 +129,13 @@ io.use(authenticateSocket);
 const WebSocketEvents = require('./websocket/events');
 const wsEvents = new WebSocketEvents(io);
 
+// Wire notification service to socket.io (avoids circular dependency)
+const notificationService = require('./services/notificationService');
+notificationService.setIO(io);
+
+// Periodic marketplace hygiene (stale request expiry, etc.)
+require('./services/maintenanceService').start();
+
 // Set up periodic token expiry monitoring
 setInterval(() => {
   if (wsEvents && wsEvents.checkForExpiringTokens) {
@@ -129,6 +149,11 @@ app.set('wsEvents', wsEvents);
 io.on('connection', (socket) => {
     // Auto-join user to their personal room
     socket.join(`user_${socket.userId}`);
+
+    // Register with WebSocketEvents for extended functionality
+    if (wsEvents && wsEvents.registerAuthenticatedSocket) {
+        wsEvents.registerAuthenticatedSocket(socket);
+    }
 
     // Broadcast online status
     socket.broadcast.emit('user_online', {
@@ -265,29 +290,47 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Enhanced message handling
+    // Enhanced message handling: verify participant, persist, then broadcast
     socket.on('send_message', async ({ purchase_request_id, message, message_type = 'text' }) => {
-        if (!socket.isAuthenticated || !purchase_request_id || !message) {
+        if (!socket.isAuthenticated || !purchase_request_id || !message || !message.trim()) {
             socket.emit('error', { message: 'Invalid message data' });
             return;
         }
 
         try {
-            // Store message in database
-            const messageData = {
-                purchase_request_id,
-                sender_id: socket.userId,
-                message: message.trim(),
-                message_type,
-                created_at: new Date().toISOString()
-            };
+            const requestCheck = await db.query(
+                'SELECT buyer_id, seller_id FROM purchase_requests WHERE id = $1',
+                [purchase_request_id]
+            );
+            const request = requestCheck.rows[0];
+            if (!request || (request.buyer_id !== socket.userId && request.seller_id !== socket.userId)) {
+                socket.emit('error', { message: 'Not authorized for this conversation' });
+                return;
+            }
+
+            const recipientId = request.buyer_id === socket.userId ? request.seller_id : request.buyer_id;
+            const trimmed = message.trim();
+
+            const inserted = await db.query(
+                `INSERT INTO purchase_request_messages
+                    (purchase_request_id, sender_id, recipient_id, content, message, message_type)
+                 VALUES ($1, $2, $3, $4, $4, $5)
+                 RETURNING message_id, created_at`,
+                [purchase_request_id, socket.userId, recipientId, trimmed, message_type]
+            );
 
             const roomName = `purchase_${purchase_request_id}`;
-            
-            // Broadcast to room participants
             io.to(roomName).emit('message_received', {
-                ...messageData,
+                id: inserted.rows[0]?.message_id,
+                purchase_request_id,
+                sender_id: socket.userId,
+                recipient_id: recipientId,
+                content: trimmed,
+                message: trimmed,
+                message_type,
+                created_at: inserted.rows[0]?.created_at || new Date().toISOString(),
                 sender_name: socket.user.username,
+                sender_username: socket.user.username,
                 sender_role: socket.user.role || 'user'
             });
         } catch (error) {
@@ -365,9 +408,9 @@ app.use('/api/', (req, res, next) => {
 app.use('/api/projects/search', searchLimiter);
 app.use('/api/public/marketplace', searchLimiter);
 
-// Apply upload rate limiting to file upload endpoints
-app.use('/api/files/upload', uploadLimiter);
-app.use('/api/projects/:id/files', uploadLimiter);
+// Apply upload rate limiting to file upload endpoints (POST only)
+app.post('/api/files/upload', uploadLimiter);
+app.post('/api/projects/:id/files', uploadLimiter);
 
 // --- Routes ---
 app.get('/', (req, res) => {
@@ -491,6 +534,12 @@ purchaseRequestRoutes.use('/:requestId/messages', purchaseRequestMessageRoutes);
 const notificationRoutes = require('./routes/notifications');
 app.use('/api/notifications', notificationRoutes);
 
+// Marketplace engagement features
+app.use('/api/saves', require('./routes/saves'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/questions', require('./routes/questions'));
+app.use('/api/follows', require('./routes/follows'));
+
 // Mount Dashboard routes
 const dashboardRoutes = require('./routes/dashboard');
 app.use('/api/dashboard', dashboardRoutes);
@@ -499,8 +548,17 @@ app.use('/api/dashboard', dashboardRoutes);
 const fileRoutes = require('./routes/files');
 app.use('/api/files', fileRoutes);
 
-// Serve uploaded files statically (for development)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files statically.
+// Sandbox CSP + nosniff prevent stored XSS via uploaded SVG/HTML files;
+// long cache is safe because filenames embed a UUID.
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d',
+    setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+        res.setHeader('Content-Disposition', 'inline');
+    }
+}));
 
 // AI and Analytics routes
 const aiRoutes = require('./routes/ai');

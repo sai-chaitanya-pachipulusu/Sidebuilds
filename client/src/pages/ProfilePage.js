@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfileById, getUserProjects } from '../services/api';
+import { getUserProfileById, getUserProjects, getFollowStatus, followUser, unfollowUser, getSellerReviews } from '../services/api';
+import { StarRating } from '../components/ProjectReviews';
 import { Button } from '../shadcn/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../shadcn/ui/card';
 import { AtSign, Github, Linkedin, Calendar, DollarSign, Edit, Eye, Trophy, CheckCircle, MapPin, ExternalLink, Package, Grid, List, User, Target, Link as LinkIcon } from 'lucide-react';
@@ -17,6 +18,10 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
   const [viewMode, setViewMode] = useState('grid');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followPending, setFollowPending] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -26,7 +31,7 @@ const ProfilePage = () => {
           getUserProfileById(userId),
           getUserProjects(userId)
         ]);
-        
+
         setUser(profileData);
         setProjects(projectsData);
       } catch (error) {
@@ -39,6 +44,48 @@ const ProfilePage = () => {
 
     fetchProfile();
   }, [userId]);
+
+  // Follow status + seller rating (non-critical, best-effort)
+  useEffect(() => {
+    let cancelled = false;
+    if (currentUser && userId) {
+      getFollowStatus(userId)
+        .then((s) => {
+          if (!cancelled) {
+            setIsFollowing(Boolean(s.is_following));
+            setFollowerCount(s.follower_count || 0);
+          }
+        })
+        .catch(() => {});
+    }
+    getSellerReviews(userId)
+      .then((r) => { if (!cancelled) setReviewSummary(r.summary); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUser, userId]);
+
+  const handleToggleFollow = async () => {
+    if (followPending) return;
+    const next = !isFollowing;
+    setIsFollowing(next);
+    setFollowerCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    setFollowPending(true);
+    try {
+      if (next) {
+        await followUser(userId);
+        toast.success(`Following ${user?.username || 'seller'} — you'll be notified of new listings.`);
+      } else {
+        await unfollowUser(userId);
+      }
+    } catch (err) {
+      // roll back optimistic update
+      setIsFollowing(!next);
+      setFollowerCount((c) => Math.max(0, c + (next ? -1 : 1)));
+      toast.error('Could not update follow status.');
+    } finally {
+      setFollowPending(false);
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
@@ -196,11 +243,27 @@ const ProfilePage = () => {
                     </p>
                   )}
 
+                  {/* Seller rating from verified-buyer reviews */}
+                  {reviewSummary && reviewSummary.review_count > 0 && (
+                    <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                      <StarRating value={Math.round(reviewSummary.average_rating)} />
+                      <span className="text-sm text-gray-300">
+                        {reviewSummary.average_rating} · {reviewSummary.review_count} review{reviewSummary.review_count !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       Joined {new Date(user.created_at).toLocaleDateString()}
                     </div>
+                    {followerCount > 0 && (
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        {followerCount} follower{followerCount !== 1 ? 's' : ''}
+                      </div>
+                    )}
                     {user.location && (
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
@@ -223,13 +286,19 @@ const ProfilePage = () => {
                 </div>
 
                 {/* Follow Button (if viewing someone else's profile) */}
-                {currentUser && currentUser.id !== user.id && (
+                {currentUser && (currentUser.user_id || currentUser.id) !== (user.user_id || user.id) && (
                   <motion.button
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                    onClick={handleToggleFollow}
+                    disabled={followPending}
+                    className={`px-6 py-3 rounded-none font-medium transition-all duration-200 disabled:opacity-60 ${
+                      isFollowing
+                        ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                        : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
+                    }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Follow
+                    {isFollowing ? 'Following ✓' : 'Follow'}
                   </motion.button>
                 )}
               </div>

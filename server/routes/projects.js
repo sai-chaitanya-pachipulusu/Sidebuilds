@@ -206,6 +206,15 @@ router.post('/', async (req, res) => {
         );
         
         console.log('Project created successfully:', JSON.stringify(createdProject.rows[0], null, 2));
+
+        // Tell the seller's followers about new public listings (best-effort, async)
+        const created = createdProject.rows[0];
+        if (created && created.is_public) {
+            const { notifyFollowersOfNewListing } = require('./follows');
+            notifyFollowersOfNewListing(req.user.user_id, req.user.username, created)
+                .catch(() => {});
+        }
+
         res.status(201).json(createdProject.rows[0]);
     } catch (err) {
         console.error("Create project error:", err.message);

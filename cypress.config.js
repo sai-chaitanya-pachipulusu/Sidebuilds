@@ -209,9 +209,9 @@ module.exports = defineConfig({
         }
       });
       
-      // Plugin configuration
-      require('@cypress/code-coverage/task')(on, config);
-      require('cypress-terminal-report/src/installLogsPrinter')(on);
+      // Plugin configuration (disabled — packages not installed)
+      // require('@cypress/code-coverage/task')(on, config);
+      // require('cypress-terminal-report/src/installLogsPrinter')(on);
       
       // Custom event handlers
       on('before:browser:launch', (browser = {}, launchOptions) => {

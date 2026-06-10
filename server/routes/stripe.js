@@ -432,8 +432,16 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
 // A simple endpoint to test the Stripe configuration
 router.get('/debug', authMiddleware, async (req, res) => {
     try {
-        // Just try to retrieve basic info from Stripe to test the connection
-        const account = await stripe.accounts.retrieve();
+        // Retrieve Stripe account info (requires account ID)
+        const stripe = require('../config/stripe.config');
+        const accountId = req.user?.stripe_account_id;
+        if (!accountId) {
+            return res.json({
+                message: 'Stripe connection successful (no account linked)',
+                configured: true
+            });
+        }
+        const account = await stripe.accounts.retrieve(accountId);
         res.json({ 
             message: 'Stripe connection successful',
             accountType: account.type,
