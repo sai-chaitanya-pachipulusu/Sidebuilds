@@ -76,14 +76,13 @@ node dev-start.js
 ```
 
 - **Frontend**: http://localhost:3002 (or 3001)
-- **Backend**: http://localhost:5001
+- **Backend**: http://localhost:5002
 
 ### Test Accounts
 
-| Role   | Email            | Password    |
-| ------ | ---------------- | ----------- |
-| Seller | seller1@test.com | password123 |
-| Buyer  | buyer1@test.com  | password123 |
+Create test accounts locally through the registration page. Seed data for the
+optional SQLite dev mode is defined in `server/db.js`. Do not commit real
+credentials anywhere in this repository.
 
 ---
 
@@ -146,7 +145,7 @@ SideProject-Tracker/
 
 ```json
 // Request
-{ "email": "user@example.com", "password": "password123" }
+{ "email": "user@example.com", "password": "your-password" }
 
 // Response
 { "token": "eyJ...", "user": { "user_id": "...", "username": "..." } }
