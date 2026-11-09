@@ -27,9 +27,10 @@ router.get('/project/:projectId',
                         asker.username AS asker_username,
                         answerer.username AS answerer_username
                  FROM project_questions q
+                 JOIN projects p ON p.project_id = q.project_id
                  JOIN users asker ON q.asker_id = asker.user_id
                  LEFT JOIN users answerer ON q.answered_by = answerer.user_id
-                 WHERE q.project_id = $1 AND COALESCE(q.is_public, true) = true
+                 WHERE q.project_id = $1 AND p.is_public = true AND COALESCE(q.is_public, true) = true
                  ORDER BY q.created_at DESC
                  LIMIT 100`,
                 [req.params.projectId]

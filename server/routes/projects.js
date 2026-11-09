@@ -287,6 +287,23 @@ router.get('/', async (req, res) => {
     }
 });
 
+// --- Check if user has Stripe Connect account ---
+// GET /api/projects/check-stripe-account
+router.get('/check-stripe-account', async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const stripeStatus = await checkUserStripeAccount(userId);
+
+        res.json({
+            hasStripeAccount: stripeStatus.hasStripeAccount,
+            isOnboardingComplete: stripeStatus.isOnboardingComplete
+        });
+    } catch (err) {
+        console.error("Check Stripe account error:", err.message);
+        res.status(500).json({ message: 'Failed to check Stripe account status.' });
+    }
+});
+
 // --- READ Single Project --- 
 // GET /api/projects/:id
 router.get('/:id', async (req, res) => {
@@ -521,23 +538,6 @@ router.delete('/:id', async (req, res) => {
             return res.status(400).json({ message: 'Invalid project ID format.' });
         }
         res.status(500).send('Server error deleting project.');
-    }
-});
-
-// --- Check if user has Stripe Connect account --- 
-// GET /api/projects/check-stripe-account
-router.get('/check-stripe-account', async (req, res) => {
-    try {
-        const userId = req.user.user_id;
-        const stripeStatus = await checkUserStripeAccount(userId);
-        
-        res.json({
-            hasStripeAccount: stripeStatus.hasStripeAccount,
-            isOnboardingComplete: stripeStatus.isOnboardingComplete
-        });
-    } catch (err) {
-        console.error("Check Stripe account error:", err.message);
-        res.status(500).json({ message: 'Failed to check Stripe account status.' });
     }
 });
 

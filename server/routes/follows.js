@@ -75,15 +75,15 @@ router.post('/:userId',
                 return res.status(404).json({ error: 'User not found' });
             }
 
-            await db.query(
+            const inserted = await db.query(
                 `INSERT INTO user_follows (follower_id, following_id)
                  VALUES ($1, $2)
-                 ON CONFLICT DO NOTHING`,
+                 ON CONFLICT DO NOTHING RETURNING following_id`,
                 [followerId, userId]
             );
 
             try {
-                await createNotification(
+                if (inserted.rows.length > 0) await createNotification(
                     userId,
                     'new_follower',
                     `${req.user.username || 'Someone'} started following you.`,
