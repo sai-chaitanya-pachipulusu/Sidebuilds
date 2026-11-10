@@ -311,11 +311,11 @@ class ProductionErrorBoundary extends React.Component {
 export class ComponentErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -324,6 +324,19 @@ export class ComponentErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const error = this.state.error;
+      if (error?.name === 'ChunkLoadError' || /Loading (?:CSS )?chunk .*failed/i.test(error?.message || '')) {
+        return (
+          <section className="sb-page sb-page-recovery" role="alert" aria-labelledby="page-recovery-title">
+            <div className="sb-container sb-empty">
+              <h1 id="page-recovery-title">This page needs a refresh.</h1>
+              <p>A page file could not load. Refresh to get the latest version and try this address again.</p>
+              <button className="sb-button sb-button-primary" onClick={() => window.location.reload()}>Refresh page</button>
+              <a className="sb-button sb-button-secondary" href="/">Go to homepage</a>
+            </div>
+          </section>
+        );
+      }
       return this.props.fallback || (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-none">
           <div className="flex items-center gap-2 text-red-400">

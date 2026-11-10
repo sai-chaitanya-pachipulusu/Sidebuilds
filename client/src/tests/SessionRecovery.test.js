@@ -5,6 +5,7 @@ import axios from 'axios';
 import api from '../services/api';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { ComponentErrorBoundary } from '../components/ProductionErrorBoundary';
 
 jest.mock('axios', () => {
   const client = Object.assign(jest.fn(), {
@@ -97,4 +98,27 @@ test('a private destination resumes after sign-in and corrupted saved profile do
   </Routes></AuthProvider></MemoryRouter>);
   await waitFor(() => expect(screen.getByText('guest /login?next=%2Fcreate%3Fdraft%3D1%23details')).toBeInTheDocument());
   expect(localStorage.getItem('user')).toBeNull();
+});
+
+test('an unavailable lazy page offers an accessible refresh instead of a permanent loading fallback', async () => {
+  const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+  const MissingPage = React.lazy(() => Promise.reject(Object.assign(new Error('Loading chunk 801 failed.'), { name: 'ChunkLoadError' })));
+  try {
+    render(<ComponentErrorBoundary fallback={<p>Loading forever</p>}><React.Suspense fallback={<p>Loading route</p>}><MissingPage /></React.Suspense></ComponentErrorBoundary>);
+    expect(await screen.findByRole('heading', { name: 'This page needs a refresh.' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('A page file could not load.');
+    expect(screen.getByRole('button', { name: 'Refresh page' })).toBeEnabled();
+    expect(screen.getByRole('link', { name: 'Go to homepage' })).toHaveAttribute('href', '/');
+    expect(screen.queryByText('Loading forever')).not.toBeInTheDocument();
+  } finally { log.mockRestore(); }
+});
+
+test('ordinary component failures retain their provided fallback', () => {
+  const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+  const Broken = () => { throw new Error('Ordinary component failure'); };
+  try {
+    render(<ComponentErrorBoundary fallback={<p>Local component recovery</p>}><Broken /></ComponentErrorBoundary>);
+    expect(screen.getByText('Local component recovery')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refresh page' })).not.toBeInTheDocument();
+  } finally { log.mockRestore(); }
 });
