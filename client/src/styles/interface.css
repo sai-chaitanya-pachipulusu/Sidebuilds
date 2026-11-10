@@ -71,6 +71,10 @@ html {
 .sb-page select:focus-visible {
   outline-offset: 2px;
 }
+/* Keep the single labelled clear action instead of a second browser icon. */
+.sb-page input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
 .sb-sr-only {
   position: absolute;
   width: 1px;
