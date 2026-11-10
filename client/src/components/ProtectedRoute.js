@@ -1,9 +1,11 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { loginDestination } from '../utils/navigation';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
     const { isAuthenticated, isLoading } = useAuth();
+    const location = useLocation();
 
     if (isLoading) {
         // Optional: Show a loading spinner or a blank page while auth state is being determined
@@ -11,7 +13,7 @@ const ProtectedRoute = () => {
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to={loginDestination(location.pathname + location.search + location.hash)} replace />;
     }
 
     return <Outlet />; // Renders the child route elements

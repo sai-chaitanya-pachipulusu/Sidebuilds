@@ -4,6 +4,10 @@ import { initializeSocket, disconnectSocket } from '../utils/socket'; // Import 
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
+const readStoredUser = () => {
+    try { return JSON.parse(localStorage.getItem('user')) || null; }
+    catch (_error) { localStorage.removeItem('user'); return null; }
+};
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -23,12 +27,12 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [authState, setAuthState] = useState({
+    const [authState, setAuthState] = useState(() => ({
         token: localStorage.getItem('token') || null,
-        user: JSON.parse(localStorage.getItem('user')) || null,
+        user: readStoredUser(),
         isAuthenticated: !!localStorage.getItem('token'), // Check if token exists
         isLoading: true, // Initially loading until we check token/user
-    });
+    }));
 
     const connectUserSocket = useCallback((token, user) => {
         if (token && user && (user.user_id || user.id)) {
@@ -68,7 +72,7 @@ export const AuthProvider = ({ children }) => {
                 return profileData;
             } catch (error) {
                 console.error("AuthContext: Failed to fetch user profile:", error);
-                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                if ([401, 403].includes(error.status || error.response?.status)) {
                     logout();
                 }
                 throw error;
@@ -112,13 +116,10 @@ export const AuthProvider = ({ children }) => {
     // Listen for token expiration events
     useEffect(() => {
         const handleTokenExpired = (event) => {
-            // Show user a message and redirect to login
-            toast.error(event.detail.message || 'Your session has expired. Please log in again.');
+            toast.error(event.detail?.message || 'Your session has expired. Please sign in again.');
             logout();
-            // Optionally redirect to login page
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2000);
+            // Public browsing stays in place. ProtectedRoute preserves the
+            // intended destination and opens sign-in only for private pages.
         };
 
         window.addEventListener('tokenExpired', handleTokenExpired);

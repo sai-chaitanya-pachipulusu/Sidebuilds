@@ -13,6 +13,16 @@ const apiClient = axios.create({
 });
 
 const isDev = process.env.NODE_ENV === 'development';
+let refreshPromise = null;
+const expireSession = () => {
+    const hadToken = !!localStorage.getItem('token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete apiClient.defaults.headers.common['Authorization'];
+    if (hadToken) window.dispatchEvent(new CustomEvent('tokenExpired', {
+        detail: { message: 'Your session has expired. Sign in again when you are ready.' }
+    }));
+};
 
 if (isDev) {
     console.log('🌐 API Client configured with baseURL:', apiClient.defaults.baseURL);
@@ -71,12 +81,8 @@ apiClient.interceptors.request.use(
                 if (isDev) console.log('🔑 Adding token to request:', config.url);
             } else {
                 if (isDev) console.log('⚠️ Invalid token format detected, clearing token');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                // Optionally redirect to login or show notification
-                if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-                    window.location.href = '/login';
-                }
+                expireSession();
+                delete config.headers['Authorization'];
             }
         } else {
             if (isDev) console.log('⚠️ No token found for request:', config.url);
@@ -110,68 +116,33 @@ apiClient.interceptors.response.use(
             return Promise.reject(new Error('Server error. Please try again later.'));
         }
 
-        // Handle unauthorized errors (401)
-        if (error.response.status === 401) {
-            console.log('401 Unauthorized response:', error.response.data);
-
-            // Check if token is expired and try to refresh
-            if (error.response.data?.message?.includes('expired') ||
-                error.response.data?.message?.includes('Token expired')) {
-
-                const currentToken = localStorage.getItem('token');
-                if (currentToken && !error.config._retry) {
-                    console.log('Attempting token refresh...');
-
-                    try {
-                        // Try to refresh the token
-                        const refreshResponse = await apiClient.post('/auth/refresh', {}, {
-                            headers: {
-                                'Authorization': `Bearer ${currentToken}`
-                            }
-                        });
-
-                        // Update stored token
-                        localStorage.setItem('token', refreshResponse.data.token);
-                        localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
-
-                        // Update API client header
-                        apiClient.defaults.headers.common['Authorization'] = `Bearer ${refreshResponse.data.token}`;
-
-                        // Retry the original request with new token
-                        error.config._retry = true;
-                        error.config.headers['Authorization'] = `Bearer ${refreshResponse.data.token}`;
-
-                        console.log('Token refreshed successfully, retrying request...');
-                        return apiClient(error.config);
-
-                    } catch (refreshError) {
-                        console.log('Token refresh failed:', refreshError.response?.data?.message || refreshError.message);
-
-                        // Clear auth state if refresh fails
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-
-                        const tokenExpiredEvent = new CustomEvent('tokenExpired', {
-                            detail: {
-                                path: window.location.pathname,
-                                message: 'Your session has expired. Please log in again.'
-                            }
-                        });
-                        window.dispatchEvent(tokenExpiredEvent);
+        // Refresh once through a separate transport: refresh failures must never
+        // enter this interceptor recursively or consume the login rate limit.
+        const config = error.config || {};
+        const currentToken = localStorage.getItem('token');
+        const authEndpoint = /\/auth\/(?:login|register|refresh)(?:\?|$)/.test(config.url || '');
+        if (error.response.status === 401 && currentToken && !authEndpoint) {
+            const expired = /expired/i.test(error.response.data?.message || '');
+            if (expired && !config._retry) {
+                config._retry = true;
+                try {
+                    if (!refreshPromise) {
+                        refreshPromise = axios.post(`${apiClient.defaults.baseURL}/auth/refresh`, {}, {
+                            headers: { Authorization: `Bearer ${currentToken}` }, timeout: 15000
+                        }).finally(() => { refreshPromise = null; });
                     }
-                } else {
-                    // Clear auth state if no token or refresh already attempted
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-
-                    const tokenExpiredEvent = new CustomEvent('tokenExpired', {
-                        detail: {
-                            path: window.location.pathname,
-                            message: 'Your session has expired. Please log in again.'
-                        }
-                    });
-                    window.dispatchEvent(tokenExpiredEvent);
+                    const { data } = await refreshPromise;
+                    if (!data?.token || !data?.user) throw new Error('Missing refreshed session');
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+                    config.headers = { ...config.headers, Authorization: `Bearer ${data.token}` };
+                    return apiClient(config);
+                } catch (_refreshError) {
+                    expireSession();
                 }
+            } else {
+                expireSession();
             }
         }
 
