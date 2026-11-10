@@ -1,5 +1,6 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
+import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -48,6 +49,13 @@ const VibeCodePage = lazy(() => import('./pages/VibeCodePage'));
 
 // Main App Wrapper Component  
 const AppContent = () => {
+  const { pathname } = useLocation();
+  const previousPath = useRef(null);
+  useEffect(() => {
+    if (previousPath.current !== null && previousPath.current !== pathname)
+      document.getElementById('main-content')?.focus({ preventScroll: true });
+    previousPath.current = pathname;
+  }, [pathname]);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Add keyboard shortcuts and global event listeners
@@ -68,7 +76,7 @@ const AppContent = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <MotionConfig reducedMotion="user"><div className="min-h-screen bg-black text-white">
       {/* <AnimatedBackground variant="constellation" /> */}
       <NavBar />
       
@@ -78,7 +86,7 @@ const AppContent = () => {
         onClose={() => setIsCommandPaletteOpen(false)} 
       />
       
-      <main className="relative z-10 pt-16">
+      <main id="main-content" tabIndex={-1} className="relative z-10 pt-16">
         <ComponentErrorBoundary fallback={<ElegantLoadingScreen />}>
           <Suspense fallback={<ElegantLoadingScreen />}>
             <Routes>
@@ -160,7 +168,7 @@ const AppContent = () => {
           },
         }}
       />
-    </div>
+    </div></MotionConfig>
   )
 }
 
