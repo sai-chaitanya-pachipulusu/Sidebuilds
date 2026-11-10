@@ -16,6 +16,12 @@ const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
+const { requireCommerceEnabled } = require('../utils/commercePolicy');
+router.use((req, res, next) => {
+    if (req.method === 'POST' && ['/create-checkout-session', '/confirm-receipt'].includes(req.path))
+        return authMiddleware(req, res, () => requireCommerceEnabled(req, res, next));
+    next();
+});
 const COMMISSION_RATE = process.env.COMMISSION_RATE || 5;
 
 // DB-backed idempotency keys (survive restarts and multiple instances)

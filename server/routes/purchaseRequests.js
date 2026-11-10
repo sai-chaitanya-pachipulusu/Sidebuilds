@@ -7,6 +7,15 @@ const { createNotification } = require('../services/notificationService');
 const emailService = require('../services/emailService');
 const { purchaseRequestLimiter } = require('../middleware/rateLimiting');
 const crypto = require('crypto');
+// Retire legacy request-only ownership changes until the paid receipt flow replaces them.
+router.use((req, res, next) => {
+    if (['POST', 'PUT'].includes(req.method) && /^\/[^/]+\/(confirm-transfer|confirm-receipt)$/.test(req.path)) {
+        return authMiddleware(req, res, () => res.status(409).json({
+            error: 'Receipt confirmation requires the verified payment review. This legacy action is unavailable.'
+        }));
+    }
+    next();
+});
 
 // DB-backed idempotency keys (survive restarts and multiple instances)
 const { checkKey: checkIdempotencyKey, storeKey: storeIdempotencyKey } = require('../services/idempotencyService');
