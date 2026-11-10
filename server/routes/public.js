@@ -4,6 +4,8 @@ const { cache, presets } = require('../middleware/cache');
 const { publicLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
+const { getMarketplaceQuery } = require('../utils/marketplaceQuery');
+const { getPagination } = require('../utils/pagination');
 
 // Apply rate limiting to all public routes
 router.use(publicLimiter);
@@ -63,21 +65,14 @@ router.get('/projects',
 // --- READ Projects Listed for Sale (Marketplace) ---
 // GET /api/public/marketplace
 router.get('/marketplace',
-    cache(presets.marketplace),
     async (req, res) => {
         try {
             console.log("[PUBLIC API] Fetching marketplace projects");
             
-            // Pagination parameters
-            const page = parseInt(req.query.page) || 1;
-            const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-            const offset = (page - 1) * limit;
-            
-            // Sorting parameters
-            const allowedSortFields = ['created_at', 'sale_price', 'monthly_revenue', 'view_count', 'overall_score'];
-            const sortBy = allowedSortFields.includes(req.query.sortBy) ? req.query.sortBy : 'created_at';
-            const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
-            
+            res.setHeader('Cache-Control', 'no-store');
+            const { page, limit, offset } = getPagination(req.query);
+            const { where, parameters, orderBy } = getMarketplaceQuery(req.query);
+
             // Build optimized query with pagination
             const marketplaceProjects = await db.query(
                 `SELECT
@@ -116,17 +111,18 @@ router.get('/marketplace',
                 FROM projects p 
                 JOIN users u ON p.owner_id = u.user_id 
                 LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id
-                WHERE p.is_for_sale = true AND p.is_public = true
-                ORDER BY ${sortBy} ${sortOrder}
-                LIMIT $1 OFFSET $2`,
-                [limit, offset]
+                WHERE ${where}
+                ORDER BY ${orderBy}
+                LIMIT $${parameters.length + 1} OFFSET $${parameters.length + 2}`,
+                [...parameters, limit, offset]
             );
             
             // Get total count
             const countResult = await db.query(
-                `SELECT COUNT(*) as total 
-                 FROM projects 
-                 WHERE is_for_sale = true AND is_public = true`
+                `SELECT COUNT(*) as total FROM projects p
+                 JOIN users u ON p.owner_id = u.user_id
+                 LEFT JOIN ai_project_analysis ai ON p.project_id = ai.project_id
+                 WHERE ${where}`, parameters
             );
             const total = parseInt(countResult.rows[0].total);
             
@@ -141,6 +137,7 @@ router.get('/marketplace',
                 }
             });
         } catch (err) {
+            if (err.status === 400) return res.status(400).json({ error: err.message });
             console.error("[PUBLIC API] Get marketplace projects error:", err.message);
             res.status(500).json({ error: 'Server error fetching marketplace projects' });
         }
