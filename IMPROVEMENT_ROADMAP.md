@@ -4,7 +4,7 @@
 
 - Implemented: flat reset/recovery pages, inline errors, valid-link preflight before password entry, clear expired/used states, retry on temporary failure, and honest email-unavailable guidance. Authored gradient styling across the interface is replaced with solid fills; future work follows the recorded no-gradient preference.
 - Validated: 128 interface tests, 86 server tests, 17 PostgreSQL scenarios and build pass. Visual preview checked desktop and 390px phone layout; no overflow or computed gradient backgrounds. No production password was entered or changed by automation.
-- Release next: deploy frontend/backend, verify actual recovery HTML/assets and validity endpoint, then renew the exact unclaimed operator invitation. Guard prevents overwriting an activated password; owner chooses the password from the private setup file. Do not issue the invitation before deployment verification.
+- Released: frontend/backend recovery changes verified, restored expiry timezone corrected, and the exact unclaimed operator invitation renewed and accepted by production preflight without consumption. Use .tmp/production-admin/ADMIN_SETUP_2026-11-13.md before 2:44 a.m. Eastern. Guard prevents overwriting an activated password; owner chooses the password. Eighteen PostgreSQL scenarios and twelve live recovery checks pass.
 - Still pending: email delivery under the free-hosting decision, operator activation, live checkout opening and first legitimate payment observation. Keep the existing live Stripe mode and checkout pause. Continue listing evidence and measured visibility work from FR6 after access is complete.
 
 ## FR6 — Current release and next priorities — November 12, 2026
