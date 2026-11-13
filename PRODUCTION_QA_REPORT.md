@@ -458,3 +458,10 @@ Remaining engineering issues include real-provider payment/mail tests, claims on
 - Released application commit 4593147: Vercel dpl_D88mKGZgrDiYN7qdwvjSpJ7xDheR READY and Render dep-dbr88kh42hec73baf1p0 Live. QA login HTTP 200; live checkout HTTP 503 LIVE_COMMERCE_PAUSED; no financial objects created.
 - Live discovery found the legacy api.sidebuilds.online hostname returns ENOTFOUND. The Render public API returns HTTP 200, while initial listing HTML and sitemap returned 503 through the legacy hostname.
 - Changed server-rendered public reads, Vercel API/socket proxies and public build defaults to the working Render host. Local settings files remain unchanged. Search-rendering tests: 6/6 pass. Follow-up production deployment and checks pending.
+
+### FR5 — Browser asset packaging repair (2026-11-12)
+- Production synthetic workflow: 53/53 checks passed, with all disposable project/file/save/follow fixtures removed. Existing public counts remained 3 projects, 2 sale listings, 33 accounts excluding tagged QA/internal roles, and zero completed sales.
+- Host fix 7de9554 is READY on Vercel dpl_Bokx3nRqDhSCBL5ibCci7M8mesBu: marketplace, public listing and sitemap now return HTTP 200 with real content. Browser verification then found published main JS/CSS returning 404 despite successful compilation.
+- Added explicit Vercel Build Output packaging for browser assets and the private HTML renderer, using the documented filesystem routing phase. Checks every manifest file before publishing; missing files abort packaging. No source settings or server credentials are included.
+- Validation: 42 real browser build assets checked and packaged; packaged homepage handler HTTP 200 with its script reference; template remains private. Rendering/package tests 7/7 passed (one new regression case; server suite total now 82). Production deployment verification pending.
+- Hosting specification references: https://vercel.com/docs/build-output-api and https://vercel.com/docs/build-output-api/primitives .

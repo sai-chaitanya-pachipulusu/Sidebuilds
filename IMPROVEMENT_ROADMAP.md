@@ -117,3 +117,8 @@ Market research and source links are retained in the QA report. Production was i
 - Core repair deployed at 4593147; production login and checkout pause verified.
 - Correct the unresolved legacy API hostname in search rendering and hosting proxies; six rendering tests pass, release verification pending.
 - Next: complete live feature smoke test and search-page checks, then issue the new internal operations account invitation. Email remains pending on the free hosting plan; live monetary actions remain paused.
+
+### FR5 — Complete browser deployment (2026-11-12)
+- Completed: all 53 production synthetic feature checks; working backend host for public HTML and sitemap.
+- Release fix prepared: explicitly package scripts/styles plus the private HTML renderer, and reject incomplete build manifests. Seven related tests and actual packaging validation passed.
+- Pending: confirm deployed assets/browser interface, then create the new internal operator invitation. Live checkout and email remain paused/pending as previously recorded.

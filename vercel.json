@@ -1,40 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "cd client && npm install && DISABLE_ESLINT_PLUGIN=true CI=false npm run build",
-  "outputDirectory": "client/build",
+  "buildCommand": "cd client && npm install && DISABLE_ESLINT_PLUGIN=true CI=false npm run build && node scripts/package-hosting.cjs",
   "installCommand": "cd client && npm install",
-  "routes": [
-    {
-      "src": "/api/site",
-      "dest": "/api/site.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "https://sidebuilds.onrender.com/api/$1"
-    },
-    {
-      "src": "/socket.io/(.*)",
-      "dest": "https://sidebuilds.onrender.com/socket.io/$1"
-    },
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/(.*\\.(png|jpg|ico|css|js|map|woff|woff2|ttf|eot|svg))",
-      "dest": "/$1",
-      "headers": {
-        "cache-control": "public, max-age=31536000"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/site?__route=$1"
-    }
-  ],
   "env": {
     "CI": "false",
     "GENERATE_SOURCEMAP": "false",
@@ -44,11 +11,5 @@
     "REACT_APP_API_URL": "https://sidebuilds.onrender.com/api",
     "REACT_APP_SOCKET_URL": "https://sidebuilds.onrender.com",
     "REACT_APP_ENV": "production"
-  },
-  "functions": {
-    "api/site.js": {
-      "includeFiles": "client/build/index.html",
-      "maxDuration": 60
-    }
   }
 }
