@@ -242,6 +242,7 @@ router.get('/', async (req, res) => {
                 is_for_sale, 
                 sale_price, 
                 price_negotiable,
+                stage_details,
                 COALESCE(contact_email, '') as contact_email, 
                 COALESCE(contact_phone, '') as contact_phone, 
                 thumbnail_url,
@@ -257,7 +258,7 @@ router.get('/', async (req, res) => {
             [userId]
         );
         console.log(`Found ${projects.rows.length} projects for user ${userId}`);
-        res.json(projects.rows);
+        res.json(projects.rows.map(deserializeListing));
     } catch (err) {
         console.error("Get projects error:", err.message, err.stack);
         res.status(500).json({ error: 'Server error fetching projects' });
@@ -368,8 +369,17 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        // Handle projects for sale validation
-        if (is_for_sale) {
+        const current = existingProject.rows[0];
+        const enabled = value => value === true || value === 1;
+        for (const [field, value] of [['is_public', is_public], ['is_for_sale', is_for_sale]]) {
+            if (value !== undefined && ![true, false, 0, 1].includes(value)) return res.status(400).json({ message: `${field} must be a boolean.` });
+        }
+        const willBeForSale = is_for_sale === undefined ? enabled(current.is_for_sale) : enabled(is_for_sale);
+        const willBePublic = is_public === undefined ? enabled(current.is_public) : enabled(is_public);
+        const beginsSale = willBeForSale && (!enabled(current.is_for_sale) || willBePublic && !enabled(current.is_public));
+        // Sellers can improve an existing listing while reconnecting payments.
+        // Starting/reopening a public sale still requires fresh provider readiness.
+        if (willBeForSale && (beginsSale || sale_price !== undefined || contact_email !== undefined || contact_phone !== undefined)) {
             // Use existing sale_price if not provided in update
             const effectiveSalePrice = sale_price || existingProject.rows[0].sale_price;
             if (!effectiveSalePrice || Number(effectiveSalePrice) <= 0) {
@@ -381,8 +391,8 @@ router.put('/:id', async (req, res) => {
             if (!effectiveContactEmail && !effectiveContactPhone) {
                 return res.status(400).json({ message: 'At least one contact method (email or phone) is required for projects listed for sale.' });
             }
-            const stripeAccountStatus = await checkUserStripeAccount(userId);
-            if (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete) {
+            const stripeAccountStatus = beginsSale ? await checkUserStripeAccount(userId) : null;
+            if (beginsSale && (!stripeAccountStatus.hasStripeAccount || !stripeAccountStatus.isOnboardingComplete)) {
                 return res.status(403).json({ 
                     message: 'You must connect your Stripe account before listing projects for sale.',
                     error_code: 'stripe_account_required'

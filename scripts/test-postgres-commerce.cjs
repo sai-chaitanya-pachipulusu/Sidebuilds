@@ -72,7 +72,7 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
  await check('a failed payment write rolls back its claim and a redelivery succeeds',async()=>{failInsert=true;await assert.rejects(hooks.processWebhook(completion));assert.equal((await db.query('SELECT event_id FROM payment_event_claims WHERE event_id=$1',[completion.id])).rows.length,0);await hooks.processWebhook(completion);});
  await check('duplicate and parallel redeliveries cannot duplicate transactions or notifications',async()=>{await Promise.all([hooks.processWebhook(completion),hooks.processWebhook(event('checkout.session.completed',paidSession))]);assert.equal(Number((await db.query('SELECT count(*) AS n FROM project_transactions')).rows[0].n),1);assert.equal(Number((await db.query("SELECT count(*) AS n FROM notifications WHERE type='PAYMENT_CONFIRMED'")).rows[0].n),2);});
  await check('the fee snapshot survives a later commission setting change',async()=>{const t=(await db.query('SELECT * FROM project_transactions')).rows[0];assert.equal(Number(t.amount),10.25);assert.equal(Number(t.commission_amount),0.51);assert.equal(Number(t.seller_amount),9.74);});
- const express=require('../server/node_modules/express');const app=express();app.use(express.json());app.use('/auth',require('../server/routes/auth'));app.use('/payments',require('../server/routes/payments').router);app.use('/requests',require('../server/routes/purchaseRequests'));app.use('/files',require('../server/routes/files'));app.use('/webhooks',require('../server/routes/paymentOperations'));
+ const express=require('../server/node_modules/express');const app=express();app.use(express.json());app.use('/auth',require('../server/routes/auth'));app.use('/payments',require('../server/routes/payments').router);app.use('/requests',require('../server/routes/purchaseRequests'));app.use('/files',require('../server/routes/files'));app.use('/webhooks',require('../server/routes/paymentOperations'));app.use('/projects',require('../server/routes/projects'));
  server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));const base=`http://127.0.0.1:${server.address().port}`;
  const transaction=(await db.query('SELECT * FROM project_transactions')).rows[0];
  await check('receipt release is blocked until the agreed handover is marked delivered',async()=>{assert.equal((await post(base,'/payments/confirm-receipt',transaction.buyer_id,{transactionId:transaction.transaction_id,receiptAcknowledged:true})).status,409);assert.equal(transfers.size,0);});
@@ -188,6 +188,23 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
  await check('administrator launch checks return live provider observations without private account data',async()=>{
   const {signToken}=require('../server/utils/jwt');const response=await fetch(base+'/webhooks/readiness',{headers:{Authorization:'Bearer '+signToken({user:{user_id:buyerB}})}});
   assert.equal(response.status,200);const data=await response.json();assert.ok(data.listings.length);assert.doesNotMatch(JSON.stringify(data),/acct_|@example|password_hash|whsec_/);
+ });
+ await check('PostgreSQL owner guidance reads saved details and allows content repairs during Stripe outage',async()=>{
+  const f=await fixture(),retrieve=stripe.accounts.retrieve;
+  const {signToken}=require('../server/utils/jwt');const headers={Authorization:'Bearer '+signToken({user:{user_id:seller}}),'Content-Type':'application/json'};
+  const details={included_assets:'Source and guide',running_costs:'$12/month',setup_handoff:'Repository and setup support'};
+  try{stripe.accounts.retrieve=async()=>{throw new Error('Synthetic provider outage');};
+   const updated=await fetch(base+'/projects/'+f.project,{method:'PUT',headers,body:JSON.stringify({is_public:true,is_for_sale:true,sale_price:10.25,contact_email:'qa@example.invalid',stage_details:details,tech_stack:['React']})});assert.equal(updated.status,200);
+   const own=await fetch(base+'/projects',{headers});assert.equal(own.status,200);const listing=(await own.json()).find(p=>p.project_id===f.project);
+   assert.deepEqual(listing.stage_details,details);assert.deepEqual(listing.tech_stack,['React']);
+  }finally{stripe.accounts.retrieve=retrieve;}
+ });
+ await check('PostgreSQL hidden listings cannot publish through an omitted sale flag',async()=>{
+  const f=await fixture(),retrieve=stripe.accounts.retrieve;await db.query("UPDATE projects SET is_public=false,contact_email='qa@example.invalid' WHERE project_id=$1",[f.project]);
+  const {signToken}=require('../server/utils/jwt');
+  try{stripe.accounts.retrieve=async()=>({charges_enabled:false});const response=await fetch(base+'/projects/'+f.project,{method:'PUT',headers:{Authorization:'Bearer '+signToken({user:{user_id:seller}}),'Content-Type':'application/json'},body:JSON.stringify({is_public:true})});
+   assert.equal(response.status,403);assert.equal((await db.query('SELECT is_public FROM projects WHERE project_id=$1',[f.project])).rows[0].is_public,false);
+  }finally{stripe.accounts.retrieve=retrieve;}
  });
  report.success=true;
 }catch(e){report.success=false;report.error=e.message;console.error(e.stack);process.exitCode=1;}finally{

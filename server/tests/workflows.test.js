@@ -65,7 +65,8 @@ async function createProject(overrides = {}) {
 async function saleProject() {
   const project = await createProject({ is_public: true });
   // Simulate an onboarded seller in the disposable DB; never call Stripe.
-  await db.query('UPDATE projects SET is_for_sale=true, sale_price=500 WHERE project_id=$1', [project.project_id]);
+  await db.query("UPDATE projects SET is_for_sale=true, sale_price=500,contact_email='seller@example.invalid' WHERE project_id=$1", [project.project_id]);
+  await db.query("UPDATE users SET stripe_account_id='acct_test_fixture' WHERE user_id=$1", [seller.user.user_id]);
   return project;
 }
 const agreementScope = (overrides = {}) => ({ price_cents: 50000, included_items: ['Source code', 'Deployment guide'],
@@ -702,4 +703,26 @@ test('checkout rejects pending or missing seller transfers before reserving or c
     assert.equal((await db.query('SELECT * FROM checkout_reservations WHERE project_id=$1', [p.project_id])).rows.length, 0);
     mocked.mock.restore();
   }
+});
+
+test('existing sale details can be improved during a Stripe outage and owner lists include the saved buyer brief', async t => {
+  const p = await saleProject();
+  await db.query("UPDATE projects SET contact_email='seller@example.invalid' WHERE project_id=$1", [p.project_id]);
+  const retrieve = t.mock.method(fakeStripe.accounts, 'retrieve', async () => { throw new Error('Synthetic outage'); });
+  const details = { included_assets: 'Code and documentation', running_costs: '$12/month hosting', setup_handoff: 'Repository transfer and setup guide' };
+  expectStatus(await request('PUT', `/projects/${p.project_id}`, seller.token, { is_public: true, is_for_sale: true, category: 'productivity', tech_stack: ['React'], stage_details: details }), 200);
+  assert.equal(retrieve.mock.callCount(), 0);
+  const own = await request('GET', '/projects', seller.token);
+  const updated = own.body.find(project => project.project_id === p.project_id);
+  assert.deepEqual(updated.stage_details, details); assert.deepEqual(updated.tech_stack, ['React']);
+  assert.equal((await request('GET', '/projects', buyer.token)).body.some(project => project.project_id === p.project_id), false);
+});
+
+test('publishing a hidden sale cannot bypass Stripe readiness by omitting the sale flag', async t => {
+  const p = await saleProject();
+  await db.query("UPDATE projects SET is_public=false,contact_email='seller@example.invalid' WHERE project_id=$1", [p.project_id]);
+  t.mock.method(fakeStripe.accounts, 'retrieve', async () => ({ charges_enabled: false }));
+  expectStatus(await request('PUT', `/projects/${p.project_id}`, seller.token, { is_public: true }), 403);
+  assert.equal((await db.query('SELECT is_public FROM projects WHERE project_id=$1', [p.project_id])).rows[0].is_public, 0);
+  expectStatus(await request('PUT', `/projects/${p.project_id}`, seller.token, { is_public: 'false' }), 400);
 });

@@ -1,5 +1,15 @@
 # SideBuilds production audit and improvement plan
 
+## FR9 — Remove seller editing roadblocks — November 13, 2026
+
+Existing sale listings can now receive buyer-brief and metadata improvements while the seller reconnects Stripe or the provider is temporarily unavailable. Starting a new sale or making a hidden sale public still requires fresh Stripe readiness, including when a caller omits the sale flag. Checkout retains its separate fresh payment checks and the global live-commerce pause. Visibility/sale booleans reject ambiguous string values.
+
+The owner-project API now returns normalized technologies, tags and the saved buyer brief, scoped to the signed-in owner. Both My projects views show a dynamic details-completion count and a link to the exact next missing field. The editor waits for saved data, focuses that field, keeps existing information and refuses an incomplete response instead of opening a blank form. Existing sellers get clear guidance that saving details does not enable payments. No seller evidence was fabricated or production listing rewritten.
+
+Other navigation fixes: a failed project load offers Retry instead of claiming there are no projects; missing descriptions no longer crash search; actual stored thumbnails replace broken external placeholders, with a letter fallback; PostgreSQL boolean hold status displays correctly; view/edit controls have accessible names. The compact phone layout wraps listing titles, statuses and metrics. All statistics and checklist values come from the owner API.
+
+Validation: 101 server tests, 134 interface tests in 21 suites and 24 disposable PostgreSQL acceptance scenarios pass. PostgreSQL covers owner metadata changes during a simulated provider outage and rejection of hidden-sale publication without payment readiness. The temporary schema was removed. Desktop preview preserves the loaded listing and focuses brief-running_costs. The 390px phone list wraps titles/statuses/metrics, with no horizontal overflow or computed gradients; viewport restored. Evidence: .tmp/listing-ui/editor.jpg, mobile.jpg and checks.json. No new migration or .env edit is needed. Hosting remains free, email pending, and live checkout paused. Build/release evidence is completed after observation.
+
 ## FR8 — Seller payment readiness and launch checks — November 13, 2026
 
 The operations administrator is activated: owner-selected password, setup link consumed, successful login after setup, and the owner's screenshot of the real empty /admin queues. No password was entered by automation. Earlier invitation/activation-pending notes below are historical and superseded.

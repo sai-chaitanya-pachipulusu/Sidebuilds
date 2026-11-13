@@ -65,6 +65,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     });
     const [loading, setLoading] = useState(editMode);
     const [loadError, setLoadError] = useState('');
+    const [wasPublicSale, setWasPublicSale] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showStripeModal, setShowStripeModal] = useState(false);
     const [stripeStatus, setStripeStatus] = useState(null);
@@ -93,6 +94,10 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         try {
             if (editMode && projectId) {
                 const data = await getProjectById(projectId);
+                if (!data || Array.isArray(data) || data.project_id !== projectId || typeof data.name !== 'string') {
+                    throw new Error('The saved project response is incomplete.');
+                }
+                setWasPublicSale((data.is_public === true || data.is_public === 1) && (data.is_for_sale === true || data.is_for_sale === 1));
                 setFormData({
                     name: data.name || '',
                     description: data.description || '',
@@ -124,6 +129,16 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     useEffect(() => {
         fetchProjectAndStripeStatus();
     }, [fetchProjectAndStripeStatus]);
+
+    useEffect(() => {
+        if (loading || loadError) return;
+        const fieldId = location.hash.slice(1);
+        const allowed = ['name', 'description', 'category', 'tech_stack', 'demo_url', ...buyerBriefFields.map(field => `brief-${field.key}`)];
+        if (!allowed.includes(fieldId)) return;
+        const field = document.getElementById(fieldId);
+        field?.scrollIntoView?.({ block: 'center', behavior: 'auto' });
+        field?.focus({ preventScroll: true });
+    }, [loading, loadError, location.hash]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -248,9 +263,9 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                     <Info className="h-4 w-4" />
                                     <AlertTitle>Action Required</AlertTitle>
                                     <AlertDescription>
-                                        {stripeStatus.unavailable ? 'Payment setup could not be checked. You can still save privately and finish later.' : 'Connect Stripe before listing for sale. You can save privately and finish this later.'}
+                                        {wasPublicSale ? 'You can save improvements to this listing while completing payment setup. Saving details does not enable payments.' : stripeStatus.unavailable || stripeStatus.verificationStatus === 'unavailable' ? 'Payment setup could not be checked. You can still save privately and finish later.' : 'Connect Stripe before listing for sale. You can save privately and finish this later.'}
                                         <Button variant="link" onClick={() => setShowStripeModal(true)} className="ml-2 text-blue-400">
-                                            Complete Onboarding <ExternalLink className="h-4 w-4 ml-1" />
+                                            {stripeStatus.requiresReconnect ? 'Reconnect Stripe' : 'Review payment setup'} <ExternalLink className="h-4 w-4 ml-1" />
                                         </Button>
                                     </AlertDescription>
                                 </Alert>
