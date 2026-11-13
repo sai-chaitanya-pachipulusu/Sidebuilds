@@ -370,7 +370,7 @@ const SmartRecommendationEngine = ({ className, userProjects = [], marketplacePr
       {/* Project Image & Tags */}
       <div className="relative mb-4">
         <div className="w-full h-32 bg-gray-800 rounded-none overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-br from-white/10 to-gray-600/20 flex items-center justify-center">
+          <div className="w-full h-full bg-neutral-800   flex items-center justify-center">
             <div className="text-gray-500">Project Preview</div>
           </div>
         </div>

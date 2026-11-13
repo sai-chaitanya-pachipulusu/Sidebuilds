@@ -75,7 +75,7 @@ function TermsPage() {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-gray-600/10 to-gray-600/10 border-b border-white/[0.08]">
+        <div className="bg-neutral-800    border-b border-white/[0.08]">
           <div className="max-w-4xl mx-auto px-4 py-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -93,7 +93,7 @@ function TermsPage() {
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 Terms and{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
+                <span className="    text-neutral-100">
                   Conditions
                 </span>
               </h1>
@@ -119,7 +119,7 @@ function TermsPage() {
                 className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 hover:border-white/[0.12] transition-all duration-200"
               >
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-white/50 rounded-none" />
+                  <div className="w-2 h-8 bg-neutral-800   rounded-none" />
                   {section.title}
                 </h2>
                 
@@ -148,7 +148,7 @@ function TermsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="bg-gradient-to-r from-blue-600/10 via-gray-600/10 to-gray-600/10 border border-white/[0.08] rounded-none p-8 text-center"
+            className="bg-neutral-800    border border-white/[0.08] rounded-none p-8 text-center"
           >
             <h3 className="text-xl font-bold text-white mb-4">
               Agreement Acknowledgment

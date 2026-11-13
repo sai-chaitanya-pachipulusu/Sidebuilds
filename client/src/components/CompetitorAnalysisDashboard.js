@@ -529,7 +529,7 @@ const CompetitorAnalysisDashboard = ({ className }) => {
               </div>
 
               {/* Market Opportunity Summary */}
-              <div className="bg-gradient-to-br from-gray-600/10 to-blue-600/10 border border-white/50/20 rounded-none p-6">
+              <div className="bg-neutral-800   border border-white/50/20 rounded-none p-6">
                 <h4 className="text-lg font-semibold text-white mb-3">Total Market Opportunity</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">

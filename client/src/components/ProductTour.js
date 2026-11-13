@@ -159,7 +159,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
           {/* Progress bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
             <motion.div
-              className={`h-full bg-gradient-to-r ${currentStepData.gradient}`}
+              className={`h-full bg-neutral-800 ${currentStepData.gradient}`}
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
               transition={{ duration: 0.3 }}
@@ -188,7 +188,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                 {/* Icon or Animation */}
                 <div className="flex justify-center mb-6">
                   {currentStepData.animation || (
-                    <div className={`w-20 h-20 rounded-none bg-gradient-to-br ${currentStepData.gradient} p-5 shadow-2xl`}>
+                    <div className={`w-20 h-20 rounded-none bg-neutral-800 ${currentStepData.gradient} p-5 shadow-2xl`}>
                       <currentStepData.icon className="w-full h-full text-white" />
                     </div>
                   )}
@@ -215,8 +215,8 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         transition={{ delay: index * 0.1 }}
                         className="flex items-center gap-3 justify-center"
                       >
-                        <CheckCircle className={`w-5 h-5 text-transparent bg-gradient-to-r ${currentStepData.gradient} rounded-none`} style={{ fill: 'url(#grad)' }} />
-                        <Zap className={`w-4 h-4 bg-gradient-to-r ${currentStepData.gradient} bg-clip-text text-green-400`} />
+                        <CheckCircle className={`w-5 h-5 text-neutral-100 bg-neutral-800 ${currentStepData.gradient} rounded-none`} style={{ fill: 'url(#grad)' }} />
+                        <Zap className={`w-4 h-4  ${currentStepData.gradient}  text-green-400`} />
                         <span className="text-gray-300">{feature}</span>
                       </motion.div>
                     ))}
@@ -231,7 +231,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                         onClose();
                         window.location.href = '/marketplace';
                       }}
-                      className="px-6 py-3 rounded-none bg-gradient-to-r from-white/50 to-gray-500 text-white font-semibold hover:opacity-90 transition-opacity"
+                      className="px-6 py-3 rounded-none bg-neutral-800   text-white font-semibold hover:opacity-90 transition-opacity"
                     >
                       Explore Marketplace
                     </button>
@@ -260,7 +260,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
                   onClick={() => setCurrentStep(index)}
                   className={`w-2 h-2 rounded-none transition-all duration-300 ${
                     index === currentStep 
-                      ? `w-6 bg-gradient-to-r ${currentStepData.gradient}` 
+                      ? `w-6 bg-neutral-800 ${currentStepData.gradient}`
                       : index < currentStep
                         ? 'bg-white/40'
                         : 'bg-white/10'
@@ -283,7 +283,7 @@ const ProductTour = ({ isOpen, onClose, onComplete }) => {
               
               <button
                 onClick={nextStep}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-none bg-gradient-to-r ${currentStepData.gradient} text-white font-medium hover:opacity-90 transition-opacity`}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-none bg-neutral-800 ${currentStepData.gradient} text-white font-medium hover:opacity-90 transition-opacity`}
               >
                 {isLastStep ? 'Get Started' : 'Next'}
                 {!isLastStep && <ChevronRight className="w-4 h-4" />}

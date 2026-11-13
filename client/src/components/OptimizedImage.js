@@ -47,16 +47,7 @@ const OptimizedImage = ({
   // Generate shimmer effect
   const shimmer = (w, h) => `
     <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-      <defs>
-        <linearGradient id="g">
-          <stop stop-color="#1a1a1a" offset="20%" />
-          <stop stop-color="#2a2a2a" offset="50%" />
-          <stop stop-color="#1a1a1a" offset="70%" />
-        </linearGradient>
-      </defs>
       <rect width="${w}" height="${h}" fill="#1a1a1a" />
-      <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
-      <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
     </svg>`;
 
   const toBase64 = (str) =>
@@ -89,8 +80,8 @@ const OptimizedImage = ({
                 className="w-full h-full object-cover filter blur-xl scale-110"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-shimmer" />
+              <div className="w-full h-full bg-neutral-800   animate-pulse">
+                <div className="absolute inset-0 bg-black/20    -skew-x-12 animate-shimmer" />
               </div>
             )}
           </motion.div>
@@ -149,7 +140,7 @@ const OptimizedImage = ({
       </AnimatePresence>
 
       {/* Optional overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-black/20   pointer-events-none" />
     </div>
   );
 };
@@ -226,7 +217,7 @@ const OptimizedImage = ({
             className="absolute inset-0 flex items-center justify-center"
           >
             {placeholder === 'skeleton' ? (
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-shimmer" />
+              <div className="absolute inset-0 bg-black/20    animate-shimmer" />
             ) : placeholder === 'blur' && blurDataURL ? (
               <img
                 src={blurDataURL}
@@ -277,7 +268,7 @@ const OptimizedImage = ({
       </AnimatePresence>
 
       // Decorative overlay for hover effects
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-black/20   opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </div>
   );
 };
@@ -289,11 +280,7 @@ export const generateBlurDataURL = (width = 10, height = 10) => {
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   
-  // Create gradient
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, '#1a1a1a');
-  gradient.addColorStop(1, '#2a2a2a');
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = '#202226';
   ctx.fillRect(0, 0, width, height);
   
   return canvas.toDataURL();

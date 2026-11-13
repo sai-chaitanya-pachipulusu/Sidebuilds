@@ -193,10 +193,7 @@ const TrustBadge = ({
             repeatType: "loop"
           }}
           style={{
-            background: `radial-gradient(circle, ${config.className.includes('gray') ? 'rgba(255, 255, 255, 0.3)' :
-                        config.className.includes('green') ? 'rgba(34, 197, 94, 0.3)' :
-                        config.className.includes('blue') ? 'rgba(59, 130, 246, 0.3)' :
-                        'rgba(251, 191, 36, 0.3)'} 0%, transparent 70%)`
+            background: 'transparent'
           }}
         />
       )}
@@ -298,9 +295,6 @@ export const TrustScoreDisplay = ({
               {score}
             </span>
           </div>
-          <div className="absolute inset-0 rounded-none" style={{
-            background: `conic-gradient(from 0deg, ${getScoreColor(score).replace('text-', '')} ${score}%, transparent ${score}%)`
-          }} />
         </div>
         <div>
           <div className={cn("text-sm font-medium", getScoreColor(score))}>

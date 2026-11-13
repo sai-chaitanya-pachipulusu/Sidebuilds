@@ -76,6 +76,7 @@ module.exports=async function handler(req,res) {
     const original = new URL(req.url,ORIGIN);
     const route=original.searchParams.get('__route');
     if(route!==null) {original.pathname='/'+route;original.searchParams.delete('__route');}
+    if (original.pathname === '/reset-password') res.setHeader('Referrer-Policy', 'no-referrer');
     const template=fs.readFileSync(path.join(process.cwd(),'client/build/index.html'),'utf8');
     const result=await render(original,template);
     res.statusCode=result.status;res.setHeader('Content-Type',result.type);

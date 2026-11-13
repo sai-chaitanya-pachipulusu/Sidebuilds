@@ -155,8 +155,8 @@ const AboutUsPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="relative bg-gradient-to-br from-gray-600/10 via-blue-600/10 to-gray-600/10 border-b border-white/[0.08] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-600/5 via-transparent to-blue-600/5" />
+        <div className="relative bg-neutral-800    border-b border-white/[0.08] overflow-hidden">
+          <div className="absolute inset-0 bg-black/20   " />
           
           <div className="relative max-w-7xl mx-auto px-4 py-20 text-center">
             <motion.div
@@ -171,7 +171,7 @@ const AboutUsPage = () => {
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
                 Home for{' '}
-                <span className="bg-gradient-to-r from-gray-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="    text-neutral-100">
                   Vibe Engineered Apps
                 </span>
                 {' '}& Finished Ideas
@@ -189,7 +189,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/marketplace"
-                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25 flex items-center gap-2"
+                    className="px-8 py-4 bg-neutral-800   text-white rounded-none font-medium   transition-all duration-200 shadow-lg shadow-white-500/25 flex items-center gap-2"
                   >
                     Explore Marketplace
                     <ArrowRight className="w-5 h-5" />
@@ -225,10 +225,10 @@ const AboutUsPage = () => {
                   <p className="text-lg text-gray-400 max-w-3xl mx-auto">
                     SideBuilds was born from a simple observation: the rise of 
                     <span className="inline-flex items-center gap-1 mx-1 align-baseline">
-                      <strong className="bg-gradient-to-r from-gray-400 to-gray-400 bg-clip-text text-transparent">Vibe</strong>
+                      <strong className="    text-neutral-100">Vibe</strong>
                       <span className="relative inline-block">
                         <span className="line-through decoration-white/50 decoration-2 text-white/40">Coding</span>
-                        <span className="absolute -top-[60%] left-0 font-bold bg-gradient-to-r from-gray-400 to-gray-400 bg-clip-text text-transparent">Engineering</span>
+                        <span className="absolute -top-[60%] left-0 font-bold     text-neutral-100">Engineering</span>
                       </span>
                     </span>
                     has unleashed a wave of creativity, but makers lacked a trusted platform to trade these 
@@ -374,7 +374,7 @@ const AboutUsPage = () => {
                     transition={{ delay: index * 0.1 }}
                     className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-8 text-center hover:border-white/[0.12] transition-all duration-200 max-w-sm"
                   >
-                    <div className="w-24 h-24 bg-gradient-to-r from-gray-600 to-blue-600 rounded-none mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-24 h-24 bg-neutral-800   rounded-none mx-auto mb-6 flex items-center justify-center text-white text-2xl font-bold">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
@@ -475,7 +475,7 @@ const AboutUsPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-none p-12 text-center"
+              className="bg-neutral-800    border border-white/[0.08] rounded-none p-12 text-center"
             >
               <h2 className="text-3xl font-bold text-white mb-4">
                 Join Our Growing Community
@@ -491,7 +491,7 @@ const AboutUsPage = () => {
                 >
                   <Link
                     to="/register"
-                    className="px-8 py-4 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
+                    className="px-8 py-4 bg-neutral-800   text-white rounded-none font-medium   transition-all duration-200 shadow-lg shadow-white-500/25"
                   >
                     Get Started
                   </Link>

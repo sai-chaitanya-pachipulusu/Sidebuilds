@@ -100,12 +100,12 @@ const MobileOptimizedProjectCard = ({ project, onInterest, onWishlist, isWishlis
               className="w-full h-full object-cover"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-black/20   " />
           </div>
         ) : (
           <div className="project-image h-48 bg-white/5 flex items-center justify-center relative">
             <Code className="w-16 h-16 text-gray-400" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-black/20   " />
           </div>
         )}
         

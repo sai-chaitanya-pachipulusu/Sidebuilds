@@ -354,18 +354,10 @@ const AIProjectScoring = ({ project, className }) => {
                   className="relative inline-block"
                 >
                   <div className="w-32 h-32 rounded-none bg-gray-800 border-4 border-gray-700 flex items-center justify-center relative overflow-hidden">
-                    <motion.div
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: score / 100 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className={cn(
-                        "absolute inset-0 rounded-none border-4 border-transparent",
-                        `bg-gradient-to-r ${getScoreGradient(score)}`
-                      )}
-                      style={{
-                        background: `conic-gradient(from 0deg, transparent ${100 - score}%, currentColor ${100 - score}%, currentColor 100%, transparent 100%)`
-                      }}
-                    />
+                    <div className="absolute bottom-0 left-0 h-1 bg-stone-300"
+                      role="progressbar" aria-label="Project score" aria-valuemin={0} aria-valuemax={100}
+                      aria-valuenow={Math.max(0, Math.min(100, score))}
+                      style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
                     <div className="relative z-10 text-center">
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -424,7 +416,7 @@ const AIProjectScoring = ({ project, className }) => {
                             animate={{ width: `${value}%` }}
                             transition={{ duration: 1, delay: index * 0.1 }}
                             className={cn(
-                              "h-1.5 rounded-none bg-gradient-to-r",
+                              "h-1.5 rounded-none bg-neutral-800",
                               getScoreGradient(value)
                             )}
                           />

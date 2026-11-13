@@ -57,8 +57,7 @@ const StripeConnectBanner = ({ onConnectClick, isDismissible = true }) => {
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, #3b82f630 0%, transparent 50%), 
-                           radial-gradient(circle at 80% 20%, #6366f130 0%, transparent 50%)`,
+          background: '#191b1f',
         }} />
       </div>
 

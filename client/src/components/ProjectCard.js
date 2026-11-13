@@ -139,8 +139,8 @@ const AIScoreRing = ({ score, size = 48 }) => {
 
 // Skeleton loader for images
 const ImageSkeleton = () => (
-  <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/30 to-transparent skeleton-shimmer" />
+  <div className="absolute inset-0 bg-black/20   animate-pulse">
+    <div className="absolute inset-0 bg-black/20    skeleton-shimmer" />
   </div>
 );
 
@@ -326,8 +326,8 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
           <motion.div
             className="absolute -inset-1 rounded-none opacity-0 blur-xl transition-opacity duration-500"
             style={{
-              background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(59,130,246,0.5) 0%, rgba(6,182,212,0.3) 50%, transparent 80%)`,
-              opacity: isHovered ? 0.7 : 0,
+              background: 'transparent',
+              opacity: 0,
             }}
           />
           
@@ -342,7 +342,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
           <div className="relative h-full bg-[#0c0c0c] backdrop-blur-xl border border-white/[0.08] rounded-none overflow-hidden transition-all duration-300 hover:border-white/[0.15]">
             
             {/* Thumbnail/Image Section */}
-            <div className="relative h-40 overflow-hidden bg-gradient-to-br from-gray-900 to-black">
+            <div className="relative h-40 overflow-hidden bg-neutral-800  ">
               {project.thumbnail_url ? (
                 <>
                   {!imageLoaded && <ImageSkeleton />}
@@ -357,7 +357,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                 </>
               ) : (
                 // Placeholder gradient
-                <div className={`absolute inset-0 bg-gradient-to-br ${status.gradient} opacity-20`}>
+                <div className={`absolute inset-0 bg-black/20 ${status.gradient} opacity-20`}>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <StatusIcon className="w-16 h-16 text-white/20" />
                   </div>
@@ -365,7 +365,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
               )}
               
               {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-black/20 from-[#0c0c0c]  " />
               
               {/* Top badges row */}
               <div className="absolute top-3 left-3 right-3 flex items-start justify-between">

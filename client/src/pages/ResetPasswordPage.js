@@ -1,176 +1,82 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Sparkles } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { resetPassword } from '../services/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+import RecoveryLayout from '../components/RecoveryLayout';
+import { resetPassword, validatePasswordResetLink } from '../services/api';
 
-const ResetPasswordPage = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
+export default function ResetPasswordPage() {
+  const [params] = useSearchParams();
+  const token = params.get('token') || '';
+  const [linkState, setLinkState] = useState('checking');
+  const [retry, setRetry] = useState(0);
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [resetError, setResetError] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
+  const form = useRef(null);
 
-  const handleSubmit = async (event) => {
+  useEffect(() => {
+    let active = true;
+    setPassword(''); setConfirm(''); setErrors({}); setError('');
+    if (!token) { setLinkState('invalid'); return; }
+    setLinkState('checking');
+    validatePasswordResetLink(token).then(result => {
+      if (active) setLinkState(result.valid ? 'valid' : 'invalid');
+    }).catch(failure => {
+      if (active) setLinkState(failure.status === 400 ? 'invalid' : 'unavailable');
+    });
+    return () => { active = false; };
+  }, [token, retry]);
+
+  async function submit(event) {
     event.preventDefault();
-
-    if (!token) {
-      toast.error('Reset link is missing or invalid.');
+    if (pending || linkState !== 'valid') return;
+    const nextErrors = {};
+    if (password.length < 8) nextErrors.password = 'Use at least 8 characters.';
+    if (password !== confirm) nextErrors.confirm = 'The passwords do not match.';
+    setErrors(nextErrors); setError('');
+    if (Object.keys(nextErrors).length) {
+      form.current?.querySelector(`[name="${Object.keys(nextErrors)[0]}"]`)?.focus();
       return;
     }
-
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters long.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match.');
-      return;
-    }
-
-    setIsLoading(true);
-    setResetError('');
-
+    setPending(true);
     try {
-      const response = await resetPassword({ token, password });
-      toast.success(response.message || 'Password reset successful. Please log in.');
-      navigate('/login');
-    } catch (error) {
-      const message = error.status === 429
-        ? `Too many reset attempts. Please try again later${error.retryAfter ? ` (${error.retryAfter})` : ''}.`
-        : error.message || 'Unable to reset password. Please request a new link.';
-      setResetError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      await resetPassword({ token, password });
+      setPassword(''); setConfirm(''); setLinkState('complete');
+    } catch (failure) {
+      if (failure.code === 'RESET_LINK_INVALID' || (failure.status === 400 && /invalid|expired/i.test(failure.message || ''))) {
+        setPassword(''); setConfirm(''); setLinkState('invalid');
+      } else setError(failure.status === 429 ? 'Too many attempts. Wait 15 minutes before trying again.' : 'Your password could not be changed. Please try again.');
+    } finally { setPending(false); }
+  }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
-      >
-        <Link to="/" className="inline-flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold">SideBuilds</span>
-        </Link>
-
-        <div className="bg-gray-950/80 border border-gray-800 rounded-2xl p-8 shadow-2xl">
-          <Link to="/login" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6">
-            <ArrowLeft className="w-4 h-4" />
-            Back to login
-          </Link>
-
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-3">Create a new password</h1>
-            <p className="text-gray-400">
-              Choose a strong password for your SideBuilds account.
-            </p>
-          </div>
-
-          {!token && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 text-sm text-red-200">
-              This reset link is missing a token. Please request a new password reset link.
-              <Link to="/forgot-password" className="block mt-2 text-red-100 underline">
-                Request a new link
-              </Link>
-            </div>
-          )}
-
-          {resetError && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 text-sm text-red-200">
-              {resetError}
-              <Link to="/forgot-password" className="block mt-2 text-red-100 underline">
-                Request a new link
-              </Link>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">New password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  placeholder="At least 8 characters"
-                  required
-                  minLength={8}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">Confirm password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  placeholder="Re-enter your new password"
-                  required
-                  minLength={8}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={isLoading || !token}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Resetting password...</span>
-                </>
-              ) : (
-                <>
-                  <span>Reset password</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </motion.button>
-          </form>
-        </div>
-      </motion.div>
+  const field = (name, label, value, change, visible, toggle) => <div className="sb-auth-field">
+    <label htmlFor={`recovery-${name}`}>{label}</label>
+    <div className="sb-password-wrap">
+      <input id={`recovery-${name}`} name={name} type={visible ? 'text' : 'password'} value={value}
+        autoComplete="new-password" spellCheck={false} required minLength={8} disabled={pending}
+        onChange={event => { change(event.target.value); setErrors(old => ({ ...old, [name]: undefined })); }}
+        aria-invalid={!!errors[name]} aria-describedby={errors[name] ? `${name}-error` : name === 'password' ? 'password-guidance' : undefined} />
+      <button type="button" className="sb-recovery-show" aria-label={`${visible ? 'Hide' : 'Show'} ${name === 'confirm' ? 'confirmation password' : 'new password'}`} aria-pressed={visible} onClick={toggle}>{visible ? 'Hide' : 'Show'}</button>
     </div>
-  );
-};
+    {errors[name] && <p className="sb-field-error" id={`${name}-error`}>{errors[name]}</p>}
+    {name === 'password' && <p className="sb-field-hint" id="password-guidance">At least 8 characters. Use a password you haven’t used elsewhere.</p>}
+  </div>;
 
-export default ResetPasswordPage;
+  return <RecoveryLayout title={linkState === 'complete' ? 'Password updated' : linkState === 'invalid' ? 'This link has expired' : 'Set a new password'}
+    description={linkState === 'complete' ? 'Your new password is ready. Sign in to continue.' : linkState === 'invalid' ? 'Reset links expire after an hour and can only be used once. You’ll need a new link to continue.' : 'Choose a unique password for your SideBuilds account.'}>
+    {linkState === 'checking' && <p className="sb-recovery-notice" role="status">Checking your reset link…</p>}
+    {linkState === 'invalid' && <div className="sb-recovery-notice" role="alert"><p>The link may have expired, been replaced or already been used.</p><Link className="sb-button sb-recovery-submit" to="/forgot-password">Recovery options<ArrowRight size={17} aria-hidden="true" /></Link></div>}
+    {linkState === 'unavailable' && <div className="sb-recovery-notice" role="alert"><p>We couldn’t check this link. Please try again before entering a password.</p><button className="sb-button sb-button-secondary" onClick={() => setRetry(value => value + 1)}>Check link again</button></div>}
+    {linkState === 'complete' && <div className="sb-recovery-notice" role="status"><Link className="sb-button sb-recovery-submit" to="/login">Continue to sign in<ArrowRight size={17} aria-hidden="true" /></Link></div>}
+    {linkState === 'valid' && <form ref={form} onSubmit={submit} noValidate aria-busy={pending}>
+      {error && <p className="sb-form-error" role="alert">{error}</p>}
+      {field('password', 'New password', password, setPassword, show, () => setShow(value => !value))}
+      {field('confirm', 'Confirm new password', confirm, setConfirm, showConfirm, () => setShowConfirm(value => !value))}
+      <button className="sb-button sb-recovery-submit" type="submit" disabled={pending}>{pending ? 'Updating password…' : 'Update password'}<ArrowRight size={17} aria-hidden="true" /></button>
+    </form>}
+  </RecoveryLayout>;
+}

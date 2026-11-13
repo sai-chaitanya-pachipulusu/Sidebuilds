@@ -132,7 +132,9 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
   await db.query('CREATE TABLE IF NOT EXISTS password_reset_tokens(id SERIAL PRIMARY KEY,user_id UUID NOT NULL,token_hash TEXT UNIQUE NOT NULL,expires_at TIMESTAMPTZ NOT NULL,used_at TIMESTAMPTZ,created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)');
   const token=require('crypto').randomBytes(32).toString('hex'),newPassword='Synthetic-replacement-only-2026!';
   await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3)',[userId,require('crypto').createHash('sha256').update(token).digest('hex'),new Date(Date.now()+60000)]);
+  const preflight=await request('reset-password/validate',{token});assert.equal(preflight.status,200);assert.deepEqual(preflight.data,{valid:true});
   assert.equal((await request('reset-password',{token,password:newPassword})).status,200);assert.equal((await request('reset-password',{token,password:'Wrong-repeated-attempt!'})).status,400);
+  assert.equal((await request('reset-password/validate',{token})).status,400);
   assert.equal((await request('login',{email,password:newPassword})).status,200);
   // This isolated scenario intentionally exceeds the normal five-request
   // authentication bucket; reset only its local test bucket for the old-password check.

@@ -163,7 +163,7 @@ const EnhancedModal = ({
             </div>
             
             {/* Decorative elements */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/50 to-blue-500" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-black/20  " />
           </motion.div>
         </div>
       )}

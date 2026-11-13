@@ -142,7 +142,7 @@ const FAQPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-gray-600/10 to-gray-600/10 border-b border-white/[0.08]">
+        <div className="bg-neutral-800    border-b border-white/[0.08]">
           <div className="max-w-4xl mx-auto px-4 py-16 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -156,7 +156,7 @@ const FAQPage = () => {
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Frequently Asked{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
+                <span className="    text-neutral-100">
                   Questions
                 </span>
               </h1>

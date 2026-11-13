@@ -20,7 +20,7 @@ const ProjectDetailSkeleton = () => {
         <div className="max-w-7xl mx-auto px-4 pb-8">
           <div className="relative h-[60vh] rounded-none overflow-hidden bg-gray-800 animate-pulse">
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-black/20   " />
             
             {/* Project Info Overlay Skeleton */}
             <div className="absolute bottom-0 left-0 right-0 p-8">

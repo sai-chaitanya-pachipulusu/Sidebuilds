@@ -521,7 +521,7 @@ const ProjectDetailPage = () => {
                 alt={projectName}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-black/65" />
               
               {/* Project Info Overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-8">
@@ -916,7 +916,7 @@ const ProjectDetailPage = () => {
                   {isOwner ? (
                     <motion.button
                       onClick={() => navigate(`/projects/edit/${projectId}`)}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                      className="w-full px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center justify-center gap-2   transition-all duration-200"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -936,7 +936,7 @@ const ProjectDetailPage = () => {
                           <motion.button
                             onClick={handleBuyNowClick}
                             disabled={isBuyButtonLoading}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center justify-center gap-2   transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isBuyButtonLoading ? 1 : 1.02 }}
                             whileTap={{ scale: isBuyButtonLoading ? 1 : 0.98 }}
                           >
@@ -950,7 +950,7 @@ const ProjectDetailPage = () => {
                           <motion.button
                             onClick={() => user ? setShowInterestModal(true) : navigate(loginDestination(`${location.pathname}?showInterest=true`), { state: location.state })}
                             disabled={isOfferButtonLoading}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center justify-center gap-2   transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isOfferButtonLoading ? 1 : 1.02 }}
                             whileTap={{ scale: isOfferButtonLoading ? 1 : 0.98 }}
                           >
@@ -1128,7 +1128,7 @@ const ProjectDetailPage = () => {
                       type="button"
                       onClick={handleInterestSubmit}
                       disabled={isSubmitting}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 bg-neutral-800   text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed   transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <>

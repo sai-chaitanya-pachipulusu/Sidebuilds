@@ -74,15 +74,9 @@ const AnalyticsPanel = () => {
               <CardContent className="h-[300px] p-2">
                 <ChartContainer config={chartConfig} className="w-full h-full">
                     <AreaChart data={analytics.revenueTrend}>
-                        <defs>
-                            <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
-                            </linearGradient>
-                        </defs>
                         <XAxis dataKey="date" tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                        <Area dataKey="revenue" type="natural" fill="url(#fillRevenue)" stroke="var(--color-revenue)" stackId="a" />
+                        <Area dataKey="revenue" type="natural" fill="var(--color-revenue)" fillOpacity={0.15} stroke="var(--color-revenue)" stackId="a" />
                     </AreaChart>
                 </ChartContainer>
               </CardContent>
@@ -104,4 +98,4 @@ const AnalyticsPanel = () => {
   );
 };
 
-export default AnalyticsPanel; 
+export default AnalyticsPanel;

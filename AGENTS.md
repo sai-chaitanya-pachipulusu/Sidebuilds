@@ -1,4 +1,5 @@
 ## Learned User Preferences
+- Use restrained, deliberate UI design with solid colors. Do not add gradients, glowing decoration or generic AI styling.
 - Do not modify `.env` files unless the user explicitly confirms.
 - Prefer semicolons over `&&` when giving or running chained commands for this Windows/PowerShell workspace.
 

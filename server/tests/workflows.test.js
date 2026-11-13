@@ -368,11 +368,26 @@ test('password reset tokens are single use and update the stored credential', as
   });
   expectStatus(await request('POST', '/auth/forgot-password', null, { email: 'buyer@example.com' }), 200);
   assert.ok(resetToken);
+  const checked = await request('POST', '/auth/reset-password/validate', null, { token: resetToken });
+  expectStatus(checked, 200); assert.deepEqual(checked.body, { valid: true });
+  expectStatus(await request('POST', '/auth/reset-password/validate', null, { token: resetToken }), 200);
   const changed = 'New-isolated-QA-password!';
   expectStatus(await request('POST', '/auth/reset-password', null, { token: resetToken, password: changed }), 200);
   expectStatus(await request('POST', '/auth/reset-password', null, { token: resetToken, password: changed }), 400);
+  expectStatus(await request('POST', '/auth/reset-password/validate', null, { token: resetToken }), 400);
   expectStatus(await request('POST', '/auth/login', null, { email: 'buyer@example.com', password: changed }), 200);
 });
+test('reset preflight rejects unknown, malformed and expired links without consuming them', async () => {
+  const token = require('crypto').randomBytes(32).toString('hex');
+  expectStatus(await request('POST', '/auth/reset-password/validate', null, { token }), 400);
+  expectStatus(await request('POST', '/auth/reset-password/validate', null, { token: ['invalid'] }), 400);
+  const hash = require('crypto').createHash('sha256').update(token).digest('hex');
+  await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3)', [buyer.user.user_id, hash, new Date(Date.now() - 60000).toISOString()]);
+  const result = await request('POST', '/auth/reset-password/validate', null, { token });
+  expectStatus(result, 400); assert.equal(result.body.code, 'RESET_LINK_INVALID');
+  assert.equal((await db.query('SELECT used_at FROM password_reset_tokens WHERE token_hash=$1', [hash])).rows[0].used_at, null);
+});
+
 test('private file upload, download and delete respect project ownership', async () => {
   const p = await createProject();
   const form = new FormData();

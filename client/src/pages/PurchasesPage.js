@@ -190,7 +190,7 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onCompletePayment, on
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-blue-600 rounded-none flex items-center justify-center">
+          <div className="w-12 h-12 bg-neutral-800   rounded-none flex items-center justify-center">
             <Package className="w-6 h-6 text-white" />
           </div>
           <div>

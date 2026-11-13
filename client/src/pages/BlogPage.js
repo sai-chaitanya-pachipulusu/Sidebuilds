@@ -141,7 +141,7 @@ const BlogPage = () => {
       
       <div className="min-h-screen bg-black">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-gray-600/10 via-blue-600/10 to-gray-600/10 border-b border-white/[0.08]">
+        <div className="bg-neutral-800    border-b border-white/[0.08]">
           <div className="max-w-7xl mx-auto px-4 py-20 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -155,7 +155,7 @@ const BlogPage = () => {
               
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 Insights &{' '}
-                <span className="bg-gradient-to-r from-gray-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="    text-neutral-100">
                   Stories
                 </span>
               </h1>
@@ -234,7 +234,7 @@ const BlogPage = () => {
                 className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none overflow-hidden hover:border-white/[0.12] hover:scale-[1.02] transition-all duration-300 group"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-2">
-                  <div className="aspect-video lg:aspect-square bg-gradient-to-br from-gray-600/20 to-blue-600/20 flex items-center justify-center">
+                  <div className="aspect-video lg:aspect-square bg-neutral-800   flex items-center justify-center">
                     <div className="text-center">
                       <BookOpen className="w-16 h-16 text-white mx-auto mb-4" />
                       <p className="text-gray-400">Featured Article</p>
@@ -291,13 +291,13 @@ const BlogPage = () => {
                     to={`/blog/${post.id}`}
                     className="block bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none overflow-hidden hover:border-white/[0.12] hover:scale-105 transition-all duration-200 group h-full"
                   >
-                    <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 relative">
+                    <div className="aspect-video bg-neutral-800   relative">
                       <div className="absolute top-4 left-4">
                         <span className={`px-3 py-1 border rounded-none text-sm font-medium ${getCategoryColor(post.category)}`}>
                           {categories.find(c => c.value === post.category)?.label}
                         </span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-600/10 to-blue-600/10" />
+                      <div className="absolute inset-0 bg-black/20  " />
                     </div>
                     <div className="p-6 flex flex-col flex-1">
                       <h3 className="text-lg font-semibold text-white mb-3 line-clamp-2 group-hover:text-gray-300 transition-colors duration-200">
@@ -364,7 +364,7 @@ const BlogPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-gradient-to-r from-gray-600/20 via-blue-600/20 to-gray-600/20 border border-white/[0.08] rounded-none p-12 text-center"
+              className="bg-neutral-800    border border-white/[0.08] rounded-none p-12 text-center"
             >
               <Mail className="w-16 h-16 text-white mx-auto mb-6" />
               <h2 className="text-3xl font-bold text-white mb-4">
@@ -386,7 +386,7 @@ const BlogPage = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleNewsletterSubscribe}
-                  className="px-8 py-3 bg-gradient-to-r from-gray-600 to-blue-600 text-white rounded-none font-medium hover:from-gray-700 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-white-500/25"
+                  className="px-8 py-3 bg-neutral-800   text-white rounded-none font-medium   transition-all duration-200 shadow-lg shadow-white-500/25"
                 >
                   Subscribe
                 </motion.button>

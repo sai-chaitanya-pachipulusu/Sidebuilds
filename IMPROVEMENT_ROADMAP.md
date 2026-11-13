@@ -1,5 +1,12 @@
 # SideBuilds improvement roadmap
 
+## FR7 — Password recovery and visual consistency — November 13, 2026
+
+- Implemented: flat reset/recovery pages, inline errors, valid-link preflight before password entry, clear expired/used states, retry on temporary failure, and honest email-unavailable guidance. Authored gradient styling across the interface is replaced with solid fills; future work follows the recorded no-gradient preference.
+- Validated: 128 interface tests, 86 server tests, 17 PostgreSQL scenarios and build pass. Visual preview checked desktop and 390px phone layout; no overflow or computed gradient backgrounds. No production password was entered or changed by automation.
+- Release next: deploy frontend/backend, verify actual recovery HTML/assets and validity endpoint, then renew the exact unclaimed operator invitation. Guard prevents overwriting an activated password; owner chooses the password from the private setup file. Do not issue the invitation before deployment verification.
+- Still pending: email delivery under the free-hosting decision, operator activation, live checkout opening and first legitimate payment observation. Keep the existing live Stripe mode and checkout pause. Continue listing evidence and measured visibility work from FR6 after access is complete.
+
 ## FR6 — Current release and next priorities — November 12, 2026
 
 **Deployed:** full marketplace repair and hosting correction at application release 114f776. Validation: 82 server tests, 118 interface tests, 17 PostgreSQL scenarios, 53 live feature checks and 20 public page/asset checks pass. The isolated Stripe-hosted purchase/handover/receipt/transfer journey passes, with test transfer reversed and payment refunded. No live sale was submitted. Existing projects preserved; 55 public tables protected by RLS.

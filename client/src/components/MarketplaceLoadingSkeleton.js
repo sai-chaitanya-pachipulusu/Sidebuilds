@@ -139,7 +139,7 @@ const MarketplaceLoadingSkeleton = memo(({ count = 9, viewMode = 'grid' }) => {
     return (
       <div className="space-y-8">
         {/* Hero skeleton */}
-        <div className="bg-gradient-to-br from-gray-950 via-gray-900 to-black border-b border-gray-800 p-16">
+        <div className="bg-neutral-800    border-b border-gray-800 p-16">
           <div className="max-w-7xl mx-auto text-center space-y-6">
             <div className="h-4 bg-gray-800 rounded-none w-64 mx-auto animate-pulse" />
             <div className="h-16 bg-gray-800 rounded-none w-96 mx-auto animate-pulse" />

@@ -334,6 +334,29 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     }
 });
 
+// Validate a bearer link before asking for a password. Never consumes it or
+// reveals an account identity. Reads have their own bucket, separate from login.
+const resetLinkLimiter = require('express-rate-limit')({
+    windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false,
+    message: { message: 'Too many link checks. Please try again later.' }
+});
+router.post('/reset-password/validate', resetLinkLimiter, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    const token = req.body.token;
+    const invalid = () => res.status(400).json({ valid: false, code: 'RESET_LINK_INVALID', message: 'Invalid or expired reset link.' });
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return invalid();
+    try {
+        await ensurePasswordResetTable();
+        const result = await db.query('SELECT expires_at, used_at FROM password_reset_tokens WHERE token_hash = ?', [hashResetToken(token)]);
+        const row = result.rows?.[0];
+        if (!row || row.used_at || !(new Date(row.expires_at) > new Date())) return invalid();
+        return res.json({ valid: true });
+    } catch (_) {
+        return res.status(503).json({ message: 'The reset link could not be checked. Please try again.' });
+    }
+});
+
 // --- Reset Password Route ---
 // POST /api/auth/reset-password
 router.post('/reset-password', authLimiter, async (req, res) => {

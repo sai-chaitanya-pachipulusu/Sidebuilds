@@ -1,5 +1,17 @@
 # SideBuilds production audit and improvement plan
 
+## FR7 — Password recovery and solid styling — November 13, 2026
+
+The original operations setup invitation expired after its one-hour window; read-only renewal rehearsal confirmed the recorded account is still unclaimed, its password fingerprint is unchanged and the token is unused. A guarded renewal script now refuses activated accounts, replaced/used/unexpired invitations and identity/role mismatches. It does not change passwords or create administrators. The renewed private invitation will be issued after deployment, so its full one-hour lifetime is available to the owner.
+
+Redesigned reset and forgot-password pages as a narrow, flat charcoal/cream form with a serif heading, visible labels, accessible show/hide buttons, inline validation and a clear completion state. Removed duplicate gradient branding, gradient buttons, glow and entrance motion. Public recovery explains unavailable email before collecting an address; no false sent-email confirmation. Expired or used links are checked before password entry, remove the form and offer recovery options. Temporary validation failures can be retried. Reset HTML uses no-referrer and account metadata stays noindex.
+
+Added a rate-limited, no-store POST /auth/reset-password/validate that reads only bearer-link validity without returning identity or consuming the token. Its 30/15-minute read bucket is independent from login attempts. The actual password change remains server-validated and single-use.
+
+Applied the no-gradient preference across authored UI: legacy Tailwind fills, text treatments, overlays, radial/conic glows, placeholders and chart fills now use solid colors. Numeric chart/score information remains. Source audit found no authored gradient functions/utility backgrounds; compiled CSS contains zero gradient functions. Preference is recorded in AGENTS.md.
+
+Validation: 128/128 client tests, 86/86 server tests and 17/17 isolated PostgreSQL scenarios pass; production build succeeds. Ten recovery-state cases and three invitation-guard cases were added. PostgreSQL auth acceptance now includes non-consuming preflight and used-token rejection. Disposable schema removed. Visual preview uses synthetic read-only responses, never accepts password changes; desktop and real 390px viewport checked, no horizontal overflow, zero computed gradient backgrounds. Expired and email-unavailable screens observed; viewport restored. Screenshots: .tmp/recovery-ui/desktop.jpg and mobile.jpg. Deployment and actual invitation renewal remain pending until observed below. No .env or Stripe settings changed; live payments remain paused and email remains pending by user choice.
+
 ## FR6 — Production repair deployed; operator setup pending — November 12, 2026
 
 Application release `114f776` is live on Vercel production deployment `dpl_E4WcYGP6CJmz74jB1io8TL22qRRq` (READY, public aliases assigned). Backend repair `4593147` was observed Live on Render deployment `dep-dbr88kh42hec73baf1p0`; subsequent application changes concern frontend hosting only. Fresh `/api/ready` and `/api/payments/health` both return 200: PostgreSQL connected, Stripe connected, mode live. Checkout still returns `503 LIVE_COMMERCE_PAUSED` for an authenticated QA account and creates no financial objects. No .env files or key values changed.

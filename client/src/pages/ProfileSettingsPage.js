@@ -251,7 +251,7 @@ function ProfileSettingsPage() {
               
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Profile &{' '}
-                <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
+                <span className="    text-neutral-100">
                   Settings
                 </span>
               </h1>
@@ -434,7 +434,7 @@ function ProfileSettingsPage() {
                       <motion.button
                         type="submit"
                         disabled={saveLoading}
-                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-gray-700 transition-all duration-200 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-neutral-800   text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed   transition-all duration-200 flex items-center justify-center gap-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -526,7 +526,7 @@ function ProfileSettingsPage() {
                               className={`w-full px-6 py-4 rounded-none font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 stripeStatus.isOnboardingComplete
                                   ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
-                                  : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
+                                  : 'bg-neutral-800   text-white  '
                               }`}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}

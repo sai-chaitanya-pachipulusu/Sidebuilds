@@ -110,7 +110,7 @@ const MyProjectsPage = () => {
         className="bg-gray-900/50 backdrop-blur-sm border border-white/[0.08] rounded-none p-6 hover:border-white/[0.12] transition-all duration-300 group relative overflow-hidden"
       >
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-gray-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-black/20   opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Project Image */}
@@ -201,7 +201,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+              className="px-4 py-2 text-sm bg-neutral-800   text-white rounded-none   transition-all duration-200 font-medium flex items-center justify-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -297,7 +297,7 @@ const MyProjectsPage = () => {
 
             <motion.button
               onClick={() => navigate(`/projects/edit/${project.project_id}`)}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none hover:from-blue-700 hover:to-gray-700 transition-all duration-200 font-medium flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-neutral-800   text-white rounded-none   transition-all duration-200 font-medium flex items-center gap-2"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -370,7 +370,7 @@ const MyProjectsPage = () => {
               
               <motion.button
                 onClick={() => navigate('/create')}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                className="px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center gap-2   transition-all duration-200"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -537,7 +537,7 @@ const MyProjectsPage = () => {
                     {!searchTerm && !stageFilter && (
                       <motion.button
                         onClick={() => navigate('/create')}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center gap-2 mx-auto hover:from-blue-700 hover:to-gray-700 transition-all duration-200"
+                        className="px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center gap-2 mx-auto   transition-all duration-200"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >

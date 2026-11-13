@@ -195,6 +195,15 @@ export const requestPasswordReset = async (email) => {
     }
 };
 
+export const validatePasswordResetLink = async (token) => {
+    try {
+        const response = await apiClient.post('/auth/reset-password/validate', { token });
+        return response.data;
+    } catch (error) {
+        throw toApiError(error, 'Reset link could not be checked');
+    }
+};
+
 export const resetPassword = async ({ token, password }) => {
     try {
         const response = await apiClient.post('/auth/reset-password', { token, password });

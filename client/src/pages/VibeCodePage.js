@@ -40,7 +40,7 @@ const VibeCodePage = () => {
       />
       <div className="container mx-auto px-4 py-24">
           <div className="text-center max-w-3xl mx-auto mb-16">
-              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">Find Your Next Big Idea</h1>
+              <h1 className="text-5xl font-bold mb-4     text-neutral-100">Find Your Next Big Idea</h1>
               <p className="text-xl text-gray-300">Enter a keyword or industry to generate a unique "Vibe Code" and discover its market potential.</p>
           </div>
 

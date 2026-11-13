@@ -216,7 +216,7 @@ const ProfilePage = () => {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-none bg-gradient-to-br from-blue-600 to-gray-600 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-32 h-32 rounded-none bg-neutral-800   flex items-center justify-center text-white text-4xl font-bold">
                     {user.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   {user.verified && (
@@ -293,7 +293,7 @@ const ProfilePage = () => {
                     className={`px-6 py-3 rounded-none font-medium transition-all duration-200 disabled:opacity-60 ${
                       isFollowing
                         ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
-                        : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
+                        : 'bg-neutral-800   text-white  '
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

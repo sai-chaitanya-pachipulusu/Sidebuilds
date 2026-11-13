@@ -365,7 +365,7 @@ const MarketplacePage = () => {
         {/* Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
-            <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-gray-600 rounded-none text-xs font-medium flex items-center gap-1">
+            <div className="px-3 py-1 bg-neutral-800   rounded-none text-xs font-medium flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               Featured
             </div>
@@ -399,7 +399,7 @@ const MarketplacePage = () => {
         </div>
 
         {/* Background gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-gray-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-black/20   opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="relative z-10 space-y-4">
           {/* Header */}
@@ -498,7 +498,7 @@ const MarketplacePage = () => {
                 className={`w-full px-4 py-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                   project.is_on_hold === 1
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
+                    : 'bg-neutral-800   text-white  '
                 }`}
                 whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
                 whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
@@ -526,7 +526,7 @@ const MarketplacePage = () => {
                   className={`flex-1 px-4 py-2 text-sm rounded-none transition-all duration-200 font-medium flex items-center justify-center gap-2 ${
                     project.is_on_hold === 1
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                      : 'bg-gradient-to-r from-blue-600 to-gray-600 text-white hover:from-blue-700 hover:to-gray-700'
+                      : 'bg-neutral-800   text-white  '
                   }`}
                   whileHover={project.is_on_hold === 1 ? {} : { scale: 1.02 }}
                   whileTap={project.is_on_hold === 1 ? {} : { scale: 0.98 }}
@@ -545,7 +545,7 @@ const MarketplacePage = () => {
   // Enhanced Hero Section - Antimetal/Linear inspired
   const HeroSection = () => (
     <motion.div
-      className="relative bg-gradient-to-br from-gray-950 via-gray-900 to-black border-b border-gray-800"
+      className="relative bg-neutral-800    border-b border-gray-800"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -578,7 +578,7 @@ const MarketplacePage = () => {
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
               Discover{' '}
-              <span className="bg-gradient-to-r from-blue-400 to-gray-400 bg-clip-text text-transparent">
+              <span className="    text-neutral-100">
                 Premium
               </span>{' '}
               Projects
@@ -1096,7 +1096,7 @@ const MarketplacePage = () => {
                   <motion.button
                     onClick={handlePurchase}
                     disabled={!selectedPaymentMethod || paymentProcessing}
-                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 sm:px-6 py-3 min-h-[48px] bg-neutral-800   text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed   transition-all duration-200 flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

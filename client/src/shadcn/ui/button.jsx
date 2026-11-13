@@ -13,8 +13,9 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-white/10 hover:text-white",
         link: "text-primary underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:from-blue-500 hover:to-cyan-500 border-0",
-        glow: "bg-gradient-to-r from-blue-600 to-cyan-600 text-white relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-400 before:to-cyan-400 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100 before:-z-10",
+        // Keep legacy variant names compatible while rendering solid buttons.
+        gradient: "bg-neutral-100 text-neutral-950 hover:bg-neutral-200 border border-neutral-100 shadow-none",
+        glow: "bg-neutral-800 text-white hover:bg-neutral-700 border border-neutral-600 shadow-none",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -42,4 +43,4 @@ const Button = React.forwardRef(({ className, variant, size, ...props }, ref) =>
 })
 Button.displayName = "Button"
 
-export { Button, buttonVariants } 
+export { Button, buttonVariants }

@@ -127,7 +127,7 @@ const ProjectStatsModal = ({ isOpen, onClose, stats, projects }) => {
                         className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/[0.05]"
                       >
                         <div className="flex items-center space-x-4 flex-1">
-                          <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center">
+                          <div className="w-12 h-12 bg-neutral-800   rounded-xl flex items-center justify-center">
                             <BarChart3 className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
@@ -166,7 +166,7 @@ const ProjectStatsModal = ({ isOpen, onClose, stats, projects }) => {
               </div>
 
               {/* Insights */}
-              <div className="mt-8 p-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl border border-blue-500/20">
+              <div className="mt-8 p-4 bg-neutral-800   rounded-xl border border-blue-500/20">
                 <h4 className="text-white font-medium mb-2 flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 text-blue-400" />
                   <span>Insights</span>
