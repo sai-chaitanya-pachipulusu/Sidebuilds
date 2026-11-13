@@ -124,3 +124,5 @@ Market research and source links are retained in the QA report. Production was i
 - Pending: confirm deployed assets/browser interface, then create the new internal operator invitation. Live checkout and email remain paused/pending as previously recorded.
 
 - FR5 follow-up: unified hosted build entrypoints and moved renderer source out of automatic API detection; 82 server tests and seven affected follow-up checks pass. Awaiting the complete browser deployment.
+
+- FR5 build follow-up: retain the existing validated browser build wrapper in the unified packaging command; verify the next hosted release before operator invitation.

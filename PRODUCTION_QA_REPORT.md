@@ -470,3 +470,5 @@ Remaining engineering issues include real-provider payment/mail tests, claims on
 - Vercel build logs showed automatic API-function detection using the legacy root vercel-build command rather than the configured packaging command. Moved renderer source out of the auto-detected api directory; its generated private function path stays internal to the deployment.
 - Unified both hosting build entrypoints to compile the browser and emit the same checked Build Output package. This removes the competing automatic function/static build paths.
 - Full server suite: 82/82 passed with localhost test connections enabled. After the source move, all seven affected rendering/package checks passed and the real 42-asset package was regenerated successfully. Deployment verification remains pending.
+
+- FR5 build follow-up: the unified build reached normal browser compilation, but the hosting CI default treated existing lint warnings as fatal. Restored the already validated build:vercel-deploy wrapper (explicit CI=false and Stripe build validation) before packaging. This preserves baseline lint policy; no source settings changed. Production release still pending verification.
