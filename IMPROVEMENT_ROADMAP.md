@@ -4,7 +4,7 @@
 
 - Implemented: existing sale listings can be improved while payment setup is incomplete; newly enabling a sale or publishing a hidden sale still verifies Stripe. Checkout remains independently guarded.
 - Owner guidance: My projects shows actual buyer-detail gaps and links directly to the missing field. The editor preserves saved content, refuses incomplete responses and explains that editing does not enable payments. Loading failures offer retry, held-state flags work with Supabase booleans, missing images have a local fallback, and phone list information wraps.
-- Validated: 101 server tests, 134 interface tests and 24 isolated PostgreSQL scenarios; no production seller content or payment setup rewritten. Final visual/deployment evidence is maintained in the production QA report.
+- Validated: 101 server tests, 134 interface tests and 24 isolated PostgreSQL scenarios; no production seller content or payment setup rewritten. Released as 35521ba on Vercel production and Render. Desktop/390px previews, 10 private live workflow checks, 11 payment/access checks and 20 public checks pass; the production fixture is removed. Evidence is maintained in the production QA report.
 - Next launch dependency: sellers use these links to supply actual costs, included assets, demo/repository and handover. RAG academy's seller completes live reconnection in payout settings. Keep the live commerce pause until that review is complete; no artificial live payments.
 - After listing readiness: measure real discovery, inquiry and scope conversion before adding more discovery features or promoting traffic. Keep email pending/free hosting as already chosen.
 
