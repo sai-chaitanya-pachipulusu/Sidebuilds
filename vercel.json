@@ -10,11 +10,11 @@
     },
     {
       "src": "/api/(.*)",
-      "dest": "https://api.sidebuilds.online/api/$1"
+      "dest": "https://sidebuilds.onrender.com/api/$1"
     },
     {
       "src": "/socket.io/(.*)",
-      "dest": "https://api.sidebuilds.online/socket.io/$1"
+      "dest": "https://sidebuilds.onrender.com/socket.io/$1"
     },
     {
       "src": "/static/(.*)",
@@ -41,8 +41,8 @@
     "DISABLE_ESLINT_PLUGIN": "true",
     "TSC_COMPILE_ON_ERROR": "true",
     "SKIP_PREFLIGHT_CHECK": "true",
-    "REACT_APP_API_URL": "https://api.sidebuilds.online/api",
-    "REACT_APP_SOCKET_URL": "https://api.sidebuilds.online",
+    "REACT_APP_API_URL": "https://sidebuilds.onrender.com/api",
+    "REACT_APP_SOCKET_URL": "https://sidebuilds.onrender.com",
     "REACT_APP_ENV": "production"
   },
   "functions": {

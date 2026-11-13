@@ -112,3 +112,8 @@ Focus on small, transferable projects a buyer can actually run. Validate demand 
 4. **Evidence-based AI:** explain missing evidence and operating risks; show assumptions behind estimates. Measure usefulness and correction rates.
 
 Market research and source links are retained in the QA report. Production was inventoried successfully again on November 9 after restoration. The focused H1 release is deployed and passes 53/53 live checks; the broader local feature set remains unreleased.
+
+### FR4 — Live release follow-up (2026-11-12)
+- Core repair deployed at 4593147; production login and checkout pause verified.
+- Correct the unresolved legacy API hostname in search rendering and hosting proxies; six rendering tests pass, release verification pending.
+- Next: complete live feature smoke test and search-page checks, then issue the new internal operations account invitation. Email remains pending on the free hosting plan; live monetary actions remain paused.

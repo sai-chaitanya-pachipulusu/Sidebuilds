@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ORIGIN = 'https://www.sidebuilds.online';
-const API = 'https://api.sidebuilds.online/api/public';
+const API = 'https://sidebuilds.onrender.com/api/public';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json = value => JSON.stringify(value).replace(/</g,'\\u003c');
 const info = {
