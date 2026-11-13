@@ -30,7 +30,7 @@
     "build:win": "cd client && npm run build:production:win",
     "build": "cd client && npm run build:vercel-deploy",
     "install": "cd client && npm install",
-    "vercel-build": "cd client && npm install && npm run build:vercel-deploy"
+    "vercel-build": "cd client && npm run build && node scripts/package-hosting.cjs"
   },
   "dependencies": {
     "axios": "^1.7.9",

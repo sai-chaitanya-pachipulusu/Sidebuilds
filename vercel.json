@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd client && npm install && DISABLE_ESLINT_PLUGIN=true CI=false npm run build && node scripts/package-hosting.cjs",
+  "buildCommand": "npm run vercel-build",
   "installCommand": "cd client && npm install",
   "env": {
     "CI": "false",

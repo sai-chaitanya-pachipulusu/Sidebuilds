@@ -122,3 +122,5 @@ Market research and source links are retained in the QA report. Production was i
 - Completed: all 53 production synthetic feature checks; working backend host for public HTML and sitemap.
 - Release fix prepared: explicitly package scripts/styles plus the private HTML renderer, and reject incomplete build manifests. Seven related tests and actual packaging validation passed.
 - Pending: confirm deployed assets/browser interface, then create the new internal operator invitation. Live checkout and email remain paused/pending as previously recorded.
+
+- FR5 follow-up: unified hosted build entrypoints and moved renderer source out of automatic API detection; 82 server tests and seven affected follow-up checks pass. Awaiting the complete browser deployment.

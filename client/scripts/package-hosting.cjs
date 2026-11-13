@@ -27,7 +27,7 @@ function packageHosting(root = path.resolve(__dirname, '../..')) {
     const fn = path.join(output, 'functions/__site.func');
     fs.mkdirSync(path.join(fn, 'api'), { recursive: true });
     fs.mkdirSync(path.join(fn, 'client/build'), { recursive: true });
-    fs.copyFileSync(path.join(root, 'api/site.js'), path.join(fn, 'api/site.js'));
+    fs.copyFileSync(path.join(root, 'client/scripts/site-renderer.cjs'), path.join(fn, 'api/site.js'));
     fs.copyFileSync(path.join(build, 'index.html'), path.join(fn, 'client/build/index.html'));
     fs.writeFileSync(path.join(fn, '.vc-config.json'), JSON.stringify({
         runtime: 'nodejs22.x', handler: 'api/site.js', launcherType: 'Nodejs', maxDuration: 60

@@ -1,6 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {render}=require('../../api/site');
+const {render}=require('../../client/scripts/site-renderer.cjs');
 const template='<!doctype html><head><title>Old title</title><meta name="description" content="Old description" /></head><body><div id="root"></div><script src="/static/main.js"></script></body>';
 const url=path=>new URL(path,'https://www.sidebuilds.online');
 const listing={project_id:'11111111-1111-4111-8111-111111111111',name:'Atlas <script>evil</script>',description:'A & B',is_public:true,is_for_sale:true,sale_price:10.25,stage:'mvp'};

@@ -465,3 +465,8 @@ Remaining engineering issues include real-provider payment/mail tests, claims on
 - Added explicit Vercel Build Output packaging for browser assets and the private HTML renderer, using the documented filesystem routing phase. Checks every manifest file before publishing; missing files abort packaging. No source settings or server credentials are included.
 - Validation: 42 real browser build assets checked and packaged; packaged homepage handler HTTP 200 with its script reference; template remains private. Rendering/package tests 7/7 passed (one new regression case; server suite total now 82). Production deployment verification pending.
 - Hosting specification references: https://vercel.com/docs/build-output-api and https://vercel.com/docs/build-output-api/primitives .
+
+### FR5 follow-up — Align hosted build entrypoint (2026-11-12)
+- Vercel build logs showed automatic API-function detection using the legacy root vercel-build command rather than the configured packaging command. Moved renderer source out of the auto-detected api directory; its generated private function path stays internal to the deployment.
+- Unified both hosting build entrypoints to compile the browser and emit the same checked Build Output package. This removes the competing automatic function/static build paths.
+- Full server suite: 82/82 passed with localhost test connections enabled. After the source move, all seven affected rendering/package checks passed and the real 42-asset package was regenerated successfully. Deployment verification remains pending.
