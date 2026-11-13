@@ -46,3 +46,7 @@ Official references: [Stripe testing](https://docs.stripe.com/testing), [separat
 ## November 12 operations completion
 
 Refund amount/state and read-only refund/reversal reconciliation are implemented. Operators have an authenticated /admin queue backed by real issue/event data. No existing account had administrator access; the user requested a new identity. A create-only bootstrap is prepared with a private single-use password setup link, using an alias of the existing mailbox. Owner password setup remains a handoff step. No email is needed for that initial setup. Public customer counts exclude internal administrators and tagged QA.
+
+## Final production observation — November 12
+
+Application release 114f776 is live (Vercel dpl_E4WcYGP6CJmz74jB1io8TL22qRRq). 82 server, 118 interface, 17 PostgreSQL, 53 live-feature and 20 page/asset checks pass. Search rendering source is client/scripts/site-renderer.cjs; client/scripts/package-hosting.cjs emits browser assets and its private function as one Build Output deployment. Live Stripe/database health is connected; checkout remains paused. The new internal operator sidebuilds_ops_191b0b exists with an unused private password-setup invitation. Owner activation and email remain pending. Final inventory is 37 accounts, 3 projects and zero purchase/inquiry/file records; all 55 public tables have RLS. See FR6 in the QA report and roadmap for evidence, browser limitations and next actions.

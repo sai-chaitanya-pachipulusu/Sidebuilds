@@ -1,5 +1,17 @@
 # SideBuilds improvement roadmap
 
+## FR6 — Current release and next priorities — November 12, 2026
+
+**Deployed:** full marketplace repair and hosting correction at application release 114f776. Validation: 82 server tests, 118 interface tests, 17 PostgreSQL scenarios, 53 live feature checks and 20 public page/asset checks pass. The isolated Stripe-hosted purchase/handover/receipt/transfer journey passes, with test transfer reversed and payment refunded. No live sale was submitted. Existing projects preserved; 55 public tables protected by RLS.
+
+1. **Owner action now:** open the private `.tmp/production-admin/ADMIN_SETUP.md`, choose the new operations account password and sign in to `/admin`. New identity: sidebuilds_ops_191b0b; no customer elevated. Setup expires November 13, 12:37 a.m. Eastern. Keep live checkout paused until operator activation/readiness is verified.
+2. **Email remains pending by user choice:** keep free hosting and existing provider settings unchanged. Password recovery and purchase emails are unavailable. Resolve through an approved delivery path when the owner changes this constraint; do not claim delivery works.
+3. **Prepare the two real listings for buyer review:** obtain current demo/repository/ownership evidence, included assets, transferable rights, operating costs and handover expectations. Their existence is not a quality or traction verification.
+4. **Observe the first legitimate purchase:** verify actual external live webhook delivery, receipt and payout with the operator. Do not run artificial real-card tests or mix test keys with production data. Keep an explicit failure/reconciliation path.
+5. **Visibility and UX:** technical search fixes are live. Next measure Search Console indexing/impressions and qualified conversations; improve listing evidence before campaigns. Perform a physical small-phone check below 520px and collect seller/buyer task feedback. Browser screenshot tooling limited this session; the current live Chrome flow was observed, and earlier sandbox receipt screenshots remain available.
+
+Final data: 37 total accounts (3 tagged QA, 1 internal operator, 33 other registrations including 3 likely tests and 30 unverified), 3 projects, zero purchases/inquiries/files after fixture cleanup. Internal roles and tagged QA are excluded from public customer counts. No genuine active-user or visibility-growth claim is supported. Prior roadmap entries retain historical context; this entry supersedes earlier unreleased status.
+
 ## FR3 — Release validation and operations handoff — November 12, 2026
 
 The full Stripe sandbox browser journey passed: buyer/seller sign-in, public question, private inquiry/reply, both scope approvals, Stripe-hosted payment, signed raw webhook processing, private file upload/download, seller delivery, explicit receipt, seller transfer and buyer ownership. Payment $10.25, platform fee $0.51, seller transfer $9.74; the transfer was reversed and payment refunded. The isolated schema and local acceptance process were removed. Provider events were retrieved from Stripe's authenticated API and forwarded through a locally signed webhook; this does not claim an externally delivered production payment event. Evidence: .tmp/repair-browser/report.json and screenshots.
@@ -111,7 +123,7 @@ Focus on small, transferable projects a buyer can actually run. Validate demand 
 3. **Buyer matching:** saved searches by budget, stack and effort required, with opt-in alerts. Measure useful matches.
 4. **Evidence-based AI:** explain missing evidence and operating risks; show assumptions behind estimates. Measure usefulness and correction rates.
 
-Market research and source links are retained in the QA report. Production was inventoried successfully again on November 9 after restoration. The focused H1 release is deployed and passes 53/53 live checks; the broader local feature set remains unreleased.
+Market research and source links are retained in the QA report. Production was inventoried successfully again on November 9 after restoration. The focused H1 release is deployed and passes 53/53 live checks; the broader repair was subsequently deployed and validated in FR6 above.
 
 ### FR4 — Live release follow-up (2026-11-12)
 - Core repair deployed at 4593147; production login and checkout pause verified.
