@@ -97,11 +97,11 @@ router.post('/',
 
             // Guardrail: only buyers who actually paid can review
             const purchase = await db.query(
-                `SELECT pr.seller_id FROM purchase_requests pr
-                 WHERE pr.project_id = $1 AND pr.buyer_id = $2
-                   AND pr.status = ANY($3)
+                `SELECT t.seller_id FROM project_transactions t
+                 WHERE t.project_id = $1 AND t.buyer_id = $2
+                   AND t.status='completed' AND t.transfer_completed=true AND t.escrow_released=true AND t.escrow_status='released'
                  LIMIT 1`,
-                [project_id, reviewerId, PURCHASED_STATUSES]
+                [project_id, reviewerId]
             );
 
             if (purchase.rows.length === 0) {

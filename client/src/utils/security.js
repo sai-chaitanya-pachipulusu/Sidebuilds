@@ -114,27 +114,35 @@ export const sanitizeFormData = (formData, rules = {}) => {
 // URL validation and sanitization
 export const sanitizeUrl = (url) => {
   if (!url || typeof url !== 'string') return '';
-  
-  // Remove dangerous protocols
-  const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:'];
-  const lowerUrl = url.toLowerCase().trim();
-  
-  for (const protocol of dangerousProtocols) {
-    if (lowerUrl.startsWith(protocol)) {
-      return '';
-    }
+
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  const explicitScheme = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
+  if (explicitScheme && !/^https?:$/i.test(explicitScheme[0])) return '';
+
+  // Preserve same-origin application paths but reject protocol-relative URLs.
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed;
+
+  const candidate = trimmed.startsWith('//')
+    ? `https:${trimmed}`
+    : (/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+  } catch (_error) {
+    return '';
   }
-  
-  // Ensure http or https protocol for external links
-  if (url.startsWith('//')) {
-    return `https:${url}`;
-  }
-  
-  if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) {
-    return `https://${url}`;
-  }
-  
-  return url;
+};
+
+export const openExternalUrl = (url) => {
+  const safeUrl = sanitizeUrl(url);
+  if (!safeUrl) return false;
+
+  const openedWindow = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+  if (openedWindow) openedWindow.opener = null;
+  return true;
 };
 
 // Content Security Policy helper
@@ -249,6 +257,7 @@ export default {
   sanitizeInput,
   sanitizeFormData,
   sanitizeUrl,
+  openExternalUrl,
   isCSPEnabled,
   safeSetTextContent,
   safeAppendText,

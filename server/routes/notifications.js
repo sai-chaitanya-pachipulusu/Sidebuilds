@@ -89,7 +89,7 @@ router.post('/:notificationId/mark-read', authMiddleware, async (req, res) => {
             WHERE notification_id = ? AND user_id = ?;
         `;
         const result = await db.query(query, [notificationId, userId]);
-        if (result.changes === 0) {
+        if ((result.rowCount ?? result.changes) === 0) {
             return res.status(404).json({ error: 'Notification not found or you do not have permission to update it.' });
         }
         res.json({ success: true, message: 'Notification marked as read' });
@@ -120,4 +120,4 @@ router.post('/mark-all-read', authMiddleware, async (req, res) => {
     }
 });
 
-module.exports = router; 
+module.exports = router;

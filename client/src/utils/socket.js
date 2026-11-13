@@ -1,6 +1,17 @@
 import io from 'socket.io-client';
+import { resolveServiceUrl } from '../config/apiUrl';
 
-const SOCKET_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5002';
+const SOCKET_URL = resolveServiceUrl(
+  process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, ''),
+  'http://localhost:5002'
+);
+
+// Absolute URL for the auth API, used by token-refresh recovery so it works
+// in cross-origin production deployments (client and API on different hosts).
+const AUTH_API_BASE = resolveServiceUrl(
+  process.env.REACT_APP_API_URL,
+  'http://localhost:5002/api'
+);
 
 // Enhanced socket management with production features
 let socket;
@@ -111,7 +122,6 @@ export const initializeSocket = (token) => {
     reconnectionAttempts: 3,         // fail fast — don't retry for minutes
     reconnectionDelay: 1000,
     reconnectionDelayMax: 3000,      // max 3s between retries
-    maxReconnectionAttempts: 3,
     timeout: 8000,                   // match our API timeout
     
     auth: {
@@ -320,11 +330,15 @@ const cleanupSocket = () => {
   if (socket) {
     // Remove all event listeners
     socket.removeAllListeners();
-    
+
+    // Tear down the transport so re-initializing (e.g. after a token
+    // refresh) never leaks the previous connection.
+    socket.disconnect();
+
     // Clear socket reference
     socket = null;
   }
-  
+
   // Stop heartbeat
   stopHeartbeat();
 };
@@ -557,18 +571,13 @@ const handleTokenRefreshWarning = (data) => {
 const refreshTokenAndReconnect = async () => {
   try {
     updateStatus('reconnecting', 'Refreshing authentication...');
-    
+
     // Strategy 1: Try refresh endpoint
     let newToken = await tryRefreshEndpoint();
-    
+
     // Strategy 2: Try to get fresh token from auth context/localStorage
     if (!newToken) {
       newToken = await tryGetFreshToken();
-    }
-    
-    // Strategy 3: Try to refresh using stored refresh token
-    if (!newToken) {
-      newToken = await tryRefreshWithRefreshToken();
     }
     
     if (newToken) {
@@ -621,7 +630,7 @@ const refreshTokenAndReconnect = async () => {
 // Strategy 1: Try dedicated refresh endpoint
 const tryRefreshEndpoint = async () => {
   try {
-    const response = await fetch('/api/auth/refresh', {
+    const response = await fetch(`${AUTH_API_BASE}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -629,7 +638,7 @@ const tryRefreshEndpoint = async () => {
         'Authorization': `Bearer ${currentToken}`
       }
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       return data.token || data.accessToken;
@@ -646,51 +655,22 @@ const tryGetFreshToken = async () => {
     // Try to get token from React context or global state
     const authEvent = new CustomEvent('get-auth-token');
     let freshToken = null;
-    
+
     const handleAuthToken = (event) => {
       freshToken = event.detail?.token;
     };
-    
+
     window.addEventListener('provide-auth-token', handleAuthToken);
     window.dispatchEvent(authEvent);
-    
+
     // Give a brief moment for the auth context to respond
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     window.removeEventListener('provide-auth-token', handleAuthToken);
-    
+
     return freshToken;
   } catch (error) {
     console.log('[Socket.IO] Fresh token retrieval failed:', error.message);
-  }
-  return null;
-};
-
-// Strategy 3: Use refresh token if available
-const tryRefreshWithRefreshToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return null;
-    
-    const response = await fetch('/api/auth/token', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken })
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      // Also update refresh token if provided
-      if (data.refreshToken) {
-        localStorage.setItem('refreshToken', data.refreshToken);
-      }
-      return data.token || data.accessToken;
-    }
-  } catch (error) {
-    console.log('[Socket.IO] Refresh token strategy failed:', error.message);
   }
   return null;
 };
@@ -759,7 +739,12 @@ const notifyAuthenticationFailure = () => {
 export const subscribeToSocketStatus = (listener) => {
   statusListeners.add(listener);
   // Immediately call listener with current status
-  listener(status, null, connectionMetrics);
+  try {
+    listener(status, null, connectionMetrics);
+  } catch (error) {
+    statusListeners.delete(listener);
+    console.error('Status listener error:', error);
+  }
   return () => {
     statusListeners.delete(listener);
   };
@@ -768,12 +753,17 @@ export const subscribeToSocketStatus = (listener) => {
 export const subscribeToConnectionEvents = (listener) => {
   connectionListeners.add(listener);
   // Immediately call with current state
-  listener({
-    status,
-    quality: connectionQuality,
-    latency: averageLatency,
-    metrics: { ...connectionMetrics }
-  });
+  try {
+    listener({
+      status,
+      quality: connectionQuality,
+      latency: averageLatency,
+      metrics: { ...connectionMetrics }
+    });
+  } catch (error) {
+    connectionListeners.delete(listener);
+    console.error('Connection listener error:', error);
+  }
   return () => {
     connectionListeners.delete(listener);
   };

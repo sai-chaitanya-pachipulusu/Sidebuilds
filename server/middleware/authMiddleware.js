@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/jwt');
 require('dotenv').config();
 
 module.exports = function(req, res, next) {
@@ -25,7 +25,7 @@ module.exports = function(req, res, next) {
 
     // Verify token
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = verifyToken(token);
 
         // Add user from payload to the request object
         // Support both user_id and id for backwards compatibility
@@ -50,4 +50,4 @@ module.exports = function(req, res, next) {
         
         res.status(401).json({ message: 'Token is not valid.' });
     }
-}; 
+};

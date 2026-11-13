@@ -3,6 +3,12 @@ const express = require('express');
 const router = express.Router();
 const { getQueryStats } = require('../db');
 const { getStats: getCacheStats } = require('../middleware/cache');
+const authMiddleware = require('../middleware/authMiddleware');
+const requireAdmin = require('../middleware/requireAdmin');
+
+// Query timings, cache contents and database health are internal operational
+// telemetry and must not be exposed to marketplace users.
+router.use(authMiddleware, requireAdmin);
 
 // Get database performance statistics
 router.get('/db-stats', async (req, res) => {
@@ -15,7 +21,7 @@ router.get('/db-stats', async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Failed to load database performance statistics.'
         });
     }
 });
@@ -31,7 +37,7 @@ router.get('/cache-stats', async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Failed to load cache performance statistics.'
         });
     }
 });
@@ -58,7 +64,7 @@ router.get('/health', async (req, res) => {
         res.status(503).json({
             success: false,
             status: 'unhealthy',
-            error: error.message,
+            error: 'Performance health check failed.',
             timestamp: new Date().toISOString()
         });
     }

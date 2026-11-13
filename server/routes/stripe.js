@@ -1,23 +1,18 @@
 const express = require('express');
 const router = express.Router();
 // Use the pre-configured Stripe instance from config
-const { stripe } = require('../config/stripe.config');
+const { stripe, stripeConfigValid } = require('../config/stripe.config');
 const authMiddleware = require('../middleware/authMiddleware');
+const requireAdmin = require('../middleware/requireAdmin');
 const db = require('../db');
+router.use((req, res, next) => {
+    if (req.method === 'POST' && !stripeConfigValid) return res.status(503).json({ message: 'Stripe setup is unavailable or its key modes do not match.', code: 'STRIPE_CONFIGURATION_INVALID' });
+    next();
+});
 
 // POST /api/stripe/create-account-link
 // Creates a Stripe account link for onboarding or account updates
 router.post('/create-account-link', authMiddleware, async (req, res) => {
-    // Allow CORS for this specific endpoint
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    // Handle preflight
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    
     // Production-safe logging
     if (process.env.NODE_ENV === 'development') {
         console.log('==== CREATE STRIPE ACCOUNT LINK ====');
@@ -211,23 +206,12 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Client URL:', process.env.CLIENT_URL);
     
-    // Allow CORS for this specific endpoint too (belt and suspenders)
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    // Handle preflight
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    
     // First, verify Stripe is properly configured
     const { stripe, stripeConfigValid, configErrors } = require('../config/stripe.config');
     if (!stripeConfigValid) {
         console.error('Stripe config invalid:', configErrors);
         return res.status(500).json({ 
             message: 'Stripe is not properly configured on the server',
-            errors: configErrors,
             action: 'Please contact support to resolve this issue'
         });
     }
@@ -430,10 +414,10 @@ router.get('/check-onboarding-status', authMiddleware, async (req, res) => {
 
 // GET /api/stripe/debug
 // A simple endpoint to test the Stripe configuration
-router.get('/debug', authMiddleware, async (req, res) => {
+router.get('/debug', authMiddleware, requireAdmin, async (req, res) => {
     try {
         // Retrieve Stripe account info (requires account ID)
-        const stripe = require('../config/stripe.config');
+        const { stripe } = require('../config/stripe.config');
         const accountId = req.user?.stripe_account_id;
         if (!accountId) {
             return res.json({
@@ -460,8 +444,8 @@ router.get('/debug', authMiddleware, async (req, res) => {
 });
 
 // GET /api/stripe/public-debug
-// A simple endpoint to test the Stripe configuration WITHOUT authentication
-router.get('/public-debug', async (req, res) => {
+// Legacy diagnostic URL retained for compatibility, but restricted to admins.
+router.get('/public-debug', authMiddleware, requireAdmin, async (req, res) => {
     try {
         // Verify Stripe secret key is present
         if (!process.env.STRIPE_SECRET_KEY) {
@@ -508,18 +492,8 @@ router.get('/public-debug', async (req, res) => {
 });
 
 // GET /api/stripe/test-status
-// A public route to check if Stripe is configured correctly
-router.get('/test-status', async (req, res) => {
-    // Explicitly set CORS headers for this endpoint since it's critical for debugging
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    
+// Legacy diagnostic URL retained for compatibility, but restricted to admins.
+router.get('/test-status', authMiddleware, requireAdmin, async (req, res) => {
     console.log('==== STRIPE TEST STATUS CHECK ====');
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Client URL:', process.env.CLIENT_URL);

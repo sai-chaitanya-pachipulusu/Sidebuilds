@@ -2,11 +2,11 @@ const { test, before, beforeEach, after } = require('node:test');
 const assert = require('node:assert/strict');
 const sqlite3 = require('sqlite3');
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { signToken } = require('../utils/jwt');
 
 // The route modules use a disposable, real SQL database. No saved settings,
 // production database, filesystem uploads or payment provider are loaded.
-Object.assign(process.env, { NODE_ENV: 'test', JWT_SECRET: 'hotfix-regression-only-secret', DATABASE_URL: '' });
+Object.assign(process.env, { NODE_ENV: 'test', JWT_SECRET: 'hotfix-regression-only-secret-with-32-characters', DATABASE_URL: '' });
 const database = new sqlite3.Database(':memory:');
 const query = (sql, values = []) => new Promise((resolve, reject) => {
   database.all(sql, values, (error, rows) => error ? reject(error) : resolve({ rows }));
@@ -17,9 +17,9 @@ const replace = (filename, exports) => {
   require.cache[id] = { id, filename: id, loaded: true, exports };
 };
 const notifications = [];
-replace('../db', { query });
+replace('../db', { query, trueExpr: column => `${column} = true`, dialect:'sqlite' });
 replace('../services/notificationService', { createNotification: async (...args) => notifications.push(args) });
-replace('../config/multer', { uploadMultiple: () => (_req, _res, next) => next(),
+replace('../config/multer', { uploadsDir: require('node:os').tmpdir(), uploadMultiple: () => (_req, _res, next) => next(),
   handleMulterError: (_req, _res, next) => next() });
 const app = express();
 app.use(express.json());
@@ -32,7 +32,7 @@ const project = '33333333-3333-4333-8333-333333333333';
 const question = '44444444-4444-4444-8444-444444444444';
 let server, base;
 async function request(method, route, userId) {
-  const token = userId && jwt.sign({ user: { user_id: userId, username: 'qa' } }, process.env.JWT_SECRET);
+  const token = userId && signToken({ user: { user_id: userId, username: 'qa' } });
   const response = await fetch(base + route, { method,
     headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: AbortSignal.timeout(5000) });
   return { status: response.status, body: await response.json() };
@@ -42,6 +42,7 @@ before(async () => {
     stripe_account_id TEXT, onboarding_complete INTEGER, stripe_onboarding_complete INTEGER,
     payout_enabled INTEGER, stripe_charges_enabled INTEGER, stripe_details_submitted INTEGER);
     CREATE TABLE projects (project_id TEXT PRIMARY KEY, owner_id TEXT, is_public INTEGER);
+    CREATE TABLE checkout_reservations (project_id TEXT PRIMARY KEY);
     CREATE TABLE user_follows (follower_id TEXT, following_id TEXT, PRIMARY KEY(follower_id, following_id));
     CREATE TABLE project_questions (question_id TEXT PRIMARY KEY, project_id TEXT, asker_id TEXT,
     answered_by TEXT, question TEXT, answer TEXT, answered_at TEXT, created_at TEXT, is_public INTEGER);`);

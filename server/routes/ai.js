@@ -1,8 +1,44 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { aiLimiter } = require('../middleware/rateLimiter');
 const db = require('../db'); // Use existing db connection
 const enhancedAIService = require('../services/enhancedAIService');
+
+const DUE_DILIGENCE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_DUE_DILIGENCE_CACHE_ENTRIES = 200;
+const dueDiligenceCache = new Map();
+
+const truncateText = (value, maxLength) => String(value || '').trim().slice(0, maxLength);
+const boundedNumber = (value, max = 1000000000) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(max, parsed)) : 0;
+};
+
+const normalizeTechStack = (value) => {
+  let stack = value;
+  if (typeof stack === 'string') {
+    try {
+      stack = JSON.parse(stack);
+    } catch (_error) {
+      stack = stack.split(',');
+    }
+  }
+  return Array.isArray(stack) ? stack.slice(0, 25).map(item => truncateText(item, 50)).filter(Boolean) : [];
+};
+
+// Only these bounded, public project fields may be sent to an AI provider.
+const normalizeProjectForAI = (project = {}) => ({
+  name: truncateText(project.name || project.title, 120),
+  description: truncateText(project.description, 4000),
+  category: truncateText(project.category, 80),
+  monthly_revenue: boundedNumber(project.monthly_revenue ?? project.monthlyRevenue),
+  sale_price: boundedNumber(project.sale_price ?? project.price),
+  tech_stack: normalizeTechStack(project.tech_stack ?? project.technologies),
+  stage: truncateText(project.stage, 40),
+  domain: truncateText(project.domain, 253),
+  github_url: truncateText(project.github_url, 500)
+});
 
 // OpenAI integration (if available)
 let openai = null;
@@ -113,7 +149,7 @@ const generateDueDiligenceReport = async (project) => {
 };
 
 // Buyer-facing due diligence report for public project listings
-router.get('/due-diligence/:projectId', async (req, res) => {
+router.get('/due-diligence/:projectId', aiLimiter, async (req, res) => {
   try {
     const { projectId } = req.params;
     const result = await db.query(
@@ -132,7 +168,19 @@ router.get('/due-diligence/:projectId', async (req, res) => {
       return res.status(404).json({ message: 'Project not found or not publicly accessible.' });
     }
 
-    const report = await generateDueDiligenceReport(result.rows[0]);
+    const project = result.rows[0];
+    const cacheKey = `${project.project_id}:${project.updated_at || project.created_at || ''}`;
+    const cached = dueDiligenceCache.get(cacheKey);
+    if (cached && Date.now() - cached.createdAt < DUE_DILIGENCE_CACHE_TTL_MS) {
+      return res.json({ ...cached.report, cached: true });
+    }
+
+    const report = await generateDueDiligenceReport(project);
+    if (dueDiligenceCache.size >= MAX_DUE_DILIGENCE_CACHE_ENTRIES) {
+      const oldestKey = dueDiligenceCache.keys().next().value;
+      if (oldestKey) dueDiligenceCache.delete(oldestKey);
+    }
+    dueDiligenceCache.set(cacheKey, { report, createdAt: Date.now() });
     res.json(report);
   } catch (error) {
     console.error('[AI] Due diligence report error:', error);
@@ -141,13 +189,42 @@ router.get('/due-diligence/:projectId', async (req, res) => {
 });
 
 // Enhanced AI Project Scoring Endpoint
-router.post('/score-project', authMiddleware, async (req, res) => {
+router.post('/score-project', authMiddleware, aiLimiter, async (req, res) => {
   try {
     const { projectId, projectData } = req.body;
     const userId = req.user.user_id;
 
-    if (!projectData) {
+    if (!projectId && !projectData) {
       return res.status(400).json({ error: 'Project data is required' });
+    }
+
+    let analysisInput;
+    let canStoreAnalysis = false;
+
+    if (projectId) {
+      const projectResult = await db.query(
+        `SELECT project_id, owner_id, name, description, category, monthly_revenue,
+                sale_price, tech_stack, stage, domain, github_url, is_public, is_for_sale
+         FROM projects WHERE project_id = ?`,
+        [projectId]
+      );
+
+      if (!projectResult.rows?.length) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      const project = projectResult.rows[0];
+      const isOwner = project.owner_id === userId;
+      const isPublic = project.is_public === true || project.is_public === 1 ||
+        project.is_for_sale === true || project.is_for_sale === 1;
+      if (!isOwner && !isPublic) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      analysisInput = normalizeProjectForAI(project);
+      canStoreAnalysis = isOwner;
+    } else {
+      analysisInput = normalizeProjectForAI(projectData);
     }
 
     console.log(`[AI] Enhanced analysis for project: ${projectId || 'unnamed'} by user ${userId}`);
@@ -179,10 +256,10 @@ router.post('/score-project', authMiddleware, async (req, res) => {
     }
 
     // Perform enhanced AI analysis
-    analysis = await enhancedAIService.analyzeProject(projectData);
+    analysis = await enhancedAIService.analyzeProject(analysisInput);
 
     // Store analysis if we have a project ID
-    if (projectId) {
+    if (projectId && canStoreAnalysis) {
       await enhancedAIService.storeAnalysis(projectId, analysis);
     }
 
@@ -213,17 +290,24 @@ router.post('/score-project', authMiddleware, async (req, res) => {
 });
 
 // AI Recommendations Endpoint
-router.post('/recommendations', authMiddleware, async (req, res) => {
+router.post('/recommendations', authMiddleware, aiLimiter, async (req, res) => {
   try {
-    const { userId, userProjects, preferences, marketplaceData } = req.body;
+    const { userProjects, preferences, marketplaceData } = req.body;
     const currentUserId = req.user.user_id;
 
+    if ((userProjects && !Array.isArray(userProjects)) || (marketplaceData && !Array.isArray(marketplaceData))) {
+      return res.status(400).json({ error: 'Project collections must be arrays' });
+    }
+
+    const boundedUserProjects = (userProjects || []).slice(0, 100);
+    const boundedMarketplaceData = (marketplaceData || []).slice(0, 200);
+
     // Generate dynamic recommendations
-    const personalized = await generatePersonalizedRecommendations(currentUserId, userProjects, preferences);
-    const trending = await generateTrendingRecommendations(marketplaceData);
-    const similar = await generateSimilarRecommendations(currentUserId, userProjects);
-    const investments = await generateInvestmentRecommendations(marketplaceData, preferences);
-    const insights = await generateMarketInsights(marketplaceData);
+    const personalized = await generatePersonalizedRecommendations(currentUserId, boundedUserProjects, preferences);
+    const trending = await generateTrendingRecommendations(boundedMarketplaceData);
+    const similar = await generateSimilarRecommendations(currentUserId, boundedUserProjects);
+    const investments = await generateInvestmentRecommendations(boundedMarketplaceData, preferences);
+    const insights = await generateMarketInsights(boundedMarketplaceData);
 
     res.json({
       personalized,
@@ -240,10 +324,17 @@ router.post('/recommendations', authMiddleware, async (req, res) => {
 });
 
 // AI Idea Assist: generate structure for projects at various stages
-router.post('/idea-assist', authMiddleware, async (req, res) => {
+router.post('/idea-assist', authMiddleware, aiLimiter, async (req, res) => {
   try {
     const { stage, prompt, category } = req.body;
     const normalizedStage = (stage || 'idea').toLowerCase();
+
+    if (typeof prompt === 'string' && prompt.length > 1000) {
+      return res.status(400).json({ error: 'Prompt must be 1000 characters or fewer' });
+    }
+    if (typeof category === 'string' && category.length > 80) {
+      return res.status(400).json({ error: 'Category must be 80 characters or fewer' });
+    }
 
     const base = {
       idea: {

@@ -3,13 +3,18 @@ import { useParams, Link as RouterLink, useLocation, useNavigate } from 'react-r
 import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
-import { getProjectById, expressInterestInProject, getDueDiligenceReport } from '../services/api';
-import PaymentService from '../services/paymentService';
-import PaymentMethodSelector from '../components/PaymentMethodSelector';
+import {
+  getProjectById,
+  expressInterestInProject,
+  getDueDiligenceReport,
+  initiateProjectCheckout
+} from '../services/api';
 import ProjectDetailSkeleton from '../components/ProjectDetailSkeleton';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ProjectQA from '../components/ProjectQA';
 import ProjectReviews from '../components/ProjectReviews';
+import BuyerBrief from '../components/BuyerBrief';
+import { loginDestination, safeReturnTo } from '../utils/navigation';
 import { 
   DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, 
   Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, 
@@ -20,7 +25,17 @@ import toast from 'react-hot-toast';
 
 // Generate unique idempotency key
 const generateIdempotencyKey = () => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const normalizeExternalUrl = (value) => {
+  if (!value) return null;
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    return url.hostname === 'localhost' || url.hostname.includes('.') ? url.href : null;
+  } catch (_error) {
+    return null;
+  }
 };
 
 // Validation helper functions
@@ -52,6 +67,7 @@ const ProjectDetailPage = () => {
   
   // State management with proper initialization
   const [project, setProject] = useState(null);
+  const [questionPrompt, setQuestionPrompt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showInterestModal, setShowInterestModal] = useState(false);
@@ -60,19 +76,17 @@ const ProjectDetailPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [purchaseError, setPurchaseError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [isBuyButtonLoading, setIsBuyButtonLoading] = useState(false);
   const [isOfferButtonLoading, setIsOfferButtonLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [purchaseInitiated, setPurchaseInitiated] = useState(false);
   const [dueDiligenceReport, setDueDiligenceReport] = useState(null);
   const [isDueDiligenceLoading, setIsDueDiligenceLoading] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [reportRetry, setReportRetry] = useState(0);
+  const isPublicListing = project?.is_public === true || project?.is_public === 1;
   
+  const purchaseLock = useRef(false);
+
   // Abort controller for request cancellation
   const abortControllerRef = useRef(null);
 
@@ -105,13 +119,6 @@ const ProjectDetailPage = () => {
         }
         
         setProject(data);
-        setIsDueDiligenceLoading(true);
-        getDueDiligenceReport(projectId)
-          .then(setDueDiligenceReport)
-          .catch((reportError) => {
-            console.warn('Due diligence report unavailable:', reportError.message || reportError);
-          })
-          .finally(() => setIsDueDiligenceLoading(false));
       } catch (err) {
         if (err.name === 'AbortError') {
           console.log('Request was cancelled');
@@ -133,17 +140,42 @@ const ProjectDetailPage = () => {
       }
     };
   }, [projectId]);
+
+  useEffect(() => {
+    setDueDiligenceReport(null);
+    setQuestionPrompt(null);
+    setReportError('');
+    setIsDueDiligenceLoading(false);
+  }, [projectId]);
+
+  // Request a buyer report only when someone opens AI Insights on a public listing.
+  useEffect(() => {
+    if (activeTab !== 'ai' || !isPublicListing || project?.project_id !== projectId || dueDiligenceReport) return;
+    let cancelled = false;
+    setReportError('');
+    setIsDueDiligenceLoading(true);
+    getDueDiligenceReport(projectId).then(report => {
+      if (cancelled) return;
+      setDueDiligenceReport(report);
+      setIsDueDiligenceLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setReportError('The buyer report could not be loaded. Your project details are still available.');
+      setIsDueDiligenceLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, isPublicListing, project?.project_id, projectId, dueDiligenceReport, reportRetry]);
   
   // Handle URL parameters - opens modal once and clears the URL param
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
-    if (queryParams.get('showInterest') === 'true' && project) {
+    if (queryParams.get('showInterest') === 'true' && project && user) {
       setShowInterestModal(true);
       // Clear the URL parameter to prevent re-opening on state changes
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      queryParams.delete('showInterest');
+      navigate({ pathname: location.pathname, search: queryParams.toString() }, { replace: true, state: location.state });
     }
-  }, [location.search, project]);
+  }, [location.search, location.pathname, location.state, project, user, navigate]);
 
   // ESC key handler to close modals
   useEffect(() => {
@@ -156,21 +188,13 @@ const ProjectDetailPage = () => {
           setCommitments(new Set());
           setValidationErrors({});
         }
-        if (showPaymentModal) {
-          console.log('ESC pressed - closing payment modal');
-          setShowPaymentModal(false);
-          setSelectedPaymentMethod('');
-          setPurchaseError(null);
-        }
-        if (showConfirmationModal) {
-          setShowConfirmationModal(false);
-        }
+
       }
     };
     
     window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
-  }, [showInterestModal, showPaymentModal, showConfirmationModal]);
+  }, [showInterestModal]);
 
   // Enhanced interest submission with better error handling
   const handleInterestSubmit = async () => {
@@ -178,7 +202,7 @@ const ProjectDetailPage = () => {
     
     if (!user) {
       toast.error('Please log in to express interest.');
-      navigate('/login');
+      navigate(loginDestination(`${location.pathname}?showInterest=true`), { state: location.state });
       return;
     }
     
@@ -304,105 +328,26 @@ const ProjectDetailPage = () => {
     }
   };
 
-  // Handle buy now button click - show confirmation modal
-  const handleBuyNowClick = () => {
+  // Start a shared scope review. Payment is available only after both approvals.
+  const handleBuyNowClick = async () => {
     if (!user) {
-      toast.error('Please log in to purchase this project.');
-      navigate('/login');
+      navigate(loginDestination(location.pathname + location.search), { state: location.state });
       return;
     }
-    
-    setShowConfirmationModal(true);
-  };
-
-  // Handle purchase confirmation
-  const handleConfirmPurchase = async () => {
-    setShowConfirmationModal(false);
-    setShowPaymentModal(true);
-  };
-
-  // Handle actual purchase
-  const handlePurchase = async () => {
-    if (!user) {
-      toast.error('Please log in to purchase this project.');
-      navigate('/login');
-      return;
-    }
-    
-    if (!selectedPaymentMethod) {
-      toast.error('Please select a payment method.');
-      return;
-    }
-
-    // Prevent duplicate submissions
-    if (purchaseInitiated || paymentProcessing) {
-      return;
-    }
-
-    setPaymentProcessing(true);
-    setPurchaseInitiated(true);
-    setPurchaseError(null);
-    
-    // Generate idempotency key
-    const idempotencyKey = generateIdempotencyKey();
-    
+    if (purchaseLock.current) return;
+    purchaseLock.current = true;
+    setIsBuyButtonLoading(true);
     try {
-      const paymentService = new PaymentService();
-      
-      const checkoutData = await paymentService.createCheckout({
-        amount: project.sale_price,
-        projectId: project.project_id || project.id,
-        projectName: project.name,
-        sellerId: project.owner_id,
-        buyerId: user.user_id || user.id
-      }, selectedPaymentMethod, {
-        idempotencyKey
-      });
-
-      if (checkoutData.checkout_url || checkoutData.url) {
-        // Store purchase attempt in session storage for recovery
-        sessionStorage.setItem('pendingPurchase', JSON.stringify({
-          projectId: project.project_id || project.id,
-          timestamp: Date.now(),
-          idempotencyKey
-        }));
-        
-        window.location.href = checkoutData.checkout_url || checkoutData.url;
-      } else {
-        throw new Error('No checkout URL received from payment provider.');
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      
-      let errorMessage = error.message || 'Payment failed. Please try again.';
-      
-      // Handle specific error types
-      if (error.code === 'NETWORK_ERROR') {
-        errorMessage = 'Network connection failed. Please check your internet connection.';
-      } else if (error.code === 'TIMEOUT') {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (error.response?.status === 409) {
-        errorMessage = 'You already have an active purchase process for this project.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.error || 'Invalid request. Please check your input.';
-      }
-      
-      setPurchaseError(errorMessage);
-      toast.error(errorMessage, {
-        duration: 6000,
-      });
-      
-      // Allow retry
-      setRetryCount(prev => prev + 1);
-      setPurchaseInitiated(false);
+      const purchaseRequest = await initiateProjectCheckout(project.project_id || project.id, generateIdempotencyKey());
+      const requestId = purchaseRequest.purchase_request_id || purchaseRequest.request_id || purchaseRequest.id;
+      if (!requestId) throw new Error('The purchase could not be opened. Please retry.');
+      navigate(`/purchase-agreement/${requestId}`);
+    } catch (failure) {
+      toast.error(failure.response?.data?.error || failure.error || failure.message || 'Unable to start the purchase agreement.');
     } finally {
-      setPaymentProcessing(false);
+      purchaseLock.current = false;
+      setIsBuyButtonLoading(false);
     }
-  };
-
-  const handlePaymentMethodSelect = (method) => {
-    setSelectedPaymentMethod(method);
-    setPurchaseError(null);
   };
 
   // Force close modal function with comprehensive cleanup
@@ -415,15 +360,10 @@ const ProjectDetailPage = () => {
     
     // Force close all modals and reset all states
     setShowInterestModal(false);
-    setShowPaymentModal(false);
-    setShowConfirmationModal(false);
     setInterestMessage('');
     setCommitments(new Set());
-    setSelectedPaymentMethod('');
     setIsSubmitting(false);
-    setPaymentProcessing(false);
     setValidationErrors({});
-    setPurchaseError(null);
     
     // Additional cleanup to ensure modal is closed
     document.body.style.overflow = 'unset';
@@ -440,7 +380,6 @@ const ProjectDetailPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
-        <SEO title="Loading Project..." />
         <div className="max-w-7xl mx-auto px-4 pt-8">
           <ProjectDetailSkeleton />
         </div>
@@ -527,8 +466,8 @@ const ProjectDetailPage = () => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: Number.isInteger(Number(price)) ? 0 : 2,
+      maximumFractionDigits: 2,
     }).format(price);
   };
 
@@ -553,18 +492,19 @@ const ProjectDetailPage = () => {
       <SEO 
         title={`${projectName} by @${creatorUsername}`}
         description={projectDescription}
+        noindex={!(project.is_public === true || project.is_public === 1)}
       />
       
       <div className="min-h-screen bg-black">
         {/* Back Button */}
         <div className="max-w-7xl mx-auto px-4 pt-8">
           <motion.button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(safeReturnTo(location.state?.marketplaceSearch, isOwner ? '/my-projects' : '/marketplace'))}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-200 mb-6"
             whileHover={{ x: -4 }}
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {location.state?.marketplaceSearch ? 'Back to results' : isOwner ? 'My projects' : 'Marketplace'}
           </motion.button>
         </div>
 
@@ -577,7 +517,7 @@ const ProjectDetailPage = () => {
           <div className="max-w-7xl mx-auto px-4 pb-8">
             <div className="relative h-[35vh] min-h-[300px] rounded-none overflow-hidden bg-gray-900">
               <img 
-                src={project.cover_image_url || 'https://via.placeholder.com/1200x675?text=Project+Image'} 
+                src={project.cover_image_url || '/project-placeholder.svg'}
                 alt={projectName}
                 className="w-full h-full object-cover"
               />
@@ -588,31 +528,31 @@ const ProjectDetailPage = () => {
                 <div className="flex items-end justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
-                      {project.verified && (
+                      {Boolean(project.verified) && (
                         <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-none text-green-400 text-sm font-medium flex items-center gap-1">
                           <Shield className="w-3 h-3" />
                           Verified
                         </div>
                       )}
-                      {project.is_verified && (
+                      {Boolean(project.is_verified) && (
                         <div className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-none text-green-400 text-sm font-medium flex items-center gap-1">
                           <Shield className="w-3 h-3" />
                           Verified Seller
                         </div>
                       )}
-                      {healthScore && (
+                      {Boolean(healthScore) && (
                         <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-none text-blue-300 text-sm font-medium flex items-center gap-1">
                           <Lightbulb className="w-3 h-3" />
                           Health {Math.round(healthScore)}/100
                         </div>
                       )}
-                      {project.is_featured && (
+                      {Boolean(project.is_featured) && (
                         <div className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-none text-blue-400 text-sm font-medium flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
                           Featured
                         </div>
                       )}
-                      {project.is_on_hold === 1 && (
+                      {(project.is_on_hold === 1 || project.is_on_hold === true || project.checkout_reserved === true || project.checkout_reserved === 1) && (
                         <div className="px-3 py-1 bg-red-600/90 backdrop-blur-md border border-red-500/30 rounded-none text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2 animate-pulse">
                           <Clock4 className="w-4 h-4" />
                           On Hold / Under Negotiation
@@ -740,16 +680,17 @@ const ProjectDetailPage = () => {
                         </p>
                       </div>
                     )}
+                    <BuyerBrief details={project.stage_details} onAsk={!isOwner && isPublicListing ? text => setQuestionPrompt({ text }) : undefined} />
                   </div>
                 )}
 
                 {activeTab === 'demo' && (
                   <div className="space-y-4">
                     <h2 className="text-2xl font-bold text-white mb-4">Live Demo</h2>
-                    {project.domain ? (
+                    {normalizeExternalUrl(project.demo_url || project.domain) ? (
                       <div className="aspect-video rounded-none overflow-hidden bg-gray-800">
                         <iframe
-                          src={`https://${project.domain}`}
+                          src={normalizeExternalUrl(project.demo_url || project.domain)}
                           title="Live Demo"
                           className="w-full h-full"
                           sandbox="allow-same-origin allow-scripts"
@@ -799,7 +740,7 @@ const ProjectDetailPage = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-white mb-2">Source Code</h3>
                         <a
-                          href={project.github_url}
+                          href={normalizeExternalUrl(project.github_url) || undefined}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
@@ -848,7 +789,9 @@ const ProjectDetailPage = () => {
                         )}
                       </div>
 
-                      {isDueDiligenceLoading ? (
+                      {!isPublicListing ? (
+                        <p className="text-gray-300">Buyer reports are available for public listings. Keep working privately and publish when you are ready.</p>
+                      ) : isDueDiligenceLoading ? (
                         <div className="flex items-center gap-2 text-gray-400">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Generating buyer report...
@@ -876,7 +819,10 @@ const ProjectDetailPage = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-400">Due diligence report is not available right now.</p>
+                        <div>
+                          <p role={reportError ? 'alert' : undefined} className="text-gray-400">{reportError || 'Due diligence report is not available right now.'}</p>
+                          {reportError && <button type="button" onClick={() => setReportRetry(value => value + 1)} className="mt-3 text-sm text-blue-300 underline underline-offset-4">Retry report</button>}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -979,16 +925,17 @@ const ProjectDetailPage = () => {
                     </motion.button>
                   ) : project.is_for_sale ? (
                     <>
-                      {project.is_on_hold === 1 ? (
+                      {(project.is_on_hold === 1 || project.is_on_hold === true || project.checkout_reserved === true || project.checkout_reserved === 1) ? (
                         <div className="w-full px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-none text-center mb-4">
-                          <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Under Negotiation</p>
-                          <p className="text-gray-400 text-xs text-balance">This project is currently on hold as the owner is in active discussions with a potential buyer.</p>
+                          <p className="text-red-400 font-bold uppercase tracking-wider text-sm mb-1">Checkout or handover in progress</p>
+                          <p className="text-gray-400 text-xs text-balance">This project is currently reserved or on hold. If this is your purchase, continue from your purchase agreement.</p>
+                          <RouterLink to="/purchases" className="inline-block mt-3 text-sm text-emerald-300 underline">Open my purchases</RouterLink>
                         </div>
                       ) : (
                         <>
                           <motion.button
                             onClick={handleBuyNowClick}
-                            disabled={isBuyButtonLoading || purchaseInitiated}
+                            disabled={isBuyButtonLoading}
                             className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isBuyButtonLoading ? 1 : 1.02 }}
                             whileTap={{ scale: isBuyButtonLoading ? 1 : 0.98 }}
@@ -998,10 +945,10 @@ const ProjectDetailPage = () => {
                             ) : (
                               <DollarSign className="w-4 h-4" />
                             )}
-                            {isBuyButtonLoading ? 'Processing...' : `Buy Now • ${formatPrice(salePrice)}`}
+                            {isBuyButtonLoading ? 'Opening agreement…' : `Start purchase • ${formatPrice(salePrice)}`}
                           </motion.button>
                           <motion.button
-                            onClick={() => setShowInterestModal(true)}
+                            onClick={() => user ? setShowInterestModal(true) : navigate(loginDestination(`${location.pathname}?showInterest=true`), { state: location.state })}
                             disabled={isOfferButtonLoading}
                             className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-gray-600 text-white rounded-none font-medium flex items-center justify-center gap-2 hover:from-blue-700 hover:to-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: isOfferButtonLoading ? 1 : 1.02 }}
@@ -1028,15 +975,12 @@ const ProjectDetailPage = () => {
                   
                   {/* External Links - visible to everyone */}
                   {(() => {
-                    const rawDomain = project.domain || project.demo_url || '';
-                    const websiteUrl = rawDomain
-                      ? (rawDomain.startsWith('http') ? rawDomain : `https://${rawDomain}`)
-                      : null;
+                    const websiteUrl = normalizeExternalUrl(project.demo_url || project.domain);
                     return (
                       <div className="flex gap-3">
                         {project.github_url && (
                           <motion.a
-                            href={project.github_url}
+                            href={normalizeExternalUrl(project.github_url) || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-none transition-colors duration-200 flex items-center justify-center gap-2"
@@ -1073,75 +1017,11 @@ const ProjectDetailPage = () => {
           {/* Community: Q&A and verified-buyer reviews */}
           {project && (
             <div className="max-w-7xl mx-auto px-4 pb-16">
-              <ProjectQA projectId={projectId} ownerId={project.owner_id} />
+              <ProjectQA projectId={projectId} ownerId={project.owner_id} isPublic={isPublicListing} questionPrompt={questionPrompt} />
               <ProjectReviews projectId={projectId} />
             </div>
           )}
         </div>
-
-        {/* Confirmation Modal */}
-        <AnimatePresence>
-          {showConfirmationModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
-              onClick={handleBackdropClick}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.12] rounded-none p-8 max-w-md w-full shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-yellow-500/20 rounded-none flex items-center justify-center mx-auto mb-4">
-                    <AlertTriangle className="w-8 h-8 text-yellow-400" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Confirm Purchase</h2>
-                  <p className="text-gray-400">
-                    You are about to purchase <span className="text-white font-semibold">{projectName}</span> for <span className="text-green-400 font-semibold">{formatPrice(salePrice)}</span>
-                  </p>
-                </div>
-
-                <div className="bg-gray-800/50 rounded-none p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-gray-300">
-                      <p className="mb-2">By proceeding, you agree to:</p>
-                      <ul className="list-disc list-inside space-y-1 text-gray-400">
-                        <li>Pay the full amount of {formatPrice(salePrice)}</li>
-                        <li>Complete the purchase process</li>
-                        <li>Our terms of service and buyer protection policy</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <motion.button
-                    onClick={() => setShowConfirmationModal(false)}
-                    className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    onClick={handleConfirmPurchase}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Continue
-                  </motion.button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Interest Modal */}
         <AnimatePresence>
@@ -1269,142 +1149,7 @@ const ProjectDetailPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Payment Modal */}
-        <AnimatePresence>
-          {showPaymentModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-              onClick={handleBackdropClick}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.08] rounded-none p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white">Purchase {projectName}</h2>
-                  <motion.button
-                    type="button"
-                    onClick={forceCloseModal}
-                    className="p-2 hover:bg-gray-800 rounded-none transition-colors duration-200 text-gray-400 hover:text-white z-10 relative"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                </div>
 
-                <div className="space-y-6">
-                  {/* Purchase Summary */}
-                  <div className="bg-gray-800/30 rounded-none p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Purchase Summary</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Project</span>
-                        <span className="text-white font-medium">{projectName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Seller</span>
-                        <span className="text-white font-medium">@{creatorUsername}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Monthly Revenue</span>
-                        <span className="text-green-400 font-medium">
-                          {monthlyRevenue > 0 ? formatPrice(monthlyRevenue) : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="border-t border-gray-700 pt-3">
-                        <div className="flex justify-between text-lg">
-                          <span className="text-white font-semibold">Total</span>
-                          <span className="text-white font-bold">{formatPrice(salePrice)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Selection */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-4">Choose Payment Method</h3>
-                    <PaymentMethodSelector
-                      selectedMethod={selectedPaymentMethod}
-                      onMethodSelect={handlePaymentMethodSelect}
-                      amount={salePrice}
-                    />
-                  </div>
-
-                  {/* Error Display */}
-                  {purchaseError && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-none p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-red-400 font-medium">Payment Error</p>
-                          <p className="text-red-300/80 text-sm">{purchaseError}</p>
-                          {retryCount > 0 && (
-                            <p className="text-gray-400 text-sm mt-1">
-                              Retry attempt {retryCount}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Security Notice */}
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-none p-4">
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-blue-300 text-sm">
-                          <strong>Secure Transaction:</strong> Your payment is processed securely through our verified payment partners. 
-                          Funds are held in escrow until project transfer is complete.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <motion.button
-                      type="button"
-                      onClick={forceCloseModal}
-                      disabled={paymentProcessing}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 disabled:opacity-50"
-                      whileHover={{ scale: paymentProcessing ? 1 : 1.02 }}
-                      whileTap={{ scale: paymentProcessing ? 1 : 0.98 }}
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      onClick={handlePurchase}
-                      disabled={!selectedPaymentMethod || paymentProcessing}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2"
-                      whileHover={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 1.02 }}
-                      whileTap={{ scale: (!selectedPaymentMethod || paymentProcessing) ? 1 : 0.98 }}
-                    >
-                      {paymentProcessing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4" />
-                          Complete Purchase
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </>
   );

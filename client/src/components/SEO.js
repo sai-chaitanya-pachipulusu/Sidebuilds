@@ -17,17 +17,19 @@ import { useLocation } from 'react-router-dom';
  */
 const SEO = ({ 
   title, 
-  description = 'SideBuilds.space - The trusted marketplace for buying and selling profitable side projects. Launch, verify, and sell your projects with confidence.', 
+  description = 'Browse seller-listed side projects, ask questions and agree a clear purchase scope on SideBuilds.',
   canonicalUrl, 
   meta = [], 
   image = '/og-image.png', // Default OG image
   article = null,
   jsonLd = null,
   type = 'website',
+  noindex = false,
   keywords = 'side projects, buy projects, sell projects, saas marketplace, project marketplace, verified projects, startup acquisition'
 }) => {
   const location = useLocation();
-  const siteUrl = 'https://sidebuilds.online';
+  const siteUrl = 'https://www.sidebuilds.online';
+  const canIndex = !noindex && !location.search && /^\/(?:|marketplace|projects\/[a-f0-9-]{36}|about|faq|contact|how-it-works|pricing|terms|privacy)$/.test(location.pathname);
   const fullUrl = canonicalUrl || `${siteUrl}${location.pathname}`;
   const siteTitle = title ? `${title} | SideBuilds` : 'SideBuilds - Where Side Projects Find Their Next Chapter';
   
@@ -37,20 +39,8 @@ const SEO = ({
     "@type": "Organization",
     name: "SideBuilds",
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
-    sameAs: [
-      "https://twitter.com/sidebuilds",
-      "https://github.com/sidebuilds",
-      "https://linkedin.com/company/sidebuilds"
-    ],
-    description: "The trusted marketplace for buying and selling profitable side projects",
-    foundingDate: "2024",
-    founders: [
-      {
-        "@type": "Person",
-        name: "SideBuilds Team"
-      }
-    ]
+    logo: `${siteUrl}/favicon.svg`,
+    description: "A marketplace for buying and selling side projects"
   };
 
   // Merge with provided jsonLd or use page-specific structured data
@@ -141,11 +131,11 @@ const SEO = ({
         // Additional SEO tags
         {
           name: 'robots',
-          content: 'index, follow, max-image-preview:large',
+          content: canIndex ? 'index, follow, max-image-preview:large' : 'noindex, follow',
         },
         {
           name: 'googlebot',
-          content: 'index, follow',
+          content: canIndex ? 'index, follow' : 'noindex, follow',
         },
         {
           name: 'generator',
@@ -183,11 +173,11 @@ const SEO = ({
         },
         {
           rel: 'icon',
-          href: '/favicon.ico',
+          href: '/favicon.svg',
         },
         {
           rel: 'apple-touch-icon',
-          href: '/apple-touch-icon.png',
+          href: '/favicon.svg',
         },
         {
           rel: 'manifest',
@@ -212,7 +202,7 @@ const SEO = ({
     >
       {/* JSON-LD structured data */}
       <script type="application/ld+json">
-        {JSON.stringify(structuredData)}
+        {JSON.stringify(structuredData).replace(/</g, '\\u003c')}
       </script>
       
       {/* Analytics scripts would go here */}

@@ -31,8 +31,8 @@ const FAQPage = () => {
   const faqs = [
     {
       category: 'general',
-      question: 'What is SideBuilds.space?',
-      answer: 'SideBuilds.space is a marketplace for buying and selling side projects. Whether you have a project you want to sell or are looking for a new venture to take over, SideBuilds.space connects buyers and sellers with secure transactions and verified metrics.'
+      question: 'What is SideBuilds?',
+      answer: 'SideBuilds is a marketplace for buying and selling side projects. Whether you have a project you want to sell or are looking for a new venture to take over, SideBuilds connects buyers and sellers with purchase conversations and written handover agreements.'
     },
     {
       category: 'selling',
@@ -67,7 +67,7 @@ const FAQPage = () => {
     {
       category: 'selling',
       question: 'What is the commission fee for selling a project?',
-      answer: 'SideBuilds.space charges a platform commission of 5% on the final sale price of a project. This fee is automatically deducted during the payment process. For example, if a project sells for $100, the seller receives $95. This covers secure payment processing, escrow services, and platform maintenance.'
+      answer: 'SideBuilds charges a platform commission of 5% on the final sale price of a project. This fee is automatically deducted during the payment process. For example, if a project sells for $100, the seller receives $95. Payment processing and any other costs should be confirmed in the purchase scope. Stripe does not provide an escrow service.'
     },
     {
       category: 'selling',
@@ -77,7 +77,7 @@ const FAQPage = () => {
     {
       category: 'security',
       question: 'Is it secure to connect my Stripe account?',
-      answer: 'Yes, it is very secure. SideBuilds.space uses Stripe Connect, which means your sensitive financial details are handled directly by Stripe, a PCI Level 1 certified payment processor. We do not store your bank account or credit card details on our servers. All transactions are encrypted and monitored for fraud.'
+      answer: 'Yes, it is very secure. SideBuilds uses Stripe Connect, which means your sensitive financial details are handled directly by Stripe, a PCI Level 1 certified payment processor. We do not store your bank account or credit card details on our servers. All transactions are encrypted and monitored for fraud.'
     },
     {
       category: 'buying',

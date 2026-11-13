@@ -23,13 +23,15 @@ import { uploadProjectFiles, deleteProjectFile, getProjectFiles } from '../servi
 import { Button } from '../shadcn/ui/button'
 import { Checkbox } from '../shadcn/ui/checkbox'
 import { Label } from '../shadcn/ui/label'
+import { openExternalUrl } from '../utils/security'
+import { downloadProjectFile } from '../services/fileDownload'
 
 const ProjectFileUploader = ({ 
   projectId,
   onFilesUploaded,
   acceptedTypes = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip', 'txt', 'md', 'json'], 
   maxFiles = 10, 
-  maxSize = 50, // MB
+  maxSize = 10, // MB
   showExistingFiles = false,
   allowFileDeletion = true
 }) => {
@@ -296,13 +298,9 @@ const ProjectFileUploader = ({
     toast.success('All files cleared')
   }
 
-  const downloadFile = (url, filename) => {
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const downloadFile = async (fileId, filename) => {
+    try { await downloadProjectFile(fileId,filename) }
+    catch (_) { toast.error('The file could not be downloaded. Please retry.') }
   }
 
   return (
@@ -349,7 +347,7 @@ const ProjectFileUploader = ({
               Accepted types: {acceptedTypes.join(', ')}
             </p>
             <p className="text-gray-500 text-xs mt-1">
-              Maximum {maxFiles} files, {maxSize}MB each
+              Maximum {maxFiles} files, {maxSize}MB each. 50MB total per project.
             </p>
           </div>
 
@@ -566,7 +564,7 @@ const ProjectFileUploader = ({
 
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => downloadFile(file.download_url, file.original_name)}
+                      onClick={() => downloadFile(file.file_id, file.original_name)}
                       className="p-2 text-gray-400 hover:text-white transition-colors duration-200"
                       title="Download"
                     >
@@ -575,7 +573,7 @@ const ProjectFileUploader = ({
                     
                     {file.preview_url && (
                       <button
-                        onClick={() => window.open(file.preview_url, '_blank')}
+                        onClick={() => openExternalUrl(file.preview_url)}
                         className="p-2 text-gray-400 hover:text-white transition-colors duration-200"
                         title="Preview"
                       >

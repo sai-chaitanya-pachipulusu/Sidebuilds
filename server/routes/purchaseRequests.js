@@ -7,14 +7,20 @@ const { createNotification } = require('../services/notificationService');
 const emailService = require('../services/emailService');
 const { purchaseRequestLimiter } = require('../middleware/rateLimiting');
 const crypto = require('crypto');
-// Retire legacy request-only ownership changes until the paid receipt flow replaces them.
-router.use((req, res, next) => {
-    if (['POST', 'PUT'].includes(req.method) && /^\/[^/]+\/(confirm-transfer|confirm-receipt)$/.test(req.path)) {
-        return authMiddleware(req, res, () => res.status(409).json({
-            error: 'Receipt confirmation requires the verified payment review. This legacy action is unavailable.'
-        }));
-    }
-    next();
+const { directToReceiptReview } = require('../utils/receiptReview');
+router.use('/:requestId/agreement', require('./purchaseAgreements'));
+router.use('/:requestId', (req,res,next) => {
+    if (req.method !== 'PUT' || !/^\/transfer(?:-status|\/code|\/domain|\/assets)$/.test(req.path)) return next();
+    authMiddleware(req,res,async () => {
+        try {
+            const paid = await db.query(`SELECT t.transaction_id FROM project_transactions t JOIN purchase_requests pr ON pr.id=t.purchase_request_id
+                JOIN projects p ON p.project_id=pr.project_id WHERE pr.id=$1 AND pr.seller_id=$2 AND p.owner_id=pr.seller_id
+                AND t.status='payment_completed' AND t.escrow_status='held' AND t.escrow_released=false`, [req.params.requestId,req.user.user_id]);
+            if (!paid.rows.length) return res.status(409).json({error:'A verified, undisputed payment is required before marking handover progress.'});
+            if (req.path !== '/transfer-status' && typeof req.body.transferred !== 'boolean') return res.status(400).json({error:'Transferred must be true or false.'});
+            next();
+        } catch (_) { res.status(503).json({error:'Payment verification is temporarily unavailable.'}); }
+    });
 });
 
 // DB-backed idempotency keys (survive restarts and multiple instances)
@@ -163,7 +169,7 @@ router.post('/projects/:projectId/request',
                     project.owner_id,
                     'new_interest',
                     `You have received a new purchase request for your project "${project.name}".`,
-                    `/dashboard?tab=sellerRequests&requestId=${newPurchaseRequest.id}`
+                    `/purchase-agreement/${newPurchaseRequest.id}`
                 );
             } catch (notificationError) {
                 console.error('Error creating notification:', notificationError);
@@ -266,7 +272,7 @@ router.post('/projects/:projectId/initiate-checkout',
 
                 if (existingRequestQuery.rows.length > 0) {
                     const existingRequest = existingRequestQuery.rows[0];
-                    if (['seller_accepted_pending_payment', 'payment_processing', 'agreement_reached_pending_payment'].includes(existingRequest.status)) {
+                    if (['interest_expressed', 'seller_terms_proposed', 'seller_accepted_pending_payment', 'payment_processing', 'agreement_reached_pending_payment'].includes(existingRequest.status)) {
                         console.log(`[PURCHASE REQUESTS] Found existing request ${existingRequest.request_id} for project ${projectId} by buyer ${buyerId} with status ${existingRequest.status}. Reusing.`);
                         return {
                             existing: true,
@@ -281,7 +287,7 @@ router.post('/projects/:projectId/initiate-checkout',
                     `INSERT INTO purchase_requests (project_id, buyer_id, seller_id, status, message, price, terms_agreed_version, created_at, updated_at)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                      RETURNING id`,
-                    [projectId, buyerId, sellerId, 'seller_accepted_pending_payment', null, project.sale_price, terms_agreed_version]
+                    [projectId, buyerId, sellerId, 'interest_expressed', null, project.sale_price, terms_agreed_version]
                 );
 
                 const newId = insert.rows[0].id;
@@ -321,14 +327,14 @@ router.post('/projects/:projectId/initiate-checkout',
                 await createNotification(
                     buyerId,
                     'BUY_NOW_READY_FOR_PAYMENT',
-                    `Your purchase of "${project.name}" is ready for payment.`,
-                    `/dashboard?tab=buyerRequests&requestId=${newPurchaseRequest.purchase_request_id}`
+                    `Your purchase of "${project.name}" needs an agreed scope before payment.`,
+                    `/purchase-agreement/${newPurchaseRequest.purchase_request_id}`
                 );
                 await createNotification(
                     newPurchaseRequest.seller_id,
                     'PROJECT_SALE_PENDING_PAYMENT',
-                    `"${project.name}" is pending payment from buyer ${buyerUsername || buyerId}.`,
-                    `/dashboard?tab=sellerRequests&requestId=${newPurchaseRequest.purchase_request_id}`
+                    `Buyer ${buyerUsername || buyerId} wants to agree a purchase scope for "${project.name}".`,
+                    `/purchase-agreement/${newPurchaseRequest.purchase_request_id}`
                 );
             } catch (notificationError) {
                 console.error('Failed to create notifications for buy now initiation:', notificationError);
@@ -427,17 +433,19 @@ router.get('/buyer', authMiddleware, async (req, res) => {
                 pr.created_at AS request_date,
                 pr.updated_at,
                 t.transaction_id,
+                t.amount AS paid_amount,
                 t.transfer_completed,
                 CASE
-                    WHEN t.escrow_released THEN 'released'
-                    WHEN t.transaction_id IS NOT NULL THEN 'held'
+                    WHEN t.status IN ('payment_completed', 'completed')
+                    THEN COALESCE(t.escrow_status, CASE WHEN t.escrow_released THEN 'released' ELSE 'held' END)
                     ELSE NULL
                 END AS escrow_status,
                 t.status as transaction_status
             FROM purchase_requests pr
             JOIN projects p ON pr.project_id = p.project_id
             JOIN users u_seller ON pr.seller_id = u_seller.user_id
-            LEFT JOIN project_transactions t ON (t.project_id = pr.project_id AND t.buyer_id = pr.buyer_id)
+            LEFT JOIN project_transactions t ON (t.stripe_session_id = pr.stripe_session_id
+                AND t.project_id = pr.project_id AND t.buyer_id = pr.buyer_id AND t.seller_id = pr.seller_id)
             WHERE pr.buyer_id = $1
             ORDER BY pr.created_at DESC`;
 
@@ -569,8 +577,8 @@ router.post('/:requestId/accept',
                 await createNotification(
                     originalRequest.buyer_id,
                     'SELLER_ACCEPTED_REQUEST',
-                    `Seller ${sellerUsername || sellerId} accepted your request for "${originalRequest.project_name}". You can now proceed to payment.`,
-                    `/dashboard?tab=buyerRequests&requestId=${responseData.request_id}`
+                    `Seller ${sellerUsername || sellerId} accepted your request for "${originalRequest.project_name}". Agree the itemized scope before payment.`,
+                    `/purchase-agreement/${responseData.request_id}`
                 );
             } catch (notificationError) {
                 console.error('Failed to create notification for request acceptance:', notificationError);
@@ -804,7 +812,7 @@ router.put('/:requestId/withdraw-interest',
                 }
 
                 const request = requestResult.rows[0];
-                if (['transfer_completed_buyer_confirmed', 'payment_completed_pending_transfer'].includes(request.status)) {
+                if (!['interest_expressed','seller_terms_proposed','seller_accepted_pending_payment','agreement_reached_pending_payment'].includes(request.status) || request.agreement_id || request.stripe_session_id) {
                     throw new Error(`Invalid status: ${request.status}`);
                 }
 
@@ -881,104 +889,10 @@ router.put('/:requestId/decline-interest',
 );
 
 // --- Buyer confirms asset transfer ---
-router.post('/:requestId/confirm-transfer', 
-    authMiddleware,
+router.post('/:requestId/confirm-transfer', authMiddleware,
     [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
-    handleValidationErrors,
-    async (req, res) => {
-        const { requestId } = req.params; 
-        const buyerId = req.user.user_id;
-        const buyerUsername = req.user.username;
-        
-        try {
-            const result = await db.withTransaction(async (client) => {
-                const requestResult = await client.query(
-                    `SELECT pr.*, p.name as project_name, u_seller.username as seller_username 
-                     FROM purchase_requests pr 
-                     JOIN projects p ON pr.project_id = p.project_id 
-                     JOIN users u_seller ON pr.seller_id = u_seller.user_id 
-                     WHERE pr.id = $1 AND pr.buyer_id = $2 FOR UPDATE`,
-                    [requestId, buyerId]
-                );
+    handleValidationErrors, directToReceiptReview);
 
-                if (requestResult.rows.length === 0) {
-                    throw new Error('Request not found');
-                }
-
-                const request = requestResult.rows[0];
-                const projectId = request.project_id;
-
-                const allowedPreviousStatuses = ['assets_transferred_pending_buyer_confirmation', 'payment_completed_pending_transfer', 'seller_accepted_pending_payment', 'transfer_completed_buyer_confirmed'];
-                if (!allowedPreviousStatuses.includes(request.status)) {
-                    throw new Error(`Cannot confirm transfer at this stage. Current status: ${request.status}`);
-                }
-
-                // Update project ownership and status
-                await client.query(
-                    `UPDATE projects 
-                     SET owner_id = $1, 
-                         is_for_sale = false, 
-                         status = 'sold',
-                         updated_at = CURRENT_TIMESTAMP 
-                     WHERE project_id = $2`,
-                    [buyerId, projectId]
-                );
-
-                // Update purchase request status
-                await client.query(
-                    "UPDATE purchase_requests SET status = 'transfer_completed_buyer_confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-                    [requestId]
-                );
-
-                return { request, projectId };
-            });
-
-            const { request, projectId } = result;
-            
-            // Send notifications (outside transaction)
-            try {
-                await createNotification(
-                    request.seller_id,
-                    'TRANSFER_CONFIRMED_BY_BUYER',
-                    `Buyer ${buyerUsername || buyerId} confirmed transfer for project "${request.project_name}". The sale is complete.`,
-                    `/dashboard?tab=sellerRequests&requestId=${requestId}`
-                );
-                await createNotification(
-                    buyerId,
-                    'TRANSFER_COMPLETED_SELF',
-                    `You have successfully confirmed the transfer of project "${request.project_name}". It is now yours.`,
-                    `/projects/${projectId}`
-                );
-            } catch (notificationError) {
-                console.error('Failed to create notification for transfer confirmation:', notificationError);
-            }
-
-            // Get updated request
-            const updatedSel = await db.query('SELECT * FROM purchase_requests WHERE id = $1', [requestId]);
-            const updatedRequest = updatedSel.rows[0];
-
-            res.json({
-                ...updatedRequest,
-                request_id: updatedRequest.id,
-                accepted_price: updatedRequest.price
-            });
-
-        } catch (error) {
-            console.error(`[CONFIRM TRANSFER] Error confirming transfer for request ${requestId}:`, error);
-            
-            if (error.message === 'Request not found') {
-                return res.status(404).json({ error: 'Purchase request not found or you are not the buyer.' });
-            }
-            if (error.message.includes('Cannot confirm transfer')) {
-                return res.status(400).json({ error: error.message });
-            }
-            
-            res.status(500).json({ error: 'Failed to confirm asset transfer.' });
-        }
-    }
-);
-
-// --- Seller Updates Transfer Status ---
 router.put('/:requestId/transfer-status', 
     authMiddleware,
     [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
@@ -1236,65 +1150,8 @@ router.get('/:requestId/transfer-status',
     }
 );
 
-router.put('/:requestId/confirm-receipt', 
-    authMiddleware,
+router.put('/:requestId/confirm-receipt', authMiddleware,
     [param('requestId').isInt({ min: 1 }).withMessage('Invalid request ID')],
-    handleValidationErrors,
-    async (req, res) => {
-        const { requestId } = req.params;
-        const buyerId = req.user.user_id;
-        const { confirmed } = req.body;
-
-        try {
-            const result = await db.withTransaction(async (client) => {
-                const requestResult = await client.query(
-                    'SELECT * FROM purchase_requests WHERE id = $1 AND buyer_id = $2 FOR UPDATE',
-                    [requestId, buyerId]
-                );
-                
-                if (requestResult.rows.length === 0) {
-                    throw new Error('Not found');
-                }
-                
-                const request = requestResult.rows[0];
-
-                if (confirmed) {
-                    await client.query(
-                        "UPDATE purchase_requests SET status = 'transfer_completed_buyer_confirmed', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-                        [requestId]
-                    );
-                    await client.query(
-                        "UPDATE projects SET status = 'sold', owner_id = $1, is_for_sale = false, updated_at = CURRENT_TIMESTAMP WHERE project_id = $2",
-                        [buyerId, request.project_id]
-                    );
-                }
-
-                return request;
-            });
-
-            try {
-                await createNotification(
-                    result.seller_id, 
-                    'TRANSFER_CONFIRMED', 
-                    `Buyer confirmed receipt for request #${requestId}.`,
-                    `/dashboard?tab=sellerRequests&requestId=${requestId}`
-                );
-            } catch (nE) {
-                console.error('Failed to create notification:', nE);
-            }
-
-            const updatedRequest = await db.query('SELECT * FROM purchase_requests WHERE id = $1', [requestId]);
-            res.json({ success: true, request: updatedRequest.rows[0] });
-        } catch (error) {
-            console.error('Error confirming receipt:', error);
-            
-            if (error.message === 'Not found') {
-                return res.status(404).json({ error: 'Not found.' });
-            }
-            
-            res.status(500).json({ error: 'Failed to confirm receipt.' });
-        }
-    }
-);
+    handleValidationErrors, directToReceiptReview);
 
 module.exports = router;

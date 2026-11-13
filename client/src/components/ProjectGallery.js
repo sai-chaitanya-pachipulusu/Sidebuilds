@@ -14,6 +14,8 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { openExternalUrl } from '../utils/security'
+import toast from 'react-hot-toast'
 
 const ProjectGallery = ({ images = [], videos = [], project }) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -293,7 +295,7 @@ const ProjectGallery = ({ images = [], videos = [], project }) => {
                         <Share2 className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => window.open(galleryItems[selectedIndex].url, '_blank')}
+                        onClick={() => openExternalUrl(galleryItems[selectedIndex].url)}
                         className="p-2 hover:bg-white/10 rounded-none transition-colors duration-200"
                       >
                         <ExternalLink className="w-4 h-4" />

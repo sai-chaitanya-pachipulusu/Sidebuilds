@@ -1,4 +1,5 @@
 const db = require('../db');
+const { randomUUID } = require('crypto');
 
 let ioInstance = null;
 
@@ -18,7 +19,7 @@ const titleFromType = (type) => {
         .join(' ');
 };
 
-const createNotification = async (userId, type, message, link = null, title = null) => {
+const createNotification = async (userId, type, message, actionUrl = null, title = null) => {
     if (!userId || !type || !message) {
         console.error('[NotificationService] Missing required parameters:', { userId, type, message });
         throw new Error('User ID, type, and message are required to create a notification.');
@@ -26,12 +27,16 @@ const createNotification = async (userId, type, message, link = null, title = nu
 
     let notificationData;
     try {
+        // Older SQLite databases use an integer autoincrement key; PostgreSQL uses UUIDs.
+        const sqlite = db.dialect === 'sqlite';
         const query = `
-            INSERT INTO notifications (user_id, type, title, message, link, is_read, created_at)
-            VALUES ($1, $2, $3, $4, $5, FALSE, NOW())
+            INSERT INTO notifications (${sqlite ? '' : 'notification_id, '}user_id, type, title, message, action_url, is_read, created_at)
+            VALUES (${sqlite ? '' : '$6, '}$1, $2, $3, $4, $5, FALSE, NOW())
             RETURNING *;
         `;
-        const { rows } = await db.query(query, [userId, type, title || titleFromType(type), message, link]);
+        const params = [userId, type, title || titleFromType(type), message, actionUrl];
+        if (!sqlite) params.push(randomUUID());
+        const { rows } = await db.query(query, params);
         if (rows.length === 0) {
             throw new Error('Failed to create notification, no rows returned.');
         }

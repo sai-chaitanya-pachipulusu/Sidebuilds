@@ -5,12 +5,16 @@
   "installCommand": "cd client && npm install",
   "routes": [
     {
+      "src": "/api/site",
+      "dest": "/api/site.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "https://api.sidebuilds.online/api/$1"
     },
     {
       "src": "/socket.io/(.*)",
-      "dest": "https://api.sidebuilds.online/socket.io/$1" 
+      "dest": "https://api.sidebuilds.online/socket.io/$1"
     },
     {
       "src": "/static/(.*)",
@@ -28,7 +32,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/api/site?__route=$1"
     }
   ],
   "env": {
@@ -40,5 +44,11 @@
     "REACT_APP_API_URL": "https://api.sidebuilds.online/api",
     "REACT_APP_SOCKET_URL": "https://api.sidebuilds.online",
     "REACT_APP_ENV": "production"
+  },
+  "functions": {
+    "api/site.js": {
+      "includeFiles": "client/build/index.html",
+      "maxDuration": 60
+    }
   }
 }

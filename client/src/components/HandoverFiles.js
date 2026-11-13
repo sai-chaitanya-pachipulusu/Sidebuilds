@@ -1,0 +1,9 @@
+import React,{useState} from 'react';
+import api from '../services/api';
+import {downloadProjectFile} from '../services/fileDownload';
+export default function HandoverFiles({projectId}){
+ const [files,setFiles]=useState(null),[pending,setPending]=useState(false),[error,setError]=useState('');
+ async function load(){setPending(true);setError('');try{const {data}=await api.get(`/files/project/${encodeURIComponent(projectId)}`);setFiles(data.files);}catch(_){setError('Shared files could not be loaded. Please retry.');}finally{setPending(false);}}
+ async function download(file){setError('');try{await downloadProjectFile(file.file_id,file.original_name);}catch(_){setError('This file could not be downloaded. Please retry.');}}
+ return <section className="border border-white/15 p-5 my-6"><h2 className="text-xl font-semibold mb-3">Shared project files</h2><p className="text-sm text-gray-400 mb-4">Files are available to the project owner and paid buyer. Check them against the agreed scope; repository and domain transfers may happen separately.</p><button type="button" disabled={pending} onClick={load} className="text-emerald-300 underline underline-offset-4">{pending?'Loading files…':files?'Refresh shared files':'Show shared files'}</button>{error&&<p role="alert" className="text-amber-200 mt-4">{error}</p>}{files&&<ul className="mt-4 divide-y divide-white/10">{files.length?files.map(file=><li key={file.file_id} className="py-3 flex flex-wrap items-center justify-between gap-3"><span className="break-all">{file.original_name}</span><button type="button" onClick={()=>download(file)} className="text-sm text-emerald-300 underline">Download</button></li>):<li className="text-gray-400">No files have been shared yet. Ask the seller in your purchase conversation.</li>}</ul>}</section>;
+}

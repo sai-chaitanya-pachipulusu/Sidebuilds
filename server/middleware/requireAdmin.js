@@ -9,7 +9,7 @@ const requireAdmin = async (req, res, next) => {
     }
 
     const result = await db.query(
-      'SELECT is_admin FROM users WHERE user_id = ?',
+      'SELECT is_admin FROM users WHERE user_id = $1',
       [userId]
     );
 

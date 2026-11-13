@@ -1,11 +1,13 @@
 // Dynamic Environment Configuration
+import { resolveServiceUrl } from './apiUrl';
+
 const getEnvironmentConfig = () => {
-  const env = process.env.REACT_APP_ENVIRONMENT || 'development';
+  const env = process.env.REACT_APP_ENVIRONMENT || process.env.REACT_APP_ENV || process.env.NODE_ENV || 'development';
   
   const configs = {
     development: {
-      API_URL: process.env.REACT_APP_API_URL || 'http://localhost:5002',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:5002',
+      API_URL: resolveServiceUrl(process.env.REACT_APP_API_URL, 'http://localhost:5002'),
+      SOCKET_URL: resolveServiceUrl(process.env.REACT_APP_SOCKET_URL, 'http://localhost:5002'),
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: true,
       ENABLE_ANALYTICS: false,
@@ -30,8 +32,8 @@ const getEnvironmentConfig = () => {
     },
     
     staging: {
-      API_URL: process.env.REACT_APP_API_URL || 'https://api-staging.sidebuilds.online',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api-staging.sidebuilds.online',
+      API_URL: resolveServiceUrl(process.env.REACT_APP_API_URL, 'https://api-staging.sidebuilds.online'),
+      SOCKET_URL: resolveServiceUrl(process.env.REACT_APP_SOCKET_URL, 'https://api-staging.sidebuilds.online'),
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: false,
       ENABLE_ANALYTICS: true,
@@ -56,8 +58,8 @@ const getEnvironmentConfig = () => {
     },
     
     production: {
-      API_URL: process.env.REACT_APP_API_URL || 'https://api.sidebuilds.online/api',
-      SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'https://api.sidebuilds.online',
+      API_URL: resolveServiceUrl(process.env.REACT_APP_API_URL, 'https://sidebuilds.onrender.com/api'),
+      SOCKET_URL: resolveServiceUrl(process.env.REACT_APP_SOCKET_URL, 'https://sidebuilds.onrender.com'),
       STRIPE_PUBLISHABLE_KEY: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || '',
       ENABLE_DEBUG: false,
       ENABLE_ANALYTICS: true,
@@ -170,8 +172,18 @@ export const config = {
   
   // Dynamic API endpoints based on current config
   getApiEndpoint: (endpoint) => {
-    const baseUrl = getEnvironmentConfig().API_URL;
-    return `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    const baseUrl = getEnvironmentConfig().API_URL.replace(/\/$/, '');
+    let normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const baseIncludesApi = /\/api$/i.test(baseUrl);
+    const endpointIncludesApi = normalizedEndpoint === '/api' || normalizedEndpoint.startsWith('/api/');
+
+    if (baseIncludesApi && endpointIncludesApi) {
+      normalizedEndpoint = normalizedEndpoint.slice(4) || '/';
+    } else if (!baseIncludesApi && !endpointIncludesApi) {
+      normalizedEndpoint = `/api${normalizedEndpoint}`;
+    }
+
+    return `${baseUrl}${normalizedEndpoint}`;
   },
   
   // Dynamic feature flag checker

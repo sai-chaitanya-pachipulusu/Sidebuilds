@@ -7,11 +7,11 @@ function TermsPage() {
   const sections = [
     {
       title: '1. Acceptance of Terms',
-      content: 'By accessing or using SideBuilds.space (the "Platform"), you agree to be bound by these Terms and Conditions ("Terms") and our Privacy Policy. If you do not agree to all of these Terms, do not use this Platform.'
+      content: 'By accessing or using SideBuilds (the "Platform"), you agree to be bound by these Terms and Conditions ("Terms") and our Privacy Policy. If you do not agree to all of these Terms, do not use this Platform.'
     },
     {
       title: '2. Platform Services',
-      content: 'SideBuilds.space provides a marketplace for users to list, discover, buy, and sell side projects ("Projects"). We facilitate connections between buyers and sellers but are not a party to any transaction between users.'
+      content: 'SideBuilds provides a marketplace for users to list, discover, buy, and sell side projects ("Projects"). We facilitate connections between buyers and sellers but are not a party to any transaction between users.'
     },
     {
       title: '3. User Accounts',
@@ -26,11 +26,11 @@ function TermsPage() {
     },
     {
       title: '5. Platform Commission',
-      content: 'SideBuilds.space charges a commission fee of 5% on the final sale price of each Project sold through the Platform. This fee is automatically deducted from the sale proceeds before funds are transferred to the seller.'
+      content: 'SideBuilds charges a commission fee of 5% on the final sale price of each Project sold through the Platform. This fee is automatically deducted from the sale proceeds before funds are transferred to the seller.'
     },
     {
       title: '6. Stripe Connect for Sellers',
-      content: 'Sellers must connect a valid Stripe account to list projects for sale and receive payouts. By connecting your Stripe account, you agree to Stripe\'s terms of service. SideBuilds.space is not responsible for any issues arising from your use of Stripe.'
+      content: 'Sellers must connect a valid Stripe account to list projects for sale and receive payouts. By connecting your Stripe account, you agree to Stripe\'s terms of service. SideBuilds is not responsible for any issues arising from your use of Stripe.'
     },
     {
       title: '7. Project Transfers',
@@ -42,15 +42,15 @@ function TermsPage() {
     },
     {
       title: '9. Intellectual Property',
-      content: 'Sellers retain ownership of their Projects until a sale is completed. Buyers receive the rights to the Project as specified by the seller upon successful purchase. The Platform and its original content, features, and functionality are owned by SideBuilds.space and are protected by copyright and other intellectual property laws.'
+      content: 'Sellers retain ownership of their Projects until a sale is completed. Buyers receive the rights to the Project as specified by the seller upon successful purchase. The Platform and its original content, features, and functionality are owned by SideBuilds and are protected by copyright and other intellectual property laws.'
     },
     {
       title: '10. Disclaimers and Limitation of Liability',
-      content: 'The Platform is provided "as is" without warranties of any kind. We do not guarantee the quality, safety, or legality of Projects listed. SideBuilds.space is not liable for any indirect, incidental, special, consequential, or punitive damages arising out of your use of the Platform.'
+      content: 'The Platform is provided "as is" without warranties of any kind. We do not guarantee the quality, safety, or legality of Projects listed. SideBuilds is not liable for any indirect, incidental, special, consequential, or punitive damages arising out of your use of the Platform.'
     },
     {
       title: '11. Dispute Resolution',
-      content: 'Disputes between buyers and sellers should first be attempted to be resolved directly. If a resolution cannot be reached, users may contact SideBuilds.space support for assistance, but we are not obligated to mediate disputes.'
+      content: 'Disputes between buyers and sellers should first be attempted to be resolved directly. If a resolution cannot be reached, users may contact SideBuilds support for assistance, but we are not obligated to mediate disputes.'
     },
     {
       title: '12. Modification of Terms',
@@ -98,7 +98,7 @@ function TermsPage() {
                 </span>
               </h1>
               <p className="text-lg text-gray-400 mb-4">
-                Last Updated: December 2024
+                Last Updated: November 9, 2026
               </p>
               <p className="text-gray-500 max-w-2xl mx-auto">
                 Please read these terms carefully before using our platform. These terms govern your use of SideBuilds and outline your rights and responsibilities.
@@ -154,7 +154,7 @@ function TermsPage() {
               Agreement Acknowledgment
             </h3>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              By using SideBuilds.space, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
+              By using SideBuilds, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

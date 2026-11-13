@@ -2,18 +2,22 @@
 // Implements token bucket algorithm for API rate limiting
 
 const rateLimitStore = new Map();
+let limiterSequence = 0;
+const MAX_RATE_LIMIT_ENTRIES = 50000;
 
 // Default rate limit configuration
 const DEFAULT_CONFIG = {
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // requests per window
+  maxRequests: process.env.NODE_ENV === 'development' ? 2000 : 600,
   skipSuccessfulRequests: false,
   skipFailedRequests: false,
   keyGenerator: (req) => req.ip || req.connection.remoteAddress,
   handler: (req, res) => {
+    const retryAfter = Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000));
+    res.setHeader('Retry-After', retryAfter);
     res.status(429).json({
       error: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+      retryAfter
     });
   },
   onLimitReached: (req, res, options) => {
@@ -23,7 +27,7 @@ const DEFAULT_CONFIG = {
 
 // Clean up expired entries periodically
 const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [key, data] of rateLimitStore.entries()) {
     if (now > data.resetTime) {
@@ -31,6 +35,7 @@ setInterval(() => {
     }
   }
 }, CLEANUP_INTERVAL);
+cleanupTimer.unref?.();
 
 /**
  * Token Bucket Rate Limiter
@@ -39,15 +44,24 @@ setInterval(() => {
  */
 function rateLimit(options = {}) {
   const config = { ...DEFAULT_CONFIG, ...options };
+  // Each limiter needs its own bucket namespace. Without this, the general API
+  // bucket was reused by stricter upload/search limiters for the same IP.
+  const namespace = options.namespace || `limiter-${++limiterSequence}`;
   
   return (req, res, next) => {
-    const key = config.keyGenerator(req);
+    const rawKey = config.keyGenerator(req);
+    const key = `${namespace}:${rawKey}`;
     const now = Date.now();
     
     // Get or create rate limit data for this key
     let limitData = rateLimitStore.get(key);
     
     if (!limitData || now > limitData.resetTime) {
+      if (!limitData && rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+        const oldestKey = rateLimitStore.keys().next().value;
+        if (oldestKey) rateLimitStore.delete(oldestKey);
+      }
+
       // Reset or create new bucket
       limitData = {
         tokens: config.maxRequests,
@@ -112,7 +126,9 @@ const strictLimiter = rateLimit({
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100 // 100 requests per 15 minutes
+  // A data-rich SPA performs several parallel reads per page. This still
+  // blocks abusive bursts without rate-limiting normal navigation.
+  maxRequests: process.env.NODE_ENV === 'development' ? 2000 : 600
 });
 
 /**
@@ -120,7 +136,7 @@ const apiLimiter = rateLimit({
  */
 const publicLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 60 // 60 requests per minute
+  maxRequests: process.env.NODE_ENV === 'development' ? 600 : 120
 });
 
 /**
@@ -163,6 +179,15 @@ const burstLimiter = rateLimit({
   maxRequests: 10 // 10 requests per second
 });
 
+/**
+ * AI rate limiter (protects paid and compute-heavy model calls)
+ */
+const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: process.env.NODE_ENV === 'development' ? 100 : 10,
+  keyGenerator: (req) => `${req.ip}:${req.user?.user_id || 'anonymous'}`
+});
+
 // Export all limiters
 module.exports = {
   rateLimit,
@@ -174,6 +199,7 @@ module.exports = {
   webhookLimiter,
   adminLimiter,
   burstLimiter,
+  aiLimiter,
   
   // Preset configurations
   presets: {

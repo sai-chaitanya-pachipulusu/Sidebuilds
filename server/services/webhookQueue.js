@@ -5,6 +5,7 @@ class WebhookQueue {
         this.processing = false;
         this.maxConcurrent = 5; // Max concurrent webhook processing
         this.currentProcessing = 0;
+        this.queueTableReady = false;
         this.retryDelays = [1000, 5000, 15000, 30000]; // Exponential backoff in ms
         
         // Start processing queue
@@ -84,6 +85,7 @@ class WebhookQueue {
         }
 
         try {
+            await this.ensureQueueTableExists();
             // Get next items to process (prioritize high priority and older items)
             const result = await db.query(`
                 SELECT * FROM webhook_queue 
@@ -202,6 +204,7 @@ class WebhookQueue {
      */
     async getQueueStats() {
         try {
+            await this.ensureQueueTableExists();
             const stats = await db.query(`
                 SELECT 
                     status,
@@ -245,6 +248,7 @@ class WebhookQueue {
      */
     async cleanup(daysOld = 7) {
         try {
+            await this.ensureQueueTableExists();
             const cutoffDate = new Date(Date.now() - (daysOld * 24 * 60 * 60 * 1000)).toISOString();
             
             const result = await db.query(`
@@ -283,6 +287,7 @@ class WebhookQueue {
      */
     async getPendingItems(limit = 50) {
         try {
+            await this.ensureQueueTableExists();
             const result = await db.query(`
                 SELECT event_id, event_type, priority, retry_count, created_at, next_retry, error_message
                 FROM webhook_queue 
@@ -332,6 +337,7 @@ class WebhookQueue {
      * Ensure webhook_queue table exists
      */
     async ensureQueueTableExists() {
+        if (this.queueTableReady) return;
         try {
             await db.query(`
                 CREATE TABLE IF NOT EXISTS webhook_queue (
@@ -366,6 +372,7 @@ class WebhookQueue {
                 CREATE INDEX IF NOT EXISTS idx_webhook_queue_retry 
                 ON webhook_queue(next_retry)
             `);
+            this.queueTableReady = true;
             
         } catch (error) {
             console.error('[WEBHOOK QUEUE] Error creating queue table:', error);

@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { signToken, verifyToken: verifyJwtToken } = require('../utils/jwt');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db'); // Adjust path as needed
@@ -12,6 +12,9 @@ console.log('AUTH_ROUTES: File loaded and router being configured.');
 const router = express.Router();
 const SALT_ROUNDS = 10; // Cost factor for bcrypt hashing
 const PASSWORD_RESET_TOKEN_TTL_MINUTES = 60;
+// Precomputed hash of random bytes: used to equalize login timing for
+// unknown emails (never matches a real password).
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), SALT_ROUNDS);
 
 const getClientUrl = () => {
     return (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://sidebuilds.online').replace(/\/$/, '');
@@ -52,7 +55,7 @@ const ensurePasswordResetTable = async () => {
 
 // Helper function to generate JWT token
 const generateToken = (user) => {
-    return jwt.sign(
+    return signToken(
         {
             user: {
                 user_id: user.user_id,
@@ -61,7 +64,6 @@ const generateToken = (user) => {
                 is_admin: Boolean(user.is_admin)
             }
         },
-        process.env.JWT_SECRET,
         { expiresIn: '24h' } // Token expires in 24 hours
     );
 };
@@ -69,7 +71,7 @@ const generateToken = (user) => {
 // Helper function to verify JWT token
 const verifyToken = (token) => {
     try {
-        return jwt.verify(token, process.env.JWT_SECRET);
+        return verifyJwtToken(token);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             throw new Error('Token expired');
@@ -156,7 +158,11 @@ router.post('/register', authLimiter, async (req, res) => {
 
     } catch (err) {
         console.error("Registration error:", err.message);
-        console.error("Full error:", err);
+        // Unique-constraint violations (concurrent duplicate signups that
+        // slipped past the check-then-insert window) are conflicts, not 500s.
+        if (err.code === '23505' || /UNIQUE constraint failed/i.test(err.message || '')) {
+            return res.status(409).json({ message: 'Email or username already exists.' });
+        }
         res.status(500).json({ message: 'Server error during registration.' });
     }
 });
@@ -186,6 +192,9 @@ router.post('/login', authLimiter, async (req, res) => {
             if (process.env.NODE_ENV !== 'production') {
                 console.log('[AUTH] Login failed - user not found');
             }
+            // Burn a bcrypt comparison so response time doesn't reveal
+            // whether the email exists (account-enumeration defense).
+            await bcrypt.compare(password, DUMMY_HASH);
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
 
@@ -211,6 +220,7 @@ router.post('/login', authLimiter, async (req, res) => {
         };
 
         const token = generateToken(user);
+        await db.query('UPDATE users SET last_login_at=CURRENT_TIMESTAMP,login_count=COALESCE(login_count,0)+1 WHERE user_id=$1', [user.user_id]);
 
         // Respond with the token and user info (excluding password hash)
         // Important: Do not send the password_hash back to the client
@@ -251,7 +261,7 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
             );
             return res.status(503).json({
                 message:
-                    'Password reset email is not available because outgoing mail is not configured on the server. Add SMTP_HOST, SMTP_USER, and SMTP_PASS (and SMTP_FROM if needed) to your backend environment.',
+                    'Password recovery emails are currently unavailable. Please try again once email delivery has been restored.',
                 code: 'EMAIL_NOT_CONFIGURED'
             });
         }
@@ -366,14 +376,22 @@ router.post('/reset-password', authLimiter, async (req, res) => {
                 'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
                 [passwordHash, resetToken.user_id]
             );
-            await client.query(
-                'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ?',
+            // Consume the token atomically: the conditional update means two
+            // concurrent submissions of the same link cannot both succeed.
+            const consumeResult = await client.query(
+                'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ? AND used_at IS NULL',
                 [resetToken.id]
             );
+            if (!consumeResult.rowCount || consumeResult.rowCount === 0) {
+                throw new Error('RESET_TOKEN_ALREADY_USED');
+            }
         });
 
         return res.json({ message: 'Password reset successful. You can now log in.' });
     } catch (err) {
+        if (err.message === 'RESET_TOKEN_ALREADY_USED') {
+            return res.status(400).json({ message: 'Invalid or expired reset link.' });
+        }
         console.error('Reset password error:', err.message);
         return res.status(500).json({ message: 'Server error while resetting password.' });
     }
@@ -400,15 +418,15 @@ router.post('/refresh', authLimiter, async (req, res) => {
         // Verify the token. Tokens expired within the grace window may still be
         // refreshed so active users aren't forced to log in again every 24h;
         // the signature is always verified either way.
-        const REFRESH_GRACE_MS = 72 * 60 * 60 * 1000;
+        const REFRESH_GRACE_MS = 15 * 60 * 1000;
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            decoded = verifyJwtToken(token);
         } catch (verifyErr) {
             if (verifyErr.name !== 'TokenExpiredError') {
                 throw verifyErr;
             }
-            decoded = jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true });
+            decoded = verifyJwtToken(token, { ignoreExpiration: true });
             const expiredAt = (decoded.exp || 0) * 1000;
             if (!expiredAt || Date.now() - expiredAt > REFRESH_GRACE_MS) {
                 return res.status(401).json({ message: 'Token expired. Please log in again.' });
@@ -460,7 +478,7 @@ router.post('/refresh', authLimiter, async (req, res) => {
 
 // --- Token Verification Route ---
 // POST /api/auth/verify
-router.post('/verify', async (req, res) => {
+router.post('/verify', authLimiter, async (req, res) => {
     console.log('AUTH_ROUTES: Reached /verify handler');
 
     try {
@@ -477,7 +495,7 @@ router.post('/verify', async (req, res) => {
         }
 
         // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = verifyJwtToken(token);
 
         // Get the user from database to ensure they still exist
         const userResult = await db.query(
@@ -514,4 +532,4 @@ router.post('/verify', async (req, res) => {
     }
 });
 
-module.exports = router; 
+module.exports = router;

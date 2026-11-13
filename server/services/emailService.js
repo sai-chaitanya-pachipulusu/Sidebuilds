@@ -9,7 +9,8 @@ const isDeployedBackend = () =>
     Boolean(process.env.RENDER_EXTERNAL_URL);
 
 const getEmailStatus = () => {
-  const missing = requiredSmtpVars.filter((key) => !process.env[key]);
+  const value = key => process.env[key] || (isDeployedBackend() ? process.env[key.replace('SMTP_', 'EMAIL_')] : undefined);
+  const missing = requiredSmtpVars.filter((key) => !value(key));
   const configured = missing.length === 0;
 
   return {
@@ -17,8 +18,8 @@ const getEmailStatus = () => {
     configured,
     missing,
     from: process.env.SMTP_FROM || 'SideBuilds <noreply@sidebuilds.online>',
-    host: process.env.SMTP_HOST || null,
-    port: Number(process.env.SMTP_PORT || 587),
+    host: value('SMTP_HOST') || null,
+    port: Number(value('SMTP_PORT') || 587),
     secure: process.env.SMTP_SECURE === 'true',
     mode: isDeployedBackend() ? 'production' : 'development'
   };
@@ -42,13 +43,14 @@ const createTransporter = () => {
   if (status.configured) {
     // Production configuration
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: status.host,
       port: status.port,
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
     });
   } else {
     // Development configuration - log to console
@@ -251,4 +253,4 @@ const emailService = {
   }
 };
 
-module.exports = emailService; 
+module.exports = emailService;

@@ -5,10 +5,13 @@ const cors = require('cors');
 const path = require('path'); // Import path
 const http = require('http'); // Import http
 const { Server } = require("socket.io"); // Import Server from socket.io
-const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const { verifyToken: verifyJwtToken } = require('./utils/jwt');
 
 // Explicitly load .env file from the server directory
-require('dotenv').config({ path: path.resolve(__dirname, '.env'), override: true }); 
+// Keep values explicitly supplied by the host (Render, CI, or a local shell).
+// The previous `override: true` made it impossible to select the documented
+// SQLite development fallback without editing the checked-out .env file.
+require('dotenv').config({ path: path.resolve(__dirname, '.env'), override: false });
 
 // --- Server Port --- (Moved to top)
 let PORT = parseInt(process.env.PORT || '5002', 10);
@@ -17,6 +20,9 @@ let PORT = parseInt(process.env.PORT || '5002', 10);
 const db = require('./db');
 const emailService = require('./services/emailService');
 const serverConfig = require('./config/environment');
+const authMiddleware = require('./middleware/authMiddleware');
+const requireAdmin = require('./middleware/requireAdmin');
+const { apiLimiter, searchLimiter, uploadLimiter, webhookLimiter } = require('./middleware/rateLimiter');
 
 // --- Middleware ---
 const app = express();
@@ -26,10 +32,18 @@ const server = http.createServer(app); // Create HTTP server for Express app
 // for rate limiting and security logging
 app.set('trust proxy', 1);
 
-// Security headers (CSP is handled by the custom Stripe-aware middleware below)
+// This process serves an API, not the Stripe-enabled browser application. A
+// restrictive API CSP prevents an accidentally returned HTML/upload response
+// from executing scripts under the API origin.
 const helmet = require('helmet');
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            baseUri: ["'none'"]
+        }
+    },
     crossOriginEmbedderPolicy: false, // Stripe.js compatibility
     crossOriginResourcePolicy: { policy: 'cross-origin' } // allow serving uploads to the client origin
 }));
@@ -74,7 +88,7 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Idempotency-Key'],
     optionsSuccessStatus: 200
 };
 
@@ -107,13 +121,14 @@ const authenticateSocket = (socket, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = verifyJwtToken(token);
         if (!decoded.user || (!decoded.user.id && !decoded.user.user_id)) {
             throw new Error('Invalid token payload');
         }
         
         socket.userId = decoded.user.user_id || decoded.user.id;
-        socket.user = decoded.user;
+        socket.user = { ...decoded.user, id: socket.userId };
+        socket.tokenInfo = { issuedAt: decoded.iat, expiresAt: decoded.exp, userId: socket.userId };
         socket.isAuthenticated = true;
         
         next();
@@ -341,26 +356,13 @@ io.on('connection', (socket) => {
 });
 
 
-// --- Content Security Policy for Stripe --- 
-// Temporarily commented out to test Stripe onboarding in Firefox
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' https://js.stripe.com https://m.stripe.network 'unsafe-inline' https://*.stripe.com; " + // Allow unsafe-inline for scripts if necessary, but be cautious
-    "style-src 'self' https://js.stripe.com 'unsafe-inline' https://*.stripe.com; " +      // Allow unsafe-inline for styles
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://*.stripe.com; " +
-    "connect-src 'self' https://api.stripe.com https://m.stripe.network https://*.stripe.com http://localhost:5002 ws://localhost:5002; " + // Added localhost:5002 and ws://localhost:5002 for Socket.IO
-    "img-src 'self' data: blob: https://*.stripe.com; " + // Allow images from Stripe, data URIs, and blob URLs
-    "font-src 'self' https://js.stripe.com https://*.stripe.com;" // Allow fonts from Stripe
-  );
-  next();
-});
-
-
 // --- Check for JWT_SECRET --- 
 if (!process.env.JWT_SECRET) {
     console.error("FATAL ERROR: JWT_SECRET environment variable is not set.");
+    process.exit(1);
+}
+if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32) {
+    console.error('FATAL ERROR: JWT_SECRET must be at least 32 characters in production.');
     process.exit(1);
 }
 
@@ -368,7 +370,8 @@ if (!process.env.JWT_SECRET) {
 // For Stripe webhook only - Express raw body parser
 // This must be defined BEFORE the express.json() middleware
 app.post('/api/payments/webhook', 
-    express.raw({type: 'application/json'}), 
+    webhookLimiter,
+    express.raw({ type: 'application/json', limit: '1mb' }),
     (req, res) => {
         // Directly call the webhookHandler with the raw body
         const { webhookHandler } = require('./routes/payments');
@@ -377,7 +380,7 @@ app.post('/api/payments/webhook',
 );
 
 // For all other routes - Parse JSON body
-app.use(express.json());
+app.use(express.json({ limit: '100kb', strict: true }));
 
 // --- Compression Middleware ---
 const compression = require('compression');
@@ -394,11 +397,9 @@ app.use(compression({
 }));
 
 // --- Rate Limiting Middleware ---
-const { apiLimiter, searchLimiter, uploadLimiter } = require('./middleware/rateLimiter');
-
 // Apply API rate limiting to all API routes
 app.use('/api/', (req, res, next) => {
-    if (['/health', '/ready', '/status', '/ping'].includes(req.path)) {
+    if (['/health', '/ready', '/ping'].includes(req.path)) {
         return next();
     }
     return apiLimiter(req, res, next);
@@ -408,8 +409,9 @@ app.use('/api/', (req, res, next) => {
 app.use('/api/projects/search', searchLimiter);
 app.use('/api/public/marketplace', searchLimiter);
 
-// Apply upload rate limiting to file upload endpoints (POST only)
-app.post('/api/files/upload', uploadLimiter);
+// Apply upload rate limiting to both upload route families. `use` deliberately
+// covers /upload/:projectId; an exact POST path did not match that route.
+app.use('/api/files/upload', uploadLimiter);
 app.post('/api/projects/:id/files', uploadLimiter);
 
 // --- Routes ---
@@ -431,20 +433,9 @@ app.get('/api/ping', (req, res) => {
     res.status(200).json({ pong: true, ts: Date.now() });
 });
 
-app.get('/api/ready', async (req, res) => {
-    const connection = await db.checkConnection();
-    res.status(connection.ok ? 200 : 503).json({
-        status: connection.ok ? 'ready' : 'not_ready',
-        database: {
-            type: connection.type || 'unknown',
-            connected: Boolean(connection.ok),
-            message: connection.message
-        },
-        timestamp: Date.now()
-    });
-});
+app.get('/api/ready', require('./utils/readiness').createReadinessHandler(() => db.checkConnection()));
 
-app.get('/api/status', async (req, res) => {
+app.get('/api/status', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const database = await db.getDatabaseInfo();
         res.status(database.healthy ? 200 : 503).json({
@@ -548,18 +539,6 @@ app.use('/api/dashboard', dashboardRoutes);
 const fileRoutes = require('./routes/files');
 app.use('/api/files', fileRoutes);
 
-// Serve uploaded files statically.
-// Sandbox CSP + nosniff prevent stored XSS via uploaded SVG/HTML files;
-// long cache is safe because filenames embed a UUID.
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-    maxAge: '7d',
-    setHeaders: (res) => {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
-        res.setHeader('Content-Disposition', 'inline');
-    }
-}));
-
 // AI and Analytics routes
 const aiRoutes = require('./routes/ai');
 const analyticsRoutes = require('./routes/analytics');
@@ -662,4 +641,4 @@ process.on('SIGINT', async () => {
 }); 
 
 // Export io for use in other modules (e.g., services)
-module.exports = { app, io }; // Exporting io along with app 
+module.exports = { app, io }; // Exporting io along with app

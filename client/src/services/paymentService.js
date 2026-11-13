@@ -1,11 +1,17 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { resolveServiceUrl } from '../config/apiUrl';
 
-// Production-ready Payment Service with comprehensive error handling
+// Production-ready Payment Service with comprehensive error handling.
+// All endpoints mirror the real server routes:
+//   POST /payments/create-checkout-session  (purchase-request based Stripe Checkout)
+//   POST /purchase-requests/projects/:projectId/initiate-checkout ("Buy now" reservation)
+//   GET  /payments/methods                  (server-reported provider availability)
+//   GET  /payments/health
 class PaymentService {
   constructor() {
     this.apiClient = axios.create({
-      baseURL: process.env.REACT_APP_API_URL || '/api',
+      baseURL: resolveServiceUrl(process.env.REACT_APP_API_URL, 'http://localhost:5002/api'),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -24,23 +30,22 @@ class PaymentService {
 
     // Payment state management
     this.paymentAttempts = new Map();
-    this.userNotifications = new Set();
 
-    // Add auth token to requests with retry mechanism
+    // Add auth token to requests
     this.apiClient.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
+        if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
           config.headers['Authorization'] = `Bearer ${token}`;
         }
-        
+
         // Add request metadata for tracking
         config.metadata = {
           requestId: this.generateRequestId(),
           timestamp: Date.now(),
           attempt: config.attempt || 1
         };
-        
+
         return config;
       },
       (error) => {
@@ -60,23 +65,20 @@ class PaymentService {
       async (error) => {
         const config = error.config;
         const shouldRetry = this.shouldRetryRequest(error, config);
-        
+
         if (shouldRetry) {
           return this.retryRequest(config, error);
         }
-        
+
         return Promise.reject(this.enhanceError(error, 'PAYMENT_REQUEST_FAILED'));
       }
     );
 
-    // Available payment providers with status tracking
+    // Only providers the server actually implements. The health check can
+    // downgrade Stripe to 'maintenance', but nothing here may advertise a
+    // provider that has no server route.
     this.providers = {
       STRIPE: { id: 'stripe', name: 'Stripe', status: 'active', fees: 2.9 },
-      PAYPAL: { id: 'paypal', name: 'PayPal', status: 'active', fees: 3.5 },
-      RAZORPAY: { id: 'razorpay', name: 'Razorpay', status: 'beta', fees: 2.0 },
-      SQUARE: { id: 'square', name: 'Square', status: 'maintenance', fees: 2.6 },
-      PADDLE: { id: 'paddle', name: 'Paddle', status: 'active', fees: 5.0 },
-      LEMONSQUEEZY: { id: 'lemonsqueezy', name: 'Lemon Squeezy', status: 'active', fees: 5.0 }
     };
 
     // Initialize health check
@@ -85,7 +87,7 @@ class PaymentService {
 
   // Generate unique request ID for tracking
   generateRequestId() {
-    return `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `pay_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
   // Enhanced error with user-friendly messaging
@@ -95,12 +97,17 @@ class PaymentService {
     enhanced.type = type;
     enhanced.timestamp = new Date().toISOString();
     enhanced.isPaymentError = true;
-    
+
     // Extract meaningful error information
     if (error.response) {
       enhanced.status = error.response.status;
       enhanced.data = error.response.data;
-      enhanced.code = error.response.data?.code || 'UNKNOWN';
+      enhanced.code = error.response.data?.code || error.response.data?.error?.code || 'UNKNOWN';
+      enhanced.message =
+        error.response.data?.message ||
+        (typeof error.response.data?.error === 'string' ? error.response.data.error : null) ||
+        error.message ||
+        'Payment request failed.';
     } else if (error.request) {
       enhanced.code = 'NETWORK_ERROR';
       enhanced.message = 'Network connection failed. Please check your internet connection.';
@@ -108,7 +115,7 @@ class PaymentService {
       enhanced.code = 'UNKNOWN_ERROR';
       enhanced.message = error.message || 'An unexpected error occurred.';
     }
-    
+
     return enhanced;
   }
 
@@ -118,8 +125,8 @@ class PaymentService {
       return false;
     }
 
-    // Don't retry payment processing requests (idempotency concerns)
-    if (config.url?.includes('/checkout') || config.url?.includes('/process')) {
+    // Don't retry checkout/session creation (idempotency concerns)
+    if (config.url?.includes('/create-checkout-session') || config.url?.includes('/initiate-checkout')) {
       return false;
     }
 
@@ -149,14 +156,6 @@ class PaymentService {
       });
     }
 
-    // Show user-friendly retry notification
-    if (attempt === 2) {
-      toast.loading(`Retrying payment request... (${attempt}/${this.retryConfig.maxRetries})`, {
-        id: `retry-${requestId}`,
-        duration: delay + 1000
-      });
-    }
-
     await new Promise(resolve => setTimeout(resolve, delay));
 
     config.attempt = attempt;
@@ -167,17 +166,16 @@ class PaymentService {
   clearPaymentAttempt(requestId) {
     if (this.paymentAttempts.has(requestId)) {
       this.paymentAttempts.delete(requestId);
-      toast.dismiss(`retry-${requestId}`);
     }
   }
 
-  // Health check for payment providers
+  // Health check for the payments API
   async performHealthCheck() {
     try {
       const response = await this.apiClient.get('/payments/health', {
         timeout: 5000
       });
-      
+
       if (response.data?.providers) {
         Object.keys(response.data.providers).forEach(provider => {
           if (this.providers[provider.toUpperCase()]) {
@@ -192,95 +190,78 @@ class PaymentService {
     }
   }
 
-  // === ENHANCED STRIPE INTEGRATION ===
-  
-  async createStripeCheckout(projectId, options = {}) {
+  // === STRIPE CHECKOUT ===
+
+  /**
+   * Create a Stripe Checkout session for an accepted purchase request.
+   * Mirrors POST /api/payments/create-checkout-session.
+   */
+  async createStripeCheckout(purchaseRequestId, options = {}) {
     const requestId = this.generateRequestId();
-    
+
     try {
-      // Pre-flight validation
-      await this.validateCheckoutRequest(projectId, 'stripe');
-      
-      // Show loading state
-      const loadingToast = toast.loading('Creating secure checkout session...', {
+      await this.validateCheckoutRequest(purchaseRequestId, 'stripe');
+      if (!options.agreementId) throw new Error('Review and approve the purchase agreement before payment.');
+
+      toast.loading('Creating secure checkout session...', {
         id: `checkout-${requestId}`
       });
 
-      const response = await this.apiClient.post('/payments/stripe/checkout', {
-        projectId,
-        successUrl: options.successUrl || `${window.location.origin}/purchase/success`,
-        cancelUrl: options.cancelUrl || `${window.location.origin}/marketplace`,
-        metadata: {
-          ...options.metadata,
-          requestId,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          referrer: document.referrer
-        }
-      });
+      const idempotencyKey = options.idempotencyKey || crypto.randomUUID();
 
-      // Clear loading state
+      const response = await this.apiClient.post(
+        '/payments/create-checkout-session',
+        { purchase_request_id: purchaseRequestId, agreement_id: options.agreementId },
+        { headers: { 'Idempotency-Key': idempotencyKey } }
+      );
+
       toast.dismiss(`checkout-${requestId}`);
-      
-      // Validate response
-      if (!response.data?.checkout_url) {
+
+      // The server returns { url, sessionId }; normalize for callers.
+      const checkoutUrl = response.data?.url || response.data?.checkout_url;
+      if (!checkoutUrl) {
         throw new Error('Invalid checkout response: missing checkout URL');
       }
 
-      // Track successful checkout creation
       this.trackPaymentEvent('checkout_created', {
         provider: 'stripe',
-        projectId,
+        purchaseRequestId,
         requestId
       });
 
       return {
         ...response.data,
+        checkout_url: checkoutUrl,
+        session_id: response.data?.sessionId || response.data?.session_id,
         requestId,
         provider: 'stripe'
       };
-      
     } catch (error) {
       toast.dismiss(`checkout-${requestId}`);
-      
+
       const enhancedError = this.enhanceError(error, 'STRIPE_CHECKOUT_FAILED');
       enhancedError.userMessage = this.getStripeErrorMessage(error);
-      
-      // Show user-friendly error
+
       toast.error(enhancedError.userMessage, {
         duration: 6000,
         action: {
           label: 'Retry',
-          onClick: () => this.createStripeCheckout(projectId, options)
+          onClick: () => this.createStripeCheckout(purchaseRequestId, options)
         }
       });
-      
+
       throw enhancedError;
     }
   }
 
   // Validate checkout request before processing
-  async validateCheckoutRequest(projectId, provider) {
-    if (!projectId) {
-      throw new Error('Project ID is required for checkout');
+  async validateCheckoutRequest(purchaseRequestId, provider) {
+    if (!purchaseRequestId) {
+      throw new Error('Purchase request ID is required for checkout');
     }
 
-    if (!this.providers[provider.toUpperCase()]?.status === 'active') {
-      throw new Error(`${provider} is currently unavailable. Please try another payment method.`);
-    }
-
-    // Check if project is still available
-    try {
-      const projectCheck = await this.apiClient.get(`/projects/${projectId}/availability`);
-      if (!projectCheck.data?.available) {
-        throw new Error('This project is no longer available for purchase');
-      }
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new Error('Project not found or has been removed');
-      }
-      // Don't block checkout for temporary API issues
-      console.warn('Project availability check failed:', error.message);
+    if (this.providers[provider.toUpperCase()]?.status !== 'active') {
+      throw new Error(`${provider} is currently unavailable. Please try again later.`);
     }
   }
 
@@ -304,12 +285,19 @@ class PaymentService {
       return stripeErrorCodes[errorCode];
     }
 
+    const serverMessage = error.response?.data?.error || error.response?.data?.message;
+    if (typeof serverMessage === 'string' && serverMessage) {
+      return serverMessage;
+    }
+
     if (error.response?.status === 400) {
       return 'Please check your payment information and try again.';
     } else if (error.response?.status === 401) {
       return 'Your session has expired. Please refresh the page and try again.';
     } else if (error.response?.status === 403) {
       return 'This payment method is not authorized for this transaction.';
+    } else if (error.response?.status === 404) {
+      return 'This purchase request could not be found. It may have been cancelled or completed already.';
     } else if (error.response?.status >= 500) {
       return 'Payment service is temporarily unavailable. Please try again in a few minutes.';
     }
@@ -331,18 +319,18 @@ class PaymentService {
           }
         });
       }
-      
-      // Log for debugging
-      console.log('Payment Event:', event, data);
-    } catch (error) {
+    } catch (_error) {
       // Silent fail for analytics
-      console.warn('Payment tracking failed:', error.message);
     }
   }
 
-  async createStripeConnectAccount() {
+  async createStripeConnectAccount(idempotencyKey) {
     try {
-      const response = await this.apiClient.post('/payments/stripe/connect/create-account');
+      const response = await this.apiClient.post(
+        '/payments/connect/create-account',
+        {},
+        idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
+      );
       return response.data;
     } catch (error) {
       throw this.handleError(error, 'Failed to create Stripe Connect account');
@@ -351,41 +339,28 @@ class PaymentService {
 
   async getStripeConnectStatus() {
     try {
-      const response = await this.apiClient.get('/payments/stripe/connect/status');
+      const response = await this.apiClient.get('/payments/connect/status');
       return response.data;
     } catch (error) {
       throw this.handleError(error, 'Failed to get Stripe Connect status');
     }
   }
 
-  // === PAYPAL INTEGRATION ===
-  
-  async createPayPalOrder(projectId, options = {}) {
-    try {
-      const response = await this.apiClient.post('/payments/paypal/orders', {
-        projectId,
-        returnUrl: options.returnUrl || `${window.location.origin}/purchase/success`,
-        cancelUrl: options.cancelUrl || `${window.location.origin}/marketplace`
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create PayPal order');
-    }
-  }
+  // === UNIVERSAL CHECKOUT ENTRYPOINT ===
 
-  // === ENHANCED UNIVERSAL PAYMENT METHODS ===
-  
   async getAvailablePaymentMethods() {
     try {
       const response = await this.apiClient.get('/payments/methods');
-      
-      // Merge with local provider status
+
       const methods = response.data?.methods || [];
-      const enhancedMethods = methods.map(method => ({
-        ...method,
-        ...this.providers[method.provider?.toUpperCase()],
-        available: this.providers[method.provider?.toUpperCase()]?.status === 'active'
-      }));
+      const implementedIds = Object.values(this.providers).map(provider => provider.id);
+      const enhancedMethods = methods
+        .filter(method => implementedIds.includes(method.provider))
+        .map(method => ({
+          ...method,
+          ...this.providers[method.provider?.toUpperCase()],
+          available: this.providers[method.provider?.toUpperCase()]?.status === 'active'
+        }));
 
       return {
         methods: enhancedMethods,
@@ -395,7 +370,7 @@ class PaymentService {
     } catch (error) {
       // Fallback to local provider information
       console.warn('Failed to fetch payment methods from API, using local data:', error.message);
-      
+
       return {
         methods: Object.values(this.providers).map(provider => ({
           ...provider,
@@ -408,163 +383,114 @@ class PaymentService {
     }
   }
 
-  // Production-ready checkout creation with comprehensive error handling
-  async createCheckout(paymentData, provider = 'stripe', options = {}) {
+  /**
+   * Production checkout entrypoint used by marketplace pages.
+   *
+   * Flow (matches the server's escrow design):
+   *   1. Reserve the project via "Buy now" -> creates/reuses a purchase request
+   *      accepted-pending-payment (POST /purchase-requests/projects/:id/initiate-checkout).
+   *   2. Create the Stripe Checkout session for that request
+   *      (POST /payments/create-checkout-session).
+   *
+   * Returns { checkout_url, session_id, purchase_request_id, provider }.
+   */
+  async createCheckout(paymentData, _provider = 'stripe', options = {}) {
     const requestId = this.generateRequestId();
-    
+
     try {
-      // Validate input data
-      this.validatePaymentData(paymentData);
-      
-      // Pre-flight checks
-      await this.validateCheckoutRequest(paymentData.projectId, provider);
-      
-      // Show loading state with better UX
-      const loadingToast = toast.loading(`Setting up ${provider} payment...`, {
-        id: `checkout-${requestId}`,
-        duration: 30000 // Longer duration for payment operations
-      });
+      if (!paymentData?.projectId) {
+        throw new Error('Project ID is required for checkout');
+      }
+      if (!options.agreementId) throw new Error('Open the purchase agreement and approve its latest version before payment.');
 
-      // Route to appropriate provider method
-      const methodMap = {
-        stripe: () => this.createStripeCheckout(paymentData.projectId, {
-          ...options,
-          amount: paymentData.amount,
-          projectName: paymentData.projectName,
-          sellerId: paymentData.sellerId,
-          buyerId: paymentData.buyerId
-        }),
-        paypal: () => this.createPayPalOrder(paymentData.projectId, {
-          ...options,
-          amount: paymentData.amount
-        }),
-      };
-
-      const createMethod = methodMap[provider];
-      if (!createMethod) {
-        throw new Error(`Unsupported payment provider: ${provider}`);
+      if (this.providers.STRIPE.status !== 'active') {
+        throw new Error('Stripe is currently unavailable. Please try again later.');
       }
 
-      const result = await createMethod();
-      
+      toast.loading('Setting up secure payment...', {
+        id: `checkout-${requestId}`,
+        duration: 30000
+      });
+
+      const idempotencyKey = crypto.randomUUID();
+
+      // Step 1: reserve the project and get/refresh the purchase request
+      const initiation = await this.apiClient.post(
+        `/purchase-requests/projects/${paymentData.projectId}/initiate-checkout`,
+        { terms_agreed_version: 'v_direct_buy_1.0' },
+        { headers: { 'Idempotency-Key': idempotencyKey } }
+      );
+
+      const purchaseRequestId = initiation.data?.purchase_request_id || initiation.data?.request_id;
+      if (!purchaseRequestId) {
+        throw new Error('Checkout could not be started. Please try again.');
+      }
+
+      // Step 2: create the Stripe Checkout session for that request
+      const sessionResponse = await this.apiClient.post(
+        '/payments/create-checkout-session',
+        { purchase_request_id: purchaseRequestId, agreement_id: options.agreementId },
+        { headers: { 'Idempotency-Key': idempotencyKey } }
+      );
+
+      const checkoutUrl = sessionResponse.data?.url || sessionResponse.data?.checkout_url;
+      if (!checkoutUrl) {
+        throw new Error('Invalid checkout response: missing checkout URL');
+      }
+
       toast.dismiss(`checkout-${requestId}`);
-      
-      // Track successful checkout
+
       this.trackPaymentEvent('checkout_success', {
-        provider,
+        provider: 'stripe',
         requestId,
         amount: paymentData.amount,
         projectId: paymentData.projectId
       });
 
-      // Show success message
-      toast.success('Payment session created successfully!', {
+      toast.success('Redirecting to secure checkout...', {
         duration: 3000
       });
 
       return {
-        ...result,
+        ...sessionResponse.data,
+        checkout_url: checkoutUrl,
+        session_id: sessionResponse.data?.sessionId || sessionResponse.data?.session_id,
+        purchase_request_id: purchaseRequestId,
         requestId,
-        provider,
+        provider: 'stripe',
         expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
       };
-
     } catch (error) {
       toast.dismiss(`checkout-${requestId}`);
-      
+
       const enhancedError = this.enhanceError(error, 'CHECKOUT_CREATION_FAILED');
-      enhancedError.provider = provider;
+      enhancedError.provider = 'stripe';
       enhancedError.requestId = requestId;
-      
-      // Provide fallback options
-      const fallbackProviders = this.getActiveFallbackProviders(provider);
-      if (fallbackProviders.length > 0) {
-        enhancedError.fallbackOptions = fallbackProviders;
-        enhancedError.userMessage = `${provider} is currently unavailable. Try ${fallbackProviders[0].name} instead?`;
-        
-        toast.error(enhancedError.userMessage, {
-          duration: 8000,
-          action: {
-            label: `Try ${fallbackProviders[0].name}`,
-            onClick: () => this.createCheckout(paymentData, fallbackProviders[0].id, options)
-          }
-        });
-      } else {
-        enhancedError.userMessage = 'Payment processing is temporarily unavailable. Please try again in a few minutes.';
-        toast.error(enhancedError.userMessage, {
-          duration: 6000
-        });
-      }
-      
+      enhancedError.userMessage =
+        (typeof error.response?.data?.error === 'string' && error.response.data.error) ||
+        this.getStripeErrorMessage(error);
+
+      toast.error(enhancedError.userMessage, {
+        duration: 6000
+      });
+
       throw enhancedError;
     }
   }
 
-  // Validate payment data before processing
-  validatePaymentData(data) {
-    const required = ['projectId', 'amount', 'projectName', 'sellerId', 'buyerId'];
-    const missing = required.filter(field => !data[field]);
-    
-    if (missing.length > 0) {
-      throw new Error(`Missing required payment data: ${missing.join(', ')}`);
-    }
-    
-    if (data.amount <= 0) {
-      throw new Error('Payment amount must be greater than zero');
-    }
-    
-    if (data.sellerId === data.buyerId) {
-      throw new Error('Seller and buyer cannot be the same');
-    }
-  }
-
-  // Get fallback payment providers when primary fails
-  getActiveFallbackProviders(excludeProvider) {
-    return Object.values(this.providers)
-      .filter(provider => 
-        provider.status === 'active' && 
-        provider.id !== excludeProvider
-      )
-      .sort((a, b) => a.fees - b.fees); // Sort by fees (cheapest first)
-  }
-
-  async createUniversalCheckout(projectId, provider, options = {}) {
-    console.warn('createUniversalCheckout is deprecated. Use createCheckout instead.');
-    
-    // Legacy support - convert to new format
-    const paymentData = {
-      projectId,
-      amount: options.amount || 0,
-      projectName: options.projectName || 'Unknown Project',
-      sellerId: options.sellerId || 'unknown',
-      buyerId: options.buyerId || 'unknown'
-    };
-    
-    return this.createCheckout(paymentData, provider, options);
-  }
-
   // === PAYMENT STATUS & HISTORY ===
-  
+
   async getPaymentHistory() {
     try {
-      const response = await this.apiClient.get('/payments/history');
+      const response = await this.apiClient.get('/payments/transactions');
       return response.data;
     } catch (error) {
       throw this.handleError(error, 'Failed to get payment history');
     }
   }
 
-  async getEarnings() {
-    try {
-      const response = await this.apiClient.get('/payments/earnings');
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to get earnings');
-    }
-  }
-
   // === SELLER CONNECT SETUP ===
-  
+
   async getConnectStatus() {
     try {
       const response = await this.apiClient.get('/payments/connect/status');
@@ -575,16 +501,16 @@ class PaymentService {
   }
 
   // === ERROR HANDLING ===
-  
+
   handleError(error, defaultMessage) {
     console.error('Payment service error:', error);
-    
+
     if (error.response) {
       const { status, data } = error.response;
-      
+
       switch (status) {
         case 400:
-          return new Error(data.message || 'Invalid payment request');
+          return new Error(data.message || data.error || 'Invalid payment request');
         case 401:
           return new Error('Authentication required for payment');
         case 403:
@@ -592,25 +518,25 @@ class PaymentService {
         case 404:
           return new Error('Payment method not found');
         case 409:
-          return new Error(data.message || 'Payment conflict');
+          return new Error(data.message || data.error || 'Payment conflict');
         case 429:
           return new Error('Too many payment requests. Please try again later.');
         case 500:
-          return new Error('Payment service temporarily unavailable');
+          return new Error(data.message || data.error || 'Payment service temporarily unavailable');
         default:
-          return new Error(data.message || defaultMessage);
+          return new Error(data.message || data.error || defaultMessage);
       }
     }
-    
+
     if (error.request) {
       return new Error('Payment service is currently unavailable');
     }
-    
+
     return new Error(error.message || defaultMessage);
   }
 
   // === UTILITY METHODS ===
-  
+
   formatAmount(amount, currency = 'USD') {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -626,4 +552,4 @@ const paymentService = new PaymentService();
 
 // Export both the class and instance
 export { PaymentService };
-export default paymentService; 
+export default paymentService;

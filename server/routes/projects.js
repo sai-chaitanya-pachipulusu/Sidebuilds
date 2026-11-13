@@ -1,11 +1,13 @@
 const express = require('express');
 const db = require('../db');
 const authMiddleware = require('../middleware/authMiddleware');
+const requireProjectOwner = require('../middleware/requireProjectOwner');
 const xss = require('xss');
 const { upload, uploadMultiple, handleMulterError, getFileType, getFileCategory } = require('../config/multer');
 const { v4: uuidv4 } = require('uuid');
-const path = require('path');
 const fs = require('fs');
+const { resolveStoredUploadPath } = require('../utils/uploadSecurity');
+const { normalizeListingFields, deserializeListing } = require('../utils/listingFields');
 
 const router = express.Router();
 
@@ -64,7 +66,7 @@ router.post('/', async (req, res) => {
     // Basic validation - ensure required fields are present
     let { 
         name, description, stage, domain,
-        demo_url, github_url, tech_stack, stage_details,
+        demo_url, github_url, tech_stack,
         monthly_revenue,
         is_public, is_for_sale, sale_price,
         contact_email, contact_phone, payment_method 
@@ -76,12 +78,16 @@ router.post('/', async (req, res) => {
     domain = sanitizeInput(domain);
     demo_url = sanitizeInput(demo_url);
     github_url = sanitizeInput(github_url);
-    stage_details = sanitizeInput(stage_details);
     
-    console.log('Project creation request received:', JSON.stringify(req.body, null, 2));
+    // Log metadata only — never dump the full body (contact phone/email)
+    console.log('Project creation request received:', JSON.stringify({
+        name, stage, is_public, is_for_sale,
+        hasContactEmail: !!req.body.contact_email,
+        hasContactPhone: !!req.body.contact_phone
+    }));
     
     // Check auth token
-    console.log('Auth user:', req.user ? `ID: ${req.user.user_id}, Username: ${req.user.username}` : 'No auth user found');
+    console.log('Auth user:', req.user ? `ID: ${req.user.user_id}` : 'No auth user found');
     
     const userId = req.user.user_id; // Get user ID from authenticated user (added by middleware)
 
@@ -92,34 +98,18 @@ router.post('/', async (req, res) => {
 
     try {
         // Stage-specific validation
-        const normalizedStage = (stage || '').toLowerCase();
+        const listing = normalizeListingFields(req.body);
+        const normalizedStage = listing.stage;
         if (!normalizedStage) {
             return res.status(400).json({ message: 'Project stage is required.' });
         }
 
-        // Validation matrix by stage
-        const stageRequirements = {
-            idea: { prohibited: ['github_url', 'monthly_revenue'], optional: ['domain', 'demo_url'] },
-            planning: { optional: ['github_url', 'domain', 'demo_url'] },
-            mvp: { recommended: ['github_url', 'demo_url'] },
-            development: { recommended: ['github_url'], optional: ['demo_url'] },
-            launched: { recommended: ['github_url', 'demo_url', 'monthly_revenue'] },
-            on_hold: {}
-        };
-        const reqs = stageRequirements[normalizedStage] || {};
-        if (reqs.prohibited) {
-            const violations = [];
-            if (reqs.prohibited.includes('github_url') && github_url) violations.push('github_url');
-            if (reqs.prohibited.includes('monthly_revenue') && monthly_revenue) violations.push('monthly_revenue');
-            if (violations.length) {
-                return res.status(400).json({ message: `Fields not allowed in stage '${normalizedStage}': ${violations.join(', ')}` });
-            }
-        }
+        // Stage describes progress; it must not forbid evidence a seller already has.
 
         // Handle projects for sale validation
         if (is_for_sale) {
             // Validate sale price
-            if (!sale_price || sale_price <= 0) {
+            if (!sale_price || !Number.isFinite(Number(sale_price)) || Number(sale_price) <= 0) {
                 console.log('Validation error: Invalid sale price for project listed for sale');
                 return res.status(400).json({ message: 'A valid sale price is required for projects listed for sale.' });
             }
@@ -160,16 +150,22 @@ router.post('/', async (req, res) => {
             domain,
             demo_url,
             github_url,
-            Array.isArray(tech_stack) && tech_stack.length > 0 ? JSON.stringify(tech_stack) : null,
+            listing.tech_stack ?? null,
             monthly_revenue || 0,
             !!is_public,
             !!is_for_sale,
             false // Default for is_on_hold
         ];
+        for (const field of ['category', 'subcategory', 'tags', 'stage_details']) {
+            if (listing[field] !== undefined) {
+                fields.push(field);
+                values.push(listing[field]);
+            }
+        }
         // Add sale-related fields if project is for sale
         if (is_for_sale) {
             fields.push('sale_price');
-            values.push(sale_price);
+            values.push(Number(sale_price));
             
             if (contact_email) {
                 fields.push('contact_email');
@@ -194,8 +190,7 @@ router.post('/', async (req, res) => {
             VALUES (${pgPlaceholders})
         `;
         
-        console.log('Executing SQL query:', query);
-        console.log('Query parameters:', JSON.stringify(values, null, 2));
+        console.log('Executing project insert with', values.length, 'parameters');
 
         await db.query(query, values);
         
@@ -205,7 +200,7 @@ router.post('/', async (req, res) => {
             [projectId]
         );
         
-        console.log('Project created successfully:', JSON.stringify(createdProject.rows[0], null, 2));
+        console.log('Project created successfully:', createdProject.rows[0]?.project_id);
 
         // Tell the seller's followers about new public listings (best-effort, async)
         const created = createdProject.rows[0];
@@ -215,8 +210,9 @@ router.post('/', async (req, res) => {
                 .catch(() => {});
         }
 
-        res.status(201).json(createdProject.rows[0]);
+        res.status(201).json(deserializeListing(createdProject.rows[0]));
     } catch (err) {
+        if (err.status) return res.status(err.status).json({ message: err.message });
         console.error("Create project error:", err.message);
         console.error("Error details:", err);
         console.error("Error stack:", err.stack);
@@ -275,7 +271,7 @@ router.get('/', async (req, res) => {
                 COALESCE(interest_count, 0) as interest_count,
                 COALESCE(is_on_hold, false) as is_on_hold
             FROM projects 
-            WHERE (owner_id = $1 OR user_id = $1) 
+            WHERE owner_id = $1
             ORDER BY created_at DESC`,
             [userId]
         );
@@ -288,12 +284,10 @@ router.get('/', async (req, res) => {
 });
 
 // --- Check if user has Stripe Connect account ---
-// GET /api/projects/check-stripe-account
+// This static route must be declared before /:id.
 router.get('/check-stripe-account', async (req, res) => {
     try {
-        const userId = req.user.user_id;
-        const stripeStatus = await checkUserStripeAccount(userId);
-
+        const stripeStatus = await checkUserStripeAccount(req.user.user_id);
         res.json({
             hasStripeAccount: stripeStatus.hasStripeAccount,
             isOnboardingComplete: stripeStatus.isOnboardingComplete
@@ -313,7 +307,7 @@ router.get('/:id', async (req, res) => {
     try {
         // Updated query to allow access if the project is public OR the user is the owner
         const projectResult = await db.query(
-            `SELECT * FROM projects 
+            `SELECT p.*,EXISTS(SELECT 1 FROM checkout_reservations cr WHERE cr.project_id=p.project_id) AS checkout_reserved FROM projects p
              WHERE project_id = $1 AND (owner_id = $2 OR CAST(is_public AS BOOLEAN) IS TRUE)`,
             [projectId, userId]
         );
@@ -323,7 +317,8 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ message: 'Project not found or it is private.' });
         }
 
-        res.json(projectResult.rows[0]);
+        const row=projectResult.rows[0];
+        res.json(deserializeListing(row.owner_id===userId ? row : require('../utils/publicProject').publicProjectRecord(row)));
     } catch (err) {
         console.error("Get single project error:", err.message);
          // Check for invalid input format (e.g., non-integer ID)
@@ -365,11 +360,38 @@ router.put('/:id', async (req, res) => {
             return res.status(403).json({ message: 'You do not have permission to update this project.' });
         }
 
+        // Sanitize string inputs (parity with the create route)
+        const listing = normalizeListingFields(req.body);
+        const sanitizedName = sanitizeInput(name);
+        const sanitizedDescription = sanitizeInput(description);
+        const sanitizedDomain = sanitizeInput(domain);
+        const sanitizedDemoUrl = sanitizeInput(demo_url);
+        const sanitizedGithubUrl = sanitizeInput(github_url);
+
+        // Validate stage against the known lifecycle values
+        if (stage !== undefined && stage !== null) {
+            const validStages = ['idea', 'planning', 'mvp', 'development', 'launched', 'on_hold'];
+            if (!validStages.includes(String(stage).toLowerCase())) {
+                return res.status(400).json({ message: `Invalid project stage. Must be one of: ${validStages.join(', ')}` });
+            }
+        }
+
+        // Numeric fields must actually be numbers when provided
+        const numericFields = [
+            ['monthly_revenue', monthly_revenue],
+            ['sale_price', sale_price],
+        ];
+        for (const [fieldName, value] of numericFields) {
+            if (value !== undefined && value !== null && value !== '' && !Number.isFinite(Number(value))) {
+                return res.status(400).json({ message: `${fieldName} must be a valid number.` });
+            }
+        }
+
         // Handle projects for sale validation
         if (is_for_sale) {
             // Use existing sale_price if not provided in update
             const effectiveSalePrice = sale_price || existingProject.rows[0].sale_price;
-            if (!effectiveSalePrice || effectiveSalePrice <= 0) {
+            if (!effectiveSalePrice || Number(effectiveSalePrice) <= 0) {
                 return res.status(400).json({ message: 'A valid sale price is required for projects listed for sale.' });
             }
             // Use existing contact info if not provided in update
@@ -401,14 +423,15 @@ router.put('/:id', async (req, res) => {
             }
         };
         
-        addUpdateField('name', name);
-        addUpdateField('description', description);
-        addUpdateField('stage', stage);
-        addUpdateField('domain', domain);
-        addUpdateField('demo_url', demo_url);
-        addUpdateField('github_url', github_url);
-        addUpdateField('tech_stack', Array.isArray(tech_stack) ? JSON.stringify(tech_stack) : tech_stack);
-        addUpdateField('monthly_revenue', monthly_revenue);
+        addUpdateField('name', sanitizedName);
+        addUpdateField('description', sanitizedDescription);
+        addUpdateField('stage', listing.stage);
+        addUpdateField('domain', sanitizedDomain);
+        addUpdateField('demo_url', sanitizedDemoUrl);
+        addUpdateField('github_url', sanitizedGithubUrl);
+        addUpdateField('tech_stack', listing.tech_stack);
+        for (const field of ['category', 'subcategory', 'tags', 'stage_details']) addUpdateField(field, listing[field]);
+        addUpdateField('monthly_revenue', monthly_revenue !== undefined && monthly_revenue !== '' ? Number(monthly_revenue) : monthly_revenue);
         addUpdateField('is_public', is_public);
         addUpdateField('is_for_sale', is_for_sale);
 
@@ -417,8 +440,8 @@ router.put('/:id', async (req, res) => {
         
         if (projectIsForSale) {
             // Use provided values or keep existing
-            if (sale_price !== undefined) {
-                addUpdateField('sale_price', sale_price);
+            if (sale_price !== undefined && sale_price !== '') {
+                addUpdateField('sale_price', Number(sale_price));
             }
             addUpdateField('contact_email', contact_email || existingProject.rows[0].contact_email);
             addUpdateField('contact_phone', contact_phone || existingProject.rows[0].contact_phone);
@@ -452,46 +475,16 @@ router.put('/:id', async (req, res) => {
             WHERE project_id = $${currentParamIndex} AND owner_id = $${currentParamIndex + 1} 
         `;
         
-        await db.query(updateQuery, queryValues);
-
-        // Get updated project data
-        const updatedProjectResult = await db.query(
-            'SELECT * FROM projects WHERE project_id = $1 AND owner_id = $2',
-            [projectId, userId]
-        );
-
-        if (updatedProjectResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Project not found or you do not have permission to update.' });
-        }
-
-        let projectData = updatedProjectResult.rows[0];
-
-        // Check asset transfer flags and update status if all are true
-        if (projectData.code_transferred === true &&
-            projectData.domain_transferred === true &&
-            projectData.assets_transferred === true &&
-            projectData.status !== 'completed') {
-            
-            console.log(`Project ${projectData.project_id}: All assets transferred. Updating status to 'completed'.`);
-            const statusUpdateQuery = `
-                UPDATE projects 
-                SET status = 'completed', updated_at = CURRENT_TIMESTAMP 
-                WHERE project_id = $1 
-            `;
-            await db.query(statusUpdateQuery, [projectData.project_id]);
-            
-            // Get updated project data
-            const statusUpdatedProjectResult = await db.query(
-                'SELECT * FROM projects WHERE project_id = $1',
-                [projectData.project_id]
-            );
-            if (statusUpdatedProjectResult.rows.length > 0) {
-                projectData = statusUpdatedProjectResult.rows[0]; // Use the latest project data
-            }
-        }
-
-        res.json(projectData);
+        const projectData = await db.withTransaction(async client => {
+            const current = (await client.query('SELECT owner_id FROM projects WHERE project_id=$1 FOR UPDATE',[projectId])).rows[0];
+            if (current?.owner_id !== userId) throw Object.assign(new Error('Project ownership changed. Refresh before editing.'),{status:409});
+            if ((await client.query('SELECT project_id FROM checkout_reservations WHERE project_id=$1',[projectId])).rows.length) throw Object.assign(new Error('This project has an active checkout or handover. Finish that purchase before changing the listing.'),{status:409});
+            await client.query(updateQuery, queryValues);
+            return (await client.query('SELECT * FROM projects WHERE project_id=$1',[projectId])).rows[0];
+        });
+        res.json(deserializeListing(projectData));
     } catch (err) {
+        if (err.status === 400) return res.status(400).json({ message: err.message });
         console.error("Update project error:", err.message);
         // Check for invalid input format (e.g., non-integer ID)
         if (err.code === '22P02') { 
@@ -523,16 +516,18 @@ router.delete('/:id', async (req, res) => {
             return res.status(403).json({ message: 'You do not have permission to delete this project.' });
         }
         
-        // Now delete the project
-        await db.query(
-            'DELETE FROM projects WHERE project_id = $1',
-            [projectId]
-        );
+        await db.withTransaction(async client => {
+            const current = (await client.query('SELECT owner_id FROM projects WHERE project_id=$1 FOR UPDATE',[projectId])).rows[0];
+            if(current?.owner_id!==userId) throw Object.assign(new Error('Project ownership changed.'),{status:409});
+            if((await client.query('SELECT project_id FROM checkout_reservations WHERE project_id=$1',[projectId])).rows.length) throw Object.assign(new Error('Finish the active checkout or handover before deleting this project.'),{status:409});
+            await client.query('DELETE FROM projects WHERE project_id=$1',[projectId]);
+        });
 
         res.json({ message: 'Project deleted successfully.', projectId: projectId });
 
     } catch (err) {
-        console.error("Delete project error:", err.message);
+        if(err.status) return res.status(err.status).json({message:err.message});
+        console.error('Delete project error:',err.message);
          // Check for invalid input format (e.g., non-integer ID)
         if (err.code === '22P02') { 
             return res.status(400).json({ message: 'Invalid project ID format.' });
@@ -562,26 +557,29 @@ router.patch('/:id/toggle-hold', async (req, res) => {
             return res.status(403).json({ message: 'Permission denied.' });
         }
 
-        const newStatus = !projectResult.rows[0].is_on_hold;
-        
-        await db.query(
-            'UPDATE projects SET is_on_hold = $1, updated_at = CURRENT_TIMESTAMP WHERE project_id = $2',
-            [newStatus, projectId]
-        );
+        const newStatus = await db.withTransaction(async client => {
+            const current = (await client.query('SELECT owner_id,is_on_hold FROM projects WHERE project_id=$1 FOR UPDATE',[projectId])).rows[0];
+            if(current?.owner_id!==userId) throw Object.assign(new Error('Project ownership changed.'),{status:409});
+            if((await client.query('SELECT project_id FROM checkout_reservations WHERE project_id=$1',[projectId])).rows.length) throw Object.assign(new Error('Checkout or handover is active. Availability cannot be changed.'),{status:409});
+            const value=!current.is_on_hold;
+            await client.query('UPDATE projects SET is_on_hold=$1,updated_at=CURRENT_TIMESTAMP WHERE project_id=$2',[value,projectId]);
+            return value;
+        });
 
         res.json({ 
             message: `Project is now ${newStatus ? 'on hold' : 'active'}.`,
             is_on_hold: newStatus 
         });
     } catch (err) {
-        console.error("Toggle hold error:", err.message);
+        if(err.status) return res.status(err.status).json({message:err.message});
+        console.error('Toggle hold error:',err.message);
         res.status(500).json({ message: 'Server error toggling hold status.' });
     }
 });
 
 // --- UPLOAD Project Files ---
 // POST /api/projects/:id/files
-router.post('/:id/files', uploadMultiple('files', 10), handleMulterError, async (req, res) => {
+router.post('/:id/files', requireProjectOwner('id'), require('../middleware/rateLimiter').uploadLimiter, uploadMultiple('files', 10), handleMulterError, async (req, res) => {
     try {
         const projectId = req.params.id;
         const userId = req.user.user_id;
@@ -594,67 +592,7 @@ router.post('/:id/files', uploadMultiple('files', 10), handleMulterError, async 
             });
         }
 
-        // Check if project exists and user is the owner
-        const projectResult = await db.query(
-            'SELECT * FROM projects WHERE project_id = $1',
-            [projectId]
-        );
-
-        if (projectResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Project not found'
-            });
-        }
-
-        const project = projectResult.rows[0];
-        const ownerId = project.owner_id || project.user_id;
-
-        if (ownerId !== userId) {
-            return res.status(403).json({
-                success: false,
-                message: 'You do not have permission to upload files to this project'
-            });
-        }
-
-        // Process uploaded files
-        const uploadedFiles = [];
-        
-        for (const file of req.files) {
-            const fileId = uuidv4();
-            const fileType = getFileType(file.mimetype, file.originalname);
-            const fileCategory = getFileCategory(fileType);
-            
-            // Store file metadata in database
-            const result = await db.query(
-                `INSERT INTO project_files (
-                    file_id, project_id, user_id, file_name, original_name,
-                    file_type, file_category, file_size, mime_type,
-                    storage_path, storage_type, is_public, description
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                RETURNING file_id, file_name, original_name, file_type, file_category, file_size, mime_type, is_public, description, created_at`,
-                [
-                    fileId,
-                    projectId,
-                    userId,
-                    file.filename,
-                    file.originalname,
-                    fileType,
-                    fileCategory,
-                    file.size,
-                    file.mimetype,
-                    file.path,
-                    'local',
-                    is_public === 'true' || is_public === true,
-                    description || null
-                ]
-            );
-
-            uploadedFiles.push({
-                ...result.rows[0],
-                download_url: `/api/files/download/${fileId}`
-            });
-        }
+        const uploadedFiles = await require('../services/fileStorage').persistUploads(req.files, projectId, userId, req.body);
 
         res.status(201).json({
             success: true,
@@ -663,12 +601,8 @@ router.post('/:id/files', uploadMultiple('files', 10), handleMulterError, async 
         });
 
     } catch (error) {
-        console.error('Project file upload error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during file upload',
-            error: error.message
-        });
+        console.error('Upload failed:', error.code || error.message);
+        res.status(error.status || 500).json({ success:false,message:error.status ? error.message : 'Upload could not be saved. Please retry.' });
     }
 });
 
@@ -706,9 +640,9 @@ router.get('/:id/files', async (req, res) => {
         let params = [projectId];
 
         // If not owner, only show public files or files from public projects
-        if (!isOwner) {
+        if (!isOwner && !await require('../services/fileStorage').isPaidBuyer(projectId,userId)) {
             if (isPublic) {
-                query += ' AND (is_public = true OR is_public = 1)';
+                query += ` AND ${db.trueExpr('is_public')}`;
             } else {
                 return res.status(403).json({
                     success: false,
@@ -790,13 +724,13 @@ router.delete('/:id/files/:fileId', async (req, res) => {
 
         const file = fileResult.rows[0];
 
-        // Delete file from disk
-        if (fs.existsSync(file.storage_path)) {
-            fs.unlinkSync(file.storage_path);
+        await require('../services/fileStorage').deleteStoredFile(fileId,userId);
+        // Remove any legacy disk copy only after the database commit.
+        const filePath = resolveStoredUploadPath(file.storage_path);
+        if (filePath) {
+            fs.unlinkSync(filePath);
         }
 
-        // Delete file record from database
-        await db.query('DELETE FROM project_files WHERE file_id = $1', [fileId]);
 
         res.json({
             success: true,

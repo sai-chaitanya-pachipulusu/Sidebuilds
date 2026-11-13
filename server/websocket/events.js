@@ -1,5 +1,5 @@
 const db = require('../db');
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/jwt');
 
 // WebSocket event handlers for real-time features
 class WebSocketEvents {
@@ -28,7 +28,7 @@ class WebSocketEvents {
       // Enhanced token validation with detailed error handling
       let decoded;
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+        decoded = verifyToken(token);
       } catch (jwtError) {
         if (jwtError.name === 'TokenExpiredError') {
           // Token expired - emit refresh required event and allow graceful handling
@@ -762,8 +762,8 @@ class WebSocketEvents {
       }
 
       // Verify new token
-      const decoded = jwt.verify(newToken, process.env.JWT_SECRET);
-      const newUserId = decoded.user ? decoded.user.id : decoded.userId;
+      const decoded = verifyToken(newToken);
+      const newUserId = decoded.user ? (decoded.user.user_id || decoded.user.id) : decoded.userId;
       
       if (newUserId !== userId) {
         socket.emit('token_refresh_error', { error: 'Token user mismatch' });

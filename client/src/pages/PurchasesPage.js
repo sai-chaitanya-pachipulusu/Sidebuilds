@@ -18,7 +18,6 @@ import {
   Package,
   ArrowLeft,
   Eye,
-  Download,
   Loader2,
   AlertCircle,
   RefreshCw,
@@ -128,13 +127,13 @@ const ErrorState = ({ error, onRetry }) => (
 );
 
 // Purchase Card Component
-const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onViewProject, submissionLoading }) => {
+const PurchaseCard = ({ purchase, index, onConfirmReceipt, onCompletePayment, onOpenDispute, onViewProject, submissionLoading }) => {
   const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: Number.isInteger(Number(price)) ? 0 : 2,
+      maximumFractionDigits: 2,
     }).format(price);
 
   const getStatusColor = (status, escrowStatus) => {
@@ -174,9 +173,10 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
   };
 
   const getStatusText = (status, escrowStatus) => {
-    if (escrowStatus === 'held') return 'Funds Held in Escrow';
+    if (escrowStatus === 'held') return 'Payment held for handover';
     if (escrowStatus === 'released') return 'Funds Released';
-    if (escrowStatus === 'disputed') return 'Disputed';
+    if (escrowStatus === 'disputed') return 'Payment under review';
+    if (escrowStatus === 'refunded') return 'Refund recorded';
     return status.replace(/_/g, ' ');
   };
 
@@ -203,7 +203,7 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
         </div>
         <div className="text-right space-y-2">
           <p className="text-2xl font-bold text-green-400">
-            {formatPrice(purchase.price || purchase.accepted_price || 0)}
+            {formatPrice(purchase.offer_amount || purchase.price || purchase.accepted_price || 0)}
           </p>
           <Badge className={`${getStatusColor(purchase.status, purchase.escrow_status)} flex items-center space-x-1 w-fit ml-auto`}>
             {getStatusIcon(purchase.status, purchase.escrow_status)}
@@ -216,7 +216,7 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span className="text-sm text-gray-300">
-            {new Date(purchase.created_at).toLocaleDateString()}
+            {new Date(purchase.request_date || purchase.created_at).toLocaleDateString()}
           </span>
         </div>
         <div className="flex items-center space-x-2">
@@ -269,14 +269,15 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
         
         <div className="flex space-x-2">
           {/* Status-based actions */}
-          {purchase.status === 'seller_accepted_pending_payment' && (
+          {['interest_expressed', 'seller_terms_proposed', 'seller_accepted_pending_payment', 'agreement_reached_pending_payment', 'payment_processing'].includes(purchase.status) && (
             <Button 
               size="sm" 
               className="bg-green-600 hover:bg-green-700" 
-              onClick={() => onViewProject(purchase.project_id)}
+              onClick={() => onCompletePayment(purchase)}
+              disabled={submissionLoading}
             >
               <DollarSign className="w-4 h-4 mr-2" />
-              Complete Payment
+              Review agreement
             </Button>
           )}
           
@@ -293,20 +294,20 @@ const PurchaseCard = ({ purchase, index, onConfirmReceipt, onOpenDispute, onView
               ) : (
                 <CheckCircle className="w-4 h-4 mr-2" />
               )}
-              Confirm & Release Funds
+              Review Transfer
             </Button>
           )}
           
-          {/* Download Receipt - If released */}
+          {/* Completed transfers remain inspectable without another release. */}
           {(purchase.escrow_status === 'released' || (purchase.status === 'completed' && !purchase.escrow_status)) && (
             <Button
               size="sm"
               variant="outline"
               className="border-green-500/20 text-green-400 hover:bg-green-500/10"
-              onClick={() => toast.info('Receipt download coming soon!')}
+              onClick={() => onConfirmReceipt(purchase)}
             >
-              <Download className="w-4 h-4 mr-2" />
-              Receipt
+              <Eye className="w-4 h-4 mr-2" />
+              View transfer
             </Button>
           )}
         </div>
@@ -374,46 +375,22 @@ const PurchasesPage = () => {
     }, delay);
   }, [retryCount, fetchPurchases]);
 
-  const handleConfirmReceipt = async (purchase) => {
+  const handleConfirmReceipt = (purchase) => {
     if (!purchase.transaction_id) {
       toast.error('Transaction ID not found');
       return;
     }
     
-    if (!window.confirm(`Are you sure you want to confirm receipt for ${purchase.project_name}? This will release funds to the seller.`)) {
+    navigate(`/project-transfer?transactionId=${encodeURIComponent(purchase.transaction_id)}`);
+  };
+
+  const handleCompletePayment = (purchase) => {
+    const requestId = purchase.purchase_request_id || purchase.request_id || purchase.id;
+    if (!requestId) {
+      toast.error('Purchase request ID not found');
       return;
     }
-
-    try {
-      setSubmissionLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/confirm-receipt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ transactionId: purchase.transaction_id })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to confirm receipt');
-      }
-
-      toast.success('Receipt confirmed! Funds released to seller.');
-      
-      // Update local state
-      setPurchases(prev => prev.map(p => 
-        p.id === purchase.id ? { ...p, escrow_status: 'released', transfer_completed: 1 } : p
-      ));
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message);
-    } finally {
-      setSubmissionLoading(false);
-    }
+    navigate(`/purchase-agreement/${requestId}`);
   };
 
   const openDisputeModal = (purchase) => {
@@ -438,31 +415,19 @@ const PurchasesPage = () => {
       setSubmissionLoading(true);
       setDisputeError(null);
       
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/payments/report-issue`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          transactionId: selectedPurchase.transaction_id,
-          issueDescription: disputeReason
-        })
+      await api.post('/payments/report-issue', {
+        transactionId: selectedPurchase.transaction_id,
+        issueDescription: disputeReason
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to report issue');
-      }
 
       toast.success('Issue reported. Funds are frozen pending review.');
       setIsDisputeModalOpen(false);
       
       // Update local state
       setPurchases(prev => prev.map(p => 
-        p.id === selectedPurchase.id ? { ...p, escrow_status: 'disputed' } : p
+        (p.purchase_request_id || p.id) === (selectedPurchase.purchase_request_id || selectedPurchase.id)
+          ? { ...p, escrow_status: 'disputed' }
+          : p
       ));
     } catch (error) {
       console.error(error);
@@ -481,22 +446,20 @@ const PurchasesPage = () => {
     new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: Number.isInteger(Number(price)) ? 0 : 2,
+      maximumFractionDigits: 2,
     }).format(price);
 
-  const totalSpent = purchases
-    .filter(p => p.status === 'completed')
-    .reduce((sum, p) => sum + (p.price || p.accepted_price || 0), 0);
+  const receiptCompleted = purchase => purchase.transaction_status === 'completed' && purchase.escrow_status === 'released' && Boolean(purchase.transfer_completed);
+  const paidTransactions = [...new Map(purchases.filter(purchase => purchase.transaction_id && ['payment_completed', 'completed'].includes(purchase.transaction_status))
+    .map(purchase => [purchase.transaction_id, purchase])).values()];
+  const totalSpent = paidTransactions.reduce((sum, purchase) => sum + Number(purchase.paid_amount), 0);
 
   const activePurchases = purchases.filter(p =>
-    !['seller_rejected', 'buyer_withdrew_interest'].includes(p.status) && 
-    (p.status !== 'completed' || p.escrow_status === 'held')
+    !['seller_rejected', 'buyer_withdrew_interest', 'aborted_project_unavailable'].includes(p.status) && !receiptCompleted(p)
   ).length;
 
-  const completedPurchases = purchases.filter(p => 
-    p.status === 'completed' && p.escrow_status !== 'held'
-  ).length;
+  const completedPurchases = paidTransactions.filter(receiptCompleted).length;
 
   // Loading state with skeleton screens
   if (loading) {
@@ -648,6 +611,7 @@ const PurchasesPage = () => {
                   purchase={purchase}
                   index={index}
                   onConfirmReceipt={handleConfirmReceipt}
+                  onCompletePayment={handleCompletePayment}
                   onOpenDispute={openDisputeModal}
                   onViewProject={handleViewProject}
                   submissionLoading={submissionLoading}

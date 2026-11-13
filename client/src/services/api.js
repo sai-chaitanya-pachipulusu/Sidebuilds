@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { resolveServiceUrl } from '../config/apiUrl';
 // (Removed unused imports)
 
 // Create an axios instance
 const apiClient = axios.create({
     // Use consistent backend port (server runs on 5002)
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5002/api',
+    baseURL: resolveServiceUrl(process.env.REACT_APP_API_URL, 'http://localhost:5002/api'),
     headers: {
         'Content-Type': 'application/json',
     },
@@ -231,7 +232,8 @@ export const getUserProfile = async () => {
         return response.data;
     } catch (error) {
         console.error('Get User Profile API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to fetch user profile');
+        // Normalized error keeps `.status` so callers can react to 401/403.
+        throw toApiError(error, 'Failed to fetch user profile');
     }
 };
 
@@ -241,7 +243,7 @@ export const updateUserProfile = async (profileData) => {
         return response.data; // Returns the updated profile
     } catch (error) {
         console.error('Update User Profile API error:', error.response ? error.response.data : error.message);
-        throw error.response ? error.response.data : new Error('Failed to update user profile');
+        throw toApiError(error, 'Failed to update user profile');
     }
 };
 
@@ -298,8 +300,7 @@ export const getProjects = async () => {
             console.error('Response data:', error.response.data);
             console.error('Response status:', error.response.status);
         }
-        // Return empty array to prevent UI from breaking
-        return [];
+        throw new Error('Your projects are temporarily unavailable. Please try again.');
     }
 };
 
@@ -440,16 +441,16 @@ export const getPublicProjects = async () => {
         console.log('Fetching public projects');
         // Note: No token needed for this public endpoint
         const response = await apiClient.get('/public/projects'); 
-        console.log(`Received ${response.data.length} public projects`);
-        return response.data;
+        const projects = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        console.log(`Received ${projects.length} public projects`);
+        return projects;
     } catch (error) {
         console.error('Get Public Projects API error:', error);
         if (error.response) {
             console.error('Response data:', error.response.data);
             console.error('Response status:', error.response.status);
         }
-        // Return empty array to prevent UI from breaking
-        return [];
+        throw new Error('Public projects are temporarily unavailable. Please try again.');
     }
 };
 
@@ -459,30 +460,20 @@ export const getMarketplaceStats = async () => {
     const response = await apiClient.get('/public/stats/marketplace');
     const data = response.data;
     return {
-      totalProjects: data.totalProjects || 0,
-      activeListings: data.activeListings || 0,
-      totalValue: data.totalValue || 0,
-      successfulSales: data.successfulSales || 0,
-      projectsCount: data.totalProjects || 0,
-      activeUsers: data.activeUsers || 0,
-      developerCount: data.activeUsers || 0,
-      completedSales: data.successfulSales || 0,
-      avgValue: data.totalValue && data.successfulSales ? Math.floor(data.totalValue / data.successfulSales) : 0
+      totalProjects: Number(data.totalProjects ?? data.projects_count ?? 0),
+      activeListings: Number(data.activeListings ?? data.active_listings ?? 0),
+      totalValue: Number(data.totalValue ?? data.total_value ?? 0),
+      successfulSales: Number(data.successfulSales ?? data.completed_sales ?? 0),
+      projectsCount: Number(data.totalProjects ?? data.projects_count ?? 0),
+      activeUsers: Number(data.activeUsers ?? data.users_count ?? 0),
+      developerCount: Number(data.activeUsers ?? data.users_count ?? 0),
+      completedSales: Number(data.successfulSales ?? data.completed_sales ?? 0),
+      avgValue: Number(data.successfulSales ?? data.completed_sales) > 0
+        ? Math.floor(Number(data.totalValue ?? data.total_value ?? 0) / Number(data.successfulSales ?? data.completed_sales)) : 0
     };
   } catch (error) {
     console.error('Error fetching marketplace stats:', error);
-    // Return default stats to prevent UI from breaking
-    return {
-      projectsCount: 0,
-      developerCount: 0,
-      completedSales: 0,
-      avgValue: 0,
-      totalProjects: 0,
-      activeListings: 0,
-      totalValue: 0,
-      successfulSales: 0,
-      activeUsers: 0
-    };
+    throw new Error('Live statistics are temporarily unavailable.');
   }
 };
 
@@ -495,13 +486,16 @@ export const getMarketplaceProjects = async (params = {}) => {
         return response.data;
     } catch (error) {
         console.error('Get Marketplace Projects API error:', error);
+        if (error.response?.status === 400) {
+            throw new Error(error.response.data?.message || 'Please check your marketplace filters.');
+        }
         if (error.response) {
             console.error('Response data:', error.response.data);
             console.error('Response status:', error.response.status);
         } else if (error.request) {
             console.error('No response received. Request:', error.request);
         }
-        return []; // Return empty array instead of throwing to avoid breaking UI
+        throw new Error('Marketplace is temporarily unavailable. Please try again.');
     }
 };
 
@@ -594,15 +588,6 @@ export const createStripeAccountLink = async () => {
     }
 };
 
-// Debug API calls (development only)
-export const debugTransferProject = async (projectId, sellerId) => {
-    const response = await apiClient.post('/payments/debug/transfer-project', {
-        projectId,
-        sellerId
-    });
-    return response.data;
-};
-
 export const getProjectAnalytics = async (projectId) => {
     const response = await apiClient.get(`/projects/${projectId}/analytics`);
     return response.data;
@@ -675,14 +660,29 @@ export const confirmTransferReceived = async (requestId) => {
 // --- End Purchase Request API Calls ---
 
 // Function to create Stripe Checkout session for a purchase request
-export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId) => {
+export const createCheckoutSessionForPurchaseRequest = async (purchaseRequestId, idempotencyKey, agreementId) => {
     try {
-        const response = await apiClient.post('/payments/create-checkout-session', { purchase_request_id: purchaseRequestId });
+        const response = await apiClient.post(
+            '/payments/create-checkout-session',
+            { purchase_request_id: purchaseRequestId, agreement_id: agreementId },
+            idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
+        );
         return response.data; // Should contain { url: checkoutSessionUrl, sessionId: ... }
     } catch (error) {
         console.error('Error creating checkout session for purchase request:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
+};
+
+// Direct “Buy now” flow: reserve the project for this buyer, then use the
+// returned purchase-request ID with the server-authoritative Stripe endpoint.
+export const initiateProjectCheckout = async (projectId, idempotencyKey) => {
+    const response = await apiClient.post(
+        `/purchase-requests/projects/${projectId}/initiate-checkout`,
+        { terms_agreed_version: 'v_direct_buy_1.0' },
+        { headers: { 'Idempotency-Key': idempotencyKey } }
+    );
+    return response.data;
 };
 
 // --- New Workflow API Calls ---

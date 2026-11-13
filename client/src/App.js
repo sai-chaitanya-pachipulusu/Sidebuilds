@@ -23,6 +23,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePageSimple'));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
+const PurchaseAgreementPage = lazy(() => import('./pages/PurchaseAgreementPage'));
 const MyProjectsPage = lazy(() => import('./pages/MyProjectsPage'));
 const ProjectFormPage = lazy(() => import('./pages/ProjectFormPage'));
 const ProfileSettingsPage = lazy(() => import('./pages/ProfileSettingsPage'));
@@ -42,6 +43,7 @@ const ContactPage = lazy(() => import('./pages/ContactPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const TrendingPage = lazy(() => import('./pages/TrendingPage'));
 const VerifyPage = lazy(() => import('./pages/VerifyPage'));
@@ -107,6 +109,7 @@ const AppContent = () => {
                       <Route path="/help" element={<ComponentErrorBoundary><FAQPage /></ComponentErrorBoundary>} />
                       <Route path="/how-it-works" element={<ComponentErrorBoundary><HowItWorksPage /></ComponentErrorBoundary>} />
                       <Route path="/pricing" element={<ComponentErrorBoundary><PricingPage /></ComponentErrorBoundary>} />
+                      <Route path="/privacy" element={<ComponentErrorBoundary><PrivacyPage /></ComponentErrorBoundary>} />
                       <Route path="/terms" element={<ComponentErrorBoundary><TermsPage /></ComponentErrorBoundary>} />
                       <Route path="/trending" element={<ComponentErrorBoundary><TrendingPage /></ComponentErrorBoundary>} />
                       <Route path="/verify" element={<ComponentErrorBoundary><VerifyPage /></ComponentErrorBoundary>} />
@@ -125,6 +128,7 @@ const AppContent = () => {
                         <Route path="/profile-settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/settings" element={<ComponentErrorBoundary><ProfileSettingsPage /></ComponentErrorBoundary>} />
                         <Route path="/notifications" element={<ComponentErrorBoundary><NotificationsPage /></ComponentErrorBoundary>} />
+                        <Route path="/purchase-agreement/:requestId" element={<ComponentErrorBoundary><PurchaseAgreementPage /></ComponentErrorBoundary>} />
                         <Route path="/purchases" element={<ComponentErrorBoundary><PurchasesPage /></ComponentErrorBoundary>} />
                         <Route path="/saved" element={<ComponentErrorBoundary><SavedProjectsPage /></ComponentErrorBoundary>} />
                         <Route path="/admin" element={<ComponentErrorBoundary><AdminDashboardPage /></ComponentErrorBoundary>} />

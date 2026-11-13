@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const auth = require('../middleware/authMiddleware');
 const db = require('../db');
+const { randomUUID } = require('node:crypto');
+router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
 // Verify the purchase request exists and the current user is a participant.
 // Returns the request row or sends the appropriate error response.
@@ -149,7 +151,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
     const { content, message_type = 'general' } = req.body;
 
-    if (!content || content.trim() === '') {
+    if (typeof content !== 'string' || content.trim() === '') {
         return res.status(400).json({ msg: 'Message content is required' });
     }
 
@@ -169,10 +171,10 @@ router.post('/', auth, async (req, res) => {
         // "message" mirrors "content" for legacy readers of this table
         const newMessage = await db.query(
             `INSERT INTO purchase_request_messages
-                (purchase_request_id, sender_id, recipient_id, content, message, message_type)
-             VALUES ($1, $2, $3, $4, $4, $5)
+                (purchase_request_id, sender_id, recipient_id, content, message, message_type, message_id)
+             VALUES ($1, $2, $3, $4, $4, $5, $6)
              RETURNING message_id, purchase_request_id, sender_id, recipient_id, content, message_type, created_at`,
-            [requestId, req.user.user_id, recipientId, trimmedContent, message_type]
+            [requestId, req.user.user_id, recipientId, trimmedContent, message_type, randomUUID()]
         );
 
         const savedMessage = newMessage.rows[0];
@@ -223,7 +225,7 @@ router.post('/', auth, async (req, res) => {
                 recipientId,
                 'new_message',
                 `You have a new message regarding "${request.project_name}".`,
-                `/dashboard/requests/${requestId}`
+                `/purchase-agreement/${requestId}#purchase-conversation`
             );
         } catch (notificationErr) {
             console.error('Error creating notification:', notificationErr.message);

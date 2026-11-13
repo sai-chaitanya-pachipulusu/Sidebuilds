@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus, aiIdeaAssist, uploadProjectFiles } from '../services/api';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { createProject, getProjectById, updateProject, checkStripeOnboardingStatus, aiIdeaAssist } from '../services/api';
+import useProjectDraft from '../hooks/useProjectDraft';
+import ListingChecklist from '../components/ListingChecklist';
+import { buyerBriefFields, briefText } from '../utils/listingGuidance';
 import ElegantLoadingScreen from '../components/ElegantLoadingScreen';
 import ProjectFileUploader from '../components/ProjectFileUploader';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import StripeConnectModal from '../components/StripeConnectModal';
 import { Button } from '../shadcn/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../shadcn/ui/card';
+import { Card, CardContent, CardHeader } from '../shadcn/ui/card';
 import { Input } from '../shadcn/ui/input';
 import { Textarea } from '../shadcn/ui/textarea';
 import { Checkbox } from '../shadcn/ui/checkbox';
@@ -37,6 +40,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
     const { id: projectId } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     
     const editMode = propEditMode || !!projectId;
 
@@ -52,38 +56,41 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         category: '',
         subcategory: '',
         tags: '',
-        is_public: true,
+        is_public: false,
         is_for_sale: false,
         sale_price: '',
         monthly_revenue: '',
         contact_email: user?.email || '',
         payment_method: 'stripe'
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(editMode);
+    const [loadError, setLoadError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showStripeModal, setShowStripeModal] = useState(false);
     const [stripeStatus, setStripeStatus] = useState(null);
     const [aiBusy, setAiBusy] = useState(false);
-    const [uploadedFiles, setUploadedFiles] = useState([]);
-    const [showFileUpload, setShowFileUpload] = useState(false);
+    const [showFileUpload, setShowFileUpload] = useState(location.hash === '#files');
+    const draft = useProjectDraft({ userId: user?.user_id || user?.id, enabled: !editMode, formData, setFormData });
+
+    useEffect(() => {
+        if (editMode && location.hash === '#files') setShowFileUpload(true);
+    }, [editMode, location.hash]);
+
+    useEffect(() => {
+        let cancelled = false;
+        checkStripeOnboardingStatus().then(status => {
+            if (!cancelled) setStripeStatus(status);
+        }).catch(() => {
+            if (!cancelled) setStripeStatus({ unavailable: true, isOnboardingComplete: false });
+        });
+        return () => { cancelled = true; };
+    }, []);
 
     const fetchProjectAndStripeStatus = useCallback(async () => {
+        if (!editMode || !projectId) return;
+        setLoading(true);
+        setLoadError('');
         try {
-            // Add timeout to prevent infinite loading
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Request timeout')), 10000)
-            );
-            
-            // Fetch Stripe status with timeout - don't block if it fails
-            try {
-                const status = await Promise.race([checkStripeOnboardingStatus(), timeoutPromise]);
-                setStripeStatus(status);
-            } catch (stripeErr) {
-                console.log('Stripe status check failed (non-blocking):', stripeErr.message);
-                // Set a default status so the page still works
-                setStripeStatus({ isOnboardingComplete: false, needsAttention: false });
-            }
-
             if (editMode && projectId) {
                 const data = await getProjectById(projectId);
                 setFormData({
@@ -95,21 +102,24 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                     demo_url: data.demo_url || '',
                     github_url: data.github_url || '',
                     tech_stack: Array.isArray(data.tech_stack) ? data.tech_stack : [],
-                    is_public: data.is_public ?? true,
-                    is_for_sale: data.is_for_sale ?? false,
+                    category: data.category || '',
+                    subcategory: data.subcategory || '',
+                    tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
+                    is_public: data.is_public === true || data.is_public === 1,
+                    is_for_sale: data.is_for_sale === true || data.is_for_sale === 1,
                     sale_price: data.sale_price || '',
-                    monthly_revenue: data.monthly_revenue || '',
+                    monthly_revenue: data.monthly_revenue ?? '',
                     contact_email: data.contact_email || user?.email || '',
                     payment_method: data.payment_method || 'stripe'
                 });
             }
         } catch (error) {
             console.error('Error loading page data:', error);
-            // Still allow the page to load even if there's an error
+            setLoadError('Your project could not be loaded. Please retry before editing.');
         } finally {
             setLoading(false);
         }
-    }, [editMode, projectId, user]);
+    }, [editMode, projectId, user?.email]);
 
     useEffect(() => {
         fetchProjectAndStripeStatus();
@@ -142,12 +152,11 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
         checkStatus();
     };
     
-    const handleFilesUploaded = (files) => {
-        setUploadedFiles(prev => [...prev, ...files]);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const action = e.nativeEvent?.submitter?.value;
+        const savePrivately = action === 'private' || action === 'files';
+        const payload = savePrivately ? { ...formData, is_public: false, is_for_sale: false } : formData;
         setIsSubmitting(true);
         
         // Frontend validation
@@ -162,48 +171,40 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
             setIsSubmitting(false);
             return;
         }
+
+        if (payload.is_for_sale && !payload.is_public) {
+            toast.error('Enable public visibility to list for sale, or choose Save privately.');
+            setIsSubmitting(false);
+            return;
+        }
         
-        if (formData.is_for_sale && (!formData.sale_price || formData.sale_price <= 0)) {
+        if (payload.is_for_sale && (!payload.sale_price || payload.sale_price <= 0)) {
             toast.error("A valid sale price is required for projects listed for sale");
             setIsSubmitting(false);
             return;
         }
         
+        const loadingToast = toast.loading(editMode ? 'Updating project...' : 'Creating your project...');
         try {
-            console.log('Submitting project data:', formData);
-            const loadingToast = toast.loading(editMode ? 'Updating project...' : 'Creating your project...');
             
             if (editMode && projectId) {
-                await updateProject(projectId, formData);
+                await updateProject(projectId, payload);
                 toast.success("Project Updated!", { id: loadingToast });
                 navigate(`/projects/${projectId}`);
             } else {
-                const newProject = await createProject(formData);
-                console.log('Project created successfully:', newProject);
-                
-                // Upload any pending files if the file uploader is shown
-                if (showFileUpload && uploadedFiles.length > 0 && newProject.project_id) {
-                    try {
-                        const fileUploadToast = toast.loading('Uploading project files...');
-                        // Files are already uploaded by the ProjectFileUploader component
-                        toast.success('Project files uploaded!', { id: fileUploadToast });
-                    } catch (uploadErr) {
-                        console.error('File upload error:', uploadErr);
-                        toast.error('Project created but some files failed to upload', { id: loadingToast });
-                    }
-                }
-                
+                const newProject = await createProject(payload);
+                draft.clearDraft();
                 toast.success("Project Created!", { id: loadingToast });
-                navigate(`/projects/${newProject.project_id}`);
+                navigate(action === 'files' ? `/projects/edit/${newProject.project_id}#files` : `/projects/${newProject.project_id}`);
             }
         } catch (err) {
             console.error(`Failed to ${editMode ? 'update' : 'create'} project:`, err);
-            if (err.response?.data?.error_code === 'stripe_account_required') {
-                toast.error("Stripe account required to list projects for sale.");
+            if ((err.error_code || err.data?.error_code || err.response?.data?.error_code) === 'stripe_account_required') {
+                toast.error("Connect Stripe to sell, or save a private project and finish later.", { id: loadingToast });
                 setShowStripeModal(true);
             } else {
                 const errorMessage = err.response?.data?.message || err.message || `Error ${editMode ? 'Updating' : 'Creating'} Project`;
-                toast.error(errorMessage);
+                toast.error(errorMessage, { id: loadingToast });
             }
         } finally {
             setIsSubmitting(false);
@@ -212,6 +213,12 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
 
     if (loading) {
         return <ElegantLoadingScreen />;
+    }
+    if (loadError) {
+        return <div className="max-w-4xl mx-auto p-8">
+            <Alert variant="destructive"><AlertTitle>Project unavailable</AlertTitle><AlertDescription>{loadError}</AlertDescription></Alert>
+            <Button className="mt-4" onClick={fetchProjectAndStripeStatus}>Retry</Button>
+        </div>;
     }
     
     return (
@@ -224,21 +231,24 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
             >
                 <Card className="bg-gray-900/50 border-gray-700">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold text-white">
+                        <h1 className="text-3xl font-bold text-white">
                             {editMode ? 'Edit Your Project' : 'Create a New Project'}
-                        </CardTitle>
+                        </h1>
                         <p className="text-gray-400 mt-2">
-                            {editMode ? 'Update the details of your existing project.' : 'Fill out the details below to get your project listed.'}
+                            {editMode ? 'Update your project and help its next owner get started.' : 'Start with a name. Build your listing privately, then publish when you are ready.'}
                         </p>
+                        {!editMode && <p role="status" className="text-sm text-emerald-300 mt-3">{draft.restored ? 'Draft restored. ' : ''}{draft.status}</p>}
+                        <Link to="/my-projects" className="text-sm text-gray-300 underline underline-offset-4 mt-3 inline-block">Back to my projects</Link>
                     </CardHeader>
                     <CardContent>
+                        <ListingChecklist project={formData} />
                         {stripeStatus && !stripeStatus.isOnboardingComplete && formData.is_for_sale && (
                             <motion.div variants={itemVariants}>
                                 <Alert variant="destructive" className="mb-6">
                                     <Info className="h-4 w-4" />
                                     <AlertTitle>Action Required</AlertTitle>
                                     <AlertDescription>
-                                        You need to complete your Stripe onboarding to sell projects. 
+                                        {stripeStatus.unavailable ? 'Payment setup could not be checked. You can still save privately and finish later.' : 'Connect Stripe before listing for sale. You can save privately and finish this later.'}
                                         <Button variant="link" onClick={() => setShowStripeModal(true)} className="ml-2 text-blue-400">
                                             Complete Onboarding <ExternalLink className="h-4 w-4 ml-1" />
                                         </Button>
@@ -257,7 +267,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 <div>
                                     <Label htmlFor="stage">Current Stage</Label>
                                     <Select onValueChange={(value) => handleSelectChange('stage', value)} value={formData.stage}>
-                                        <SelectTrigger>
+                                        <SelectTrigger id="stage">
                                             <SelectValue placeholder="Select a stage" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -272,7 +282,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                                     const { template } = await aiIdeaAssist({ stage: formData.stage, category: 'general' });
                                                     setFormData(prev => ({ ...prev, stage_details: { ...prev.stage_details, ...template } }));
                                                 } catch (e) {
-                                                    console.error(e);
+                                                    toast.error('The writing assistant is unavailable. You can keep writing below.');
                                                 } finally { setAiBusy(false); }
                                             }}>
                                             {aiBusy ? 'Generating…' : 'AI Fill Stage Template'}
@@ -293,7 +303,7 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 />
                                 <p className="text-sm text-gray-500 mt-1">
                                     A brief, compelling description of what your project does. Focus on the value proposition.
-                                    <span className="text-blue-400 ml-1">{formData.description.length}/500 characters</span>
+                                    <span className="text-blue-400 ml-1">{formData.description.length} characters</span>
                                 </p>
                             </motion.div>
 
@@ -311,10 +321,22 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                             </motion.div>
 
                             <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><Label htmlFor="demo_url">Demo URL (Optional)</Label>
+                                    <Input id="demo_url" name="demo_url" type="url" value={formData.demo_url} onChange={handleChange} placeholder="https://demo.example.com" />
+                                    <p className="text-xs text-gray-400 mt-1">A working preview helps buyers try the project at any stage.</p>
+                                </div>
+                                <div><Label htmlFor="tech_stack">Technologies</Label>
+                                    <Input id="tech_stack" value={Array.isArray(formData.tech_stack) ? formData.tech_stack.join(', ') : formData.tech_stack}
+                                        onChange={e => setFormData(prev => ({ ...prev, tech_stack: e.target.value }))} placeholder="React, Node.js, PostgreSQL" />
+                                    <p className="text-xs text-gray-400 mt-1">Separate technologies with commas so buyers can find your stack.</p>
+                                </div>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <Label htmlFor="category">Category</Label>
                                     <Select onValueChange={(value) => handleSelectChange('category', value)} value={formData.category}>
-                                        <SelectTrigger>
+                                        <SelectTrigger id="category">
                                             <SelectValue placeholder="Select a category" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -349,14 +371,14 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 {formData.stage === 'idea' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <Label>Problem</Label>
-                                            <Textarea name="stage_details.problem" value={formData.stage_details.problem || ''}
+                                            <Label htmlFor="detail-problem">Problem</Label>
+                                            <Textarea id="detail-problem" name="stage_details.problem" value={formData.stage_details.problem || ''}
                                                 onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, problem: e.target.value }}))}
                                                 rows={3} />
                                         </div>
                                         <div>
-                                            <Label>Audience</Label>
-                                            <Textarea name="stage_details.audience" value={formData.stage_details.audience || ''}
+                                            <Label htmlFor="detail-audience">Audience</Label>
+                                            <Textarea id="detail-audience" name="stage_details.audience" value={formData.stage_details.audience || ''}
                                                 onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, audience: e.target.value }}))}
                                                 rows={3} />
                                         </div>
@@ -364,24 +386,24 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 )}
                                 {formData.stage === 'planning' && (
                                     <div>
-                                        <Label>Milestones</Label>
-                                        <Textarea name="stage_details.milestones" value={Array.isArray(formData.stage_details.milestones)? formData.stage_details.milestones.join(', ') : (formData.stage_details.milestones || '')}
+                                        <Label htmlFor="detail-milestones">Milestones</Label>
+                                        <Textarea id="detail-milestones" name="stage_details.milestones" value={Array.isArray(formData.stage_details.milestones)? formData.stage_details.milestones.join(', ') : (formData.stage_details.milestones || '')}
                                             onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, milestones: e.target.value.split(',').map(s=>s.trim()).filter(Boolean) }}))}
                                             rows={3} placeholder="MVP, Beta, Launch" />
                                     </div>
                                 )}
                                 {formData.stage === 'mvp' && (
                                     <div>
-                                        <Label>Must-have Features</Label>
-                                        <Textarea name="stage_details.must_have_features" value={Array.isArray(formData.stage_details.must_have_features)? formData.stage_details.must_have_features.join(', ') : (formData.stage_details.must_have_features || '')}
+                                        <Label htmlFor="detail-must_have_features">Must-have Features</Label>
+                                        <Textarea id="detail-must_have_features" name="stage_details.must_have_features" value={Array.isArray(formData.stage_details.must_have_features)? formData.stage_details.must_have_features.join(', ') : (formData.stage_details.must_have_features || '')}
                                             onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, must_have_features: e.target.value.split(',').map(s=>s.trim()).filter(Boolean) }}))}
                                             rows={3} placeholder="Auth, Core workflow" />
                                     </div>
                                 )}
                                 {formData.stage === 'development' && (
                                     <div>
-                                        <Label>Roadmap</Label>
-                                        <Textarea name="stage_details.roadmap" value={Array.isArray(formData.stage_details.roadmap)? formData.stage_details.roadmap.join(', ') : (formData.stage_details.roadmap || '')}
+                                        <Label htmlFor="detail-roadmap">Roadmap</Label>
+                                        <Textarea id="detail-roadmap" name="stage_details.roadmap" value={Array.isArray(formData.stage_details.roadmap)? formData.stage_details.roadmap.join(', ') : (formData.stage_details.roadmap || '')}
                                             onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, roadmap: e.target.value.split(',').map(s=>s.trim()).filter(Boolean) }}))}
                                             rows={3} placeholder="Feature A, Feature B" />
                                     </div>
@@ -389,13 +411,8 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 {formData.stage === 'launched' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <Label htmlFor="demo_url">Demo URL</Label>
-                                            <Input id="demo_url" name="demo_url" value={formData.demo_url}
-                                                onChange={handleChange} placeholder="https://demo.example.com" />
-                                        </div>
-                                        <div>
-                                            <Label>Pricing Tiers</Label>
-                                            <Textarea name="stage_details.pricing" value={Array.isArray(formData.stage_details.pricing)? formData.stage_details.pricing.join(', ') : (formData.stage_details.pricing || '')}
+                                            <Label htmlFor="detail-pricing">Pricing Tiers</Label>
+                                            <Textarea id="detail-pricing" name="stage_details.pricing" value={Array.isArray(formData.stage_details.pricing)? formData.stage_details.pricing.join(', ') : (formData.stage_details.pricing || '')}
                                                 onChange={(e)=> setFormData(p=>({...p, stage_details: { ...p.stage_details, pricing: e.target.value.split(',').map(s=>s.trim()).filter(Boolean) }}))}
                                                 rows={3} placeholder="Free, Pro, Team" />
                                         </div>
@@ -403,7 +420,20 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 )}
                             </motion.div>
 
+                            <motion.div id="buyer-brief" variants={itemVariants} className="space-y-5 border-t border-gray-700 pt-6 scroll-mt-24">
+                                <div><h2 className="text-xl font-semibold">Write your buyer brief</h2>
+                                    <p className="text-sm text-gray-400 mt-2">Help the next owner understand the handover. These details follow your project's visibility. Leave out passwords, API keys and private customer data.</p>
+                                </div>
+                                {buyerBriefFields.map(field => <div key={field.key}>
+                                    <Label htmlFor={`brief-${field.key}`}>{field.label}</Label>
+                                    <Textarea id={`brief-${field.key}`} value={typeof formData.stage_details[field.key] === 'string' ? formData.stage_details[field.key] : briefText(formData.stage_details[field.key])} maxLength={2000} rows={3} placeholder={field.placeholder}
+                                        onChange={e => setFormData(prev => ({ ...prev, stage_details: { ...prev.stage_details, [field.key]: e.target.value } }))} />
+                                </div>)}
+                            </motion.div>
+
                             <motion.div variants={itemVariants} className="space-y-4">
+                                <h2 className="text-lg font-semibold">Publish when you are ready</h2>
+                                <p className="text-sm text-gray-400">Private projects are visible only to you. A marketplace listing needs both public visibility and sale enabled.</p>
                                 <div className="flex items-center space-x-2">
                                     <Checkbox id="is_public" name="is_public" checked={formData.is_public} onCheckedChange={(checked) => handleChange({ target: { name: 'is_public', value: checked } })} />
                                     <Label htmlFor="is_public">Make Project Publicly Visible</Label>
@@ -425,35 +455,39 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <Label htmlFor="sale_price">Sale Price (USD)</Label>
-                                            <Input id="sale_price" name="sale_price" type="number" value={formData.sale_price} onChange={handleChange} placeholder="e.g., 5000" required={formData.is_for_sale} />
+                                            <Input id="sale_price" name="sale_price" type="number" min="0.01" step="0.01" value={formData.sale_price} onChange={handleChange} placeholder="e.g., 5000" required={formData.is_for_sale} />
                                         </div>
                                         <div>
                                             <Label htmlFor="monthly_revenue">Monthly Revenue (USD)</Label>
-                                            <Input id="monthly_revenue" name="monthly_revenue" type="number" value={formData.monthly_revenue} onChange={handleChange} placeholder="e.g., 500" />
+                                            <Input id="monthly_revenue" name="monthly_revenue" type="number" min="0" step="0.01" value={formData.monthly_revenue} onChange={handleChange} placeholder="e.g., 500" />
                                         </div>
                                     </div>
                                 </motion.div>
                             )}
 
                             {/* File Upload Section */}
-                            <motion.div variants={itemVariants} className="space-y-4">
+                            <motion.div id="files" variants={itemVariants} className="space-y-4 scroll-mt-24">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                         <FileUp className="w-5 h-5" />
                                         Project Files
                                     </h3>
-                                    <Button
+                                    {editMode && <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setShowFileUpload(!showFileUpload)}
                                     >
                                         {showFileUpload ? 'Hide File Upload' : 'Add Files'}
-                                    </Button>
+                                    </Button>}
                                 </div>
+                                {!editMode && <div className="border border-gray-700 p-4 space-y-3">
+                                    <p className="text-sm text-gray-300">Save your project privately first, then attach files to it. No payment setup is needed.</p>
+                                    <Button type="submit" value="files" formNoValidate variant="outline" disabled={isSubmitting}>Save privately & add files</Button>
+                                </div>}
                                 
                                 <AnimatePresence>
-                                    {showFileUpload && (
+                                    {editMode && showFileUpload && (
                                         <motion.div
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: 'auto' }}
@@ -466,7 +500,6 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                             </p>
                                             <ProjectFileUploader
                                                 projectId={projectId}
-                                                onFilesUploaded={handleFilesUploaded}
                                                 acceptedTypes={['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip', 'txt', 'md', 'json', 'js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py']}
                                                 maxFiles={10}
                                                 maxSize={50}
@@ -478,9 +511,10 @@ const ProjectFormPage = ({ editMode: propEditMode }) => {
                                 </AnimatePresence>
                             </motion.div>
 
-                            <motion.div variants={itemVariants} className="flex justify-end pt-4">
+                            <motion.div variants={itemVariants} className="flex flex-wrap justify-end gap-3 pt-4 border-t border-gray-700">
+                                {(formData.is_public || formData.is_for_sale) && <Button type="submit" value="private" formNoValidate variant="outline" disabled={isSubmitting}>Save privately</Button>}
                                 <Button type="submit" size="lg" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Saving...' : (editMode ? 'Save Changes' : 'Create Project')}
+                                    {isSubmitting ? 'Saving...' : editMode ? 'Save Changes' : formData.is_for_sale && formData.is_public ? 'Publish sale listing' : formData.is_public ? 'Publish project' : 'Create private project'}
                                 </Button>
                             </motion.div>
                         </form>

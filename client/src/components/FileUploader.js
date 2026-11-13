@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import toast from 'react-hot-toast'
+import { openExternalUrl } from '../utils/security'
 
 const FileUploader = ({ 
   onFilesChange, 
@@ -336,7 +337,7 @@ const FileUploader = ({
                         <>
                           <CheckCircle className="w-4 h-4 text-green-400" />
                           <button
-                            onClick={() => window.open(file.url, '_blank')}
+                            onClick={() => openExternalUrl(file.url)}
                             className="p-2 text-gray-400 hover:text-white transition-colors duration-200"
                             title="View"
                           >

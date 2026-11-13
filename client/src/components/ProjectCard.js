@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { loginDestination } from '../utils/navigation';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import {
   Eye,
@@ -29,6 +30,7 @@ import { Badge } from '../shadcn/ui/badge';
 import TrustBadge, { TrustBadgeGroup } from './TrustBadge';
 import { useAuth } from '../context/AuthContext';
 import { getSavedProjectIds, saveProject, unsaveProject } from '../services/api';
+import { sanitizeUrl } from '../utils/security';
 
 // Session-level cache of the user's saved project ids so a grid of cards
 // costs one request, not one per card.
@@ -46,13 +48,14 @@ const invalidateSavedIds = () => { savedIdsPromise = null; };
 
 // Helper functions
 const formatPrice = (price) => {
-  if (!price) return 'Contact for Price';
+  const amount = Number(price);
+  if (!Number.isFinite(amount) || amount <= 0) return 'Contact for Price';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 };
 
 const formatNumber = (num) => {
@@ -149,6 +152,8 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
   const [savePending, setSavePending] = useState(false);
   const cardRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const detailState = location.pathname === '/marketplace' ? { marketplaceSearch: location.pathname + location.search } : undefined;
   const { isAuthenticated } = useAuth();
 
   // Reflect the user's real saved state
@@ -169,7 +174,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
     e.preventDefault();
 
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(loginDestination(location.pathname + location.search));
       return;
     }
     if (savePending) return;
@@ -299,7 +304,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
       onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onClick={() => navigate(`/projects/${project.project_id}`)}
+      onClick={() => navigate(`/projects/${project.project_id}`, { state: detailState })}
       style={{
         perspective: 1000,
         transformStyle: 'preserve-3d',
@@ -428,7 +433,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Link to={`/projects/${project.project_id}`}>
+                    <Link to={`/projects/${project.project_id}`} state={detailState} onClick={e => e.stopPropagation()}>
                       <motion.button
                         className="px-4 py-2 bg-white text-black text-sm font-bold uppercase flex items-center gap-2 hover:bg-gray-200 transition-colors"
                         initial={{ y: 10, opacity: 0 }}
@@ -444,7 +449,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                     
                     {project.demo_url && (
                       <motion.a
-                        href={project.demo_url}
+                        href={sanitizeUrl(project.demo_url) || undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-white/10 text-white rounded-none text-sm font-medium flex items-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
@@ -468,7 +473,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
               {/* Title and price row */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <Link to={`/projects/${project.project_id}`}>
+                  <Link to={`/projects/${project.project_id}`} state={detailState} onClick={e => e.stopPropagation()}>
                     <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors truncate">
                       {project.name}
                     </h3>
@@ -491,7 +496,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                 </div>
                 
                 {/* Enhanced price display */}
-                {showPrice && project.is_for_sale && project.sale_price && (
+                {showPrice && project.is_for_sale && (
                   <div className="flex flex-col items-end shrink-0">
                     <div className="flex items-center gap-1.5">
                       {isHotDeal && (
@@ -580,7 +585,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                 <div className="flex items-center gap-2">
                   {project.github_url && (
                     <motion.a
-                      href={project.github_url}
+                      href={sanitizeUrl(project.github_url) || undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"
@@ -594,7 +599,7 @@ const ProjectCard = ({ project, variant = 'default', showPrice = true, className
                   
                   {project.domain && (
                     <motion.a
-                      href={`https://${project.domain}`}
+                      href={sanitizeUrl(project.domain) || undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-7 h-7 rounded-none bg-white/[0.05] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.1] transition-colors"

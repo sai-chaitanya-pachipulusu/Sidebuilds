@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/jwt');
 const db = require('../db');
 
 /**
@@ -48,16 +48,17 @@ class SocketAuthManager {
   async validateAndAuthenticateSocket(socket, token, next) {
     try {
       // Verify JWT token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = verifyToken(token);
+      const userId = decoded.user?.user_id || decoded.user?.id;
       
-      if (!decoded.user?.id) {
+      if (!userId) {
         throw new Error('Invalid token payload: missing user data');
       }
 
       // Get user data from database to ensure user still exists
       const userResult = await db.query(
         'SELECT user_id, username, email, is_active FROM users WHERE user_id = $1',
-        [decoded.user.id]
+        [userId]
       );
 
       if (userResult.rows.length === 0) {
@@ -76,7 +77,7 @@ class SocketAuthManager {
       
       // Check if token is about to expire (within buffer time)
       if (tokenExpiry.getTime() - now.getTime() < this.tokenRefreshBuffer) {
-        console.log(`[SocketAuth] Token for user ${decoded.user.id} expires soon, notifying client`);
+        console.log(`[SocketAuth] Token for user ${userId} expires soon, notifying client`);
         // Don't reject, but notify client to refresh
         setTimeout(() => {
           if (socket.connected) {
@@ -89,9 +90,9 @@ class SocketAuthManager {
       }
 
       // Set authentication data on socket
-      socket.userId = decoded.user.id;
+      socket.userId = userId;
       socket.user = {
-        id: decoded.user.id,
+        id: userId,
         username: userData.username,
         email: userData.email
       };
@@ -141,14 +142,15 @@ class SocketAuthManager {
    */
   async refreshSocketToken(socket, newToken) {
     try {
-      const decoded = jwt.verify(newToken, process.env.JWT_SECRET);
+      const decoded = verifyToken(newToken);
+      const userId = decoded.user?.user_id || decoded.user?.id;
       
-      if (!decoded.user?.id) {
+      if (!userId) {
         throw new Error('Invalid token payload');
       }
 
       // Verify this is the same user
-      if (decoded.user.id !== socket.userId) {
+      if (userId !== socket.userId) {
         throw new Error('Token user mismatch');
       }
 

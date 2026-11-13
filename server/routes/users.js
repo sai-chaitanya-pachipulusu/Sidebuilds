@@ -19,7 +19,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
                 twitter_handle as twitter_profile_url,
                 avatar_url, is_verified, verification_level,
                 is_admin,
-                total_projects_sold, total_projects_bought, total_revenue,
+                (SELECT COUNT(*) FROM project_transactions t WHERE t.seller_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_projects_sold, (SELECT COUNT(*) FROM project_transactions t WHERE t.buyer_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_projects_bought, (SELECT COALESCE(SUM(t.seller_amount),0) FROM project_transactions t WHERE t.seller_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_revenue,
                 reputation_score, created_at, updated_at,
                 stripe_account_id, onboarding_complete, stripe_onboarding_complete
              FROM users
@@ -139,7 +139,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
                 github_username as github_profile_url,
                 twitter_handle as twitter_profile_url,
                 avatar_url, is_verified, verification_level,
-                total_projects_sold, total_projects_bought, total_revenue,
+                (SELECT COUNT(*) FROM project_transactions t WHERE t.seller_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_projects_sold, (SELECT COUNT(*) FROM project_transactions t WHERE t.buyer_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_projects_bought, (SELECT COALESCE(SUM(t.seller_amount),0) FROM project_transactions t WHERE t.seller_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_revenue,
                 reputation_score, created_at, updated_at,
                 stripe_account_id, onboarding_complete, stripe_onboarding_complete
              FROM users
@@ -322,7 +322,7 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
                 SUM(view_count) as total_views,
                 SUM(interest_count) as total_interest
              FROM projects 
-             WHERE (owner_id = $1 OR user_id = $1)`,
+             WHERE owner_id = $1`,
             [userId]
         );
 
@@ -358,6 +358,44 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error("Get dashboard stats error:", err.message);
         res.status(500).json({ message: 'Server error fetching dashboard stats.' });
+    }
+});
+
+// Public seller profile used by /profile/:userId and the signed-in user's
+// /profile page. Private fields such as email and Stripe IDs are excluded.
+router.get('/:userId/profile', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT user_id, username, first_name, last_name, bio, location,
+                    website_url, linkedin_url, github_username, twitter_handle,
+                    avatar_url, is_verified, verification_level,
+                    (SELECT COUNT(*) FROM project_transactions t WHERE t.seller_id=users.user_id AND t.status='completed' AND t.escrow_status='released' AND t.escrow_released=true AND t.transfer_completed=true) AS total_projects_sold, reputation_score, created_at
+             FROM users WHERE user_id = $1`,
+            [req.params.userId]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ message: 'User not found.' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Get public user profile error:', err.message);
+        res.status(500).json({ message: 'Server error fetching profile.' });
+    }
+});
+
+router.get('/:userId/projects', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT project_id, name, description, stage, status, category,
+                    monthly_revenue, is_for_sale, sale_price, thumbnail_url,
+                    view_count, created_at, updated_at
+             FROM projects
+             WHERE owner_id = $1 AND is_public = true
+             ORDER BY created_at DESC`,
+            [req.params.userId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Get public user projects error:', err.message);
+        res.status(500).json({ message: 'Server error fetching projects.' });
     }
 });
 

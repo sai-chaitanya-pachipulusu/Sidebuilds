@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, MessageSquare, User, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../../shadcn/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../shadcn/ui/card';
 import { Badge } from '../../shadcn/ui/badge';
-import { getSellerPurchaseRequests } from '../../services/api';
+import { getSellerPurchaseRequests, rejectPurchaseRequest } from '../../services/api';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import toast from 'react-hot-toast';
 
 const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionRequestId, setActionRequestId] = useState(null);
 
   // Close modal on ESC key
   useEscapeKey(onClose, isOpen);
@@ -51,12 +55,33 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
     }
   };
 
+  const handleAccept = (request) => {
+    const requestId = request.request_id || request.id;
+    onClose();
+    navigate(`/purchase-agreement/${requestId}`);
+  };
+
+  const handleDecline = async (request) => {
+    const requestId = request.request_id || request.id;
+    if (!window.confirm('Decline this purchase request?')) return;
+    try {
+      setActionRequestId(requestId);
+      await rejectPurchaseRequest(requestId, 'Seller declined the request');
+      toast.success('Purchase request declined.');
+      await fetchPurchaseRequests();
+    } catch (error) {
+      toast.error(error?.error || error?.message || 'Failed to decline the request.');
+    } finally {
+      setActionRequestId(null);
+    }
+  };
+
   const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(price);
 
   const getStatusColor = (status) => {
@@ -127,7 +152,7 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
                 <div className="space-y-4">
                   {requests.map((request, index) => (
                     <motion.div
-                      key={request.id || index}
+                      key={request.request_id || request.id || index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -159,7 +184,7 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
                         <div className="flex items-center space-x-2">
                           <Clock className="w-4 h-4 text-blue-400" />
                           <span className="text-sm text-gray-300">
-                            {new Date(request.created_at).toLocaleDateString()}
+                            {new Date(request.request_date || request.created_at).toLocaleDateString()}
                           </span>
                         </div>
                         {request.buyer_commitments && (
@@ -181,13 +206,24 @@ const ProjectInterestsModal = ({ isOpen, onClose, userId }) => {
                       )}
 
                       <div className="flex justify-end space-x-2 mt-4">
-                        {request.status === 'seller_accepted_pending_payment' && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                            Process Payment
+                        {request.status !== 'seller_rejected' && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleAccept(request)}
+                            disabled={actionRequestId === (request.request_id || request.id)}
+                          >
+                            Review agreement
                           </Button>
                         )}
-                        {['new_interest', 'seller_accepted_pending_payment'].includes(request.status) && (
-                          <Button size="sm" variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
+                        {request.status === 'interest_expressed' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/20 text-red-400 hover:bg-red-500/10"
+                            onClick={() => handleDecline(request)}
+                            disabled={actionRequestId === (request.request_id || request.id)}
+                          >
                             Decline
                           </Button>
                         )}

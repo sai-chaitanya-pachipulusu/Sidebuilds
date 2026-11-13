@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const xss = require('xss');
 const db = require('../db');
 const authMiddleware = require('../middleware/authMiddleware');
-const { upload, uploadMultiple, handleMulterError, getFileType, getFileCategory, uploadsDir } = require('../config/multer');
+const requireProjectOwner = require('../middleware/requireProjectOwner');
+const { uploadMultiple, handleMulterError, getFileType, getFileCategory } = require('../config/multer');
+const {
+    resolveStoredUploadPath,
+    sanitizeDownloadName,
+    SAFE_INLINE_IMAGE_TYPES
+} = require('../utils/uploadSecurity');
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
@@ -15,7 +21,7 @@ router.use(authMiddleware);
  * @desc    Upload files to a project
  * @access  Private (Project owner only)
  */
-router.post('/upload/:projectId', uploadMultiple('files', 10), handleMulterError, async (req, res) => {
+router.post('/upload/:projectId', requireProjectOwner('projectId'), require('../middleware/rateLimiter').uploadLimiter, uploadMultiple('files', 10), handleMulterError, async (req, res) => {
     try {
         const { projectId } = req.params;
         const userId = req.user.user_id;
@@ -28,67 +34,7 @@ router.post('/upload/:projectId', uploadMultiple('files', 10), handleMulterError
             });
         }
 
-        // Check if project exists and user is the owner
-        const projectResult = await db.query(
-            'SELECT * FROM projects WHERE project_id = $1',
-            [projectId]
-        );
-
-        if (projectResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Project not found'
-            });
-        }
-
-        const project = projectResult.rows[0];
-        const ownerId = project.owner_id || project.user_id;
-
-        if (ownerId !== userId) {
-            return res.status(403).json({
-                success: false,
-                message: 'You do not have permission to upload files to this project'
-            });
-        }
-
-        // Process uploaded files
-        const uploadedFiles = [];
-        
-        for (const file of req.files) {
-            const fileId = uuidv4();
-            const fileType = getFileType(file.mimetype, file.originalname);
-            const fileCategory = getFileCategory(fileType);
-            
-            // Store file metadata in database
-            const result = await db.query(
-                `INSERT INTO project_files (
-                    file_id, project_id, user_id, file_name, original_name,
-                    file_type, file_category, file_size, mime_type,
-                    storage_path, storage_type, is_public, description
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                RETURNING *`,
-                [
-                    fileId,
-                    projectId,
-                    userId,
-                    file.filename,
-                    file.originalname,
-                    fileType,
-                    fileCategory,
-                    file.size,
-                    file.mimetype,
-                    file.path,
-                    'local',
-                    is_public === 'true' || is_public === true,
-                    description || null
-                ]
-            );
-
-            uploadedFiles.push({
-                ...result.rows[0],
-                url: `/api/files/download/${fileId}`
-            });
-        }
+        const uploadedFiles = await require('../services/fileStorage').persistUploads(req.files, projectId, userId, req.body);
 
         res.status(201).json({
             success: true,
@@ -97,12 +43,8 @@ router.post('/upload/:projectId', uploadMultiple('files', 10), handleMulterError
         });
 
     } catch (error) {
-        console.error('File upload error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during file upload',
-            error: error.message
-        });
+        console.error('Upload failed:', error.code || error.message);
+        res.status(error.status || 500).json({ success:false,message:error.status ? error.message : 'Upload could not be saved. Please retry.' });
     }
 });
 
@@ -134,13 +76,16 @@ router.get('/project/:projectId', async (req, res) => {
         const isPublic = project.is_public === true || project.is_public === 1;
 
         // Build query based on access level
-        let query = 'SELECT * FROM project_files WHERE project_id = $1';
+        let query = `SELECT file_id, project_id, user_id, file_name, original_name,
+                            file_type, file_category, file_size, mime_type,
+                            is_public, description, download_count, created_at, updated_at
+                     FROM project_files WHERE project_id = $1`;
         let params = [projectId];
 
         // If not owner, only show public files or files from public projects
-        if (!isOwner) {
+        if (!isOwner && !await require('../services/fileStorage').isPaidBuyer(projectId,userId)) {
             if (isPublic) {
-                query += ' AND (is_public = true OR is_public = 1)';
+                query += ` AND ${db.trueExpr('is_public')}`;
             } else {
                 return res.status(403).json({
                     success: false,
@@ -223,22 +168,16 @@ router.get('/download/:fileId', async (req, res) => {
         // 1. User is file owner
         // 2. User is project owner
         // 3. File is public AND project is public
-        if (!isFileOwner && !isProjectOwner && !(isPublic && isProjectPublic)) {
+        if (!isFileOwner && !isProjectOwner && !(isPublic && isProjectPublic) && !await require('../services/fileStorage').isPaidBuyer(file.project_id, userId)) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied'
             });
         }
 
-        // Check if file exists on disk
-        const filePath = file.storage_path;
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({
-                success: false,
-                message: 'File not found on server'
-            });
-        }
-
+        const content = await require('../services/fileStorage').readContent(file);
+        if (!content) return res.status(404).json({success:false,message:'File content unavailable'});
+        res.setHeader('Cache-Control','private, no-store');
         // Increment download count
         await db.query(
             'UPDATE project_files SET download_count = download_count + 1 WHERE file_id = $1',
@@ -246,13 +185,13 @@ router.get('/download/:fileId', async (req, res) => {
         );
 
         // Set headers for download
-        res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${file.original_name}"`);
-        res.setHeader('Content-Length', file.file_size);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${sanitizeDownloadName(file.original_name)}"`);
+        res.setHeader('Content-Length', content.length);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
 
         // Stream file to response
-        const fileStream = fs.createReadStream(filePath);
-        fileStream.pipe(res);
+        res.end(content);
 
     } catch (error) {
         console.error('File download error:', error);
@@ -289,7 +228,7 @@ router.get('/preview/:fileId', async (req, res) => {
         const file = fileResult.rows[0];
 
         // Only allow preview for images
-        if (!file.file_type || !file.file_type.startsWith('image')) {
+        if (!SAFE_INLINE_IMAGE_TYPES.has(file.mime_type)) {
             return res.status(400).json({
                 success: false,
                 message: 'Preview only available for images'
@@ -315,29 +254,25 @@ router.get('/preview/:fileId', async (req, res) => {
         const isPublic = file.is_public === true || file.is_public === 1;
         const isProjectPublic = project.is_public === true || project.is_public === 1;
 
-        if (!isFileOwner && !isProjectOwner && !(isPublic && isProjectPublic)) {
+        if (!isFileOwner && !isProjectOwner && !(isPublic && isProjectPublic) && !await require('../services/fileStorage').isPaidBuyer(file.project_id, userId)) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied'
             });
         }
 
-        // Check if file exists on disk
-        const filePath = file.storage_path;
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({
-                success: false,
-                message: 'File not found on server'
-            });
-        }
-
+        const content = await require('../services/fileStorage').readContent(file);
+        if (!content) return res.status(404).json({success:false,message:'File content unavailable'});
+        res.setHeader('Cache-Control','private, no-store');
         // Set headers for inline display
         res.setHeader('Content-Type', file.mime_type);
-        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Disposition', `inline; filename="${sanitizeDownloadName(file.original_name)}"`);
+        res.setHeader('Content-Length', content.length);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
 
         // Stream file to response
-        const fileStream = fs.createReadStream(filePath);
-        fileStream.pipe(res);
+        res.end(content);
 
     } catch (error) {
         console.error('File preview error:', error);
@@ -390,21 +325,28 @@ router.delete('/:fileId', async (req, res) => {
         const isProjectOwner = (project.owner_id || project.user_id) === userId;
         const isFileOwner = file.user_id === userId;
 
-        if (!isFileOwner && !isProjectOwner) {
+        if (!isProjectOwner) {
             return res.status(403).json({
                 success: false,
                 message: 'You do not have permission to delete this file'
             });
         }
 
-        // Delete file from disk
-        const filePath = file.storage_path;
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        // Delete the database record first, then unlink from disk best-effort.
+        // If the file is already gone, deletion still succeeds; if the DB
+        // delete fails, no orphaned "deleted" state is created.
+        await require('../services/fileStorage').deleteStoredFile(fileId,userId);
 
-        // Delete file record from database
-        await db.query('DELETE FROM project_files WHERE file_id = $1', [fileId]);
+        const filePath = resolveStoredUploadPath(file.storage_path);
+        if (filePath) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (unlinkErr) {
+                if (unlinkErr.code !== 'ENOENT') {
+                    console.error('File unlink failed after DB delete:', unlinkErr.message);
+                }
+            }
+        }
 
         res.json({
             success: true,
@@ -413,6 +355,7 @@ router.delete('/:fileId', async (req, res) => {
 
     } catch (error) {
         console.error('File deletion error:', error);
+        if(error.status) return res.status(error.status).json({success:false,message:error.message});
         res.status(500).json({
             success: false,
             message: 'Server error during file deletion'
@@ -463,7 +406,7 @@ router.put('/:fileId', async (req, res) => {
         const isProjectOwner = (project.owner_id || project.user_id) === userId;
         const isFileOwner = file.user_id === userId;
 
-        if (!isFileOwner && !isProjectOwner) {
+        if (!isProjectOwner) {
             return res.status(403).json({
                 success: false,
                 message: 'You do not have permission to update this file'
@@ -477,7 +420,8 @@ router.put('/:fileId', async (req, res) => {
 
         if (description !== undefined) {
             updates.push(`description = $${paramIndex}`);
-            values.push(description);
+            // Sanitize free-text metadata (parity with upload path)
+            values.push(description === null ? null : xss(String(description)));
             paramIndex++;
         }
 
@@ -496,12 +440,14 @@ router.put('/:fileId', async (req, res) => {
 
         values.push(fileId);
 
-        const result = await db.query(
+        const result = await require('../services/fileStorage').withFileOwner(fileId,userId,client=>client.query(
             `UPDATE project_files SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP 
              WHERE file_id = $${paramIndex} 
-             RETURNING *`,
+             RETURNING file_id, project_id, user_id, file_name, original_name,
+                       file_type, file_category, file_size, mime_type,
+                       is_public, description, download_count, created_at, updated_at`,
             values
-        );
+        ));
 
         res.json({
             success: true,
@@ -511,6 +457,7 @@ router.put('/:fileId', async (req, res) => {
 
     } catch (error) {
         console.error('File update error:', error);
+        if(error.status) return res.status(error.status).json({success:false,message:error.message});
         res.status(500).json({
             success: false,
             message: 'Server error during file update'

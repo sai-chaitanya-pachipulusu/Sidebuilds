@@ -4,62 +4,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// GET /api/dashboard/demo - Get demo dashboard data (no auth required)
-router.get('/demo', async (req, res) => {
-    try {
-        // Return demo data for testing purposes
-        const dashboardData = {
-            stats: {
-                totalProjects: 3, // 3 projects
-                portfolioValue: 40000, // $40k portfolio value
-                activeOffers: 2, // 2 active offers
-                completedSales: 2, // 2 completed sales
-                totalViews: 306, // 306 total views
-                averageViews: 102, // 102 average views per project
-                interestReceived: 4, // 4 interests received
-                purchasesMade: 1, // 1 purchase made
-                totalRevenue: 50000, // $50k total revenue
-                unreadNotifications: 2 // 2 unread notifications
-            },
-            recentProjects: [
-                {
-                    id: 'demo-proj-1',
-                    name: 'AI Task Manager',
-                    description: 'Smart task management with AI prioritization',
-                    price: 15000,
-                    status: 'mvp',
-                    created_at: '2025-09-15T10:00:00Z'
-                },
-                {
-                    id: 'demo-proj-2',
-                    name: 'E-commerce Analytics',
-                    description: 'Real-time analytics dashboard for online stores',
-                    price: 25000,
-                    status: 'launched',
-                    created_at: '2025-08-10T14:30:00Z'
-                },
-                {
-                    id: 'demo-proj-3',
-                    name: 'Code Review Bot',
-                    description: 'Automated code review assistant using AI',
-                    price: 0,
-                    status: 'development',
-                    created_at: '2025-09-01T09:15:00Z'
-                }
-            ],
-            user: {
-                id: 'demo-user-1',
-                name: 'John Maker'
-            }
-        };
-
-        res.json(dashboardData);
-    } catch (err) {
-        console.error('Demo dashboard error:', err.message);
-        res.status(500).json({ error: 'Failed to fetch demo dashboard data.' });
-    }
-});
-
 // GET /api/dashboard - Get dashboard data for authenticated user
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -110,10 +54,16 @@ async function getUserDashboardStats(userId) {
             COUNT(*) FILTER (WHERE seller_id = $1 AND status NOT IN (
                 'completed','seller_rejected','buyer_withdrew_interest','transfer_completed_buyer_confirmed'
             ))                                                        AS active_offers,
-            COUNT(*) FILTER (WHERE seller_id = $1 AND status = 'completed')  AS completed_sales,
+            COUNT(*) FILTER (WHERE seller_id = $1 AND status IN (
+                'completed','transfer_completed_buyer_confirmed'
+            ))                                                        AS completed_sales,
             COUNT(*) FILTER (WHERE seller_id = $1)                   AS interest_received,
-            COUNT(*) FILTER (WHERE buyer_id  = $1 AND status = 'completed')  AS purchases_made,
-            COALESCE(SUM(CASE WHEN seller_id = $1 AND status = 'completed' THEN price ELSE 0 END), 0) AS total_revenue
+            COUNT(*) FILTER (WHERE buyer_id = $1 AND status IN (
+                'completed','transfer_completed_buyer_confirmed'
+            ))                                                        AS purchases_made,
+            COALESCE(SUM(CASE WHEN seller_id = $1 AND status IN (
+                'completed','transfer_completed_buyer_confirmed'
+            ) THEN price ELSE 0 END), 0)                              AS total_revenue
          FROM purchase_requests
          WHERE seller_id = $1 OR buyer_id = $1`,
         [userId]

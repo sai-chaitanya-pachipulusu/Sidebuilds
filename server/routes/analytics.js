@@ -19,7 +19,7 @@ router.get('/metrics', authenticateToken, async (req, res) => {
 router.get('/activity', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.max(1, Math.min(100, Number.parseInt(req.query.limit, 10) || 20));
     const activities = await getActivityFeed(userId, limit);
     res.json({ activities });
   } catch (error) {
@@ -62,11 +62,11 @@ router.get('/project/:projectId/performance', authenticateToken, async (req, res
 
     // Verify project ownership
     const ownership = await db.query(
-      'SELECT user_id FROM projects WHERE id = $1',
+      'SELECT owner_id FROM projects WHERE project_id = $1',
       [projectId]
     );
 
-    if (ownership.rows.length === 0 || ownership.rows[0].user_id !== userId) {
+    if (ownership.rows.length === 0 || ownership.rows[0].owner_id !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -82,7 +82,7 @@ router.get('/project/:projectId/performance', authenticateToken, async (req, res
 router.get('/activity-feed', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.max(1, Math.min(100, Number.parseInt(req.query.limit, 10) || 20));
     
     const activities = await getActivityFeed(userId, limit);
     res.json(activities);
@@ -96,7 +96,7 @@ router.get('/activity-feed', authenticateToken, async (req, res) => {
 router.get('/revenue', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const period = req.query.period || '30'; // days
+    const period = Math.max(1, Math.min(365, Number.parseInt(req.query.period, 10) || 30));
     
     const revenueData = await getRevenueAnalytics(userId, period);
     res.json(revenueData);
@@ -122,8 +122,8 @@ async function getDashboardMetrics(userId) {
         COALESCE(SUM(view_count), 0) as total_views,
         COALESCE(AVG(view_count), 0) as average_views
       FROM projects 
-      WHERE (owner_id = ? OR user_id = ?)
-    `, [userId, userId]);
+      WHERE owner_id = ?
+    `, [userId]);
 
     const offersResult = await db.query(`
       SELECT 
@@ -132,8 +132,8 @@ async function getDashboardMetrics(userId) {
         COUNT(*) as total_interest
       FROM purchase_requests pr
       JOIN projects p ON pr.project_id = p.project_id
-      WHERE (p.owner_id = ? OR p.user_id = ?)
-    `, [userId, userId]);
+      WHERE p.owner_id = ?
+    `, [userId]);
 
     // Get buyer metrics
     const buyerResult = await db.query(`
@@ -147,8 +147,8 @@ async function getDashboardMetrics(userId) {
         ${recentProjectsQuery},
         ${previousProjectsQuery}
       FROM projects 
-      WHERE (owner_id = ? OR user_id = ?)
-    `, [userId, userId]);
+      WHERE owner_id = ?
+    `, [userId]);
 
     const projectData = projectsResult.rows[0] || {};
     const offerData = offersResult.rows[0] || {};
@@ -229,7 +229,7 @@ async function getMarketInsights() {
 
     const trends = (trendsResult.rows || []).map((row, index) => ({
       category: row.category ? (row.category.charAt(0).toUpperCase() + row.category.slice(1)) : 'Other',
-      growth: `+${Math.floor((parseFloat(row.avg_views) || 0) / 50 + Math.random() * 20) + 5}%`,
+      growth: `+${Math.min(99, Math.round((parseFloat(row.avg_views) || 0) / 10))}%`,
       opportunity: index < 3 ? 'High' : index < 6 ? 'Medium' : 'Low',
       avgPrice: Math.round(parseFloat(row.avg_price) || 0),
       projectCount: parseInt(row.project_count) || 0
@@ -247,11 +247,11 @@ async function getMarketInsights() {
       priceAnalysis: {
         avgPrice: Math.round(parseFloat(marketData.avg_price) || 0),
         medianPrice: Math.round(parseFloat(marketData.avg_price) || 0), 
-        priceChange: `+${Math.floor(Math.random() * 20) + 5}% vs last month`,
+        priceChange: 'Historical comparison not available',
         totalMarketValue: Math.round(parseFloat(marketData.total_monthly_revenue) * 12 || 0)
       },
       hotCategories: trends.slice(0, 5).map(t => t.category),
-      marketSize: `${Math.floor(parseInt(marketData.active_sellers) * 50).toLocaleString()} active buyers globally`,
+      marketSize: `${parseInt(marketData.active_sellers) || 0} active sellers`,
       totalProjects: parseInt(marketData.total_projects) || 0,
       activeSellers: parseInt(marketData.active_sellers) || 0,
       lastUpdated: new Date().toISOString()
@@ -291,26 +291,35 @@ async function getProjectPerformance(projectId) {
 
     const project = projectResult.rows[0];
 
-    // Get view analytics (simulated daily data for last 30 days)
+    // No per-day view table exists yet, so distribute the live aggregate
+    // deterministically rather than returning random metrics on every request.
     const viewAnalytics = [];
+    const totalProjectViews = Math.max(0, parseInt(project.view_count, 10) || 0);
+    const baseDailyViews = Math.floor(totalProjectViews / 30);
+    const remainderViews = totalProjectViews % 30;
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
+      const dayIndex = 29 - i;
+      const views = baseDailyViews + (dayIndex < remainderViews ? 1 : 0);
       viewAnalytics.push({
         date: date.toISOString().split('T')[0],
-        views: Math.floor(Math.random() * (project.view_count / 15)) + 1,
-        uniqueViews: Math.floor(Math.random() * (project.view_count / 20)) + 1
+        views,
+        uniqueViews: Math.round(views * 0.8),
+        estimated: true
       });
     }
 
     // PostgreSQL-compatible days ago calculation
-    const daysAgoQuery = `EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400`;
+    const daysAgoQuery = db.db
+      ? `(julianday('now') - julianday(created_at))`
+      : `EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400`;
 
     const requestsResult = await db.query(`
       SELECT 
         status, created_at,
         ${daysAgoQuery} as days_ago
-      FROM project_purchase_requests 
+      FROM purchase_requests
       WHERE project_id = $1 
       ORDER BY created_at DESC
       LIMIT 20
@@ -359,10 +368,10 @@ async function getActivityFeed(userId, limit) {
         'views' as metric_type,
         updated_at as activity_time
       FROM projects
-      WHERE (owner_id = ? OR user_id = ?)
+      WHERE owner_id = ?
       ORDER BY updated_at DESC
       LIMIT ?
-    `, [userId, userId, limit]);
+    `, [userId, limit]);
 
     // Get recent purchase requests
     const requestsResult = await db.query(`
@@ -374,10 +383,10 @@ async function getActivityFeed(userId, limit) {
         pr.created_at as activity_time
       FROM purchase_requests pr
       JOIN projects p ON pr.project_id = p.project_id
-      WHERE (p.owner_id = ? OR p.user_id = ? OR pr.buyer_id = ?)
+      WHERE (p.owner_id = ? OR pr.buyer_id = ?)
       ORDER BY pr.created_at DESC
       LIMIT ?
-    `, [userId, userId, userId, limit]);
+    `, [userId, userId, limit]);
 
     // Combine and sort activities
     const allActivities = [
@@ -404,7 +413,8 @@ async function getRevenueAnalytics(userId, period) {
   try {
     // PostgreSQL-compatible date functions
     const dateFunction = "DATE(created_at)";
-    const whereClause = `created_at > NOW() - INTERVAL '${parseInt(period)} days'`;
+    const safePeriod = Math.max(1, Math.min(365, Number.parseInt(period, 10) || 30));
+    const whereClause = `created_at > NOW() - INTERVAL '${safePeriod} days'`;
 
     const result = await db.query(`
       SELECT 
@@ -412,12 +422,12 @@ async function getRevenueAnalytics(userId, period) {
         SUM(COALESCE(monthly_revenue, 0)) as daily_revenue,
         COUNT(*) as projects_created
       FROM projects 
-      WHERE (owner_id = ? OR user_id = ?) 
+      WHERE owner_id = ?
         AND ${whereClause}
         AND monthly_revenue > 0
       GROUP BY ${dateFunction}
       ORDER BY ${dateFunction} ASC
-    `, [userId, userId]);
+    `, [userId]);
 
     const rows = result.rows || [];
     const totalRevenue = rows.reduce((sum, row) => sum + parseFloat(row.daily_revenue || 0), 0);
@@ -433,7 +443,7 @@ async function getRevenueAnalytics(userId, period) {
         totalRevenue: Math.round(totalRevenue),
         avgDailyRevenue: Math.round(avgDailyRevenue),
         totalProjects: rows.reduce((sum, row) => sum + parseInt(row.projects_created || 0), 0),
-        period: `${period} days`
+        period: `${safePeriod} days`
       },
       lastUpdated: new Date().toISOString()
     };
@@ -446,7 +456,7 @@ async function getRevenueAnalytics(userId, period) {
         totalRevenue: 0,
         avgDailyRevenue: 0,
         totalProjects: 0,
-        period: `${period} days`
+        period: `${Math.max(1, Math.min(365, Number.parseInt(period, 10) || 30))} days`
       },
       lastUpdated: new Date().toISOString()
     };

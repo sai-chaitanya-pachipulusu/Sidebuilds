@@ -36,7 +36,7 @@ const getDatabaseConfig = () => {
     
     staging: {
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true,ca:fs.readFileSync(process.env.DB_SSL_CA_FILE || path.join(__dirname,'../certs/supabase-ca.crt')) },
       pool: {
         min: 5,
         max: 20,
@@ -47,7 +47,7 @@ const getDatabaseConfig = () => {
     
     production: {
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true,ca:fs.readFileSync(process.env.DB_SSL_CA_FILE || path.join(__dirname,'../certs/supabase-ca.crt')) },
       pool: {
         min: 10,
         max: 30,
@@ -412,7 +412,7 @@ const getApiDocConfig = () => {
         description: 'Development server'
       },
       {
-        url: 'https://api.sidebuilds.online',
+        url: process.env.API_PUBLIC_URL || 'https://sidebuilds.onrender.com',
         description: 'Production server'
       }
     ]
@@ -500,10 +500,8 @@ const config = {
   },
   
   validate: () => {
-    const required = [
-      'JWT_SECRET',
-      'DATABASE_URL'
-    ];
+    const sqliteDevelopment = NODE_ENV === 'development' && process.env.USE_SQLITE === 'true';
+    const required = sqliteDevelopment ? ['JWT_SECRET'] : ['JWT_SECRET', 'DATABASE_URL'];
     
     const missing = required.filter(key => !process.env[key]);
     

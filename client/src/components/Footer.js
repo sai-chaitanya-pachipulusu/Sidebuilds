@@ -26,10 +26,8 @@ export default function Footer() {
           <span>© {new Date().getFullYear()} SideBuilds</span>
           <div>
             <Link to="/terms">Terms</Link>
-            <a href="mailto:support@sidebuilds.online?subject=Privacy%20question">
-              Privacy questions
-            </a>
-            <a href="mailto:support@sidebuilds.online">Support</a>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/contact">Support</Link>
           </div>
           <span>Made for the next build.</span>
         </div>

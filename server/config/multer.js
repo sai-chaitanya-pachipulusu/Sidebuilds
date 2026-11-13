@@ -4,7 +4,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+const uploadsDir = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -107,7 +107,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: Math.max(...Object.values(sizeLimits)), // 50MB max
+        fileSize: 10 * 1024 * 1024,
         files: 10 // Max 10 files per upload
     }
 });
@@ -128,7 +128,7 @@ const handleMulterError = (err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
-                message: 'File too large. Maximum size is 50MB.',
+                message: 'File too large. Maximum size is 10MB.',
                 code: 'FILE_TOO_LARGE'
             });
         } else if (err.code === 'LIMIT_FILE_COUNT') {
