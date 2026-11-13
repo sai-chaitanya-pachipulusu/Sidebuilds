@@ -1,5 +1,15 @@
 # SideBuilds improvement roadmap
 
+## FR8 — Live seller connections and actionable launch review — November 13, 2026
+
+- Completed: owner activated the new operations identity and opened /admin. Invitation setup is finished; do not renew or reset its password.
+- Implemented and validated: strict fresh Stripe capability checks, explicit guarded reconnection, protected durable provider attempts, retirement of destructive reset and read-triggered account creation, Express/Standard management paths, distinct seller guidance and a flat live launch checklist in operations. 99 server tests, 130 interface tests, 22 isolated PostgreSQL scenarios and build pass; local desktop/390px visual checks pass. Migration 016 is applied with RLS and no public grants; production records preserved. Source deployment observation is recorded in the production QA report.
+- Owner/seller dependency: RAG academy still points to a test-only Stripe connection. Its seller must choose Reconnect Stripe in Profile settings → Payouts and complete live verification. Mira AI's live connection is active. Automation did not replace either seller's account or submit live money.
+- Before reopening checkout: complete the current seller connection review and add real buyer evidence to both sale listings—category, technologies, demo/repository, included assets, running costs and handover. Confirm ownership and transfer rights through the agreed purchase scope. The admin checklist shows gaps from current data; empty issue queues do not mean ready.
+- After readiness: enable the existing live-commerce flag deliberately, observe the first legitimate purchase and external Stripe event through handover/receipt/payout, and record provider evidence. Never create artificial real-card test purchases. Keep refunds and disputes visible to the operator.
+- Next product work: improve seller listing completion and evidence collection, then measure marketplace views → inquiries → approved scopes → purchases. Keep public numbers dynamic, QA/internal users excluded, and visibility claims tied to actual traffic/conversion evidence.
+- Accepted limitations: free hosting may cold-start; existing email delivery remains pending. No paid plan, new provider or .env change was introduced.
+
 ## FR7 — Password recovery and visual consistency — November 13, 2026
 
 - Implemented: flat reset/recovery pages, inline errors, valid-link preflight before password entry, clear expired/used states, retry on temporary failure, and honest email-unavailable guidance. Authored gradient styling across the interface is replaced with solid fills; future work follows the recorded no-gradient preference.

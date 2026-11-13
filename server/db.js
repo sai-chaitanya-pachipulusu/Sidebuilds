@@ -376,6 +376,10 @@ if (useSQLite) {
     addColumn('users', 'is_test', 'INTEGER NOT NULL DEFAULT 0');
     addColumn('users', 'last_login_at', 'DATETIME');
     addColumn('users', 'login_count', 'INTEGER NOT NULL DEFAULT 0');
+    db.run(`CREATE TABLE IF NOT EXISTS stripe_connection_attempts (
+      user_id TEXT PRIMARY KEY REFERENCES users(user_id),previous_account_id TEXT NOT NULL,mode TEXT NOT NULL,
+      generation TEXT NOT NULL UNIQUE,email TEXT NOT NULL,account_type TEXT NOT NULL,
+      started_at TEXT NOT NULL,account_id TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS checkout_reservations (
       project_id TEXT PRIMARY KEY REFERENCES projects(project_id), purchase_request_id INTEGER NOT NULL REFERENCES purchase_requests(id),
       generation TEXT UNIQUE NOT NULL, agreement_id TEXT NOT NULL, price_cents INTEGER NOT NULL, fee_cents INTEGER NOT NULL,

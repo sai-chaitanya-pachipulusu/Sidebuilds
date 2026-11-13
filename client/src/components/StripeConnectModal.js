@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createStripeAccountLink } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import Modal from './uikit/Modal';
 import { Button } from '../shadcn/ui/button';
-import { ExternalLink, CheckCircle, AlertTriangle, Settings } from 'lucide-react';
+import { ExternalLink, CheckCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -19,7 +17,6 @@ const StripeLogo = () => (
 
 const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
 
     const handleConnectStripe = async () => {
         setIsLoading(true);
@@ -62,14 +59,15 @@ const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) =
                 </div>
 
                 <p className="text-gray-400">
-                    We partner with Stripe to handle secure payments and payouts directly to your bank account. Connect your account to start selling.
+                    Stripe handles payment verification and seller payouts. After a purchase, funds are released when the buyer confirms the agreed handover.
                     <br />
                     <span className="text-gray-400 text-sm mt-3 block italic">
                         Note: You must complete all Stripe verification steps (identity, bank account, etc.) before you can list projects for sale.
                     </span>
                 </p>
 
-                {status && (
+                {status?.requiresReconnect && <p className="text-[#efcc8d] text-sm">Your saved connection cannot receive payments here. Continue to replace it with a connection in this environment. Existing purchases are checked before a replacement is allowed.</p>}
+                {status && !status.requiresReconnect && status.verificationStatus !== 'unavailable' && (
                     <div className="p-4 bg-gray-800/50 rounded-none space-y-3">
                         <h3 className="font-semibold text-white">Your Account Status:</h3>
                         <StatusItem 
@@ -91,7 +89,7 @@ const StripeConnectModal = ({ isOpen, onClose, onOnboardingComplete, status }) =
                         disabled={isLoading} 
                         className="flex-1"
                     >
-                        {isLoading ? 'Redirecting...' : (status?.isOnboardingComplete ? 'Manage Stripe Account' : 'Connect Stripe Account')}
+                        {isLoading ? 'Redirecting...' : (status?.requiresReconnect ? 'Reconnect Stripe' : status?.isOnboardingComplete ? 'Manage Stripe Account' : 'Continue to Stripe')}
                         <ExternalLink className="w-4 h-4 ml-2" />
                     </Button>
                     <Button variant="ghost" onClick={onClose} disabled={isLoading}>

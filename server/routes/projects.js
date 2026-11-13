@@ -35,28 +35,9 @@ router.use(authMiddleware);
 
 // Helper function to check if user has a Stripe account
 async function checkUserStripeAccount(userId) {
-    const userResult = await db.query(`
-        SELECT stripe_account_id, onboarding_complete, stripe_onboarding_complete, 
-               payout_enabled, stripe_charges_enabled, stripe_details_submitted
-        FROM users 
-        WHERE user_id = $1
-    `, [userId]);
-    
-    const user = userResult.rows[0];
-    
-    // Check any of the onboarding status columns
-    const isOnboardingComplete = 
-        user?.onboarding_complete === 1 || user?.onboarding_complete === true ||
-        user?.stripe_onboarding_complete === 1 || user?.stripe_onboarding_complete === true ||
-        (user?.payout_enabled === true && user?.stripe_charges_enabled === true);
-    
-    console.log('[Stripe Check] User:', userId, 'Account:', user?.stripe_account_id, 'Onboarding Complete:', isOnboardingComplete);
-    
-    return {
-        hasStripeAccount: !!user?.stripe_account_id,
-        isOnboardingComplete: isOnboardingComplete,
-        stripeAccountId: user?.stripe_account_id
-    };
+    const { stripe } = require('../config/stripe.config');
+    const status = await require('../services/sellerConnectionService').userStatus(db, stripe, userId);
+    return { hasStripeAccount: status.hasAccount, isOnboardingComplete: status.isOnboardingComplete, stripeAccountId: status.accountId };
 }
 
 // --- CREATE Project --- 

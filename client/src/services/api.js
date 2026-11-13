@@ -593,7 +593,7 @@ export const createStripeAccountLink = async () => {
     } catch (error) {
         console.error('Create Stripe Account Link API error:', error.response ? error.response.data : error.message);
         const defaultMessage = 'Failed to create or retrieve Stripe account link. Please try again.';
-        throw new Error(error.response?.data?.error || error.message || defaultMessage);
+        throw new Error(error.response?.data?.error || error.response?.data?.message || error.message || defaultMessage);
     }
 };
 

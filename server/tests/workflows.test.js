@@ -686,3 +686,20 @@ test('paid receipt reads the frozen itemized scope instead of mutable listing de
   assert.deepEqual(read.body.purchase_agreement.included_items, ['Source code', 'Deployment guide']);
   assert.equal(read.body.purchase_agreement.price_cents, 1025);
 });
+
+test('checkout rejects pending or missing seller transfers before reserving or contacting checkout', async t => {
+  for (const transfers of ['pending', undefined]) {
+    const p = await saleProject();
+    await db.query("UPDATE users SET stripe_account_id='acct_test_fixture',onboarding_complete=true,stripe_onboarding_complete=true WHERE user_id=$1", [seller.user.user_id]);
+    const inserted = await db.query('INSERT INTO purchase_requests(project_id,buyer_id,seller_id,status,price) VALUES($1,$2,$3,$4,$5) RETURNING id',
+      [p.project_id, buyer.user.user_id, seller.user.user_id, 'agreement_reached_pending_payment', 500]);
+    const requestId = inserted.rows[0].id;
+    const agreement = await approveScope(requestId);
+    const mocked = t.mock.method(fakeStripe.accounts, 'retrieve', async () => ({charges_enabled:true,payouts_enabled:true,details_submitted:true,capabilities:{transfers}}));
+    const count = stripeCalls.length;
+    const result = await request('POST', '/payments/create-checkout-session', buyer.token, { purchase_request_id: requestId, agreement_id: agreement.id });
+    expectStatus(result, 409); assert.equal(stripeCalls.length, count);
+    assert.equal((await db.query('SELECT * FROM checkout_reservations WHERE project_id=$1', [p.project_id])).rows.length, 0);
+    mocked.mock.restore();
+  }
+});

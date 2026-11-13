@@ -1,3 +1,4 @@
+const { accountStatus } = require('./sellerConnectionService');
 const db = require('../db');
 const { randomUUID } = require('node:crypto');
 const { assertStripeEventMode } = require('../utils/stripeSafety');
@@ -91,7 +92,7 @@ class WebhookService {
   async processAccountUpdated(account, client) {
     await client.query(`UPDATE users SET onboarding_complete=$1,stripe_onboarding_complete=$1,payout_enabled=$2,
       stripe_charges_enabled=$3,stripe_details_submitted=$4 WHERE stripe_account_id=$5`,
-      [Boolean(account.charges_enabled && account.payouts_enabled && account.details_submitted), Boolean(account.payouts_enabled),
+      [accountStatus(account.id, account).isOnboardingComplete, Boolean(account.payouts_enabled),
         Boolean(account.charges_enabled), Boolean(account.details_submitted), account.id]);
   }
 

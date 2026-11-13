@@ -54,9 +54,7 @@ function ProfileSettingsPage() {
     setIsStripeLoading(true);
 
     try {
-      console.log('🔄 Fetching user profile...');
       const profileData = await getUserProfile();
-      console.log('✅ Profile data received:', profileData);
       
       setProfile({
         username: profileData.username || '',
@@ -74,12 +72,10 @@ function ProfileSettingsPage() {
     }
 
     try {
-      console.log('🔄 Fetching Stripe status...');
       const stripeData = await checkStripeOnboardingStatus();
-      console.log('✅ Stripe data received:', stripeData);
       setStripeStatus(stripeData);
     } catch (err) {
-      console.error('❌ Stripe status error:', err);
+      setStripeStatus({ verificationStatus: 'unavailable', isOnboardingComplete: false });
       let specificMessage = err.message || 'Failed to fetch Stripe status.';
       if (err.code === 'STRIPE_ACCOUNT_AUTOCREATE_FAILED') {
         specificMessage = `Initial Stripe setup failed: ${err.error || err.message}`;
@@ -120,7 +116,7 @@ function ProfileSettingsPage() {
           if (stripeData.isOnboardingComplete) {
             toast.success("Stripe account fully connected and verified!", { id: loadingToast });
           } else {
-            toast.success("Account created! Please finish onboarding to start selling.", { id: loadingToast, icon: '⚠️' });
+            toast.error(stripeData.requiresReconnect ? 'Reconnect Stripe to use payments in this environment.' : stripeData.verificationStatus === 'unavailable' ? 'Stripe could not verify your connection. Try again shortly.' : 'Finish the requirements on Stripe before accepting payments.', { id: loadingToast });
           }
         } catch (err) {
           toast.error("Connected to Stripe, but failed to verify status.", { id: loadingToast });
@@ -139,7 +135,6 @@ function ProfileSettingsPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'email') return; // Email is read-only
-    console.log(`📝 Field changed: ${name} = ${value}`);
     setProfile(prev => ({ ...prev, [name]: value }));
   };
 
@@ -149,13 +144,10 @@ function ProfileSettingsPage() {
     }
     
     setSaveLoading(true);
-    console.log('💾 Starting profile save...');
-    console.log('📤 Profile data to save:', profile);
 
     try {
       // Check authentication first
       const token = localStorage.getItem('token');
-      console.log('🔍 Token check - exists:', !!token, 'length:', token?.length, 'starts with:', token?.substring(0, 30) + '...');
       
       if (!token) {
         console.error('❌ No authentication token found');
@@ -164,10 +156,8 @@ function ProfileSettingsPage() {
         return;
       }
 
-      console.log('🔑 Token exists, proceeding with save...');
       
-      const updatedProfile = await updateUserProfile(profile);
-      console.log('✅ Profile updated successfully:', updatedProfile);
+      await updateUserProfile(profile);
       
       toast.success('Profile updated successfully!');
       
@@ -178,11 +168,6 @@ function ProfileSettingsPage() {
       
     } catch (err) {
       console.error('❌ Profile save error:', err);
-      console.error('📋 Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
       
       let errorMessage = 'Failed to update profile';
       
@@ -203,7 +188,6 @@ function ProfileSettingsPage() {
       toast.error(errorMessage);
     } finally {
       setSaveLoading(false);
-      console.log('🏁 Profile save process completed');
     }
   };
 
@@ -467,76 +451,17 @@ function ProfileSettingsPage() {
                       <div className="space-y-6">
                         {stripeStatus && (
                           <>
-                            {stripeStatus.accountId && stripeStatus.isOnboardingComplete ? (
-                              <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-none">
-                                <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
-                                <div>
-                                  <h3 className="text-green-400 font-semibold">Stripe Connected!</h3>
-                                  <p className="text-gray-300 text-sm">Your Stripe account is connected and ready for payouts.</p>
-                                  <p className="text-gray-500 text-xs mt-1">Account ID: {stripeStatus.accountId}</p>
-                                </div>
+                            <div className="flex items-start gap-3 p-4 bg-[#141714] border border-[#353b34]">
+                              {stripeStatus.isOnboardingComplete ? <CheckCircle className="w-5 h-5 text-[#d5efae] mt-0.5 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-[#efcc8d] mt-0.5 shrink-0" />}
+                              <div>
+                                <h3 className="text-white font-semibold">{stripeStatus.requiresReconnect ? 'Reconnect Stripe' : stripeStatus.verificationStatus === 'unavailable' ? 'Connection not verified' : stripeStatus.isOnboardingComplete ? 'Ready to receive payments' : stripeStatus.accountId ? 'Finish Stripe setup' : 'Connect Stripe'}</h3>
+                                <p className="text-gray-300 text-sm mt-2">{stripeStatus.requiresReconnect ? 'Your saved connection is unavailable in the current payment environment. Reconnect below and complete verification on Stripe. An unfinished purchase may require support review first.' : stripeStatus.verificationStatus === 'unavailable' ? 'We could not check your Stripe connection. Try again shortly. Your existing connection has been kept.' : stripeStatus.isOnboardingComplete ? 'Stripe confirms payments, payouts and transfers are active. Each purchase checks your connection again.' : stripeStatus.accountId ? 'Complete the requirements on Stripe to enable payments, payouts and transfers.' : 'Connect your own Stripe account to receive payment for project sales.'}</p>
                               </div>
-                            ) : stripeStatus.accountId && !stripeStatus.isOnboardingComplete ? (
-                              <div className="flex items-start gap-3 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-none">
-                                <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
-                                <div>
-                                  <h3 className="text-yellow-400 font-semibold">Onboarding Incomplete</h3>
-                                  <p className="text-gray-300 text-sm">Your Stripe onboarding is incomplete. Please complete the setup to receive payouts.</p>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-none">
-                                <Info className="w-5 h-5 text-blue-400 mt-0.5" />
-                                <div>
-                                  <h3 className="text-blue-400 font-semibold">Connect Stripe</h3>
-                                  <p className="text-gray-300 text-sm">Connect your Stripe account to receive payouts for your sold projects.</p>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {stripeStatus.needsAttention && (
-                              <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-none">
-                                <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
-                                <div className="space-y-2">
-                                  <h3 className="text-red-400 font-semibold">Attention Required</h3>
-                                  <p className="text-gray-300 text-sm">Your Stripe account requires attention. Please complete the missing requirements to enable payouts.</p>
-                                  {stripeStatus.currentlyDue && stripeStatus.currentlyDue.length > 0 && (
-                                    <div className="mt-2">
-                                      <p className="text-xs font-bold text-red-400/80 uppercase tracking-wider">Missing Requirements:</p>
-                                      <ul className="list-disc list-inside text-xs text-gray-400 mt-1">
-                                        {stripeStatus.currentlyDue.map((req, idx) => (
-                                          <li key={idx}>
-                                            {req.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {stripeStatus.disabledReason && (
-                                    <p className="text-xs text-red-400/60 mt-2 italic">
-                                      Reason: {stripeStatus.disabledReason.replace(/_/g, ' ')}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            <motion.button
-                              onClick={() => setShowStripeModal(true)}
-                              className={`w-full px-6 py-4 rounded-none font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                                stripeStatus.isOnboardingComplete
-                                  ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
-                                  : 'bg-neutral-800   text-white  '
-                              }`}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <CreditCard className="w-5 h-5" />
-                              {stripeStatus.accountId 
-                                ? (stripeStatus.isOnboardingComplete ? "Manage Stripe Account" : "Complete Stripe Onboarding")
-                                : "Connect with Stripe"
-                              }
-                            </motion.button>
+                            </div>
+                            <button type="button" className="border border-[#b8c4ad] bg-[#d5efae] text-[#141714] px-5 py-3 font-semibold"
+                              onClick={() => stripeStatus.verificationStatus === 'unavailable' ? fetchProfileAndStripeStatus() : setShowStripeModal(true)}>
+                              {stripeStatus.verificationStatus === 'unavailable' ? 'Retry verification' : stripeStatus.requiresReconnect ? 'Reconnect Stripe' : stripeStatus.isOnboardingComplete ? 'Manage Stripe account' : stripeStatus.accountId ? 'Complete Stripe setup' : 'Connect Stripe'}
+                            </button>
                           </>
                         )}
                         
@@ -607,11 +532,11 @@ function ProfileSettingsPage() {
             <StripeConnectModal
               isOpen={showStripeModal}
               onClose={() => setShowStripeModal(false)}
-              onSuccess={() => {
+              status={stripeStatus}
+              onOnboardingComplete={() => {
                 setShowStripeModal(false);
                 fetchProfileAndStripeStatus();
               }}
-              accountType={stripeStatus?.isOnboardingComplete ? 'account_update' : 'account_onboarding'}
             />
           )}
         </AnimatePresence>

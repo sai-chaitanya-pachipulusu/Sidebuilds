@@ -61,7 +61,7 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
  await admin.connect();await admin.query(`CREATE SCHEMA "${schema}"`);
  for(const table of ['users','projects','purchase_requests','project_transactions','project_files','notifications'])await admin.query(`CREATE TABLE "${schema}"."${table}" (LIKE public."${table}" INCLUDING DEFAULTS INCLUDING INDEXES)`);
  await admin.query(`CREATE SEQUENCE "${schema}".request_ids`);await admin.query(`ALTER TABLE "${schema}".purchase_requests ALTER COLUMN id SET DEFAULT nextval('"${schema}".request_ids'::regclass)`);
- for(const file of ['011_purchase_agreements.sql','013_commerce_integrity.sql','014_refund_state.sql'])await pool.query(fs.readFileSync(path.join(__dirname,'../database/migrations',file),'utf8').replace(/^\s*(BEGIN|COMMIT);\s*$/gm,''));
+ for(const file of ['011_purchase_agreements.sql','013_commerce_integrity.sql','014_refund_state.sql','016_seller_connection_attempts.sql'])await pool.query(fs.readFileSync(path.join(__dirname,'../database/migrations',file),'utf8').replace(/^\s*(BEGIN|COMMIT);\s*$/gm,''));
  for(const [user,username] of [[seller,'qa_seller'],[buyerA,'qa_buyer_a'],[buyerB,'qa_buyer_b']])await db.query('INSERT INTO users(user_id,username,email,password_hash,stripe_account_id) VALUES($1,$2,$3,$4,$5)',[user,username,username+'@example.invalid','unusable-test-hash',user===seller?'acct_test_fixture':null]);
  let winner,main;
  await check('two simultaneous buyers produce only one payable project reservation',async()=>{main=await fixture();const r=await Promise.allSettled(main.requests.map(checkout));assert.equal(r.filter(x=>x.status==='fulfilled').length,1);assert.equal(r.find(x=>x.status==='rejected').reason.status,409);winner=r.find(x=>x.status==='fulfilled').value;});
@@ -160,6 +160,34 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
   assert.equal((await post(base,route,buyerB,{})).status,200);
   const reconciled=(await db.query('SELECT * FROM project_transactions WHERE transaction_id=$1',[row.transaction_id])).rows[0];assert.equal(reconciled.status,'refunded');assert.equal(reconciled.reconciled_by,buyerB);assert.ok(reconciled.reconciled_at);
   assert.equal((await post(base,route,buyerB,{})).body.already_reconciled,true);assert.equal(transfers.size,1);
+ });
+ await check('fresh pending transfer capability blocks PostgreSQL checkout without a reservation',async()=>{
+  const f=await fixture(),retrieve=stripe.accounts.retrieve;
+  try{stripe.accounts.retrieve=async()=>({charges_enabled:true,payouts_enabled:true,details_submitted:true,capabilities:{transfers:'pending'}});
+   await assert.rejects(checkout(f.requests[0]),{status:409});
+   assert.equal((await db.query('SELECT project_id FROM checkout_reservations WHERE project_id=$1',[f.project])).rows.length,0);
+  }finally{stripe.accounts.retrieve=retrieve;}
+ });
+ await check('unfinished PostgreSQL purchases block seller connection replacement',async()=>{
+  const {assertNoUnsettledSales}=require('../server/services/sellerConnectionService');
+  await assert.rejects(db.withTransaction(client=>assertNoUnsettledSales(client,seller)),{status:409});
+  assert.equal((await db.query('SELECT stripe_account_id FROM users WHERE user_id=$1',[seller])).rows[0].stripe_account_id,'acct_test_fixture');
+ });
+ await check('parallel seller reconnects reuse one durable PostgreSQL provider attempt',async()=>{
+  const user=randomUUID();await db.query("INSERT INTO users(user_id,username,email,password_hash,stripe_account_id) VALUES($1,$2,$3,'unusable','acct_old_connection')",[user,'qa_connect_'+user,user+'@example.invalid']);
+  const created=new Map(),provider={accounts:{retrieve:async id=>{
+   if(id==='acct_old_connection')throw Object.assign(new Error('Synthetic missing account'),{code:'account_invalid'});return {};
+  },create:async(params,options)=>{if(!created.has(options.idempotencyKey))created.set(options.idempotencyKey,{id:'acct_test_new_'+randomUUID(),params});
+   const record=created.get(options.idempotencyKey);assert.deepEqual(record.params,params);return {id:record.id};}},accountLinks:{create:async()=>({url:'https://connect.stripe.com/synthetic'})}};
+  const {createOnboardingLink}=require('../server/services/sellerConnectionService');
+  const results=await Promise.all([1,2].map(()=>createOnboardingLink({db,stripe:provider,userId:user,mode:'test',clientUrl:'http://localhost:3009'})));
+  assert.equal(created.size,1);assert.equal(results[0].account_id,results[1].account_id);
+  const attempt=(await db.query('SELECT * FROM stripe_connection_attempts WHERE user_id=$1',[user])).rows[0];assert.equal(attempt.account_id,results[0].account_id);
+  const policy=(await db.query("SELECT c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=current_schema() AND c.relname='stripe_connection_attempts'")).rows[0];assert.equal(policy.relrowsecurity,true);
+ });
+ await check('administrator launch checks return live provider observations without private account data',async()=>{
+  const {signToken}=require('../server/utils/jwt');const response=await fetch(base+'/webhooks/readiness',{headers:{Authorization:'Bearer '+signToken({user:{user_id:buyerB}})}});
+  assert.equal(response.status,200);const data=await response.json();assert.ok(data.listings.length);assert.doesNotMatch(JSON.stringify(data),/acct_|@example|password_hash|whsec_/);
  });
  report.success=true;
 }catch(e){report.success=false;report.error=e.message;console.error(e.stack);process.exitCode=1;}finally{

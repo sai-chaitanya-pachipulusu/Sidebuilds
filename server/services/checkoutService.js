@@ -1,4 +1,5 @@
 const { randomUUID } = require('node:crypto');
+const { readAccount } = require('./sellerConnectionService');
 const { approvedAgreement, fail } = require('../utils/purchaseAgreement');
 
 // A reservation is committed before contacting Stripe. Unknown provider outcomes
@@ -13,7 +14,7 @@ async function createCheckout({ db, stripe, requestId, agreementId, buyerId, cli
     if (!['seller_accepted_pending_payment', 'agreement_reached_pending_payment', 'payment_processing'].includes(request.status)) fail(409, 'Payment cannot be processed in the current purchase state.');
     if (!Number.isFinite(Number(request.price)) || Number(request.price) < 0.5) fail(400,'This purchase has no valid agreed price.');
     const agreement = await approvedAgreement(client, { ...request, purchase_request_id: request.id, accepted_price: request.price }, agreementId);
-    const seller = (await client.query('SELECT stripe_account_id,is_test FROM users WHERE user_id=$1', [request.seller_id])).rows[0];
+    const seller = (await client.query('SELECT stripe_account_id,is_test FROM users WHERE user_id=$1 FOR UPDATE', [request.seller_id])).rows[0];
     const buyer = (await client.query('SELECT is_test FROM users WHERE user_id=$1',[buyerId])).rows[0];
     if(liveMode && [buyer,seller].some(user=>user?.is_test===true || user?.is_test===1))fail(403,'Testing accounts cannot start live payments. Use the isolated Stripe test environment.');
     if (!seller?.stripe_account_id) fail(409, 'The seller must complete payment setup first.');
@@ -40,8 +41,9 @@ async function createCheckout({ db, stripe, requestId, agreementId, buyerId, cli
       const rate = Number(commissionRate);
       if (!Number.isFinite(rate) || rate < 0 || rate >= 100) fail(503, 'The marketplace fee needs configuration review.');
       // Check the connected account freshly; cached onboarding flags can be stale.
-      const account = await stripe.accounts.retrieve(seller.stripe_account_id);
-      if (!account.charges_enabled || !account.payouts_enabled || !account.details_submitted || account.capabilities?.transfers === 'inactive') fail(409, 'The seller must finish or update payment setup before checkout.');
+      const status = await readAccount(stripe, seller.stripe_account_id);
+      if (status.verificationStatus === 'unavailable') fail(503, 'The seller payment connection could not be verified. Please try again shortly.');
+      if (!status.isOnboardingComplete) fail(409, status.requiresReconnect ? 'The seller must reconnect Stripe for live payments before checkout.' : 'The seller must finish or update payment setup before checkout.');
       reservation = { project_id: project.project_id, purchase_request_id: request.id, generation: randomUUID(), agreement_id: agreement.id,
         price_cents: agreement.price_cents, fee_cents: Math.round(agreement.price_cents * rate / 100), currency: 'usd',
         seller_account_id: seller.stripe_account_id, expires_at: Math.floor(Date.now() / 1000) + 2100 };

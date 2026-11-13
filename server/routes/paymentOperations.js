@@ -2,6 +2,11 @@ const router=require('express').Router();
 const db=require('../db');
 const service=require('../services/webhookService');
 router.use(require('../middleware/authMiddleware'),require('../middleware/requireAdmin'),(_req,res,next)=>{res.set('Cache-Control','no-store');next();});
+router.get('/readiness',async(_req,res)=>{try{
+ const {stripe,stripeEnvironment}=require('../config/stripe.config');
+ res.json(await require('../services/launchReadinessService').launchReadiness({db,stripe,configuration:stripeEnvironment,
+  emailConfigured:require('../services/emailService').getEmailStatus().configured}));
+}catch(_){res.status(503).json({error:'Launch checks could not be completed. Refresh to try again.'});}});
 router.get('/health',async(_req,res)=>{try{const health=await service.getHealthStatus();res.status(health.healthy?200:503).json({webhook:health,timestamp:new Date().toISOString()});}catch(_){res.status(503).json({error:'Payment monitoring is temporarily unavailable.'});}});
 router.get('/events',async(req,res)=>{try{
  const limit=Math.max(1,Math.min(200,parseInt(req.query.limit,10)||50));
