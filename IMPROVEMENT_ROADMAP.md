@@ -145,3 +145,10 @@ Market research and source links are retained in the QA report. Production was i
 - FR5 follow-up: unified hosted build entrypoints and moved renderer source out of automatic API detection; 82 server tests and seven affected follow-up checks pass. Awaiting the complete browser deployment.
 
 - FR5 build follow-up: retain the existing validated browser build wrapper in the unified packaging command; verify the next hosted release before operator invitation.
+
+### FR7 completion — November 13
+
+- Deployed and observed: redesigned recovery pages and solid styling at 3c5beda. Production stylesheet and computed page backgrounds contain no gradients. Expired links are rejected before password entry; email outage is explained honestly.
+- Corrected an additional restored-schema defect: reset expiries now use timezone-aware UTC (migration 015), with explicit ISO writes in setup scripts. Preserved all reset records and security. Added and passed the exact legacy PostgreSQL migration scenario; current totals are 128 interface, 86 server and 18 PostgreSQL checks, plus 12 live recovery checks.
+- Owner action: use the renewed private .tmp/production-admin/ADMIN_SETUP_2026-11-13.md invitation. It was accepted by the live validity endpoint without consumption and expires November 13 at 2:44 a.m. Eastern. Older setup links no longer work. Choose the password yourself; administrator activation remains pending.
+- Existing constraints persist: free hosting, email pending and live checkout paused. No .env or Stripe settings changed. Resume listing evidence and visibility priorities after operator access.

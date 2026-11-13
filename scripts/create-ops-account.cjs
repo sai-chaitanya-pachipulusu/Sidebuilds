@@ -30,7 +30,7 @@ const db=new Client({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauth
  await db.query('ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY');
  await db.query('REVOKE ALL ON password_reset_tokens FROM PUBLIC,anon,authenticated');
  const expires=new Date(Date.now()+60*60*1000);
- const reset=(await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3) RETURNING id',[id,tokenHash,expires])).rows[0];
+ const reset=(await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3) RETURNING id',[id,tokenHash,expires.toISOString()])).rows[0];
  if(!apply){await db.query('ROLLBACK');console.log(JSON.stringify({mode:'rollback rehearsal',success:true,wouldCreateNewAdministrator:true,noExistingAccountPromoted:true}));return;}
  fs.mkdirSync(privateDir,{recursive:true});
  const setupUrl='https://www.sidebuilds.online/reset-password?token='+token;

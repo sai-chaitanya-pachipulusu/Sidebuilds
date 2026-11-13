@@ -30,7 +30,7 @@ async function renew({ connectionString, ca, privateDir, apply = false }) {
         const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
         const expires = new Date(Date.now() + 60 * 60 * 1000);
         await db.query('UPDATE password_reset_tokens SET used_at=CURRENT_TIMESTAMP WHERE user_id::text=$1::text AND used_at IS NULL', [state.userId]);
-        const replacement = (await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3) RETURNING id', [state.userId, hash, expires])).rows[0];
+        const replacement = (await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3) RETURNING id', [state.userId, hash, expires.toISOString()])).rows[0];
         const nextState = { ...state, resetTokenId: replacement.id, expiresAt: expires.toISOString() };
         const localExpiry = expires.toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' });
         const content = `# Private SideBuilds operations setup\n\nUse this renewed invitation. Earlier setup links no longer work. Keep this file private.\n\nUsername: ${state.username}\n\nLogin email: ${state.email}\n\n[Choose your administrator password](https://www.sidebuilds.online/reset-password?token=${rawToken})\n\nExpires: ${localExpiry} Eastern (${expires.toISOString()}). The link works once and expires in one hour.\n\nChoose your password yourself, then sign in with the login email above and open [Payment operations](https://www.sidebuilds.online/admin). No password was changed, saved or sent by email.\n`;

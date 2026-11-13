@@ -123,6 +123,15 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
   stripe.events={retrieve:async value=>{assert.equal(value,completion.id);return completion;}};
   const retry=await post(base,'/webhooks/replay/'+completion.id,buyerB,{});assert.equal(retry.status,200);assert.equal(retry.body.duplicate,true);
  });
+ await check('restored timezone-less reset expiries migrate to exact UTC instants',async()=>{
+  await db.query('CREATE TABLE password_reset_tokens(id SERIAL PRIMARY KEY,user_id UUID NOT NULL,token_hash TEXT UNIQUE NOT NULL,expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,used_at TIMESTAMPTZ,created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)');
+  const expected=new Date(Date.now()+3600000).toISOString();
+  await db.query('INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES($1,$2,$3)',[buyerA,'synthetic-legacy-expiry',expected]);
+  const sql=fs.readFileSync(path.join(__dirname,'../database/migrations/015_reset_token_timezone.sql'),'utf8').replace(/^\s*(BEGIN|COMMIT);\s*$/gm,'');
+  await pool.query(sql);await pool.query(sql);
+  const row=(await db.query("SELECT expires_at,pg_typeof(expires_at)::text AS type,expires_at>CURRENT_TIMESTAMP AS valid FROM password_reset_tokens WHERE token_hash='synthetic-legacy-expiry'")).rows[0];
+  assert.equal(row.type,'timestamp with time zone');assert.equal(row.expires_at.toISOString(),expected);assert.equal(row.valid,true);
+ });
  await check('PostgreSQL registration, login and single-use password setup work without granting administrator access',async()=>{
   const unique=randomUUID().slice(0,8),email='qa.signup.'+unique+'@example.invalid',password='Synthetic-registration-only-2026!';
   const request=async(route,body)=>{const r=await fetch(base+'/auth/'+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};};
