@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import SEO from '../components/SEO';
@@ -12,6 +12,8 @@ const statuses = { interest_expressed: 'Inquiry', seller_terms_proposed: 'Scope 
 const pageSize = 20;
 export default function InboxPage() {
   const { user } = useAuth();
+  const pageTop = useRef(null);
+  useEffect(() => { pageTop.current?.scrollIntoView?.({ block: 'start' }); }, []);
   const [params, setParams] = useSearchParams();
   const role = ['selling', 'buying'].includes(params.get('role')) ? params.get('role') : 'all';
   const unread = params.get('unread') === 'true', search = params.get('q') || '';
@@ -36,7 +38,7 @@ export default function InboxPage() {
     for (const [key, value] of Object.entries({ offset: '', ...patch })) value === '' || value === false ? next.delete(key) : next.set(key, String(value));
     setParams(next);
   };
-  return <div className="sb-inbox"><SEO title="Inbox" noindex/>
+  return <div ref={pageTop} className="sb-inbox"><SEO title="Inbox" noindex/>
     <header className="sb-inbox-header"><div><p className="sb-inbox-eyebrow">Buying & selling</p><h1>Inbox</h1><p>Private conversations about your projects and purchases.</p></div>
       <button type="button" disabled={pending} onClick={() => setRefresh(value => value + 1)} className="sb-inbox-button">{pending ? 'Checking…' : 'Refresh inbox'}</button></header>
     <div className="sb-inbox-tools">

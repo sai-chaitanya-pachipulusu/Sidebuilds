@@ -1,4 +1,4 @@
-.sb-inbox { max-width: 1120px; margin: 0 auto; padding: 56px 24px 72px; color: #f2f3ee; }
+.sb-inbox { max-width: 1120px; margin: 0 auto; padding: 56px 24px 72px; color: #f2f3ee; scroll-margin-top: 72px; }
 .sb-inbox-header { display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: start; padding-bottom: 30px; border-bottom: 1px solid #30362d; }
 .sb-inbox-eyebrow { font: 11px/1.5 ui-monospace, monospace; color: #b5c1a8; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
 .sb-inbox h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin-bottom: 12px; }
