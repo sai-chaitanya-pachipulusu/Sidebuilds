@@ -44,7 +44,7 @@ app.use('/api/purchase-requests/:requestId/messages', require('../routes/purchas
 app.use('/api/payments', require('../routes/payments').router);
 app.use('/api/files', require('../routes/files'));
 app.use('/api/ai', require('../routes/ai'));
-beforeEach(() => require('../middleware/rateLimiting').authLimiter.resetKey('127.0.0.1'));
+beforeEach(() => { const limits = require('../middleware/rateLimiting'); limits.authLimiter.resetKey('127.0.0.1'); limits.purchaseRequestLimiter.resetKey('127.0.0.1'); });
 let server, base, seller, buyer, outsider;
 const password = 'Synthetic-test-password-2026!';
 async function request(method, route, token, body) {
@@ -272,12 +272,14 @@ test('public questions support seller answers and reject answers from other buye
   expectStatus(result, 200);
   assert.equal(result.body[0].answer, 'Yes, with deployment instructions.');
 });
-test('purchase interest rejects duplicates and hides conversations from outsiders', async () => {
+test('purchase interest reuses a thread and hides conversations from outsiders', async () => {
   const p = await saleProject();
   const route = `/purchase-requests/projects/${p.project_id}/request`;
-  const result = await request('POST', route, buyer.token, { buyer_intro_message: 'QA synthetic purchase interest.' });
+  const result = await request('POST', route, buyer.token, { buyerIntroMessage: 'QA synthetic purchase interest.' });
   expectStatus(result, 201);
-  expectStatus(await request('POST', route, buyer.token, {}), 409);
+  const reused = await request('POST', route, buyer.token, { buyerIntroMessage: 'A draft for the existing thread.' });
+  expectStatus(reused, 200); assert.equal(reused.body.id, result.body.id); assert.equal(reused.body.existing, true);
+  assert.equal((await db.query('SELECT message FROM purchase_requests WHERE id=$1', [result.body.id])).rows[0].message, 'QA synthetic purchase interest.');
   const messages = `/purchase-requests/${result.body.id}/messages`;
   expectStatus(await request('GET', messages, outsider.token), 403);
   expectStatus(await request('POST', messages, buyer.token, { content: 'Can you share deployment instructions?' }), 201);
@@ -725,4 +727,47 @@ test('publishing a hidden sale cannot bypass Stripe readiness by omitting the sa
   expectStatus(await request('PUT', `/projects/${p.project_id}`, seller.token, { is_public: true }), 403);
   assert.equal((await db.query('SELECT is_public FROM projects WHERE project_id=$1', [p.project_id])).rows[0].is_public, 0);
   expectStatus(await request('PUT', `/projects/${p.project_id}`, seller.token, { is_public: 'false' }), 400);
+});
+
+test('hidden sale listings reject new inquiry and scope requests without revealing listing details', async () => {
+  const p = await saleProject(); await db.query('UPDATE projects SET is_public=false WHERE project_id=$1', [p.project_id]);
+  expectStatus(await request('POST', `/purchase-requests/projects/${p.project_id}/request`, buyer.token, { buyerIntroMessage: 'Can we discuss this project?' }), 404);
+  expectStatus(await request('POST', `/purchase-requests/projects/${p.project_id}/initiate-checkout`, buyer.token, {}), 404);
+  assert.equal((await db.query('SELECT id FROM purchase_requests WHERE project_id=$1', [p.project_id])).rows.length, 0);
+});
+test('parallel inquiry submissions commit one introduction and one seller notification', async () => {
+  const p = await saleProject(); const route = `/purchase-requests/projects/${p.project_id}/request`;
+  const body = { buyerIntroMessage: 'What are the R&D costs and handover steps?' };
+  const results = await Promise.all([request('POST', route, buyer.token, body), request('POST', route, buyer.token, body)]);
+  assert.deepEqual(results.map(r => r.status).sort(), [200, 201]); assert.equal(results[0].body.id, results[1].body.id);
+  const id = results[0].body.id;
+  assert.equal((await db.query('SELECT id FROM purchase_requests WHERE project_id=$1', [p.project_id])).rows.length, 1);
+  assert.equal((await db.query('SELECT notification_id FROM notifications WHERE action_url=$1', [`/purchase-agreement/${id}#purchase-conversation`])).rows.length, 1);
+  const read = await request('GET', `/purchase-requests/${id}/messages`, seller.token);
+  assert.ok(read.body.messages.some(message => message.content === body.buyerIntroMessage));
+});
+test('held listings reject new inquiry threads while an existing participant can continue theirs', async () => {
+  const p = await saleProject(); const route = `/purchase-requests/projects/${p.project_id}/request`;
+  const first = await request('POST', route, buyer.token, { buyerIntroMessage: 'Please explain the setup costs.' }); expectStatus(first, 201);
+  await db.query('UPDATE projects SET is_on_hold=true WHERE project_id=$1', [p.project_id]);
+  expectStatus(await request('POST', route, outsider.token, { buyerIntroMessage: 'I would like to discuss this project.' }), 409);
+  const existing = await request('POST', route, buyer.token, { buyerIntroMessage: 'Keep this new message as a draft.' }); expectStatus(existing, 200); assert.equal(existing.body.id, first.body.id);
+});
+test('a fully refunded request does not permanently block a fresh inquiry on a relisted project', async () => {
+  const p = await saleProject(); const route = `/purchase-requests/projects/${p.project_id}/request`;
+  const first = await request('POST', route, buyer.token, { buyerIntroMessage: 'Can we discuss the project scope?' }); expectStatus(first, 201);
+  await db.query("UPDATE purchase_requests SET status='payment_refunded' WHERE id=$1", [first.body.id]);
+  const next = await request('POST', route, buyer.token, { buyerIntroMessage: 'I would like a new scope discussion.' }); expectStatus(next, 201); assert.notEqual(next.body.id, first.body.id);
+});
+test('private-message retries reuse the stored row and reject content or participant mismatches', async () => {
+  const p = await saleProject(); const created = await request('POST', `/purchase-requests/projects/${p.project_id}/request`, buyer.token, { buyerIntroMessage: 'Can we discuss the handover steps?' });
+  const route = `/purchase-requests/${created.body.id}/messages`, clientMessageId = randomUUID();
+  const body = { clientMessageId, content: 'Please explain the deployment costs.' };
+  const first = await request('POST', route, buyer.token, body); expectStatus(first, 201);
+  const retry = await request('POST', route, buyer.token, body); expectStatus(retry, 200); assert.equal(first.body.id, retry.body.id);
+  expectStatus(await request('POST', route, buyer.token, { ...body, content: 'Different content cannot reuse this attempt.' }), 409);
+  expectStatus(await request('POST', route, outsider.token, body), 403);
+  expectStatus(await request('POST', route, buyer.token, { ...body, clientMessageId: 'bad-id' }), 400);
+  assert.equal((await db.query('SELECT message_id FROM purchase_request_messages WHERE purchase_request_id=$1', [created.body.id])).rows.length, 1);
+  const notifications = await db.query("SELECT notification_id FROM notifications WHERE action_url=$1 AND type='new_message'", [`/purchase-agreement/${created.body.id}#purchase-conversation`]); assert.equal(notifications.rows.length, 1);
 });

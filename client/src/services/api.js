@@ -699,12 +699,6 @@ export const initiateProjectCheckout = async (projectId, idempotencyKey) => {
 // Called by buyer to initiate interest with initial commitments
 export const expressInterestInProject = async (projectId, buyerInitialCommitments, buyerIntroMessage) => {
     try {
-        console.log('Sending interest request with data:', {
-            projectId,
-            buyerCommitments: buyerInitialCommitments,
-            buyerIntroMessage
-        });
-        
         const response = await apiClient.post(`/purchase-requests/projects/${projectId}/request`, { 
             buyerCommitments: buyerInitialCommitments,
             buyerIntroMessage: buyerIntroMessage

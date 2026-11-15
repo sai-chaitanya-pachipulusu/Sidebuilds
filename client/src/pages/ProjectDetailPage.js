@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 import { useAuth } from '../context/AuthContext';
 import {
   getProjectById,
-  expressInterestInProject,
   getDueDiligenceReport,
   initiateProjectCheckout
 } from '../services/api';
@@ -14,12 +13,13 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import ProjectQA from '../components/ProjectQA';
 import ProjectReviews from '../components/ProjectReviews';
 import BuyerBrief from '../components/BuyerBrief';
+import ProjectInquiryModal from '../components/ProjectInquiryModal';
 import { loginDestination, safeReturnTo } from '../utils/navigation';
 import { 
   DollarSign, Zap, Shield, Users, Calendar, ArrowLeft, Share2, Bookmark, 
   Code2, Eye, PlayCircle, ImageIcon, TrendingUp, Star, Edit3, Heart, 
-  Github, Send, X, CheckCircle, BookmarkCheck, Trophy, ExternalLink, 
-  Lightbulb, Clock4, AlertCircle, Loader2, Info, AlertTriangle 
+  Github, CheckCircle, BookmarkCheck, Trophy, ExternalLink,
+  Lightbulb, Clock4, Loader2, Info, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -38,27 +38,6 @@ const normalizeExternalUrl = (value) => {
   }
 };
 
-// Validation helper functions
-const validateInterestMessage = (message) => {
-  if (!message || message.trim().length === 0) {
-    return 'Please include a message to the seller.';
-  }
-  if (message.trim().length < 10) {
-    return 'Message must be at least 10 characters long.';
-  }
-  if (message.trim().length > 2000) {
-    return 'Message must be less than 2000 characters.';
-  }
-  return null;
-};
-
-const validateCommitments = (commitments) => {
-  if (commitments.size < 3) {
-    return 'Please agree to all commitments.';
-  }
-  return null;
-};
-
 const ProjectDetailPage = () => {
   const { id: projectId } = useParams();
   const { user } = useAuth();
@@ -71,14 +50,9 @@ const ProjectDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showInterestModal, setShowInterestModal] = useState(false);
-  const [interestMessage, setInterestMessage] = useState('');
-  const [commitments, setCommitments] = useState(new Set());
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBuyButtonLoading, setIsBuyButtonLoading] = useState(false);
-  const [isOfferButtonLoading, setIsOfferButtonLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
   const [dueDiligenceReport, setDueDiligenceReport] = useState(null);
   const [isDueDiligenceLoading, setIsDueDiligenceLoading] = useState(false);
   const [reportError, setReportError] = useState('');
@@ -142,6 +116,7 @@ const ProjectDetailPage = () => {
   }, [projectId]);
 
   useEffect(() => {
+    setShowInterestModal(false);
     setDueDiligenceReport(null);
     setQuestionPrompt(null);
     setReportError('');
@@ -177,157 +152,6 @@ const ProjectDetailPage = () => {
     }
   }, [location.search, location.pathname, location.state, project, user, navigate]);
 
-  // ESC key handler to close modals
-  useEffect(() => {
-    const handleEscKey = (e) => {
-      if (e.key === 'Escape') {
-        if (showInterestModal) {
-          console.log('ESC pressed - closing interest modal');
-          setShowInterestModal(false);
-          setInterestMessage('');
-          setCommitments(new Set());
-          setValidationErrors({});
-        }
-
-      }
-    };
-    
-    window.addEventListener('keydown', handleEscKey);
-    return () => window.removeEventListener('keydown', handleEscKey);
-  }, [showInterestModal]);
-
-  // Enhanced interest submission with better error handling
-  const handleInterestSubmit = async () => {
-    console.log('handleInterestSubmit called');
-    
-    if (!user) {
-      toast.error('Please log in to express interest.');
-      navigate(loginDestination(`${location.pathname}?showInterest=true`), { state: location.state });
-      return;
-    }
-    
-    if (!project) {
-      toast.error('Project information not available.');
-      return;
-    }
-    
-    // Frontend validation
-    const messageError = validateInterestMessage(interestMessage);
-    const commitmentsError = validateCommitments(commitments);
-    
-    const errors = {};
-    if (messageError) errors.message = messageError;
-    if (commitmentsError) errors.commitments = commitmentsError;
-    
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      toast.error('Please fix the validation errors.');
-      return;
-    }
-    
-    setValidationErrors({});
-    console.log('All validations passed, submitting interest...');
-    setIsOfferButtonLoading(true);
-    setIsSubmitting(true);
-    
-    try {
-      console.log('Sending interest:', {
-        projectId,
-        commitments: Array.from(commitments),
-        message: interestMessage
-      });
-      
-      const result = await expressInterestInProject(
-        projectId, 
-        Array.from(commitments), 
-        interestMessage
-      );
-      
-      console.log('Interest submission successful:', result);
-      
-      // Reset form first
-      setInterestMessage('');
-      setCommitments(new Set());
-      
-      // Close modal immediately
-      setShowInterestModal(false);
-      
-      // Show success message after modal closes
-      setTimeout(() => {
-        toast.success('Interest sent! The seller has been notified.', {
-          duration: 4000,
-          position: 'top-center',
-        });
-      }, 100);
-      
-    } catch (error) {
-      console.error('Interest submission error:', error);
-      
-      // Enhanced error handling with specific messages
-      let errorMessage = 'Failed to send interest. Please try again.';
-      if (error.response?.status === 401) {
-        const serverMessage = error.response.data?.message;
-        if (serverMessage?.includes('Invalid token format') || serverMessage?.includes('Token expired')) {
-          errorMessage = 'Your session has expired. Please log in again.';
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setTimeout(() => window.location.href = '/login', 2000);
-        } else {
-          errorMessage = 'Please log in again to send an offer.';
-        }
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Project not found. It may have been removed.';
-      } else if (error.response?.status === 403) {
-        errorMessage = 'You cannot make an offer on your own project.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.error || 'Invalid request. Please check your input.';
-      } else if (error.response?.status === 409) {
-        errorMessage = error.response.data?.error || 'You already have an active request for this project.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-center',
-      });
-      
-      // If it's a critical error (like session expired), close modal after showing error
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        setTimeout(() => {
-          setShowInterestModal(false);
-          setInterestMessage('');
-          setCommitments(new Set());
-        }, 2000);
-      }
-    } finally {
-      setIsSubmitting(false);
-      setIsOfferButtonLoading(false);
-    }
-  };
-
-  const toggleCommitment = (commitment) => {
-    const newCommitments = new Set(commitments);
-    if (newCommitments.has(commitment)) {
-      newCommitments.delete(commitment);
-    } else {
-      newCommitments.add(commitment);
-    }
-    setCommitments(newCommitments);
-    // Clear commitment error when user makes a selection
-    if (validationErrors.commitments) {
-      setValidationErrors(prev => ({ ...prev, commitments: null }));
-    }
-  };
-
-  const handleMessageChange = (e) => {
-    setInterestMessage(e.target.value);
-    // Clear message error when user types
-    if (validationErrors.message) {
-      setValidationErrors(prev => ({ ...prev, message: null }));
-    }
-  };
-
   // Start a shared scope review. Payment is available only after both approvals.
   const handleBuyNowClick = async () => {
     if (!user) {
@@ -347,32 +171,6 @@ const ProjectDetailPage = () => {
     } finally {
       purchaseLock.current = false;
       setIsBuyButtonLoading(false);
-    }
-  };
-
-  // Force close modal function with comprehensive cleanup
-  const forceCloseModal = useCallback((e) => {
-    console.log('forceCloseModal called');
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    // Force close all modals and reset all states
-    setShowInterestModal(false);
-    setInterestMessage('');
-    setCommitments(new Set());
-    setIsSubmitting(false);
-    setValidationErrors({});
-    
-    // Additional cleanup to ensure modal is closed
-    document.body.style.overflow = 'unset';
-  }, []);
-
-  // Handle backdrop clicks
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      forceCloseModal(e);
     }
   };
 
@@ -949,17 +747,12 @@ const ProjectDetailPage = () => {
                           </motion.button>
                           <motion.button
                             onClick={() => user ? setShowInterestModal(true) : navigate(loginDestination(`${location.pathname}?showInterest=true`), { state: location.state })}
-                            disabled={isOfferButtonLoading}
                             className="w-full px-6 py-3 bg-neutral-800   text-white rounded-none font-medium flex items-center justify-center gap-2   transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            whileHover={{ scale: isOfferButtonLoading ? 1 : 1.02 }}
-                            whileTap={{ scale: isOfferButtonLoading ? 1 : 0.98 }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                           >
-                            {isOfferButtonLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Heart className="w-4 h-4" />
-                            )}
-                            {isOfferButtonLoading ? 'Sending...' : 'Make Offer'}
+                            <Heart className="w-4 h-4" />
+                            Contact seller
                           </motion.button>
                         </>
                       )}
@@ -1024,130 +817,8 @@ const ProjectDetailPage = () => {
         </div>
 
         {/* Interest Modal */}
-        <AnimatePresence>
-          {showInterestModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
-              onClick={handleBackdropClick}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-gray-900 border border-white/[0.12] rounded-none p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Make an Offer for {projectName}</h2>
-                    <button
-                      type="button"
-                      onClick={forceCloseModal}
-                      className="p-2 hover:bg-red-600 rounded-none transition-colors duration-200 text-gray-400 hover:text-white z-10 relative bg-gray-800"
-                      style={{ pointerEvents: 'auto' }}
-                      title="Close modal (or press ESC)"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Press ESC key or click the X button above to close this modal</p>
-                </div>
-
-                <div className="space-y-6">
-                  <p className="text-gray-300">
-                    Your offer will be sent to the seller. This is a negotiation starting point.
-                  </p>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Message to Seller <span className="text-red-400">*</span>
-                    </label>
-                    <textarea
-                      value={interestMessage}
-                      onChange={handleMessageChange}
-                      placeholder="Introduce yourself, your offer amount, and why you're interested in this project..."
-                      className={`w-full h-32 px-4 py-3 bg-gray-800 border rounded-none text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-colors ${
-                        validationErrors.message 
-                          ? 'border-red-500 focus:border-red-500' 
-                          : 'border-gray-700 focus:border-blue-500'
-                      }`}
-                    />
-                    {validationErrors.message && (
-                      <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {validationErrors.message}
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs text-gray-500">
-                      {interestMessage.length}/2000 characters
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-4">
-                      Commitments (all required) <span className="text-red-400">*</span>
-                    </label>
-                    <div className={`space-y-3 p-4 rounded-none border ${validationErrors.commitments ? 'border-red-500 bg-red-500/5' : 'border-gray-700'}`}>
-                      {[
-                        { id: 'funds_ready', text: 'I have the funds available for this purchase.' },
-                        { id: 'respect_process', text: 'I understand this is a negotiation and the seller may decline.' },
-                        { id: 'prompt_payment', text: 'I agree to make the payment promptly if my offer is accepted.' }
-                      ].map((commitment) => (
-                        <label key={commitment.id} className="flex items-start gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={commitments.has(commitment.id)}
-                            onChange={() => toggleCommitment(commitment.id)}
-                            className="mt-1 w-4 h-4 bg-gray-800 border border-gray-600 rounded focus:ring-blue-500 focus:ring-2 text-blue-600"
-                          />
-                          <span className="text-gray-300 text-sm">{commitment.text}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {validationErrors.commitments && (
-                      <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        {validationErrors.commitments}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="button"
-                      onClick={forceCloseModal}
-                      disabled={isSubmitting}
-                      className="flex-1 px-6 py-3 text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded-none transition-colors duration-200 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleInterestSubmit}
-                      disabled={isSubmitting}
-                      className="flex-1 px-6 py-3 bg-neutral-800   text-white rounded-none font-medium disabled:opacity-50 disabled:cursor-not-allowed   transition-all duration-200 flex items-center justify-center gap-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          Send Offer
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ProjectInquiryModal key={projectId} open={showInterestModal} onClose={() => setShowInterestModal(false)} projectId={projectId} projectName={projectName}
+          onContinue={(requestId, draft) => { setShowInterestModal(false); navigate(`/purchase-agreement/${requestId}#purchase-conversation`, { state: draft ? { inquiryDraft: draft, inquiryRequestId: String(requestId) } : null }); }} />
 
 
       </div>

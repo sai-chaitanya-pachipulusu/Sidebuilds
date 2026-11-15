@@ -52,10 +52,10 @@ const expressInterestValidation = [
         .withMessage('Buyer commitments must be an array'),
     body('buyerIntroMessage')
         .optional()
+        .isString().withMessage('Message must be text').bail()
         .trim()
         .isLength({ min: 10, max: 2000 })
         .withMessage('Message must be between 10 and 2000 characters')
-        .escape()
 ];
 
 // Validation rules for checkout initiation
@@ -77,138 +77,16 @@ const initiateCheckoutValidation = [
 
 // --- Create a new Purchase Request (Buyer Action) ---
 // POST /api/purchase-requests/projects/:projectId/request
-router.post('/projects/:projectId/request', 
-    authMiddleware, 
-    purchaseRequestLimiter, 
-    expressInterestValidation,
-    handleValidationErrors,
-    async (req, res) => {
-        const { projectId } = req.params;
-        const { buyerCommitments, buyerIntroMessage } = req.body;
-        const buyerId = req.user.user_id;
-        const idempotencyKey = req.headers['idempotency-key'];
-
-        console.log(`[PURCHASE REQUESTS] Expressing interest for project ${projectId} by buyer ${buyerId}`);
-
-        try {
-            // Check idempotency key
-            const cachedResponse = await checkIdempotencyKey(idempotencyKey, `interest_${projectId}_${buyerId}`);
-            if (cachedResponse) {
-                console.log(`[PURCHASE REQUESTS] Returning cached response for idempotency key ${idempotencyKey}`);
-                return res.status(201).json(cachedResponse);
-            }
-
-            // Use database transaction for atomicity
-            const result = await db.withTransaction(async (client) => {
-                // Check if project exists and is for sale with row locking
-                const projectResult = await client.query(
-                    'SELECT project_id, owner_id, name, is_for_sale FROM projects WHERE project_id = $1 FOR UPDATE',
-                    [projectId]
-                );
-
-                if (projectResult.rows.length === 0) {
-                    throw new Error('Project not found.');
-                }
-
-                const project = projectResult.rows[0];
-
-                // Check if project is for sale
-                if (!project.is_for_sale) {
-                    throw new Error('This project is not currently for sale.');
-                }
-
-                // Check owner_id
-                if (project.owner_id === buyerId) {
-                    throw new Error('You cannot express interest in your own project.');
-                }
-
-                // Check for existing active requests with row locking
-                const existingRequestResult = await client.query(
-                    `SELECT id, status FROM purchase_requests
-                     WHERE project_id = $1 AND buyer_id = $2
-                     AND status NOT IN ('seller_rejected', 'buyer_withdrew_interest', 'transfer_completed_buyer_confirmed', 'payment_failed', 'aborted_project_unavailable', 'expired')
-                     FOR UPDATE`,
-                    [projectId, buyerId]
-                );
-
-                if (existingRequestResult.rows.length > 0) {
-                    const existingRequest = existingRequestResult.rows[0];
-                    throw new Error(`You already have an active request for this project with status: ${existingRequest.status}`);
-                }
-
-                // Create new purchase request
-                const insertResult = await client.query(
-                    `INSERT INTO purchase_requests
-                        (project_id, buyer_id, seller_id, status, message, created_at, updated_at)
-                     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                     RETURNING id`,
-                    [projectId, buyerId, project.owner_id, 'interest_expressed', buyerIntroMessage || null]
-                );
-
-                const requestId = insertResult.rows[0].id;
-                console.log(`[PURCHASE REQUESTS] Created new interest request ${requestId} for project ${projectId}`);
-
-                // Get the created request
-                const createdRequest = await client.query(
-                    'SELECT * FROM purchase_requests WHERE id = $1',
-                    [requestId]
-                );
-
-                return {
-                    request: createdRequest.rows[0],
-                    project: project
-                };
-            });
-
-            const newPurchaseRequest = result.request;
-            const project = result.project;
-
-            // Create notification for seller (outside transaction for better performance)
-            try {
-                await createNotification(
-                    project.owner_id,
-                    'new_interest',
-                    `You have received a new purchase request for your project "${project.name}".`,
-                    `/purchase-agreement/${newPurchaseRequest.id}`
-                );
-            } catch (notificationError) {
-                console.error('Error creating notification:', notificationError);
-                // Don't fail the request if notification fails
-            }
-
-            const response = {
-                ...newPurchaseRequest,
-                message: 'Interest expressed successfully!'
-            };
-
-            // Store idempotency key
-            if (idempotencyKey) {
-                storeIdempotencyKey(idempotencyKey, `interest_${projectId}_${buyerId}`, response);
-            }
-
-            res.status(201).json(response);
-
-        } catch (error) {
-            console.error('Error expressing interest:', error);
-            
-            // Handle specific error types
-            if (error.message === 'Project not found.') {
-                return res.status(404).json({ error: error.message });
-            }
-            if (error.message.includes('not currently for sale')) {
-                return res.status(400).json({ error: error.message });
-            }
-            if (error.message.includes('own project')) {
-                return res.status(400).json({ error: error.message });
-            }
-            if (error.message.includes('already have an active request')) {
-                return res.status(409).json({ error: error.message });
-            }
-            
-            res.status(500).json({ error: 'Server error while processing your request.' });
-        }
+router.post('/projects/:projectId/request', authMiddleware, purchaseRequestLimiter, expressInterestValidation, handleValidationErrors, async (req, res) => {
+    try {
+        const result = await require('../services/projectInquiryService').openProjectInquiry(db, {
+            projectId: req.params.projectId, buyerId: req.user.user_id, message: req.body.buyerIntroMessage
+        });
+        res.status(result.existing ? 200 : 201).json({ id: result.id, purchase_request_id: result.id, status: result.status, existing: result.existing });
+    } catch (error) {
+        res.status(error.status || 503).json({ error: error.status ? error.message : 'The inquiry could not be opened. Retry shortly; your existing conversation will be reused.' });
     }
-);
+});
 
 // --- Initiate Checkout for a Project (Buy Now action) ---
 // POST /api/purchase-requests/projects/:projectId/initiate-checkout
@@ -237,11 +115,11 @@ router.post('/projects/:projectId/initiate-checkout',
             const result = await db.withTransaction(async (client) => {
                 // Check project availability with row locking
                 const projectResult = await client.query(
-                    'SELECT owner_id as seller_id, sale_price, name, is_for_sale, is_on_hold FROM projects WHERE project_id = $1 FOR UPDATE',
+                    'SELECT owner_id as seller_id, sale_price, name, is_public, is_for_sale, is_on_hold FROM projects WHERE project_id = $1 FOR UPDATE',
                     [projectId]
                 );
 
-                if (projectResult.rows.length === 0) {
+                if (projectResult.rows.length === 0 || !projectResult.rows[0].is_public) {
                     throw new Error('Project not found.');
                 }
 
@@ -265,22 +143,17 @@ router.post('/projects/:projectId/initiate-checkout',
                 const existingRequestQuery = await client.query(
                     `SELECT id as request_id, status FROM purchase_requests 
                      WHERE project_id = $1 AND buyer_id = $2 
-                     AND status NOT IN ('transfer_completed_buyer_confirmed','seller_rejected','buyer_withdrew_interest','payment_failed','aborted_project_unavailable','expired')
+                     AND status NOT IN ('transfer_completed_buyer_confirmed','seller_rejected','buyer_withdrew_interest','payment_failed','aborted_project_unavailable','expired','payment_refunded')
                      FOR UPDATE`,
                     [projectId, buyerId]
                 );
 
                 if (existingRequestQuery.rows.length > 0) {
                     const existingRequest = existingRequestQuery.rows[0];
-                    if (['interest_expressed', 'seller_terms_proposed', 'seller_accepted_pending_payment', 'payment_processing', 'agreement_reached_pending_payment'].includes(existingRequest.status)) {
-                        console.log(`[PURCHASE REQUESTS] Found existing request ${existingRequest.request_id} for project ${projectId} by buyer ${buyerId} with status ${existingRequest.status}. Reusing.`);
-                        return {
-                            existing: true,
-                            data: existingRequest
-                        };
-                    }
-                    throw new Error(`Active purchase process exists with status: ${existingRequest.status}`);
+                    return { existing: true, data: existingRequest };
                 }
+                const reservation = await client.query('SELECT project_id FROM checkout_reservations WHERE project_id=$1', [projectId]);
+                if (reservation.rows.length) return { reserved: true };
 
                 // Create new purchase request
                 const insert = await client.query(
@@ -304,6 +177,8 @@ router.post('/projects/:projectId/initiate-checkout',
                     project: project
                 };
             });
+
+            if (result.reserved) return res.status(409).json({ error: 'This project is reserved. Open an existing purchase from your purchases page.' });
 
             // Handle existing request case
             if (result.existing) {

@@ -31,9 +31,9 @@ test('detail price keeps cents and Back to results restores the exact search', a
   expect(screen.getByTestId('destination')).toHaveTextContent('/marketplace?q=Atlas&minPrice=10.25');
 });
 
-test('a guest signs in before composing an offer and retains the project destination', async () => {
+test('a guest signs in before contacting a seller and retains the project destination', async () => {
   open(); await screen.findByRole('heading', { name: 'Atlas' });
-  fireEvent.click(screen.getByRole('button', { name: 'Make Offer' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Contact seller' }));
   expect(screen.getByTestId('destination')).toHaveTextContent('/login?next=%2Fprojects%2Ffixture%3FshowInterest%3Dtrue');
 });
 

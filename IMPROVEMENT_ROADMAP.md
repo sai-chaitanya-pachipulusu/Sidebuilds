@@ -1,5 +1,13 @@
 # SideBuilds improvement roadmap
 
+## FR10 — A clearer route from listing to private discussion — November 15, 2026
+
+- Implemented: Contact seller without upfront funds/payment commitments, immediate navigation to the correct conversation, reuse of an existing thread with an unsent draft, preserved errors/drafts and no late-response redirects after leaving a page.
+- Reliability/privacy: hidden listings reject new inquiry/scope requests; held or reserved projects reject new threads. Inquiries and seller notifications commit together. Reply attempts have stable IDs, so lost-response retries reuse one message and one notification; altered/cross-conversation reuse is rejected. Existing message uniqueness is sufficient; no migration or .env edit.
+- Validated: 106 server tests, 142 interface tests, 29 isolated PostgreSQL scenarios, build and local desktop/390px reviews pass. No real seller was contacted and no live financial object was created. Hosted release status and privacy checks are maintained in the production QA report.
+- Next launch dependencies remain seller work: reconnect RAG academy's Stripe account in the live environment and supply actual project costs, included assets, demo/repository and handover details. The new contact flow remains useful while checkout is paused. Email remains pending on free hosting.
+- After listing readiness: deliberately open live commerce, observe a legitimate purchase and externally delivered provider event through handover/receipt, and measure actual listing → inquiry → approved scope → purchase conversion. Do not manufacture live-card test purchases or claim traffic gains without evidence.
+
 ## FR9 — Make seller improvements easy — November 13, 2026
 
 - Implemented: existing sale listings can be improved while payment setup is incomplete; newly enabling a sale or publishing a hidden sale still verifies Stripe. Checkout remains independently guarded.

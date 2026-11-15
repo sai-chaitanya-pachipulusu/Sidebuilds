@@ -59,7 +59,7 @@ const event=(type,object,eventId='evt_test_'+randomUUID().replaceAll('-',''))=>(
 async function post(base,route,buyer,body){const {signToken}=require('../server/utils/jwt');const r=await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+signToken({user:{user_id:buyer}})},body:JSON.stringify(body)});return {status:r.status,body:await r.json()};}
 (async()=>{const report={startedAt:new Date().toISOString(),isolatedSchema:true,fakePaymentProvider:true};try{
  await admin.connect();await admin.query(`CREATE SCHEMA "${schema}"`);
- for(const table of ['users','projects','purchase_requests','project_transactions','project_files','notifications'])await admin.query(`CREATE TABLE "${schema}"."${table}" (LIKE public."${table}" INCLUDING DEFAULTS INCLUDING INDEXES)`);
+ for(const table of ['users','projects','purchase_requests','project_transactions','project_files','notifications','purchase_request_messages'])await admin.query(`CREATE TABLE "${schema}"."${table}" (LIKE public."${table}" INCLUDING DEFAULTS INCLUDING INDEXES)`);
  await admin.query(`CREATE SEQUENCE "${schema}".request_ids`);await admin.query(`ALTER TABLE "${schema}".purchase_requests ALTER COLUMN id SET DEFAULT nextval('"${schema}".request_ids'::regclass)`);
  for(const file of ['011_purchase_agreements.sql','013_commerce_integrity.sql','014_refund_state.sql','016_seller_connection_attempts.sql'])await pool.query(fs.readFileSync(path.join(__dirname,'../database/migrations',file),'utf8').replace(/^\s*(BEGIN|COMMIT);\s*$/gm,''));
  for(const [user,username] of [[seller,'qa_seller'],[buyerA,'qa_buyer_a'],[buyerB,'qa_buyer_b']])await db.query('INSERT INTO users(user_id,username,email,password_hash,stripe_account_id) VALUES($1,$2,$3,$4,$5)',[user,username,username+'@example.invalid','unusable-test-hash',user===seller?'acct_test_fixture':null]);
@@ -205,6 +205,49 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
   try{stripe.accounts.retrieve=async()=>({charges_enabled:false});const response=await fetch(base+'/projects/'+f.project,{method:'PUT',headers:{Authorization:'Bearer '+signToken({user:{user_id:seller}}),'Content-Type':'application/json'},body:JSON.stringify({is_public:true})});
    assert.equal(response.status,403);assert.equal((await db.query('SELECT is_public FROM projects WHERE project_id=$1',[f.project])).rows[0].is_public,false);
   }finally{stripe.accounts.retrieve=retrieve;}
+ });
+ await check('parallel PostgreSQL inquiries create one thread and one durable seller notification',async()=>{
+  const f=await fixture();await db.query('DELETE FROM purchase_agreements WHERE purchase_request_id IN (SELECT id FROM purchase_requests WHERE project_id=$1)',[f.project]);await db.query('DELETE FROM purchase_requests WHERE project_id=$1',[f.project]);
+  const {openProjectInquiry}=require('../server/services/projectInquiryService');
+  const message='Please explain the R&D costs and handover.';
+  const replies=await Promise.all([1,2].map(()=>openProjectInquiry(db,{projectId:f.project,buyerId:buyerA,message})));
+  assert.equal(replies.filter(r=>r.existing).length,1);assert.equal(replies[0].id,replies[1].id);
+  assert.equal(Number((await db.query('SELECT count(*) AS n FROM purchase_requests WHERE project_id=$1',[f.project])).rows[0].n),1);
+  assert.equal(Number((await db.query('SELECT count(*) AS n FROM notifications WHERE action_url=$1',[`/purchase-agreement/${replies[0].id}#purchase-conversation`])).rows[0].n),1);
+  assert.equal((await db.query('SELECT message FROM purchase_requests WHERE id=$1',[replies[0].id])).rows[0].message,message);
+ });
+ await check('a failed PostgreSQL inquiry notification rolls back its thread before a safe retry',async()=>{
+  const f=await fixture();await db.query('DELETE FROM purchase_agreements WHERE purchase_request_id IN (SELECT id FROM purchase_requests WHERE project_id=$1)',[f.project]);await db.query('DELETE FROM purchase_requests WHERE project_id=$1',[f.project]);
+  const {openProjectInquiry}=require('../server/services/projectInquiryService');
+  const failing={...db,withTransaction:fn=>db.withTransaction(client=>fn({query:(sql,args)=>{if(sql.includes('INSERT INTO notifications'))throw new Error('Synthetic notification failure');return client.query(sql,args);}}))};
+  await assert.rejects(openProjectInquiry(failing,{projectId:f.project,buyerId:buyerA,message:'Synthetic draft that must survive.'}));
+  assert.equal((await db.query('SELECT id FROM purchase_requests WHERE project_id=$1',[f.project])).rows.length,0);
+  assert.equal((await openProjectInquiry(db,{projectId:f.project,buyerId:buyerA,message:'Synthetic safe retry.'})).existing,false);
+ });
+ await check('hidden and reserved PostgreSQL listings reject new inquiry threads',async()=>{
+  const {openProjectInquiry}=require('../server/services/projectInquiryService');
+  const hidden=await fixture();await db.query('UPDATE projects SET is_public=false WHERE project_id=$1',[hidden.project]);
+  await assert.rejects(openProjectInquiry(db,{projectId:hidden.project,buyerId:buyerA,message:'Should remain private.'}),{status:404});
+  const reserved=await fixture();await checkout(reserved.requests[0]);
+  const other=randomUUID();await db.query("INSERT INTO users(user_id,username,email,password_hash) VALUES($1,$2,$3,'unusable')",[other,'qa_outsider_'+other,other+'@example.invalid']);
+  await assert.rejects(openProjectInquiry(db,{projectId:reserved.project,buyerId:other,message:'Reserved listing inquiry.'}),{status:409});
+ });
+ await check('PostgreSQL message retries persist one message and one notification after an unknown response',async()=>{
+  const f=await fixture(),{sendConversationMessage}=require('../server/services/projectInquiryService');
+  const input={requestId:f.requests[0].requestId,senderId:buyerA,content:'Please clarify the deployment guide.',messageType:'general',messageId:randomUUID()};
+  const results=await Promise.all([sendConversationMessage(db,input),sendConversationMessage(db,input)]);
+  assert.equal(results.filter(r=>r.created).length,1);assert.equal(results[0].message.id,results[1].message.id);
+  assert.equal(Number((await db.query('SELECT count(*) AS n FROM purchase_request_messages WHERE message_id=$1',[input.messageId])).rows[0].n),1);
+  assert.equal(Number((await db.query("SELECT count(*) AS n FROM notifications WHERE action_url=$1 AND type='new_message'",[`/purchase-agreement/${input.requestId}#purchase-conversation`])).rows[0].n),1);
+  await assert.rejects(sendConversationMessage(db,{...input,content:'A different message'}),{status:409});
+  const other=await fixture();await assert.rejects(sendConversationMessage(db,{...input,requestId:other.requests[0].requestId}),{status:409});
+ });
+ await check('a failed PostgreSQL message notification rolls back the message before retry',async()=>{
+  const f=await fixture(),{sendConversationMessage}=require('../server/services/projectInquiryService');
+  const input={requestId:f.requests[0].requestId,senderId:buyerA,content:'A synthetic retry-safe message.',messageType:'general',messageId:randomUUID()};
+  const failing={...db,withTransaction:fn=>db.withTransaction(client=>fn({query:(sql,args)=>{if(sql.includes('INSERT INTO notifications'))throw new Error('Synthetic notification failure');return client.query(sql,args);}}))};
+  await assert.rejects(sendConversationMessage(failing,input));assert.equal((await db.query('SELECT message_id FROM purchase_request_messages WHERE message_id=$1',[input.messageId])).rows.length,0);
+  assert.equal((await sendConversationMessage(db,input)).created,true);
  });
  report.success=true;
 }catch(e){report.success=false;report.error=e.message;console.error(e.stack);process.exitCode=1;}finally{

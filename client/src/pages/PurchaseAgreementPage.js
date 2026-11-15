@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import api, { createCheckoutSessionForPurchaseRequest } from '../services/api';
 import SEO from '../components/SEO';
 import PurchaseScope from '../components/PurchaseScope';
@@ -22,7 +22,10 @@ function scopeDraft(data) {
 
 export default function PurchaseAgreementPage() {
     const { requestId } = useParams();
-    const { hash } = useLocation();
+    const location = useLocation();
+    const { hash } = location;
+    const navigate = useNavigate();
+    const inquiryDraft = location.state?.inquiryRequestId === requestId && typeof location.state?.inquiryDraft === 'string' ? location.state.inquiryDraft.slice(0, 2000) : '';
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
@@ -140,7 +143,8 @@ export default function PurchaseAgreementPage() {
                     <HandoverFiles key={data.project_id} projectId={data.project_id} />
                     {data.role === 'buyer' && <Link className="text-emerald-300 underline underline-offset-4" to={`/project-transfer?transactionId=${data.payment.transaction_id}`}>Review handover and receipt</Link>}
                 </section>}
-                <PurchaseConversation key={requestId} requestId={requestId} />
+                <PurchaseConversation key={requestId} requestId={requestId} initialDraft={inquiryDraft}
+                    onDraftSent={() => { if (inquiryDraft) navigate(location.pathname + hash, { replace: true, state: null }); }} />
             </>}
         </div>
     </div>;

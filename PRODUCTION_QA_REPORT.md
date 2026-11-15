@@ -1,5 +1,19 @@
 # SideBuilds production audit and improvement plan
 
+## FR10 — Private inquiries and retry-safe replies — November 15, 2026
+
+Replaced the offer modal's three mandatory payment commitments with a focused, accessible Contact seller dialog. Buyers can ask about costs, assets and handover before discussing a purchase. A successful inquiry opens the exact private conversation. Existing threads are reused; the new message arrives as an unsent draft, is never posted automatically, and is cleared from navigation state only after a confirmed send. Failed requests retain the draft. Late responses cannot redirect a buyer after leaving the project or conversation. No payment is taken by this flow.
+
+The server now rejects new inquiries and scope initiation against hidden listings. Held/reserved listings reject new inquiry threads while existing participants can continue their own. A refunded request does not permanently block a fresh inquiry on a relisted project. Row locking makes parallel inquiry submissions create one thread; its seller notification commits in the same transaction. Original introductions remain plain text, including characters such as &; request bodies are not logged by the inquiry API helper.
+
+Replies carry a stable UUID for the current draft attempt. Retrying after an unknown response returns the original message, with one stored row and one recipient notification. Reusing an ID for different content or a different conversation is rejected. Message, timestamp and notification writes commit together; socket broadcasts occur only for new records. The existing PostgreSQL primary key on purchase_request_messages.message_id already provides uniqueness, so no migration or data rewrite is needed. Legacy clients without a message ID remain compatible. Checkout/scope/receipt safeguards remain in place.
+
+Validation: **106 server tests, 142 interface tests in 23 suites and 29 disposable PostgreSQL scenarios pass**. Tests include concurrent inquiries/replies, notification-write rollback, unauthorized message access, hidden/reserved listings, carried drafts, retry IDs and late responses after navigation. PostgreSQL test schema removed. The production build succeeds. Desktop and 390px local previews verified focus, readable controls, draft handoff, sending and clearing; zero computed gradients, no send-button shadow, viewport restored. Preview images use synthetic data. No real seller was contacted and no live payment/provider account was created. Source deployment and hosted privacy checks are recorded after observation below.
+
+The production baseline remains 37 accounts, 3 original projects, zero transactions/inquiries/files, with all 56 public tables protected and zero anon/authenticated direct SELECT access. No .env or Stripe key changes. Keep live checkout paused until the seller connection and actual listing evidence are reviewed; email remains pending and hosting remains free by the user's decisions.
+
+Evidence: .tmp/inquiry-server-tests.log, .tmp/inquiry-client-tests.log, .tmp/repair-postgres-commerce.json, .tmp/recovery-build.log and .tmp/inquiry-ui/checks.json.
+
 ## FR9 — Remove seller editing roadblocks — November 13, 2026
 
 Existing sale listings can now receive buyer-brief and metadata improvements while the seller reconnects Stripe or the provider is temporarily unavailable. Starting a new sale or making a hidden sale public still requires fresh Stripe readiness, including when a caller omits the sale flag. Checkout retains its separate fresh payment checks and the global live-commerce pause. Visibility/sale booleans reject ambiguous string values.

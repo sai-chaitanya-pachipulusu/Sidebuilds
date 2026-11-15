@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const auth = require('../middleware/authMiddleware');
 const db = require('../db');
-const { randomUUID } = require('node:crypto');
 router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
 // Verify the purchase request exists and the current user is a participant.
@@ -149,93 +148,28 @@ router.get('/', auth, async (req, res) => {
 // @desc    Send a message in a purchase request conversation
 // @access  Private (buyer or seller only)
 router.post('/', auth, async (req, res) => {
-    const { content, message_type = 'general' } = req.body;
-
-    if (typeof content !== 'string' || content.trim() === '') {
-        return res.status(400).json({ msg: 'Message content is required' });
-    }
-
-    if (content.length > 5000) {
-        return res.status(400).json({ msg: 'Message is too long (max 5000 characters)' });
-    }
-
+    const { content, message_type = 'general', clientMessageId } = req.body;
+    if (typeof content !== 'string' || !content.trim()) return res.status(400).json({ msg: 'Message content is required' });
+    if (content.length > 5000) return res.status(400).json({ msg: 'Message is too long (max 5000 characters)' });
+    if (typeof message_type !== 'string' || !/^[a-z_]{1,40}$/.test(message_type)) return res.status(400).json({ msg: 'Invalid message type.' });
+    if (clientMessageId !== undefined && (typeof clientMessageId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(clientMessageId)))
+        return res.status(400).json({ msg: 'Invalid message attempt ID.' });
     try {
-        const { requestId } = req.params;
-
-        const request = await loadRequestForUser(requestId, req.user.user_id, res);
-        if (!request) return;
-
-        const recipientId = request.buyer_id === req.user.user_id ? request.seller_id : request.buyer_id;
-        const trimmedContent = content.trim();
-
-        // "message" mirrors "content" for legacy readers of this table
-        const newMessage = await db.query(
-            `INSERT INTO purchase_request_messages
-                (purchase_request_id, sender_id, recipient_id, content, message, message_type, message_id)
-             VALUES ($1, $2, $3, $4, $4, $5, $6)
-             RETURNING message_id, purchase_request_id, sender_id, recipient_id, content, message_type, created_at`,
-            [requestId, req.user.user_id, recipientId, trimmedContent, message_type, randomUUID()]
-        );
-
-        const savedMessage = newMessage.rows[0];
-
-        const senderInfo = await db.query(
-            `SELECT username FROM users WHERE user_id = $1`,
-            [req.user.user_id]
-        );
-
-        await db.query(
-            `UPDATE purchase_requests
-             SET updated_at = CURRENT_TIMESTAMP
-             WHERE id = $1`,
-            [requestId]
-        );
-
-        const responseMessage = {
-            id: savedMessage.message_id,
-            purchase_request_id: savedMessage.purchase_request_id,
-            sender_id: savedMessage.sender_id,
-            recipient_id: savedMessage.recipient_id,
-            sender_username: senderInfo.rows[0]?.username,
-            content: savedMessage.content,
-            message_type: savedMessage.message_type,
-            created_at: savedMessage.created_at,
-            is_system_message: false
-        };
-
-        // Real-time delivery to anyone viewing this conversation
-        try {
-            const io = req.app.get('io');
-            if (io) {
-                io.to(`purchase_${requestId}`).emit('message_received', responseMessage);
-                io.to(`user_${recipientId}`).emit('new_message_notification', {
-                    purchase_request_id: requestId,
-                    project_name: request.project_name,
-                    sender_username: responseMessage.sender_username
-                });
-            }
-        } catch (socketErr) {
-            console.error('Socket broadcast error (message still saved):', socketErr.message);
+        const result = await require('../services/projectInquiryService').sendConversationMessage(db, {
+            requestId: req.params.requestId, senderId: req.user.user_id, content: content.trim(), messageType: message_type, messageId: clientMessageId
+        });
+        if (result.created) {
+            try {
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`purchase_${req.params.requestId}`).emit('message_received', result.message);
+                    io.to(`user_${result.recipientId}`).emit('new_message_notification', { purchase_request_id: req.params.requestId, project_name: result.projectName, sender_username: result.message.sender_username });
+                }
+            } catch (_) { console.error('Message socket delivery unavailable; the message and notification are saved.'); }
         }
-
-        // Notification for the recipient (non-fatal if it fails)
-        try {
-            const { createNotification } = require('../services/notificationService');
-            await createNotification(
-                recipientId,
-                'new_message',
-                `You have a new message regarding "${request.project_name}".`,
-                `/purchase-agreement/${requestId}#purchase-conversation`
-            );
-        } catch (notificationErr) {
-            console.error('Error creating notification:', notificationErr.message);
-        }
-
-        res.status(201).json(responseMessage);
-
-    } catch (err) {
-        console.error('Error sending message:', err.message);
-        res.status(500).json({ error: 'Server Error' });
+        res.status(result.created ? 201 : 200).json(result.message);
+    } catch (error) {
+        res.status(error.status || 503).json({ msg: error.status ? error.message : 'The message could not be confirmed. Retry with the same draft; the saved message will be reused.' });
     }
 });
 
