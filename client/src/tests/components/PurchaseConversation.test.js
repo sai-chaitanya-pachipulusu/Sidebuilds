@@ -58,3 +58,16 @@ test('a late message response cannot clear history or navigate after leaving the
     await screen.findByText('No messages yet.'); fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
     page.unmount(); await act(async () => finish({ data: { id: 'late-message', content: 'Please explain the hosting costs.' } })); expect(sent).not.toHaveBeenCalled();
 });
+
+test('read receipt acknowledges only IDs from the displayed load and does not block displaying messages', async () => {
+    let finish; api.get.mockResolvedValue({ data: { messages: [{ id: 'm1', content: 'Visible reply' }], read_receipt: { messageIds: ['m1'], notificationIds: ['n1'] } } });
+    api.post.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    render(<PurchaseConversation requestId="12"/>); await screen.findByText('Visible reply');
+    expect(api.post).toHaveBeenCalledWith('/purchase-requests/12/messages/read', { messageIds: ['m1'], notificationIds: ['n1'] });
+    await act(async () => finish({ data: {} }));
+});
+test('failed unread acknowledgement keeps the conversation visible and explains retry', async () => {
+    api.get.mockResolvedValue({ data: { messages: [{ id: 'm1', content: 'Visible despite receipt failure' }], read_receipt: { messageIds: ['m1'], notificationIds: [] } } });
+    api.post.mockRejectedValueOnce(new Error('offline')); render(<PurchaseConversation requestId="12"/>);
+    await screen.findByText(/unread status could not be updated/); expect(screen.getByText('Visible despite receipt failure')).toBeInTheDocument(); expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});

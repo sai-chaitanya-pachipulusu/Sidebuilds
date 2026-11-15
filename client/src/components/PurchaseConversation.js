@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api from '../services/api';
+import { announceNotificationsChanged } from '../utils/notificationNavigation';
 
 function newMessageId() {
     if (window.crypto.randomUUID) return window.crypto.randomUUID();
@@ -13,6 +14,7 @@ export default function PurchaseConversation({ requestId, initialDraft = '', onD
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [readError, setReadError] = useState('');
     const [retry, setRetry] = useState(0);
     const [draft, setDraft] = useState(initialDraft);
     const [hasCarriedDraft, setHasCarriedDraft] = useState(Boolean(initialDraft));
@@ -24,9 +26,17 @@ export default function PurchaseConversation({ requestId, initialDraft = '', onD
     useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
     useEffect(() => {
         let active = true;
-        setLoading(true); setError('');
-        api.get(`/purchase-requests/${requestId}/messages`).then(({ data }) => {
-            if (active) setMessages(data.messages || []);
+        setLoading(true); setError(''); setReadError('');
+        api.get(`/purchase-requests/${requestId}/messages`).then(async ({ data }) => {
+            if (!active) return;
+            setMessages(data.messages || []);
+            setLoading(false);
+            const messageIds = data.read_receipt?.messageIds || [], notificationIds = data.read_receipt?.notificationIds || [];
+            try {
+                for (let offset = 0; active && offset < Math.max(messageIds.length, notificationIds.length); offset += 400)
+                    await api.post(`/purchase-requests/${requestId}/messages/read`, { messageIds: messageIds.slice(offset, offset + 400), notificationIds: notificationIds.slice(offset, offset + 400) });
+                if (active && (messageIds.length || notificationIds.length)) announceNotificationsChanged();
+            } catch (_) { if (active) setReadError('Messages loaded, but unread status could not be updated. Refresh the conversation to retry.'); }
         }).catch(() => { if (active) setError('The conversation could not be loaded.'); })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
@@ -48,6 +58,7 @@ export default function PurchaseConversation({ requestId, initialDraft = '', onD
     return <section id="purchase-conversation" aria-labelledby="conversation-heading" className="border border-white/15 p-5 sm:p-7 mt-6 scroll-mt-24">
         <h2 id="conversation-heading" className="text-xl font-semibold mb-2">Discuss this purchase</h2>
         <p className="text-sm text-gray-400 mb-5">Ask for changes here. Messages do not change an approved scope; the seller must publish a new version.</p>
+        {readError && <p role="status" className="text-sm text-[#efcc8d] mb-4">{readError}</p>}
         {loading ? <p role="status">Loading conversation…</p> : error ? <div role="alert"><p>{error}</p><button className="text-emerald-300 underline mt-2" onClick={() => setRetry(value => value + 1)}>Retry conversation</button></div>
             : <div className="space-y-4 max-h-80 overflow-y-auto mb-5">{messages.length ? messages.map(message => <article key={message.id} className="border-l border-white/20 pl-4">
                 <p className="text-sm text-emerald-300 mb-1">{message.sender_username || 'Participant'}</p><p className="text-gray-300 whitespace-pre-wrap break-words">{message.content}</p>

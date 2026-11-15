@@ -249,6 +249,36 @@ async function post(base,route,buyer,body){const {signToken}=require('../server/
   await assert.rejects(sendConversationMessage(failing,input));assert.equal((await db.query('SELECT message_id FROM purchase_request_messages WHERE message_id=$1',[input.messageId])).rows.length,0);
   assert.equal((await sendConversationMessage(db,input)).created,true);
  });
+ await check('PostgreSQL inbox is participant-only with literal search and filters before paging',async()=>{
+  const f=await fixture();await db.query('UPDATE projects SET name=$1 WHERE project_id=$2',['Inbox 100%_ PG literal',f.project]);
+  const inbox=require('../server/services/conversationInboxService');
+  const page=await inbox.getInbox(db,buyerA,{q:'100%_',role:'buying',limit:'1'});
+  assert.equal(page.total,1);assert.equal(page.threads[0].request_id,f.requests[0].requestId);assert.equal(page.threads[0].role,'buying');
+  assert.equal((await inbox.getInbox(db,buyerA,{q:'100%_',role:'selling'})).total,0);
+  assert.equal((await inbox.getInbox(db,buyerA,{q:'100%_',offset:'1',limit:'1'})).threads.length,0);
+  assert.equal((await inbox.getInbox(db,seller,{q:'100%_',role:'selling'})).total,2);
+  assert.doesNotMatch(JSON.stringify(page),/buyer_id|seller_id|@example|stripe_account|password_hash/);
+ });
+ await check('PostgreSQL read receipt preserves later messages and other requests or financial alerts',async()=>{
+  const f=await fixture(),inbox=require('../server/services/conversationInboxService'),{sendConversationMessage}=require('../server/services/projectInquiryService');
+  const send=requestId=>sendConversationMessage(db,{requestId,senderId:buyerA,content:'Synthetic read receipt message',messageType:'general',messageId:randomUUID()});
+  const first=await send(f.requests[0].requestId),notifications=await inbox.chatNotificationIds(db,f.requests[0].requestId,seller);
+  const later=await send(f.requests[0].requestId),other=await fixture(),otherMessage=await send(other.requests[0].requestId);
+  const otherNotifications=await inbox.chatNotificationIds(db,other.requests[0].requestId,seller);
+  const financial=(await db.query("INSERT INTO notifications(user_id,title,type,message,action_url) VALUES($1,'Synthetic alert','payment_warning','Synthetic financial alert',$2) RETURNING notification_id",[seller,'/purchase-agreement/'+f.requests[0].requestId])).rows[0].notification_id;
+  const receipt={messageIds:[first.message.id,otherMessage.message.id],notificationIds:[...notifications,...otherNotifications,financial]};
+  await assert.rejects(inbox.acknowledgeConversationRead(db,f.requests[0].requestId,buyerB,receipt),{status:403});
+  assert.deepEqual(await inbox.acknowledgeConversationRead(db,f.requests[0].requestId,seller,receipt),{marked_messages:1,marked_notifications:1});
+  for(const id of [later.message.id,otherMessage.message.id])assert.equal((await db.query('SELECT is_read FROM purchase_request_messages WHERE message_id=$1',[id])).rows[0].is_read,false);
+  assert.equal((await db.query('SELECT is_read FROM notifications WHERE notification_id=$1',[financial])).rows[0].is_read,false);
+  assert.deepEqual(await inbox.acknowledgeConversationRead(db,f.requests[0].requestId,seller,receipt),{marked_messages:0,marked_notifications:0});
+  await assert.rejects(inbox.acknowledgeConversationRead(db,f.requests[0].requestId,seller,{messageIds:['invalid']}),{status:400});
+ });
+ await check('PostgreSQL mark-all-read returns an actual updated row count',async()=>{
+  app.use('/notifications',require('../server/routes/notifications'));
+  const before=Number((await db.query('SELECT count(*) AS n FROM notifications WHERE user_id=$1 AND is_read=false',[seller])).rows[0].n);
+  const response=await post(base,'/notifications/mark-all-read',seller,{});assert.equal(response.status,200);assert.equal(response.body.updated_count,before);
+ });
  report.success=true;
 }catch(e){report.success=false;report.error=e.message;console.error(e.stack);process.exitCode=1;}finally{
  if(server)await new Promise(resolve=>server.close(resolve));await pool.end();

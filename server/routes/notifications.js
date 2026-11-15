@@ -108,7 +108,8 @@ router.post('/mark-all-read', authMiddleware, async (req, res) => {
             SET is_read = true
             WHERE user_id = ? AND is_read = false
         `; // Only update those that are unread
-        const { changes } = await db.query(query, [userId]);
+        const result = await db.query(query, [userId]);
+        const changes = Number(result.rowCount ?? result.changes ?? 0);
         
         res.json({ 
             message: `${changes} notifications marked as read.`, 

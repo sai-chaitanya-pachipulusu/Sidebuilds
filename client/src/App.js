@@ -21,6 +21,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const InboxPage = lazy(() => import('./pages/InboxPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePageSimple'));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
 const PurchaseAgreementPage = lazy(() => import('./pages/PurchaseAgreementPage'));
@@ -121,6 +122,7 @@ const AppContent = () => {
                       <Route element={<ProtectedRoute />}>
                         <Route path="/create" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
                         <Route path="/dashboard" element={<ComponentErrorBoundary><DashboardPage /></ComponentErrorBoundary>} />
+                        <Route path="/inbox" element={<ComponentErrorBoundary><InboxPage /></ComponentErrorBoundary>} />
                         <Route path="/my-projects" element={<ComponentErrorBoundary><MyProjectsPage /></ComponentErrorBoundary>} />
                         <Route path="/projects/new" element={<ComponentErrorBoundary><ProjectFormPage editMode={false} /></ComponentErrorBoundary>} />
                         <Route path="/projects/edit/:id" element={<ComponentErrorBoundary><ProjectFormPage editMode={true} /></ComponentErrorBoundary>} />

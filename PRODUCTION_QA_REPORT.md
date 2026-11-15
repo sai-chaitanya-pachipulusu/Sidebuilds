@@ -1,5 +1,19 @@
 # SideBuilds production audit and improvement plan
 
+## FR11 — A private inbox and reliable notification links — November 15, 2026
+
+Added /inbox to signed-in navigation and replaced the dashboard's legacy interests modal entry point with Selling conversations. All, Selling, Buying, Unread only and project/person search run on participant-scoped database queries before pagination. Results show actual unread messages, initial inquiry notifications, latest preview, participant, activity and scope status. No private email, payment account or unrelated conversation data is returned. Loading errors offer Retry instead of pretending the inbox is empty. Filters remain in the URL; returning to the inbox refreshes current data. Flat solid-color desktop/mobile styling follows the no-gradient preference. The private route is served by the hosted renderer and excluded from indexing.
+
+Fixed notifications and dashboard activity links to use the backend's action_url and open the exact conversation, scope or transfer destination. Unsafe external destinations are rejected; legacy internal links remain compatible. Navigation proceeds if marking a notification read fails. The notification bell refreshes after read changes, navigation and window focus; it indicates unread activity without claiming the limited notifications list is a global count. Mark-all-read now returns the actual PostgreSQL update count.
+
+Conversation GET remains read-only. A separate authenticated read receipt acknowledges only IDs returned in the displayed load, belonging to that recipient and that conversation. It cannot clear another thread, another recipient's messages, financial alerts or later arrivals. Failed acknowledgements retain visible content and explain how to retry. No purchase scope or payment state changes through the inbox. No migration or .env edit.
+
+Validation: **108 server tests, 150 interface tests in 24 suites and 32 isolated PostgreSQL scenarios pass**. The production client builds. Desktop and 390px browser checks verify filters, wrapping, keyboard/click navigation, exact conversation handoff and read-state return; no horizontal overflow or computed gradients. A wrapped title's click area was expanded during the review. The temporary viewport was restored. **12/12 rollback-only checks against actual production constraints pass**, using only existing tagged QA accounts: participant privacy, retry-safe replies, read receipts and later-arrival unread state. No test project, conversation, message or notification was committed and no real seller contacted. Disposable PostgreSQL test schema removed; no provider financial object created.
+
+Deployment status: source ready for deployment; hosted release and acceptance checks pending. Live checkout remains paused while sellers complete live connection and buyer evidence. Email remains pending under the free-hosting decision.
+
+Evidence: .tmp/inbox-server-tests.log, .tmp/inbox-client-tests.log, .tmp/repair-postgres-commerce.json, .tmp/inbox-production-rollback.json, .tmp/recovery-build.log and .tmp/inbox-ui/checks.json. Preview screenshots use synthetic data.
+
 ## FR10 — Private inquiries and retry-safe replies — November 15, 2026
 
 Replaced the offer modal's three mandatory payment commitments with a focused, accessible Contact seller dialog. Buyers can ask about costs, assets and handover before discussing a purchase. A successful inquiry opens the exact private conversation. Existing threads are reused; the new message arrives as an unsent draft, is never posted automatically, and is cleared from navigation state only after a confirmed send. Failed requests retain the draft. Late responses cannot redirect a buyer after leaving the project or conversation. No payment is taken by this flow.

@@ -26,6 +26,7 @@ import { useAuth } from '../context/AuthContext';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/api';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
+import { notificationDestination } from '../utils/notificationNavigation';
 
 const getNotificationIcon = (type) => {
   switch (type?.toLowerCase()) {
@@ -123,11 +124,10 @@ const NotificationsPage = () => {
 
   const handleNotificationClick = async (notification) => {
     if (!notification.is_read) {
-      await handleMarkOneAsRead(notification.notification_id);
+      void handleMarkOneAsRead(notification.notification_id);
     }
-    if (notification.link) {
-      navigate(notification.link);
-    }
+    const destination = notificationDestination(notification);
+    if (destination) navigate(destination);
   };
 
   const handleMarkAllRead = async () => {
@@ -304,7 +304,10 @@ const NotificationsPage = () => {
                         !notification.is_read 
                           ? 'border-white/50/30 bg-white/10/5' 
                           : 'border-white/[0.08] hover:border-white/[0.12]'
-                      } ${notification.link ? 'cursor-pointer' : ''}`}
+                      } ${notificationDestination(notification) ? 'cursor-pointer' : ''}`}
+                      role={notificationDestination(notification) ? 'link' : undefined}
+                      tabIndex={notificationDestination(notification) ? 0 : undefined}
+                      onKeyDown={event => { if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) { event.preventDefault(); handleNotificationClick(notification); } }}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       {/* Unread indicator */}
@@ -349,7 +352,7 @@ const NotificationsPage = () => {
 
                         {/* Actions */}
                         {!notification.is_read && (
-                          <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="flex-shrink-0 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
                             <motion.button
                               onClick={(e) => handleMarkOneAsRead(notification.notification_id, true, e)}
                               className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-none transition-colors duration-200"

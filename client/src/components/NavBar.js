@@ -24,17 +24,26 @@ export default function NavBar() {
   }, [location.pathname, location.search]);
   useEffect(() => {
     let active = true;
+    let generation = 0;
     setUnread(0);
-    if (isAuthenticated)
+    const refresh = () => {
+      if (!isAuthenticated) return;
+      const current = ++generation;
       getNotifications()
         .then((rows) => {
-          if (active) setUnread(rows.filter((item) => !item.is_read).length);
+          if (active && current === generation) setUnread(rows.filter((item) => !item.is_read).length);
         })
         .catch(() => {});
+    };
+    refresh();
+    window.addEventListener('sidebuilds:notifications-updated', refresh);
+    window.addEventListener('focus', refresh);
     return () => {
       active = false;
+      window.removeEventListener('sidebuilds:notifications-updated', refresh);
+      window.removeEventListener('focus', refresh);
     };
-  }, [isAuthenticated, user?.user_id]);
+  }, [isAuthenticated, user?.user_id, location.pathname]);
   const escape = (event) => {
     if (event.key === "Escape") {
       event.currentTarget.open = false;
@@ -45,7 +54,7 @@ export default function NavBar() {
     <>
       <NavLink to="/marketplace">Marketplace</NavLink>
       <NavLink to="/how-it-works">How it works</NavLink>
-      {isAuthenticated && <NavLink to="/dashboard">Dashboard</NavLink>}
+      {isAuthenticated && <><NavLink to="/dashboard">Dashboard</NavLink><NavLink to="/inbox">Inbox</NavLink></>}
     </>
   );
   return (
@@ -70,7 +79,7 @@ export default function NavBar() {
                 <Link
                   className="sb-icon-button sb-notification-link"
                   to="/notifications"
-                  aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
+                  aria-label={`Notifications${unread ? ', unread activity' : ""}`}
                 >
                   <Bell size={19} aria-hidden="true" />
                   {unread > 0 && <span className="sb-notification-dot" />}
@@ -99,6 +108,7 @@ export default function NavBar() {
                     </p>
                     {[
                       ["My projects", "/my-projects"],
+                      ["Inbox", "/inbox"],
                       ["Saved projects", "/saved"],
                       ["Purchases", "/purchases"],
                       ["Profile settings", "/profile-settings"],

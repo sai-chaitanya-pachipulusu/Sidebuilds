@@ -40,6 +40,10 @@ router.get('/', auth, async (req, res) => {
         const request = await loadRequestForUser(requestId, req.user.user_id, res);
         if (!request) return;
 
+        // Capture notification IDs before reading messages. A later arrival must
+        // remain unread until a subsequent conversation load displays it.
+        const notificationIds = await require('../services/conversationInboxService').chatNotificationIds(db, requestId, req.user.user_id);
+
         const fullRequest = await db.query(
             `SELECT pr.*, p.name as project_name,
                     buyer.username as buyer_username,
@@ -125,6 +129,7 @@ router.get('/', auth, async (req, res) => {
         res.json({
             purchase_request_id: requestId,
             messages,
+            read_receipt: { notificationIds, messageIds: storedMessages.rows.filter(row => row.recipient_id === req.user.user_id && !row.is_read).map(row => String(row.message_id)) },
             participant_info: {
                 buyer: {
                     id: requestData.buyer_id,
@@ -142,6 +147,11 @@ router.get('/', auth, async (req, res) => {
         console.error('Error fetching purchase request messages:', err.message);
         res.status(500).json({ error: 'Server Error' });
     }
+});
+router.post('/read', auth, async (req, res) => {
+    if (!/^[1-9]\d*$/.test(req.params.requestId) || Number(req.params.requestId) > 2147483647) return res.status(400).json({ msg: 'Invalid conversation.' });
+    try { res.json(await require('../services/conversationInboxService').acknowledgeConversationRead(db, req.params.requestId, req.user.user_id, req.body)); }
+    catch (error) { res.status(error.status || 503).json({ msg: error.status ? error.message : 'Unread status could not be updated. Refresh to retry.' }); }
 });
 
 // @route   POST /api/purchase-requests/:requestId/messages

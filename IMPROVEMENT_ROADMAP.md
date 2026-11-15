@@ -1,5 +1,13 @@
 # SideBuilds improvement roadmap
 
+## FR11 — Make buyer and seller follow-up easy — November 15, 2026
+
+- Implemented: a private conversation inbox with role/unread filters, project/person search, pagination, actual activity, direct conversation links and separate scope/status links. Signed-in navigation and dashboard interests now open the inbox.
+- Reliability: action_url notification routing works, external URLs are rejected, keyboard/touch actions are available, and the unread bell refreshes after reads/focus/navigation. Read receipts acknowledge only displayed recipient-owned items; later arrivals and financial notifications stay unread. Database/API errors remain visible and retryable.
+- Validated: 108 server tests, 150 interface tests, 32 isolated PostgreSQL scenarios, production build, desktop/390px browser checks and 12 fully rolled-back production-schema checks. No new schema, settings edit, real seller message or live financial action. Deployment and hosted acceptance pending; evidence is maintained in the production QA report.
+- Next product dependency: have the original sellers complete real listing evidence and RAG academy's live Stripe reconnection, then review the administrator launch checklist. The inbox supports legitimate inquiry follow-up while checkout is paused. Email is still pending on free hosting; do not claim off-site alerts are delivered.
+- After seller readiness: deliberately reopen live commerce, observe a legitimate externally delivered payment through receipt/payout, and measure listing views → conversations → approved scopes → purchases before promotion. No artificial live-card purchases or invented visibility gains.
+
 ## FR10 — A clearer route from listing to private discussion — November 15, 2026
 
 - Implemented: Contact seller without upfront funds/payment commitments, immediate navigation to the correct conversation, reuse of an existing thread with an unsent draft, preserved errors/drafts and no late-response redirects after leaving a page.

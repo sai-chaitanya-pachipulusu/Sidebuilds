@@ -31,7 +31,7 @@ import { Button } from '../shadcn/ui/button';
 // Stripe banner removed from dashboard - only shown in project listing flow
 import ElegantLoadingScreen from '../components/ElegantLoadingScreen';
 import PortfolioValueModal from '../components/dashboard/PortfolioValueModal';
-import ProjectInterestsModal from '../components/dashboard/ProjectInterestsModal';
+import { notificationDestination } from '../utils/notificationNavigation';
 import ProjectStatsModal from '../components/dashboard/ProjectStatsModal';
 import SalesHistoryModal from '../components/dashboard/SalesHistoryModal';
 
@@ -67,7 +67,6 @@ const DashboardPage = () => {
 
   // Modal states
   const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
-  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [salesModalOpen, setSalesModalOpen] = useState(false);
 
@@ -183,13 +182,13 @@ const DashboardPage = () => {
   // Activity click handler
   const handleActivityClick = (activity) => {
     if (activity.requestId) {
-      navigate(`/purchase-agreement/${activity.requestId}`);
+      navigate(`/purchase-agreement/${activity.requestId}#purchase-conversation`);
       return;
     }
     console.log('Activity clicked:', activity);
     if (activity.type === 'interest' || activity.type === 'purchase_request') {
       console.log('Opening interests modal from activity');
-      setInterestsModalOpen(true);
+      navigate('/inbox?role=selling');
     } else if (activity.type === 'sale' || activity.type === 'payment') {
       console.log('Opening sales modal from activity');
       setSalesModalOpen(true);
@@ -215,39 +214,8 @@ const DashboardPage = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    console.log('Notification clicked:', notification);
-
-    // Mark notification as read if it's unread
-    if (!notification.is_read) {
-      markNotificationAsRead(notification.notification_id);
-    }
-
-    // Navigate based on notification type and available fields
-    if (notification.type === 'purchase_request' || notification.type?.includes('interest') || notification.type?.includes('offer')) {
-      console.log('Opening interests modal for notification:', notification.type);
-      // Open interests modal for project interest notifications
-      setInterestsModalOpen(true);
-    } else if (notification.type?.includes('sale') || notification.type?.includes('payment') || notification.type === 'payment') {
-      console.log('Opening sales modal for notification:', notification.type);
-      // Open sales modal for sale-related notifications
-      setSalesModalOpen(true);
-    } else if (notification.action_url) {
-      console.log('Navigating to action_url:', notification.action_url);
-      // Navigate to the specified action URL
-      navigate(notification.action_url);
-    } else if (notification.related_project_id) {
-      console.log('Navigating to project:', notification.related_project_id);
-      // Navigate to project detail page
-      navigate(`/project/${notification.related_project_id}`);
-    } else if (notification.related_transaction_id) {
-      console.log('Navigating to transaction:', notification.related_transaction_id);
-      // Navigate to transaction detail page
-      navigate(`/transaction/${notification.related_transaction_id}`);
-    } else {
-      console.log('Default navigation to notifications page');
-      // Default to notifications page
-      navigate('/notifications');
-    }
+    if (!notification.is_read) void markNotificationAsRead(notification.notification_id);
+    navigate(notificationDestination(notification) || '/notifications');
   };
 
   const StatCard = ({ icon: Icon, title, value, trend, trendUp, description, color = "gray", onClick }) => {
@@ -433,7 +401,7 @@ const DashboardPage = () => {
             value={stats.activeOffers}
             description="Pending purchase requests"
             color="red"
-            onClick={() => setInterestsModalOpen(true)}
+            onClick={() => navigate('/inbox?role=selling')}
             trend={stats.activeOffers > 0 ? '+' + stats.activeOffers : '0'}
             trendUp={true}
           />
@@ -615,11 +583,7 @@ const DashboardPage = () => {
         projects={projects}
       />
 
-      <ProjectInterestsModal
-        isOpen={interestsModalOpen}
-        onClose={() => setInterestsModalOpen(false)}
-        userId={user?.id || user?.user_id}
-      />
+
 
       <ProjectStatsModal
         isOpen={statsModalOpen}

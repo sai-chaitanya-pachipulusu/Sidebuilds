@@ -8,6 +8,11 @@ const emailService = require('../services/emailService');
 const { purchaseRequestLimiter } = require('../middleware/rateLimiting');
 const crypto = require('crypto');
 const { directToReceiptReview } = require('../utils/receiptReview');
+router.get('/inbox', authMiddleware, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try { res.json(await require('../services/conversationInboxService').getInbox(db, req.user.user_id, req.query)); }
+    catch (error) { res.status(error.status || 503).json({ error: error.status ? error.message : 'Your inbox is temporarily unavailable. Please retry.' }); }
+});
 router.use('/:requestId/agreement', require('./purchaseAgreements'));
 router.use('/:requestId', (req,res,next) => {
     if (req.method !== 'PUT' || !/^\/transfer(?:-status|\/code|\/domain|\/assets)$/.test(req.path)) return next();

@@ -1,3 +1,4 @@
+import { announceNotificationsChanged } from '../utils/notificationNavigation';
 import axios from 'axios';
 import { resolveServiceUrl } from '../config/apiUrl';
 // (Removed unused imports)
@@ -785,6 +786,7 @@ export const getNotifications = async () => {
 export const markNotificationAsRead = async (notificationId) => {
     try {
         const response = await apiClient.post(`/notifications/${notificationId}/mark-read`);
+        announceNotificationsChanged();
         return response.data;
     } catch (error) {
         console.error(`Error marking notification ${notificationId} as read:`, error.response?.data || error.message);
@@ -795,6 +797,7 @@ export const markNotificationAsRead = async (notificationId) => {
 export const markAllNotificationsAsRead = async () => {
     try {
         const response = await apiClient.post('/notifications/mark-all-read');
+        announceNotificationsChanged();
         return response.data;
     } catch (error) {
         console.error('Error marking all notifications as read:', error.response?.data || error.message);

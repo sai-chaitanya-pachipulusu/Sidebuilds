@@ -771,3 +771,42 @@ test('private-message retries reuse the stored row and reject content or partici
   assert.equal((await db.query('SELECT message_id FROM purchase_request_messages WHERE purchase_request_id=$1', [created.body.id])).rows.length, 1);
   const notifications = await db.query("SELECT notification_id FROM notifications WHERE action_url=$1 AND type='new_message'", [`/purchase-agreement/${created.body.id}#purchase-conversation`]); assert.equal(notifications.rows.length, 1);
 });
+
+test('inbox filters before pagination, escapes search wildcards and never exposes another buyer conversation', async () => {
+  const p = await saleProject();
+  await db.query('UPDATE projects SET name=$1 WHERE project_id=$2', ['Inbox 100%_ literal', p.project_id]);
+  const { openProjectInquiry } = require('../services/projectInquiryService');
+  const thread = await openProjectInquiry(db, { projectId: p.project_id, buyerId: buyer.user.user_id, message: 'Can you explain the handover details?' });
+  const page = await request('GET', '/purchase-requests/inbox?role=selling&q=100%25_&limit=1', seller.token);
+  expectStatus(page, 200); assert.equal(page.body.total, 1); assert.equal(page.body.threads[0].request_id, thread.id);
+  assert.equal(page.body.threads[0].unread_count, 1); assert.equal(page.body.threads[0].role, 'selling');
+  assert.doesNotMatch(JSON.stringify(page.body), /password_hash|stripe_account|@example|buyer_id|seller_id/);
+  assert.equal((await request('GET', '/purchase-requests/inbox?role=buying&q=100%25_', seller.token)).body.total, 0);
+  assert.equal((await request('GET', '/purchase-requests/inbox?q=100%25_', outsider.token)).body.total, 0);
+  assert.equal((await request('GET', '/purchase-requests/inbox?unread=true&q=100%25_', seller.token)).body.total, 1);
+  assert.equal((await request('GET', '/purchase-requests/inbox?q=100%25_&offset=1&limit=1', seller.token)).body.threads.length, 0);
+  assert.equal((await request('GET', '/purchase-requests/inbox?q=100%25_', buyer.token)).body.threads[0].role, 'buying');
+  expectStatus(await request('GET', '/purchase-requests/inbox'), 401);
+  for (const query of ['role=admin', 'limit=0', 'limit=51', 'offset=-1', 'unread=maybe', 'q=' + 'x'.repeat(101)]) expectStatus(await request('GET', '/purchase-requests/inbox?' + query, seller.token), 400);
+});
+
+test('conversation receipt marks only displayed incoming messages and chat notifications; later arrivals stay unread', async () => {
+  const p = await saleProject(), { openProjectInquiry, sendConversationMessage } = require('../services/projectInquiryService');
+  const thread = await openProjectInquiry(db, { projectId: p.project_id, buyerId: buyer.user.user_id, message: 'Please clarify this synthetic listing.' });
+  const send = senderId => sendConversationMessage(db, { requestId: thread.id, senderId, content: 'Synthetic receipt test message', messageType: 'general', messageId: randomUUID() });
+  const first = await send(buyer.user.user_id); const outgoing = await send(seller.user.user_id);
+  const loaded = await request('GET', `/purchase-requests/${thread.id}/messages`, seller.token); expectStatus(loaded, 200);
+  assert.deepEqual(loaded.body.read_receipt.messageIds, [first.message.id]); assert.equal(loaded.body.read_receipt.notificationIds.length, 2);
+  assert.equal((await db.query('SELECT is_read FROM purchase_request_messages WHERE message_id=$1', [first.message.id])).rows[0].is_read, 0);
+  const later = await send(buyer.user.user_id);
+  const financial = (await db.query("INSERT INTO notifications(user_id,title,type,message,action_url) VALUES($1,'Synthetic alert','payment_warning','Synthetic financial warning',$2) RETURNING notification_id", [seller.user.user_id, `/purchase-agreement/${thread.id}`])).rows[0].notification_id;
+  expectStatus(await request('POST', `/purchase-requests/${thread.id}/messages/read`, outsider.token, loaded.body.read_receipt), 403);
+  const marked = await request('POST', `/purchase-requests/${thread.id}/messages/read`, seller.token, { messageIds: [...loaded.body.read_receipt.messageIds, outgoing.message.id], notificationIds: [...loaded.body.read_receipt.notificationIds, String(financial)] });
+  expectStatus(marked, 200); assert.deepEqual(marked.body, { marked_messages: 1, marked_notifications: 2 });
+  for (const id of [later.message.id, outgoing.message.id]) assert.equal((await db.query('SELECT is_read FROM purchase_request_messages WHERE message_id=$1', [id])).rows[0].is_read, 0);
+  assert.equal((await db.query('SELECT is_read FROM notifications WHERE notification_id=$1', [financial])).rows[0].is_read, 0);
+  const inbox = await request('GET', '/purchase-requests/inbox', seller.token);
+  assert.equal(inbox.body.threads.find(row => row.request_id === thread.id).unread_count, 1);
+  assert.deepEqual((await request('POST', `/purchase-requests/${thread.id}/messages/read`, seller.token, loaded.body.read_receipt)).body, { marked_messages: 0, marked_notifications: 0 });
+  expectStatus(await request('POST', `/purchase-requests/${thread.id}/messages/read`, seller.token, { messageIds: ['invalid id'] }), 400);
+});

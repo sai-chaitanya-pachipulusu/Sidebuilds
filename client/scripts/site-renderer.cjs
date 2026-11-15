@@ -28,7 +28,7 @@ function card(project, primary=false) {
 }
 async function render(url, template, fetcher = fetch) {
   const pathname = url.pathname.replace(/\/$/,'') || '/';
-  if (pathname === '/robots.txt') return {status:200,type:'text/plain; charset=utf-8',body:`User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /purchase-agreement/\nDisallow: /project-transfer\nDisallow: /api/\nSitemap: ${ORIGIN}/sitemap.xml\n`};
+  if (pathname === '/robots.txt') return {status:200,type:'text/plain; charset=utf-8',body:`User-agent: *\nAllow: /\nDisallow: /dashboard\nDisallow: /inbox\nDisallow: /purchase-agreement/\nDisallow: /project-transfer\nDisallow: /api/\nSitemap: ${ORIGIN}/sitemap.xml\n`};
   if (pathname === '/sitemap.xml') {
     const listings = [];
     for (let page=1;page<=100;page++) {
@@ -60,7 +60,7 @@ async function render(url, template, fetcher = fetch) {
   } else if (pathname === '/') {
     content='<h1>Side projects. New possibilities.</h1><p>Find a project to build on, or put your work in front of its next owner.</p><a href="/marketplace">Explore the marketplace</a><p>Ask the seller questions, agree a written purchase scope and review the handover before confirming receipt.</p>';
   } else if (info[pathname]) content=`<h1>${escape(title)}</h1><p>${escape(description)}</p>`;
-  else if (!/^\/(login|register|forgot-password|reset-password|dashboard|purchases|purchase\/success|purchase-agreement(?:\/[^/]+)?|project-transfer|my-projects|projects\/(new|edit\/[^/]+)|create|saved|admin|settings|stripe\/connect\/complete|profile-settings|notifications|profile(?:\/[^/]+)?|users\/[^/]+|public-projects|trending|verify|vibe-code|help|blog)(?:\/.*)?$/.test(pathname)) {
+  else if (!/^\/(login|register|forgot-password|reset-password|dashboard|inbox|purchases|purchase\/success|purchase-agreement(?:\/[^/]+)?|project-transfer|my-projects|projects\/(new|edit\/[^/]+)|create|saved|admin|settings|stripe\/connect\/complete|profile-settings|notifications|profile(?:\/[^/]+)?|users\/[^/]+|public-projects|trending|verify|vibe-code|help|blog)(?:\/.*)?$/.test(pathname)) {
     status=404;title='Page not found | SideBuilds';description='This page could not be found.';
   }
   if (url.search) index=false;

@@ -1,0 +1,37 @@
+.sb-inbox { max-width: 1120px; margin: 0 auto; padding: 56px 24px 72px; color: #f2f3ee; }
+.sb-inbox-header { display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: start; padding-bottom: 30px; border-bottom: 1px solid #30362d; }
+.sb-inbox-eyebrow { font: 11px/1.5 ui-monospace, monospace; color: #b5c1a8; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+.sb-inbox h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin-bottom: 12px; }
+.sb-inbox-header p:last-child, .sb-inbox-state p { color: #b1b7aa; line-height: 1.6; }
+.sb-inbox button, .sb-inbox a, .sb-inbox input { outline-offset: 4px; }
+.sb-inbox button:focus-visible, .sb-inbox a:focus-visible, .sb-inbox input:focus-visible { outline: 2px solid #d5efae; }
+.sb-inbox-button { padding: 11px 16px; border: 1px solid #58624f; font-size: 14px; }
+.sb-inbox button:disabled { opacity: .45; cursor: default; }
+.sb-inbox-tools { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding: 24px 0; }
+.sb-inbox-roles { display: flex; gap: 4px; padding: 4px; border: 1px solid #30362d; }
+.sb-inbox-roles button { padding: 8px 14px; color: #b1b7aa; font-size: 14px; }
+.sb-inbox-roles button[aria-pressed=true] { background: #d5efae; color: #141714; }
+.sb-inbox-unread { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.sb-inbox-unread input { accent-color: #d5efae; }
+.sb-inbox-search { display: flex; margin-left: auto; min-width: 0; }
+.sb-inbox-search input { min-width: 0; width: 200px; background: #11140f; border: 1px solid #424b3a; padding: 10px 12px; font-size: 14px; }
+.sb-inbox-search button { border: 1px solid #424b3a; border-left: 0; padding: 10px 14px; font-size: 14px; }
+.sb-inbox-count, .sb-inbox-footnote { font-size: 12px; color: #a4ad9a; line-height: 1.6; margin: 0 0 18px; }
+.sb-inbox-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid #424b3a; }
+.sb-inbox-list li { padding: 24px 0; border-bottom: 1px solid #30362d; }
+.sb-inbox-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 32px; }
+.sb-inbox-main { min-width: 0; }
+.sb-inbox-meta { font-size: 12px; color: #b1b7aa; margin-bottom: 8px; }
+.sb-inbox-title { display: inline-block; font-size: 21px; font-weight: 600; text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }
+.sb-inbox-preview { font-size: 14px; line-height: 1.65; color: #b1b7aa; margin-top: 12px; overflow-wrap: anywhere; }
+.sb-inbox-side { display: flex; flex-direction: column; align-items: end; gap: 9px; font-size: 12px; color: #a4ad9a; }
+.sb-inbox-side a { color: #d5efae; text-decoration: underline; text-underline-offset: 3px; }
+.sb-inbox-badge { border: 1px solid #5b6b49; color: #d5efae; padding: 3px 8px; }
+.sb-inbox-state { border: 1px solid #30362d; padding: 28px; margin: 12px 0 28px; }
+.sb-inbox-state h2 { font-size: 21px; margin-bottom: 12px; }
+.sb-inbox-state button, .sb-inbox-state a { display: inline-block; margin-top: 18px; }
+.sb-inbox-state a { color: #d5efae; text-decoration: underline; }
+.sb-inbox-footnote { margin-top: 28px; max-width: 74ch; }
+.sb-inbox-paging { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 24px 0; font-size: 14px; }
+.sb-inbox-paging button { border: 1px solid #424b3a; padding: 8px 14px; }
+@media (max-width: 640px) { .sb-inbox { padding: 32px 20px 48px; } .sb-inbox h1 { font-size: 34px; } .sb-inbox-search { width: 100%; margin-left: 0; } .sb-inbox-search input { flex: 1; } .sb-inbox-row { grid-template-columns: 1fr; gap: 18px; } .sb-inbox-side { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 12px; } }
